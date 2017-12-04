@@ -1,0 +1,7 @@
+Django==1.11.7
+djangorestframework==3.7.3
+mongoengine==0.15.0
+blinker==1.4
+django-rest-framework-mongoengine==3.3.1
+mysql-connector-python==8.0.5
+psycopg2==2.7.3.2

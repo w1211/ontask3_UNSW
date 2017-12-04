@@ -1,0 +1,461 @@
+{
+	"info": {
+		"name": "onTask",
+		"_postman_id": "38232246-ab18-de68-3790-ab5776691413",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "General",
+			"description": "",
+			"item": [
+				{
+					"name": "API endpoints",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}"
+							}
+						],
+						"body": {},
+						"url": {
+							"raw": "localhost:8000",
+							"host": [
+								"localhost"
+							],
+							"port": "8000"
+						},
+						"description": ""
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Containers",
+			"description": "",
+			"item": [
+				{
+					"name": "List",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}"
+							}
+						],
+						"body": {},
+						"url": {
+							"raw": "localhost:8000/container/",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"container",
+								""
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "Create",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "code",
+									"value": "test",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": "test",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "title",
+									"value": "test",
+									"description": "",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "localhost:8000/container/",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"container",
+								""
+							]
+						},
+						"description": "\t"
+					},
+					"response": []
+				},
+				{
+					"name": "Update",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "code",
+									"value": "test",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": "test",
+									"description": "",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "title",
+									"value": "test",
+									"description": "",
+									"type": "text",
+									"disabled": true
+								}
+							]
+						},
+						"url": {
+							"raw": "localhost:8000/container/5a1b9de2f5ec4ea4587d67b5/",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"container",
+								"5a1b9de2f5ec4ea4587d67b5",
+								""
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Data Sources",
+			"description": "",
+			"item": [
+				{
+					"name": "List",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}"
+							}
+						],
+						"body": {},
+						"url": {
+							"raw": "localhost:8000/datasource/",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"datasource",
+								""
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "Create (mysql)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "Test DataSource232",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "dbType",
+									"value": "mysql",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "host",
+									"value": "localhost",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "database",
+									"value": "ontask",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "user",
+									"value": "sk_uat",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "Fr1day!",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "query",
+									"value": "select * from user;",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "isDynamic",
+									"value": "false",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "updateFrequency",
+									"value": "",
+									"description": "",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "localhost:8000/datasource/",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"datasource",
+								""
+							]
+						},
+						"description": "\t"
+					},
+					"response": []
+				},
+				{
+					"name": "Create (postgresql)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "Test DataSource232",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "dbType",
+									"value": "postgresql",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "host",
+									"value": "localhost",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "database",
+									"value": "ontask",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "user",
+									"value": "ontask",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "ontask",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "query",
+									"value": "select * from authtools_user;",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "isDynamic",
+									"value": "false",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "updateFrequency",
+									"value": "",
+									"description": "",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "localhost:8000/datasource/",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"datasource",
+								""
+							]
+						},
+						"description": "\t"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Matrices",
+			"description": "",
+			"item": [
+				{
+					"name": "List",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}"
+							}
+						],
+						"body": {},
+						"url": {
+							"raw": "localhost:8000/matrix/",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"matrix",
+								""
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "Create",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"test\",\n    \"primaryColumn\": {\n    \t\"field\": \"id\",\n    \t\"datasource\": \"5a24acfaf5ec4e613c0716b7\"\n    },\n    \"secondaryColumns\": [\n    \t{\n    \t\t\"field\": \"firstName\",\n    \t\t\"datasource\": \"5a24acfaf5ec4e613c0716b7\",\n    \t\t\"matchesWith\": \"id\"\n    \t},\n       \t{\n    \t\t\"field\": \"lastName\",\n    \t\t\"datasource\": \"5a24acfaf5ec4e613c0716b7\",\n    \t\t\"matchesWith\": \"id\"\n    \t},\n    \t{\n    \t\t\"field\": \"email\",\n    \t\t\"datasource\": \"5a24acfaf5ec4e613c0716b7\",\n    \t\t\"matchesWith\": \"id\"\n    \t}\n    ]\n}"
+						},
+						"url": {
+							"raw": "localhost:8000/matrix/",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"matrix",
+								""
+							]
+						},
+						"description": "\t"
+					},
+					"response": []
+				},
+				{
+					"name": "Data",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}"
+							}
+						],
+						"body": {},
+						"url": {
+							"raw": "localhost:8000/matrix/5a24a37cf5ec4e494f448565/get_data",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"matrix",
+								"5a24a37cf5ec4e494f448565",
+								"get_data"
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
