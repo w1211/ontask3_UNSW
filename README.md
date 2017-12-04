@@ -1,7 +1,7 @@
 # onTask v2.5
 
 ## Initial setup
-1. Set up & run python virtual environment [More info](https://packaging.python.org/guides/installing-using-pip-and-virtualenv/)
+1. Set up & run python [virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtualenv/)
 2. Pip install `backend/requirements.txt`
 3. Create django super user in terminal
 
