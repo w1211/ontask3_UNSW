@@ -7,12 +7,15 @@ from django.http import JsonResponse
 from .serializers import MatrixSerializer
 from .models import Matrix
 from datasource.models import DataSource
+from ontask.permissions import IsOwner
 
 from collections import defaultdict
+
 
 class MatrixViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
     serializer_class = MatrixSerializer
+    permission_classes = [IsOwner]
 
     def get_queryset(self):
         return Matrix.objects.all()
@@ -43,6 +46,11 @@ class MatrixViewSet(viewsets.ModelViewSet):
         if queryset.count():
             raise ValidationError('A matrix with this name already exists')
         serializer.save()
+
+    def perform_destroy(self, obj):
+         # Ensure that the request.user is the owner of the object
+        self.check_object_permissions(self.request, obj)
+        obj.delete()
 
     @detail_route(methods=['get'])
     def get_data(self, request, id=None):

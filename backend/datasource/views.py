@@ -8,11 +8,14 @@ import psycopg2
 
 from .serializers import DataSourceSerializer
 from .models import DataSource
+from matrix.models import Matrix
+from ontask.permissions import IsOwner
 
 
 class DataSourceViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
     serializer_class = DataSourceSerializer
+    permission_classes = [IsOwner]
 
     def get_queryset(self):
         return DataSource.objects.all()
@@ -86,5 +89,18 @@ class DataSourceViewSet(viewsets.ModelViewSet):
             data = data
         )
 
-    # TO DO: Delete function should validate that no Matrices are using the Data Source
+    def perform_destroy(self, obj):
+         # Ensure that the request.user is the owner of the object
+        self.check_object_permissions(self.request, obj)
+        
+        # Ensure that no matrix is currently using this datasource
+        # Because the secondaryColumns field is a list of SecondaryColumn embedded documents, we use 
+        # $elemMatch which is aliased to "match" in mongoengine
+        queryset = Matrix.objects.filter(
+            owner = self.request.user.id,
+            secondaryColumns__match = { "datasource": obj }
+        )
+        if queryset.count():
+            raise ValidationError('This datasource is being used by a matrix')
+        obj.delete()
     

@@ -3,11 +3,13 @@ from rest_framework_mongoengine.validators import ValidationError
 
 from .serializers import ContainerSerializer
 from .models import Container
+from ontask.permissions import IsOwner
 
 
 class ContainerViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
     serializer_class = ContainerSerializer
+    permission_classes = [IsOwner]
 
     def get_queryset(self):
         return Container.objects.all()
@@ -39,5 +41,11 @@ class ContainerViewSet(viewsets.ModelViewSet):
             raise ValidationError('A container with this code already exists')
         serializer.save()
 
-    # TO DO: Delete function should be cascading
-    # I.e. delete all associated Data Sources, Matrices, etc
+    def perform_destroy(self, obj):
+         # Ensure that the request.user is the owner of the object
+        self.check_object_permissions(self.request, obj)
+
+        # TO DO: Delete function should be cascading
+        # I.e. delete all associated Data Sources, Matrices, etc
+
+        obj.delete()
