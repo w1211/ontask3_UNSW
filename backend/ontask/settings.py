@@ -14,21 +14,14 @@ import os
 
 import mongoengine
 
+if os.environ.get('DJANGO_DEVELOPMENT') is not None:
+    from config.dev import *
+    DEBUG = True
+else:
+    from config.prod import *
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'w$7u7!eupa#b2nvt0&)j586s%trp#7l1nrwb2bvy$5ii7cwq-t'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
-
 
 # Application definition
 
@@ -79,17 +72,11 @@ WSGI_APPLICATION = 'ontask.wsgi.application'
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
+    'default': SQL_DATABASE
 }
 
 # TO DO: implement config variables for the NoSQL db connection
-mongoengine.connect(
-    db = "ontask_api",
-    host = "localhost"
-)
+mongoengine.connect(NOSQL_URI)
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators

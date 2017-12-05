@@ -21,4 +21,5 @@
 Thumbs.db
 
 # Backend config files
-backend/app/config.*
+backend/config/dev.*
+backend/config/prod.*

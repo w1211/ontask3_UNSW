@@ -1,26 +1,32 @@
 # onTask v2.5
 
 ## Initial setup
-1. Set up & run python [virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtualenv/)
-2. Pip install `backend/requirements.txt`
+1. Set up & run a python [virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtualenv/)
+2. Pip install `/backend/requirements.txt`
 3. Create django super user in terminal
-
-## Postman
-- Example API requests can be made via [Postman](https://www.getpostman.com/)
-- Import the routes from `dev/postman.json`
-
-
-<!-- 4. Create file `backend/app/config.py` with settings like:
-```
-SECRET_KEY = secret
-ALLOWED_HOSTS = []
-Database connection settings
-Auth types
+4. Create environment files in `/backend/config` as `dev.py` and `prod.py`
+5. Provide environment variables for each file as follows:
+```python
+SECRET_KEY = ''
+ALLOWED_HOSTS = ['']
+SQL_DATABASE = {
+  'ENGINE': '',
+  'NAME': ''
+}
+NOSQL_URI = '' # Connection string e.g. 'mongodb://localhost/dbname'
 ```
 
-## For development
-1. Create ~/.bashrc
-2. Add line `export DJANGO_DEVELOPMENT=true`
-3. Seed data 
-  - Specify the dev db in `backend/data/seed.py`
-  - Run `seed.py` in python shell -->
+## Development
+1. Seed data using `to be done`
+2. Add `export DJANGO_DEVELOPMENT=true` to your `~/.bash_profile` (Mac OS) or `~/.bashrc` (Linux)
+
+### Example API interactions
+Examples are provided for use with [Postman](https://www.getpostman.com/). To get started:
+1. Import the API requests into Postman from `/dev/postman.json`
+2. Configure the token variable as one of the authenticated user's tokens 
+    - Tokens can be created/viewed via Django admin page
+3. Modify the API calls to refer to the IDs of documents created in the dev NOSQL database
+
+
+## Production
+- https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/

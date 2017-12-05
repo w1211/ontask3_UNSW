@@ -45,7 +45,6 @@ class ContainerViewSet(viewsets.ModelViewSet):
          # Ensure that the request.user is the owner of the object
         self.check_object_permissions(self.request, obj)
 
-        # TO DO: Delete function should be cascading
-        # I.e. delete all associated Data Sources, Matrices, etc
-
+        # The delete function cascades down datasources & matrices 
+        # This is done via the container field of the datasource & matrix models
         obj.delete()
