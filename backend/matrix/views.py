@@ -8,7 +8,7 @@ from .serializers import MatrixSerializer
 from .models import Matrix
 from datasource.models import DataSource
 
-from itertools import groupby
+from collections import defaultdict
 
 class MatrixViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
@@ -55,26 +55,25 @@ class MatrixViewSet(viewsets.ModelViewSet):
         #   'lastName': { 1: 'Smith', 2: 'Johnson', 3: 'Sanders' },
         # }
         # I.e. User with id 1 is John Smith
-        column_data = {}
-
-        # To do: group by datasource first
+        column_data = defaultdict(dict)
+        
+        # Group secondary columns by datasource
+        secondary_column_datasource = defaultdict(list)
         for column in matrix['secondaryColumns']:
-            data = column.datasource.data # Imported data source which was saved as a dictField in the Matrix model
-            matching_column = column.matchesWith # E.g. "id"
-            field_name = column.field # E.g. "firstName"
+            secondary_column_datasource[column.datasource].append(column)
 
-            # For each secondary column, create a dict which is a key-value pair of matching_column with the respective field value
-            column_values = {}
+        for datasource, secondary_columns in secondary_column_datasource.items():
+            data = datasource.data # Imported data source which was saved as a dictField in the Matrix model
             for row in data:
-                matching_column_value = row[matching_column] # E.g. 1
-                field_value = row[field_name] # E.g. John
-                # Add key-value pair of the form { matching_column_value: field_value } to the column dict 
-                # E.g. { 1: 'John' } in the case of { id: firstName }
-                column_values[matching_column_value] = field_value
-
-            # Add the secondary column values to the dict holding all of the secondary column values
-            # E.g. column_data['firstName'] = { 1: 'John', 2: 'Frank', 3: 'Billy' }
-            column_data[field_name] = column_values
+                # For each secondary column, create a dict which is a key-value pair of matching_column with the respective field value
+                for column in secondary_columns:
+                    matching_column_value = row[column.matchesWith] # E.g. "id" of 1
+                    field_name = column.field # E.g. "firstName"
+                    field_value = row[field_name] # E.g. John
+                    # Each secondary column is represented by a dict in the column_data defaultdict
+                    # Add key-value pair of the form { matching_column_value: field_value } to the secondary column dict
+                    # E.g. { 1: 'John' } in the case of { id: firstName }
+                    column_data[field_name][matching_column_value] = field_value
 
         primaryColumn = matrix['primaryColumn']
         primaryField = primaryColumn.field
