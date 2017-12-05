@@ -65,14 +65,13 @@ class MatrixViewSet(viewsets.ModelViewSet):
         for datasource, secondary_columns in secondary_column_datasource.items():
             data = datasource.data # Imported data source which was saved as a dictField in the Matrix model
             for row in data:
-                # For each secondary column, create a dict which is a key-value pair of matching_column with the respective field value
                 for column in secondary_columns:
-                    matching_column_value = row[column.matchesWith] # E.g. "id" of 1
-                    field_name = column.field # E.g. "firstName"
-                    field_value = row[field_name] # E.g. John
                     # Each secondary column is represented by a dict in the column_data defaultdict
                     # Add key-value pair of the form { matching_column_value: field_value } to the secondary column dict
                     # E.g. { 1: 'John' } in the case of { id: firstName }
+                    matching_column_value = row[column.matchesWith] # E.g. "id" of 1
+                    field_name = column.field # E.g. "firstName"
+                    field_value = row[field_name] # E.g. John
                     column_data[field_name][matching_column_value] = field_value
 
         primaryColumn = matrix['primaryColumn']
