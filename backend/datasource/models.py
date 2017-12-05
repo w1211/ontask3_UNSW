@@ -1,5 +1,6 @@
 from mongoengine import Document, EmbeddedDocument, DynamicEmbeddedDocument, fields
 
+from container.models import Container
 
 class Connection(EmbeddedDocument):
     dbType = fields.StringField(choices=('mysql', 'postgresql', 'sqlite', 'mssql'), required=True)
@@ -18,6 +19,7 @@ class Metadata(EmbeddedDocument):
 
 class DataSource(Document):
     owner = fields.IntField()
+    container = fields.ReferenceField(Container, required=True, reverse_delete_rule=2) # Cascade delete if container is deleted
     sharedWith = fields.ListField(fields.IntField()) # List of user ids
     connection = fields.EmbeddedDocumentField(Connection)
     metadata = fields.EmbeddedDocumentField(Metadata)

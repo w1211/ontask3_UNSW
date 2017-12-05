@@ -44,12 +44,12 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         metadata['updateFrequency'] = self.request.data['updateFrequency']
         metadata['lastUpdated'] = datetime.now()
 
+        container = self.request.data['container']
+
         # Connect to specified database and get the data from the query
         # Data passed in to the DataSource model must be a list of dicts of the form {column_name: value}
-        dbType = self.request.data['dbType']
-
         # TO DO: if isDynamic, then store values into lists as objects with timestamps
-        if dbType == 'mysql':
+        if connection['dbType'] == 'mysql':
             dbConnection = mysql.connector.connect(
                 host = connection['host'],
                 database = connection['database'],
@@ -62,7 +62,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
             cursor.close()
             dbConnection.close()
 
-        elif dbType == 'postgresql':
+        elif connection['dbType'] == 'postgresql':
             dbConnection = psycopg2.connect(
                 host = connection['host'],
                 dbname = connection['database'],
@@ -76,14 +76,15 @@ class DataSourceViewSet(viewsets.ModelViewSet):
             dbConnection.close()
 
         # TO DO: implement MS SQL and SQLite imports
-        elif dbType == 'sqlite':
+        elif connection['dbType'] == 'sqlite':
             pass
         
-        elif dbType == 'mssql':
+        elif connection['dbType'] == 'mssql':
             pass
 
         serializer.save(
             owner = self.request.user.id,
+            container = container,
             connection = connection,
             metadata = metadata,
             data = data
