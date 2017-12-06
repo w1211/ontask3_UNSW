@@ -23,3 +23,6 @@ Thumbs.db
 # Backend config files
 backend/config/dev.*
 backend/config/prod.*
+
+# Virtual environment files
+ontask_venv/
