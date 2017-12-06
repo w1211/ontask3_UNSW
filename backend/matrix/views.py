@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from .serializers import MatrixSerializer
 from .models import Matrix
 from datasource.models import DataSource
-from ontask.permissions import IsOwner
+from ontask.permissions import IsOwnerOrShared
 
 from collections import defaultdict
 
@@ -15,7 +15,7 @@ from collections import defaultdict
 class MatrixViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
     serializer_class = MatrixSerializer
-    permission_classes = [IsOwner]
+    permission_classes = [IsOwnerOrShared]
 
     def get_queryset(self):
         return Matrix.objects.all()
@@ -33,7 +33,8 @@ class MatrixViewSet(viewsets.ModelViewSet):
         serializer.save(owner=self.request.user.id)
 
     def perform_update(self, serializer):
-        queryset = Container.objects.filter(
+        self.check_object_permissions(self.request, self.get_object())
+        queryset = Matrix.objects.filter(
             # We only want to check against the documents that are not the document being updated
             # I.e. only include objects in the filter that do not have the same id as the current object
             # id != self.kwargs.get(self.lookup_field) is syntactically incorrect
@@ -55,6 +56,7 @@ class MatrixViewSet(viewsets.ModelViewSet):
     @detail_route(methods=['get'])
     def get_data(self, request, id=None):
         matrix = Matrix.objects.get(id=id)
+        self.check_object_permissions(self.request, matrix)
 
         # Create a dict of dicts which will hold the values for each secondary column
         # Our goal is to end up with something like:
@@ -78,10 +80,13 @@ class MatrixViewSet(viewsets.ModelViewSet):
                     # Each secondary column is represented by a dict in the column_data defaultdict
                     # Add key-value pair of the form { matching_column_value: field_value } to the secondary column dict
                     # E.g. { 1: 'John' } in the case of { id: firstName }
-                    matching_column_value = int(row[column.matchesWith]) if primary_is_integer else str(row[column.matchesWith]) # E.g. "id" of 1
-                    field_name = column.field # E.g. "firstName"
-                    field_value = row[field_name] # E.g. John
-                    column_data[field_name][matching_column_value] = field_value
+                    try:
+                        matching_column_value = int(row[column.matchesWith]) if primary_is_integer else str(row[column.matchesWith]) # E.g. "id" of 1
+                        field_name = column.field # E.g. "firstName"
+                        field_value = row[field_name] # E.g. John
+                        column_data[field_name][matching_column_value] = field_value
+                    except KeyError:
+                        raise ValidationError('The matching column for "{0}" must be incorrect'.format(column.field))
 
         primaryColumn = matrix['primaryColumn']
         primaryField = primaryColumn.field

@@ -3,13 +3,13 @@ from rest_framework_mongoengine.validators import ValidationError
 
 from .serializers import ContainerSerializer
 from .models import Container
-from ontask.permissions import IsOwner
+from ontask.permissions import IsOwnerOrShared
 
 
 class ContainerViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
     serializer_class = ContainerSerializer
-    permission_classes = [IsOwner]
+    permission_classes = [IsOwnerOrShared]
 
     def get_queryset(self):
         return Container.objects.all()
@@ -27,6 +27,7 @@ class ContainerViewSet(viewsets.ModelViewSet):
         serializer.save(owner=self.request.user.id)
 
     def perform_update(self, serializer):
+        self.check_object_permissions(self.request, self.get_object())
         queryset = Container.objects.filter(
             # We only want to check against the documents that are not the document being updated
             # I.e. only include objects in the filter that do not have the same id as the current object
