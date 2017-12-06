@@ -1,14 +1,25 @@
 # onTask v2.5
 
 ## Initial setup
+1. Run `xcode-select --install` (Mac OS) or `sudo apt-get install build-essential` (Linux)
 1. Set up & run a python [virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtualenv/)
     - Ensure that you are in a virtual environment whenever trying to run the server
 2. Pip install `backend/requirements.txt`
 3. Create a django super user by running `python backend/manage.py createsuperuser`
 4. Create environment files `dev.py` and `prod.py` in `backend/config`
-5. Provide environment variables for each file as follows:
+5. In a python shell, run the following:
+```python
+from cryptography.fernet import Fernet
+# This key will be stored as DATASOURCE_SECRET in the config files
+# Generate two keys: one for development and the other for production
+# BE CAREFUL! Modifying or losing the key will make it impossible to unencrypt any datasource db passwords stored
+# I.e. Users will be forced to re-enter their passwords for every data source
+Fernet.generate_key()
+```
+6. Provide environment variables for each file as follows:
 ```python
 SECRET_KEY = '' # https://docs.djangoproject.com/en/1.11/ref/settings/#secret-key
+DATASOURCE_SECRET = '' # Used for encrypting datasource db passwords
 ALLOWED_HOSTS = [''] # https://docs.djangoproject.com/en/1.11/ref/settings/#allowed-hosts
 SQL_DATABASE = { # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
   'ENGINE': '',

@@ -75,7 +75,6 @@ DATABASES = {
     'default': SQL_DATABASE
 }
 
-# TO DO: implement config variables for the NoSQL db connection
 mongoengine.connect(host=NOSQL_URI)
 
 # Password validation

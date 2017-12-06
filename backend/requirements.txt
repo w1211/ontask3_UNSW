@@ -5,3 +5,4 @@ blinker==1.4
 django-rest-framework-mongoengine==3.3.1
 mysql-connector-python==8.0.5
 psycopg2==2.7.3.2
+cryptography==2.1.4

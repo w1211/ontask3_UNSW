@@ -7,7 +7,6 @@ class Connection(EmbeddedDocument):
     host = fields.StringField(required=True)
     database = fields.StringField(required=True)
     user = fields.StringField(required=True)
-    # TO DO: do not store db password as plaintext!
     password = fields.StringField(required=True)
     query = fields.StringField(required=True)
 

@@ -6,6 +6,10 @@ from datetime import datetime
 import mysql.connector
 import psycopg2
 
+# Imports for encrypting the datasource db password
+from cryptography.fernet import Fernet
+from ontask.settings import DATASOURCE_KEY
+
 from .serializers import DataSourceSerializer
 from .models import DataSource
 from matrix.models import Matrix
@@ -29,13 +33,17 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         if queryset.count():
             raise ValidationError('A data source with this name already exists')
 
+        # Encrypt the db password of the data source
+        cipher = Fernet(DATASOURCE_KEY)
+        password_cipher = cipher.encrypt(str(self.request.data['password']))
+
         # Map attributes from the http request to the subdocument schemas
         connection = {}
         connection['dbType'] = self.request.data['dbType']
         connection['host'] = self.request.data['host']
         connection['database'] = self.request.data['database']
         connection['user'] = self.request.data['user']
-        connection['password'] = self.request.data['password']
+        connection['password'] = password_cipher
         connection['query'] = self.request.data['query']
 
         metadata = {}
@@ -54,7 +62,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
                 host = connection['host'],
                 database = connection['database'],
                 user = connection['user'],
-                password = connection['password']
+                password = self.request.data['password'] # Use the unencrypted password
             )
             cursor = dbConnection.cursor(dictionary=True)
             cursor.execute(connection['query'])
@@ -67,7 +75,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
                 host = connection['host'],
                 dbname = connection['database'],
                 user = connection['user'],
-                password = connection['password']
+                password = self.request.data['password'] # Use the unencrypted password
             )
             cursor = dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
             cursor.execute(connection['query'])
@@ -104,4 +112,8 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         if queryset.count():
             raise ValidationError('This datasource is being used by a matrix')
         obj.delete()
-    
+
+
+# Decrypt the encrypted datasource db password as follows:
+# cipher = Fernet(DATASOURCE_KEY)
+# password = cipher.decrypt(encrypted_password)
