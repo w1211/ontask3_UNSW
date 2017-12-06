@@ -34,7 +34,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
-    'rest_framework_mongoengine'
+    'rest_framework_mongoengine',
+    'authtools'
 ]
 
 MIDDLEWARE = [
@@ -125,3 +126,5 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     )
 }
+
+AUTH_USER_MODEL = 'authtools.User'

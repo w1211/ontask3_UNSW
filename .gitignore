@@ -26,3 +26,7 @@ backend/config/prod.*
 
 # Virtual environment files
 ontask_venv/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
