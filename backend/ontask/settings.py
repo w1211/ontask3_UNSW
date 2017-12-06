@@ -76,7 +76,7 @@ DATABASES = {
 }
 
 # TO DO: implement config variables for the NoSQL db connection
-mongoengine.connect(NOSQL_URI)
+mongoengine.connect(host=NOSQL_URI)
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators

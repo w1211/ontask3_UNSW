@@ -6,6 +6,7 @@ from container.models import Container
 
 class PrimaryColumn(EmbeddedDocument):
     field = fields.StringField(required=True)
+    isInteger = fields.BooleanField(required=True) # User must specify whether the field is an integer or a string
     datasource = fields.ReferenceField(DataSource, required=True)
 
 class SecondaryColumn(EmbeddedDocument):

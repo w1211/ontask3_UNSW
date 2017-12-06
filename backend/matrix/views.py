@@ -72,12 +72,13 @@ class MatrixViewSet(viewsets.ModelViewSet):
 
         for datasource, secondary_columns in secondary_column_datasource.items():
             data = datasource.data # Imported data source which was saved as a dictField in the Matrix model
+            primary_is_integer = matrix['primaryColumn'].isInteger # Dict key for secondary column is string or integer dependant on the primary field type
             for row in data:
                 for column in secondary_columns:
                     # Each secondary column is represented by a dict in the column_data defaultdict
                     # Add key-value pair of the form { matching_column_value: field_value } to the secondary column dict
                     # E.g. { 1: 'John' } in the case of { id: firstName }
-                    matching_column_value = row[column.matchesWith] # E.g. "id" of 1
+                    matching_column_value = int(row[column.matchesWith]) if primary_is_integer else str(row[column.matchesWith]) # E.g. "id" of 1
                     field_name = column.field # E.g. "firstName"
                     field_value = row[field_name] # E.g. John
                     column_data[field_name][matching_column_value] = field_value

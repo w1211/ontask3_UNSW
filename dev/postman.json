@@ -162,6 +162,33 @@
 						"description": ""
 					},
 					"response": []
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}"
+							}
+						],
+						"body": {},
+						"url": {
+							"raw": "localhost:8000/container/5a24cf83f5ec4eafbfae363f/",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"container",
+								"5a24cf83f5ec4eafbfae363f",
+								""
+							]
+						},
+						"description": ""
+					},
+					"response": []
 				}
 			]
 		},
@@ -294,7 +321,7 @@
 							"formdata": [
 								{
 									"key": "name",
-									"value": "Test DataSource232",
+									"value": "Students",
 									"description": "",
 									"type": "text"
 								},
@@ -312,7 +339,7 @@
 								},
 								{
 									"key": "database",
-									"value": "ontask",
+									"value": "ontask_seed",
 									"description": "",
 									"type": "text"
 								},
@@ -330,7 +357,7 @@
 								},
 								{
 									"key": "query",
-									"value": "select * from authtools_user;",
+									"value": "select * from students;",
 									"description": "",
 									"type": "text"
 								},
@@ -343,6 +370,12 @@
 								{
 									"key": "updateFrequency",
 									"value": "",
+									"description": "",
+									"type": "text"
+								},
+								{
+									"key": "container",
+									"value": "5a276cf94e3aeb1209b0152a",
 									"description": "",
 									"type": "text"
 								}
@@ -360,6 +393,33 @@
 							]
 						},
 						"description": "\t"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}"
+							}
+						],
+						"body": {},
+						"url": {
+							"raw": "localhost:8000/datasource/5a24cf83f5ec4eafbfae363f/",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"datasource",
+								"5a24cf83f5ec4eafbfae363f",
+								""
+							]
+						},
+						"description": ""
 					},
 					"response": []
 				}
@@ -411,7 +471,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"name\": \"test\",\n    \"primaryColumn\": {\n    \t\"field\": \"id\",\n    \t\"datasource\": \"5a24acfaf5ec4e613c0716b7\"\n    },\n    \"secondaryColumns\": [\n    \t{\n    \t\t\"field\": \"firstName\",\n    \t\t\"datasource\": \"5a24acfaf5ec4e613c0716b7\",\n    \t\t\"matchesWith\": \"id\"\n    \t},\n       \t{\n    \t\t\"field\": \"lastName\",\n    \t\t\"datasource\": \"5a24acfaf5ec4e613c0716b7\",\n    \t\t\"matchesWith\": \"id\"\n    \t},\n    \t{\n    \t\t\"field\": \"email\",\n    \t\t\"datasource\": \"5a24acfaf5ec4e613c0716b7\",\n    \t\t\"matchesWith\": \"id\"\n    \t}\n    ]\n}"
+							"raw": "{\n    \"name\": \"Student grades\",\n    \"container\": \"5a276cf94e3aeb1209b0152a\",\n    \"primaryColumn\": {\n    \t\"field\": \"id\",\n    \t\"isInteger\": true,\n    \t\"datasource\": \"5a276d114e3aeb1209b0152b\"\n    },\n    \"secondaryColumns\": [\n    \t{\n    \t\t\"field\": \"first_name\",\n    \t\t\"datasource\": \"5a276d114e3aeb1209b0152b\",\n    \t\t\"matchesWith\": \"id\"\n    \t},\n       \t{\n    \t\t\"field\": \"last_name\",\n    \t\t\"datasource\": \"5a276d114e3aeb1209b0152b\",\n    \t\t\"matchesWith\": \"id\"\n    \t},\n    \t{\n    \t\t\"field\": \"email\",\n    \t\t\"datasource\": \"5a276d114e3aeb1209b0152b\",\n    \t\t\"matchesWith\": \"id\"\n    \t},\n    \t{\n    \t\t\"field\": \"grade\",\n    \t\t\"datasource\": \"5a276d274e3aeb1209b0152c\",\n    \t\t\"matchesWith\": \"student_id\"\n    \t}\n    ]\n}"
 						},
 						"url": {
 							"raw": "localhost:8000/matrix/",
@@ -440,15 +500,42 @@
 						],
 						"body": {},
 						"url": {
-							"raw": "localhost:8000/matrix/5a24a37cf5ec4e494f448565/get_data",
+							"raw": "localhost:8000/matrix/5a276fc64e3aeb17239fce26/get_data",
 							"host": [
 								"localhost"
 							],
 							"port": "8000",
 							"path": [
 								"matrix",
-								"5a24a37cf5ec4e494f448565",
+								"5a276fc64e3aeb17239fce26",
 								"get_data"
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}"
+							}
+						],
+						"body": {},
+						"url": {
+							"raw": "localhost:8000/matrix/5a276e014e3aeb1209b0152f/",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"matrix",
+								"5a276e014e3aeb1209b0152f",
+								""
 							]
 						},
 						"description": ""
