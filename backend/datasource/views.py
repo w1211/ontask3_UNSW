@@ -1,6 +1,7 @@
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
 from datetime import datetime
+from mongoengine.queryset.visitor import Q
 
 # Imports to connect to data sources
 import mysql.connector
@@ -13,16 +14,24 @@ from ontask.settings import DATASOURCE_KEY
 from .serializers import DataSourceSerializer
 from .models import DataSource
 from matrix.models import Matrix
-from ontask.permissions import IsOwnerOrShared
+from container.models import Container
+from .permissions import DataSourcePermissions
 
 
 class DataSourceViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
     serializer_class = DataSourceSerializer
-    permission_classes = [IsOwnerOrShared]
+    permission_classes = [DataSourcePermissions]
 
     def get_queryset(self):
-        return DataSource.objects.all()
+        # Find any containers that the user is owner of, or has readOnly or readWrite access to
+        containers_with_access = Container.objects.filter(
+            Q(owner = self.request.user.id) | Q(sharing__readOnly__contains = self.request.user.id) | Q(sharing__readWrite__contains = self.request.user.id) 
+        )
+        # Return data sources that belong to the containers found
+        return DataSource.objects.filter(
+            container__in = containers_with_access
+        )
 
     def get_datasource_data(self, connection):
         if connection['dbType'] == 'mysql':

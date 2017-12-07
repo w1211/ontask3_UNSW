@@ -1,18 +1,21 @@
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
+from mongoengine.queryset.visitor import Q
 
 from .serializers import ContainerSerializer
 from .models import Container
-from ontask.permissions import IsOwnerOrShared
+from .permissions import ContainerPermissions
 
 
 class ContainerViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
     serializer_class = ContainerSerializer
-    permission_classes = [IsOwnerOrShared]
+    permission_classes = [ContainerPermissions]
 
     def get_queryset(self):
-        return Container.objects.all()
+        return Container.objects.filter(
+            Q(owner = self.request.user.id) | Q(sharing__readOnly__contains = self.request.user.id) | Q(sharing__readWrite__contains = self.request.user.id) 
+        )
 
     def perform_create(self, serializer):
         # We are manually checking that the combination of (owner, code) is unique

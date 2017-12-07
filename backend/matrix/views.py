@@ -1,13 +1,15 @@
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
 from rest_framework.decorators import detail_route
+from mongoengine.queryset.visitor import Q
 
 from django.http import JsonResponse
 
 from .serializers import MatrixSerializer
 from .models import Matrix
 from datasource.models import DataSource
-from ontask.permissions import IsOwnerOrShared
+from container.models import Container
+from .permissions import MatrixPermissions
 
 from collections import defaultdict
 
@@ -15,10 +17,17 @@ from collections import defaultdict
 class MatrixViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
     serializer_class = MatrixSerializer
-    permission_classes = [IsOwnerOrShared]
+    permission_classes = [MatrixPermissions]
 
     def get_queryset(self):
-        return Matrix.objects.all()
+        # Find any containers that the user is owner of, or has readOnly or readWrite access to
+        containers_with_access = Container.objects.filter(
+            Q(owner = self.request.user.id) | Q(sharing__readOnly__contains = self.request.user.id) | Q(sharing__readWrite__contains = self.request.user.id) 
+        )
+        # Return matrices that belong to the containers found
+        return Matrix.objects.filter(
+            container__in = containers_with_access
+        )
 
     def perform_create(self, serializer):
         # We are manually checking that the combination of (owner, code) is unique

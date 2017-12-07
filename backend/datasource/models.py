@@ -21,7 +21,6 @@ class Metadata(EmbeddedDocument):
 class DataSource(Document):
     owner = fields.IntField()
     container = fields.ReferenceField(Container, required=True, reverse_delete_rule=2) # Cascade delete if container is deleted
-    sharedWith = fields.ListField(fields.IntField()) # List of user ids
     connection = fields.EmbeddedDocumentField(Connection)
     metadata = fields.EmbeddedDocumentField(Metadata)
     data = fields.ListField(fields.DictField())
