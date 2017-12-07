@@ -35,7 +35,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_mongoengine',
-    'authtools'
+    'authtools',
+    'accounts'
 ]
 
 MIDDLEWARE = [
