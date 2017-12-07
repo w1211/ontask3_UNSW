@@ -2,10 +2,15 @@
 
 ## Initial setup
 1. Set up & run a python [virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtualenv/)
-2. Pip install `backend/requirements.txt`
-3. Create a django super user by running `python backend/manage.py createsuperuser`
-4. Create environment files `dev.py` and `prod.py` in `backend/config`
-5. Provide environment variables for each file as follows:
+2. Run the following commands to install the dependencies for the python packages:
+  ```
+  $ sudo yum -y install gcc gcc-c++ kernel-devel
+$ sudo yum -y install python-devel libxslt-devel libffi-devel  openssl-devel
+```
+3. Pip install `backend/requirements.txt`
+4. Create a django super user by running `python backend/manage.py createsuperuser`
+5. Create environment files `dev.py` and `prod.py` in `backend/config`
+6. Provide environment variables for each file as follows:
 ```python
 SECRET_KEY = '' # https://docs.djangoproject.com/en/1.11/ref/settings/#secret-key
 ALLOWED_HOSTS = [''] # https://docs.djangoproject.com/en/1.11/ref/settings/#allowed-hosts
