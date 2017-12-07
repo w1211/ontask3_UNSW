@@ -1,6 +1,7 @@
 ''' LTI AUTHENTICATION '''
 from django.conf import settings
 from jwt import decode, ExpiredSignature
+from cryptography.fernet import Fernet
 from .auth_handler import UserAuthHandler
 
 class LTIAuthHandler(UserAuthHandler):
@@ -20,6 +21,7 @@ class AAFAuthHandler(UserAuthHandler):
         '''Initializes the configurations for the AAF authentication'''
         # Maps the AAF configuration from the settings file
         self.config = settings.AAF_CONFIG
+        self.cipher_suite = Fernet(settings.CIPHER_SUITE_KEY)
 
     def authenticate_user(self, jwt_payload):
         '''Verifies if AAF has authenticated the user and returns a User object'''
@@ -36,7 +38,7 @@ class AAFAuthHandler(UserAuthHandler):
                 user_attributes = verified_jwt['https://aaf.edu.au/attributes']
                 email = user_attributes["mail"]
                 fullname =  user_attributes["displayname"]
-                password = user_attributes["edupersontargetedid"][66:]
+                password = self.cipher_suite.encrypt(email)
                 role = self.extract_user_role(user_attributes["edupersonscopedaffiliation"])
                 user = self.authenticate(email, fullname, password, role)
                 return user
@@ -44,7 +46,7 @@ class AAFAuthHandler(UserAuthHandler):
                 #self.status = 403
                 #TODO logging
                 #self.response.write('Error: Not for this audience')
-                print "############ 403 Not AUthorized ##############"
+                print "############ 403 Not Authorized ##############"
         except ExpiredSignature:
             #self.status = 403
             #TODO logging
