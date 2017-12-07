@@ -47,11 +47,13 @@ class AAFAuthHandler(UserAuthHandler):
                 #TODO logging
                 #self.response.write('Error: Not for this audience')
                 print "############ 403 Not Authorized ##############"
+                return "NOT_AUTHORIZED"
         except ExpiredSignature:
             #self.status = 403
             #TODO logging
             #self.response.write('Error: Security cookie has expired')
             print "############ 403 ExpiredSignature ##############"
+            return "EXPIRED_SIGNATURE"
         return None
 
     def extract_user_role(self, user_role_mapping):
