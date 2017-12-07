@@ -2,12 +2,12 @@
 
 ## Initial setup
 1. Run `xcode-select --install` (Mac OS) or `sudo apt-get install build-essential` (Linux)
-1. Set up & run a Python [virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtualenv/)
+2. Set up & run a Python [virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtualenv/)
     - Always ensure that you are in the created virtual environment when running the backend or performing these initial setup steps
-2. Run `pip install backend/requirements.txt`
-3. Create a django super user by running `python backend/manage.py createsuperuser`
-4. Create environment files `dev.py` and `prod.py` in `backend/config`
-5. In a Python shell, run the following:
+3. Run `pip install backend/requirements.txt`
+4. Create a django super user by running `python backend/manage.py createsuperuser`
+5. Create environment files `dev.py` and `prod.py` in `backend/config`
+6. In a Python shell, run the following:
 ```python
 from cryptography.fernet import Fernet
 # This key will be stored as DATASOURCE_SECRET in the config files
@@ -19,7 +19,7 @@ Fernet.generate_key()
 7. Provide environment variables for each file as follows:
 ```python
 SECRET_KEY = '' # https://docs.djangoproject.com/en/1.11/ref/settings/#secret-key
-DATASOURCE_SECRET = '' # Used for encrypting datasource db passwords
+DATASOURCE_SECRET = '' # Used for encrypting datasource db passwords, generated in step 6
 ALLOWED_HOSTS = [''] # https://docs.djangoproject.com/en/1.11/ref/settings/#allowed-hosts
 SQL_DATABASE = { # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
   'ENGINE': '',
