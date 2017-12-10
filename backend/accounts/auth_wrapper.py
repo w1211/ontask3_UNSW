@@ -8,13 +8,35 @@ from .auth_handler import UserAuthHandler
 
 class LTIAuthHandler(UserAuthHandler):
     '''Login methods for LTI authentication'''
+    def __init__(self):
+        '''Initializes the configurations for the AAF authentication'''
+        # Maps the AAF configuration from the settings file
+        self.config = settings.LTI_CONFIG
+        self.cipher = XOR.new(settings.CIPHER_SUITE_KEY)
 
     def authenticate_user(self, payload):
-        print "########### LTI PAYLOAD #############"
-        print payload
-        print "########### LTI PAYLOAD #############"
-        return None
+        '''Verifies if LTI has authenticated the user and returns a User object'''
+        try:
+            email = payload["lis_person_contact_email_primary"]
+            fullname = payload["lis_person_name_full"]
+            password = base64.b64encode(self.cipher.encrypt(email))
+            role = self.extract_user_role(payload["roles"])
+            user = self.authenticate(email, fullname, password, role)
+            return user
+        except Exception as ex:
+            return None
+    
+    def extract_user_role(self, user_role_mapping):
+        '''Retrieves the correct role mapping to set the
+        permissions against user authenticated against AAF'''
 
+        role_domain = user_role_mapping.split(";")
+
+        # Check for a Staff role
+        for role in role_domain:
+            if role in self.config['role_mappings']['staff']:
+                return 'STAFF'
+        return 'STUDENT'
 
 
 class AAFAuthHandler(UserAuthHandler):
