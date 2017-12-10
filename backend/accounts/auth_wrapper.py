@@ -1,4 +1,4 @@
-''' LTI AUTHENTICATION '''
+''' AUTHENTICATION WRAPPER '''
 from django.conf import settings
 from jwt import decode, ExpiredSignature
 from Crypto.Cipher import XOR
