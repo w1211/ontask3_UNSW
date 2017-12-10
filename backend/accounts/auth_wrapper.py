@@ -32,10 +32,7 @@ class AAFAuthHandler(UserAuthHandler):
             # TODO remap the input variable to the value
             # passed from AAF [self.request.POST['assertion']]
             verified_jwt = decode(jwt_payload['assertion'], self.config['secret_key'], audience=self.config['aaf.edu.au']['aud'])
-	    print  "################## JWT PAYLOAD #################"
-	    print jwt_payload
-	    print  "################## JWT PAYLOAD #################"
-
+            
             # TODO  - Check: In a complete app we'd also store and
             # validate the jti value to ensure there is no replay attack
             if verified_jwt['aud'] == self.config['aaf.edu.au']['aud'] \
@@ -46,9 +43,6 @@ class AAFAuthHandler(UserAuthHandler):
                 password = base64.b64encode(self.cipher.encrypt(email))
                 role = self.extract_user_role(user_attributes["edupersonscopedaffiliation"])
                 user = self.authenticate(email, fullname, password, role)
-	        print "########## USER #################"
-		print user
-		print "########## USER #################"
                 return user
             else:
                 #self.status = 403
@@ -64,10 +58,9 @@ class AAFAuthHandler(UserAuthHandler):
             return "EXPIRED_SIGNATURE"
 	except Exception as e:
             print "################### GENERIC EXCEPTION ##################"
-            print e.message, e.args
-	    print traceback.print_exc()
+            # TODO loggin
+            print traceback.print_exc()
             print "################### GENERIC EXCEPTION ##################"
-	print "=========== RETURNING NONE AS USER ==============="
         return None
 
     def extract_user_role(self, user_role_mapping):
