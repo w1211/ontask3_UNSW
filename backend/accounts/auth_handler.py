@@ -13,6 +13,12 @@ class UserAuthHandler(object):
         '''Authenticates an external user into the system'''
         try:
             # retrieve the existing user information
+	    print "############# USERNAME ################"
+	    print email
+	    print "############# USERNAME ################"
+	    print "############# PASSWORD ################"
+	    print password
+	    print "############# PASSWORD ################"
             user = authenticate(username=email, password=password)
             if user == None:
                 raise ValueError('User Does not exist')
