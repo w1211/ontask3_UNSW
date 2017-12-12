@@ -20,6 +20,9 @@
 .DS_Store
 Thumbs.db
 
+# Python files
+*.pyc
+
 # Backend config files
 backend/config/dev.*
 backend/config/prod.*
