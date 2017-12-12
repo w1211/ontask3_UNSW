@@ -42,7 +42,7 @@ def combine_data(matrix):
                     field_value = row[field_name] # E.g. John
                     column_data[field_name][matching_column_value] = field_value
                 except KeyError:
-                    raise ValidationError('The matching column for "{0}" must be incorrect'.format(column.field))
+                    raise ValidationError('The matching column for \'{0}\' is incorrectly configured'.format(column.field))
 
     primaryColumn = matrix['primaryColumn']
     primaryField = primaryColumn.field
@@ -59,7 +59,7 @@ def combine_data(matrix):
                 # E.g. item['firstName'] = column_data['firstName'][1] gets the firstName of user with id 1
                 item[secondary_column.field] = column_data[secondary_column.field][row[primaryField]]
             except KeyError:
-                raise ValidationError('The \'type\' of the primary column must be incorrectly configured')
+                raise ValidationError('The \'type\' of the primary column is incorrectly configured')
         # We end up with a joined single record
         # E.g. { id: 1, firstName: 'John', lastName: 'Smith' }
         # And then we append this to the list of joined items which will be returned to the front-end

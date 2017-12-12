@@ -91,9 +91,10 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         else:
             filtered_data = data
             
-        # Determine the rows for that pass each condition
-        # Outputs a dict of { condition_name: [item, item_2, ...] }
+        # Determine the rows that pass each condition
+        # Outputs a dict of { condition_name: [ item_1_primary_field, item_2_primary_field, ... ] }
         conditions_passed = self.evaluate_conditions(matrix['primaryColumn']['field'], matrix['secondaryColumns'], filtered_data, condition_groups)
+        
         import json
         print(json.dumps(conditions_passed))
         print(content)
