@@ -11,4 +11,5 @@ class Workflow(Document):
     owner = fields.IntField()
     name = fields.StringField(required=True)#, unique_with='matrix')
     matrix = fields.ReferenceField(Matrix, required=True, reverse_delete_rule=2) # Cascade delete if matrix is deleted
+    filter = fields.StringField(null=True)
     conditions = fields.EmbeddedDocumentListField(Condition)
