@@ -6,11 +6,12 @@ from container.models import Container
 
 class PrimaryColumn(EmbeddedDocument):
     field = fields.StringField(required=True)
-    isInteger = fields.BooleanField(required=True) # User must specify whether the field is an integer or a string
+    type = fields.StringField(choices=('number', 'text'))
     datasource = fields.ReferenceField(DataSource, required=True)
 
 class SecondaryColumn(EmbeddedDocument):
     field = fields.StringField(required=True)
+    type = fields.StringField(choices=('number', 'text', 'date'))
     datasource = fields.ReferenceField(DataSource)
     matchesWith = fields.StringField()
     isCustom = fields.BooleanField()
