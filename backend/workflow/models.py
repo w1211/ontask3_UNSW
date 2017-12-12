@@ -17,3 +17,4 @@ class Workflow(Document):
     matrix = fields.ReferenceField(Matrix, required=True, reverse_delete_rule=2) # Cascade delete if matrix is deleted
     filter = fields.StringField(null=True)
     conditionGroups = fields.EmbeddedDocumentListField(ConditionGroup)
+    content = fields.StringField()
