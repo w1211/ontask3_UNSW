@@ -29,12 +29,12 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         else:
             return str(item[field_name])
 
-    def populate_formula(self, secondary_columns, item, formula):
+    def populate_fields(self, secondary_columns, item, formula):
         # Each row in the data is represented by a dict of the columns of the matrix (as the key) and the respective values for that row
         # Regex matches the formula of the condition against two groups: "{{field_name}}" (group 1) and "field_name" (group 2)
         # Lambda function takes the matched string's "field_name" (group 2) as input and returns the value of the key "field_name" in the row dict
         # The resulting value is then used to replace "{{field_name}}" (group 1) in the formula
-        return re.sub(r'({{([^\s]+)}})', lambda match: self.substitute_value(match.group(2), secondary_columns, item), formula)
+        return re.sub(r'({{(.*?)}})', lambda match: self.substitute_value(match.group(2), secondary_columns, item), formula)
 
     def evaluate_conditions(self, primary_column, secondary_columns, data, condition_groups):
         conditions_passed = defaultdict(list)
@@ -44,7 +44,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                 # Ensure that each item passes the test for only one condition per condition group
                 hasMatched = False
                 for condition in condition_group['conditions']:
-                    populated_formula = self.populate_formula(secondary_columns, item, condition['formula'])
+                    populated_formula = self.populate_fields(secondary_columns, item, condition['formula'])
                     # Eval the populated formula to see if the condition passes for this row
                     # If the row passes the condition, then add the row to the dict of conditions
                     try:
@@ -61,19 +61,21 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         matrix = Matrix.objects.get(id=self.request.data['matrix'])
+        secondary_columns = matrix['secondaryColumns']
         data = combine_data(matrix)
         filter = self.request.data['filter']
         condition_groups = self.request.data['conditionGroups']
         content = self.request.data['content']
+        primary_column = matrix['primaryColumn']['field']
 
         # Confirm that all provided fields are defined in the matrix
-        secondary_columns = [secondary_column.field for secondary_column in matrix['secondaryColumns']]
+        secondary_column_fields = [secondary_column.field for secondary_column in secondary_columns]
         for condition_group in condition_groups:
             for condition in condition_group['conditions']:
                 formula = condition['formula']
                 fields = re.findall(r'{{([^\s]+)}}', formula)
                 for field in fields:
-                    if field not in secondary_columns:
+                    if field not in secondary_column_fields:
                         raise ValidationError('Invalid formula: field \'{0}\' does not exist in the matrix'.format(field))
 
         # Filter the data
@@ -81,7 +83,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             filtered_data = []
             # Filter the data
             for item in data:
-                populated_formula = self.populate_formula(matrix['secondaryColumns'], item, filter)
+                populated_formula = self.populate_fields(secondary_columns, item, filter)
                 try:
                     # TO DO: consider security implications of using eval()
                     if eval(populated_formula):
@@ -93,12 +95,20 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             
         # Determine the rows that pass each condition
         # Outputs a dict of { condition_name: [ item_1_primary_field, item_2_primary_field, ... ] }
-        conditions_passed = self.evaluate_conditions(matrix['primaryColumn']['field'], matrix['secondaryColumns'], filtered_data, condition_groups)
+        conditions_passed = self.evaluate_conditions(primary_column, secondary_columns, filtered_data, condition_groups)
+
+        # Populate the content for each row
+        for item in filtered_data:
+            # User submits a 'content' field which contains conditional blocks, such that the content is customised for each item in the filtered data dependant on the conditions that item passes
+            # In the content, identify each conditional block of the format: {% if condition_name %}Text{% end if %}
+            # If the current item's primary key is in the conditions_passed for that condition, then include that block in this item's customised content
+            # Otherwise, that block will be removed from the customised content of this item
+            conditional_content = re.sub(r'({% if (.*?) %}(.*?){% endif %})', lambda match: match.group(3) if item[primary_column] in conditions_passed[match.group(2)] else '', content)
+            # After the content is customised for this item, populate any fields that may be present in the content
+            # i.e. populate the {{field_name}} tags
+            populated_content = self.populate_fields(secondary_columns, item, conditional_content)
         
-        import json
-        print(json.dumps(conditions_passed))
-        print(content)
-        # for item in filtered_data:
-            
+        # TO DO: implement actions that consume this populated content
+        # E.g. sending emails
         
         serializer.save(owner=self.request.user.id)
