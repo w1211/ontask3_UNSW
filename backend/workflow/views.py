@@ -34,7 +34,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         # Regex matches the formula of the condition against two groups: "{{field_name}}" (group 1) and "field_name" (group 2)
         # Lambda function takes the matched string's "field_name" (group 2) as input and returns the value of the key "field_name" in the row dict
         # The resulting value is then used to replace "{{field_name}}" (group 1) in the formula
-        return re.sub(r'({{(.*?)}})', lambda match: self.substitute_value(match.group(2), secondary_columns, item), formula)
+        return re.sub(r'({{ (.*?) }})', lambda match: self.substitute_value(match.group(2), secondary_columns, item), formula)
 
     def evaluate_conditions(self, primary_column, secondary_columns, data, condition_groups):
         conditions_passed = defaultdict(list)
@@ -103,10 +103,14 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             # In the content, identify each conditional block of the format: {% if condition_name %}Text{% end if %}
             # If the current item's primary key is in the conditions_passed for that condition, then include that block in this item's customised content
             # Otherwise, that block will be removed from the customised content of this item
-            conditional_content = re.sub(r'({% if (.*?) %}(.*?){% endif %})', lambda match: match.group(3) if item[primary_column] in conditions_passed[match.group(2)] else '', content)
+            # Firstly parse any conditional blocks that use {% else %} statements
+            conditional_content = re.sub(r'({% if (.*?) %}(.*?){% else %}(.*?){% endif %})', lambda match: match.group(3) if item[primary_column] in conditions_passed[match.group(2)] else match.group(4), content)
+            # Secondly parse any conditional blocks that only use {% if condition_name %} without {% else %} 
+            conditional_content = re.sub(r'({% if (.*?) %}(.*?){% endif %})', lambda match: match.group(3) if item[primary_column] in conditions_passed[match.group(2)] else '', conditional_content)
             # After the content is customised for this item, populate any fields that may be present in the content
             # i.e. populate the {{field_name}} tags
             populated_content = self.populate_fields(secondary_columns, item, conditional_content)
+            print(populated_content)
         
         # TO DO: implement actions that consume this populated content
         # E.g. sending emails
