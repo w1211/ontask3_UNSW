@@ -1,20 +1,22 @@
 import React from 'react';
-import { BrowserRouter as Router, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
 
-import Containers from './containers/containers.component';
+import Login from './login/Login';
+import Containers from './containers/Containers';
 
 
 class App extends React.Component {
   render() {
     return (
       <Router>
-        <div>
-          {/* <Route path="/login" component={Login}/> */}
+        <Switch>
+          <Route exact path="/" component={Login}/>
           <Route path="/containers" component={Containers}/>
-        </div>
+        </Switch>
       </Router>
     );
   };
 };
+
 
 export default App;
