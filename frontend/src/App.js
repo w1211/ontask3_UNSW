@@ -1,27 +1,20 @@
-import React, { Component } from 'react';
-import { Navbar, Nav, NavItem, Glyphicon, PageHeader, ButtonToolbar, Button } from 'react-bootstrap';
+import React from 'react';
+import { BrowserRouter as Router, Route } from 'react-router-dom';
 
-import utils from './shared/utils.css.js';
+import Containers from './containers/containers.component';
 
-class App extends Component {
+
+class App extends React.Component {
   render() {
     return (
-      <div style={utils.padding.top[30]}>
-        <Navbar fixedTop style={utils.fontSize.medium}>
-          <Nav>
-            <NavItem eventKey={1} href="#"><Glyphicon glyph="home"/></NavItem>
-            <NavItem eventKey={1} href="#">About</NavItem>
-            <NavItem eventKey={1} href="#">Contact</NavItem>
-          </Nav>
-        </Navbar>
-        <PageHeader className="text-center">Containers</PageHeader>
-        <ButtonToolbar style={utils.flexCenter}>
-          <Button bsStyle="primary"><Glyphicon glyph="plus"/> New Container</Button>
-          <Button bsStyle="primary" disabled><Glyphicon glyph="import"/> Import</Button>
-        </ButtonToolbar>
-      </div>
+      <Router>
+        <div>
+          {/* <Route path="/login" component={Login}/> */}
+          <Route path="/containers" component={Containers}/>
+        </div>
+      </Router>
     );
-  }
-}
+  };
+};
 
 export default App;
