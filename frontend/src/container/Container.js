@@ -5,7 +5,7 @@ import { PageHeader, ButtonToolbar, Button, Glyphicon } from 'react-bootstrap';
 import DefaultNavbar from '../shared/Navbar';
 
 
-class Containers extends React.Component {
+class Container extends React.Component {
 
   render() {
     return (
@@ -20,11 +20,13 @@ class Containers extends React.Component {
           <Button bsStyle="primary" disabled><Glyphicon glyph="import"/> Import</Button>
         </ButtonToolbar>
 
-        
-
       </div>
     );
   };
 
+  componentDidMount() {
+    console.log('mounted');
+  };
+
 };
-export default Containers;
+export default Container;
