@@ -9,20 +9,26 @@ import { fetchContainers } from './ContainerActions';
 const Panel = Collapse.Panel;
 const ButtonGroup = Button.Group;
 
+const ButtonStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  verticalAlign: 'middle',
+  marginRight: '10px',
+}
 
 const ContainerHeader  = ({ container }) => {
   return (
     <div>
       {container.code}
-      <div style={{float: "right", marginRight: "20px", marginTop: "-5px"}}>
-        <ButtonGroup style={{marginRight: "10px", verticalAlign: "middle"}}>
+      <div style={{float: "right", marginRight: "10px", marginTop: "-5px"}}>
+        <ButtonGroup style={ButtonStyle}>
           <Button icon="user"/>
-          <Button icon="share-alt"/>
           <Button icon="edit"/>
+          <Button icon="share-alt"/>
         </ButtonGroup>
-        <Button icon="hdd" style={{marginRight: "10px"}}><Badge count={4} style={{backgroundColor: '#616161'}} /></Button>
-        <Button style={{marginRight: "10px", verticalAlign: "middle"}}><Icon type="plus"/>New Workflow</Button>
-        <Button type="danger" icon="delete" style={{verticalAlign: "middle"}}/>
+        <Button icon="hdd" style={ButtonStyle}><Badge count={4} style={{backgroundColor: '#616161'}} /></Button>
+        <Button style={ButtonStyle}><Icon type="plus"/>New Workflow</Button>
+        <Button type="danger" icon="delete" style={ButtonStyle}/>
       </div>
     </div>
   )
