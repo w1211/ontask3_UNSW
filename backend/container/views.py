@@ -1,6 +1,11 @@
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
+from rest_framework.decorators import list_route
 from mongoengine.queryset.visitor import Q
+
+from django.http import JsonResponse
+import json
+from bson import json_util, ObjectId
 
 from .serializers import ContainerSerializer
 from .models import Container
@@ -11,6 +16,39 @@ class ContainerViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
     serializer_class = ContainerSerializer
     permission_classes = [ContainerPermissions]
+
+    @list_route(methods=['get'])
+    def retrieve_containers(self, request):
+        # Retrieve containers owned by or shared with the current user, ncluding the associated workflows & data sources
+        # Consumed by the containers list interface
+        # We are not using the provided get_queryset generic Django Rest Framework function as serialization on the objects returned
+        # Given that we are joining workflow & datasource models manually, we must use a custom function/endpoint
+        pipeline = [
+            {
+                '$lookup': {
+                    'from': 'data_source',
+                    'localField': '_id',
+                    'foreignField': 'container',
+                    'as': 'datasources'
+                }
+            },
+            {
+                '$lookup': {
+                    'from': 'workflow',
+                    'localField': '_id',
+                    'foreignField': 'container',
+                    'as': 'workflows'
+                }
+            },
+            {
+                # Exclude the data from each datasource
+                '$project': {
+                    'datasources.data': 0
+                }
+            }
+        ]
+        containers = list(Container.objects.aggregate(*pipeline))
+        return JsonResponse(json.loads(json_util.dumps(containers)), safe=False)
 
     def get_queryset(self):
         return Container.objects.filter(
@@ -50,5 +88,5 @@ class ContainerViewSet(viewsets.ModelViewSet):
         self.check_object_permissions(self.request, obj)
 
         # The delete function cascades down datasources & matrices 
-        # This is done via the container field of the datasource & matrix models
+        # This is done via the container field of the datasource & workflow models
         obj.delete()

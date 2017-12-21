@@ -13,9 +13,10 @@ from ontask.settings import DATASOURCE_KEY
 
 from .serializers import DataSourceSerializer
 from .models import DataSource
-from matrix.models import Matrix
-from container.models import Container
 from .permissions import DataSourcePermissions
+
+from container.models import Container
+from workflow.models import Workflow
 
 
 class DataSourceViewSet(viewsets.ModelViewSet):
@@ -23,15 +24,9 @@ class DataSourceViewSet(viewsets.ModelViewSet):
     serializer_class = DataSourceSerializer
     permission_classes = [DataSourcePermissions]
 
+    # TO DO: make this filter based on permissions
     def get_queryset(self):
-        # Find any containers that the user is owner of, or has readOnly or readWrite access to
-        containers_with_access = Container.objects.filter(
-            Q(owner = self.request.user.id) | Q(sharing__readOnly__contains = self.request.user.id) | Q(sharing__readWrite__contains = self.request.user.id) 
-        )
-        # Return data sources that belong to the containers found
-        return DataSource.objects.filter(
-            container__in = containers_with_access
-        )
+        return DataSource.objects.all()
 
     def get_datasource_data(self, connection):
         if connection['dbType'] == 'mysql':
@@ -79,13 +74,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         return data
 
     def perform_create(self, serializer):
-        # Check that the data source to be created is unique on (owner, name)
-        queryset = DataSource.objects.filter(
-            owner = self.request.user.id,
-            metadata__name = self.request.data['metadata']['name']
-        )
-        if queryset.count():
-            raise ValidationError('A data source with this name already exists')
+        self.check_object_permissions(self.request, None)
 
         # Connect to specified database and get the data from the query
         # Data passed in to the DataSource model must be a list of dicts of the form {column_name: value}
@@ -98,26 +87,12 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         connection['password'] = cipher.encrypt(str(connection['password']))
 
         serializer.save(
-            owner = self.request.user.id,
             connection = connection,
             data = data
         )
 
     def perform_update(self, serializer):
         self.check_object_permissions(self.request, self.get_object())
-        # Check that the data source to be created is unique on (owner, name)
-        queryset = DataSource.objects.filter(
-            # We only want to check against the documents that are not the document being updated
-            # I.e. only include objects in the filter that do not have the same id as the current object
-            # id != self.kwargs.get(self.lookup_field) is syntactically incorrect
-            # So instead we are making use of a query operator [field]__ne (i.e. field not equal to)
-            # Refer to http://docs.mongoengine.org/guide/querying.html#query-operators for more information
-            id__ne = self.kwargs.get(self.lookup_field), # Get the id of the object from the url route as defined by the lookup_field
-            owner = self.request.user.id,
-            metadata__name = self.request.data['metadata']['name']
-        )
-        if queryset.count():
-            raise ValidationError('A data source with this name already exists')
 
         # Connect to specified database and get the data from the query
         # Data passed in to the DataSource model must be a list of dicts of the form {column_name: value}
@@ -144,15 +119,14 @@ class DataSourceViewSet(viewsets.ModelViewSet):
          # Ensure that the request.user is the owner of the object
         self.check_object_permissions(self.request, obj)
         
-        # Ensure that no matrix is currently using this datasource
-        # Because the secondaryColumns field is a list of SecondaryColumn embedded documents, we use 
+        # Ensure that no workflow is currently using this datasource
+        # Because the matrix secondaryColumns field is a list of SecondaryColumn embedded documents, we use 
         # $elemMatch which is aliased to "match" in mongoengine
-        queryset = Matrix.objects.filter(
-            owner = self.request.user.id,
-            secondaryColumns__match = { "datasource": obj }
+        queryset = Workflow.objects.filter(
+            Q(matrix__secondaryColumns__match = { "datasource": obj }) | Q(matrix__primaryColumn__datasource = obj)
         )
         if queryset.count():
-            raise ValidationError('This datasource is being used by a matrix')
+            raise ValidationError('This datasource is being used by a workflow')
         obj.delete()
 
 

@@ -1,20 +1,29 @@
 from mongoengine import Document, EmbeddedDocument, fields
 
-from matrix.models import Matrix
+from datasource.models import DataSource
+from container.models import Container
 
 
-class Condition(EmbeddedDocument):
+# Matrix
+class PrimaryColumn(EmbeddedDocument):
+    field = fields.StringField(required=True)
+    type = fields.StringField(choices=('number', 'text'))
+    datasource = fields.ReferenceField(DataSource, required=True)
+
+class SecondaryColumn(EmbeddedDocument):
+    field = fields.StringField(required=True)
+    type = fields.StringField(choices=('number', 'text', 'date'))
+    datasource = fields.ReferenceField(DataSource)
+    matchesWith = fields.StringField()
+    isCustom = fields.BooleanField()
+
+class Matrix(EmbeddedDocument):
     name = fields.StringField(required=True)
-    formula = fields.StringField(required=True)
+    primaryColumn = fields.EmbeddedDocumentField(PrimaryColumn, required=True)
+    secondaryColumns = fields.EmbeddedDocumentListField(SecondaryColumn)
 
-class ConditionGroup(EmbeddedDocument):
-    name = fields.StringField(required=True)
-    conditions = fields.EmbeddedDocumentListField(Condition)
-
+# Workflow 
 class Workflow(Document):
-    owner = fields.IntField()
-    name = fields.StringField(required=True)#, unique_with='matrix')
-    matrix = fields.ReferenceField(Matrix, required=True, reverse_delete_rule=2) # Cascade delete if matrix is deleted
-    filter = fields.StringField(null=True)
-    conditionGroups = fields.EmbeddedDocumentListField(ConditionGroup)
-    content = fields.StringField()
+    container = fields.ReferenceField(Container, required=True, reverse_delete_rule=2) # Cascade delete if container is deleted
+    name = fields.StringField(required=True, unique_with='container')
+    matrix = fields.EmbeddedDocumentField(Matrix)

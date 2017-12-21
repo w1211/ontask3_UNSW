@@ -13,14 +13,14 @@ class Connection(EmbeddedDocument):
     query = fields.StringField(required=True)
 
 class Metadata(EmbeddedDocument):
-    name = fields.StringField(required=True)
     isDynamic = fields.BooleanField()
     updateFrequency = fields.StringField(choices=('hourly', 'daily', 'weekly')) # Weekly = 7 days from lastUpdated
     lastUpdated = fields.DateTimeField(default=datetime.now)
 
 class DataSource(Document):
-    owner = fields.IntField()
+    # Owner of the datasource can be determined from container.owner
     container = fields.ReferenceField(Container, required=True, reverse_delete_rule=2) # Cascade delete if container is deleted
+    name = fields.StringField(required=True, unique_with='container')    
     connection = fields.EmbeddedDocumentField(Connection)
     metadata = fields.EmbeddedDocumentField(Metadata)
     data = fields.ListField(fields.DictField())
