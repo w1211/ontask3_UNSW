@@ -25,7 +25,7 @@ const HeaderStyle = {
 class App extends React.Component {
   render() {
     return (
-      <Layout style={{ height: '100%' }}>
+      <Layout style={{ minHeight: '100%' }}>
         <Header style={HeaderStyle}>
           <img src={logo} alt="Logo" style={LogoStyle}/>
           <Menu mode="horizontal" defaultSelectedKeys={['1']} style={{ lineHeight: '62px' }}>

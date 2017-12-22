@@ -26,4 +26,5 @@ class Matrix(EmbeddedDocument):
 class Workflow(Document):
     container = fields.ReferenceField(Container, required=True, reverse_delete_rule=2) # Cascade delete if container is deleted
     name = fields.StringField(required=True, unique_with='container')
+    description = fields.StringField(null=True)
     matrix = fields.EmbeddedDocumentField(Matrix)
