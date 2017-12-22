@@ -5,6 +5,11 @@ export const CLOSE_CREATE_CONTAINER = 'CLOSE_CREATE_CONTAINER';
 export const REQUEST_CREATE_CONTAINER = 'REQUEST_CREATE_CONTAINER';
 export const SUCCESS_CREATE_CONTAINER = 'SUCCESS_CREATE_CONTAINER';
 export const FAILURE_CREATE_CONTAINER = 'FAILURE_CREATE_CONTAINER';
+export const OPEN_UPDATE_CONTAINER = 'OPEN_UPDATE_CONTAINER';
+export const CLOSE_UPDATE_CONTAINER = 'CLOSE_UPDATE_CONTAINER';
+export const REQUEST_UPDATE_CONTAINER = 'REQUEST_UPDATE_CONTAINER';
+export const SUCCESS_UPDATE_CONTAINER = 'SUCCESS_UPDATE_CONTAINER';
+export const FAILURE_UPDATE_CONTAINER = 'FAILURE_UPDATE_CONTAINER';
 
 const requestContainers = () => ({
   type: REQUEST_CONTAINERS
@@ -70,6 +75,54 @@ export const createContainer = (container) => dispatch => {
       });
     } else {
       dispatch(successCreateContainer());
+      dispatch(fetchContainers());
+    }
+  })
+  .catch(error => {
+    dispatch(failureCreateContainer('Failed to contact server. Please try again.'));
+  })
+};
+
+export const openUpdateContainer = (container) => ({
+  type: OPEN_UPDATE_CONTAINER,
+  container
+});
+
+export const closeUpdateContainer = () => ({
+  type: CLOSE_UPDATE_CONTAINER
+});
+
+const requestUpdateContainer = (container) => ({
+  type: REQUEST_UPDATE_CONTAINER,
+  container
+});
+
+const successUpdateContainer = () => ({
+  type: SUCCESS_UPDATE_CONTAINER
+});
+
+const failureUpdateContainer = (error) => ({
+  type: FAILURE_UPDATE_CONTAINER,
+  error
+});
+
+export const updateContainer = (id, payload) => dispatch => {
+  dispatch(requestUpdateContainer());
+  fetch(`/container/${id}/`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  })
+  .then(response => {
+    if (response.status >= 400 && response.status < 600) {
+      response.json().then(error => {
+        dispatch(failureUpdateContainer(error[0]));
+      });
+    } else {
+      dispatch(successUpdateContainer());
       dispatch(fetchContainers());
     }
   })

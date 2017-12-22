@@ -28,7 +28,8 @@ class ContainerForm extends React.Component {
           label="Code"
         >
           {getFieldDecorator('code', {
-            rules: [{ required: true, message: 'Code is required' }],
+            initialValue: this.props.container ? this.props.container.code : null,
+            rules: [{ required: true, message: 'Code is required' }]
           })(
             <Input/>
           )}
@@ -37,20 +38,29 @@ class ContainerForm extends React.Component {
           {...formItemLayout}
           label="School"
         >
-          <Input/>
+          {getFieldDecorator('school', {
+            initialValue: this.props.container ? this.props.container.school : null
+          })(
+            <Input/>
+          )}
         </FormItem>
         <FormItem
           {...formItemLayout}
           label="Faculty"
         >
-          <Input/>
+          {getFieldDecorator('faculty', {
+            initialValue: this.props.container ? this.props.container.faculty : null
+          })(
+            <Input/>
+          )}
         </FormItem>
         <FormItem
           {...formItemLayout}
           label="Description"
         >
           {getFieldDecorator('description', {
-            rules: [{ required: true, message: 'Description is required' }],
+            initialValue: this.props.container ? this.props.container.description : null,
+            rules: [{ required: true, message: 'Description is required' }]
           })(
             <TextArea rows={4}/>
           )}

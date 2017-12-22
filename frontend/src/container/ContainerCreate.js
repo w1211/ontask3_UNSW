@@ -2,7 +2,7 @@ import React from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 
-import { Button } from 'antd';
+import { Button, Alert } from 'antd';
 
 import ModalForm from '../shared/ModalForm';
 import ContainerForm from './ContainerForm';
@@ -10,10 +10,6 @@ import ContainerForm from './ContainerForm';
 import { openCreateContainer, closeCreateContainer, createContainer } from './ContainerActions';
 
 class ContainerCreate extends React.Component {
-  state = {
-    visible: false,
-  };
-  
   showModal = () => {
     const { dispatch } = this.props;
     dispatch(openCreateContainer());
@@ -40,11 +36,11 @@ class ContainerCreate extends React.Component {
 
   componentWillReceiveProps(nextProps) {
     if (
-      nextProps.isSaving === false &&
-      nextProps.submitError === null &&
-      nextProps.modalVisible === false
+      nextProps.isCreating === false &&
+      nextProps.createError === null &&
+      nextProps.createModalVisible === false
     ) {
-      this.form.resetFields()
+      this.form.resetFields();
     }
   }
 
@@ -53,18 +49,18 @@ class ContainerCreate extends React.Component {
         <div>
           <Button onClick={this.showModal} type="primary" icon="plus" size="large" style={{marginBottom: '20px'}}>
             New container
-          </Button>
+          </Button> 
           <ModalForm 
-            visible={this.props.modalVisible} 
+            visible={this.props.createModalVisible} 
             title="Create container"
             okText="Create"
             onCancel={this.handleCancel} 
             onOk={this.handleCreate}
-            isLoading={this.props.isSaving}
+            isLoading={this.props.isCreating}
           >
             <ContainerForm ref={this.createContainerRef}/>
-            {this.props.submitError}
-          </ModalForm>
+            { this.props.createError && <Alert message={this.props.createError} type="error"/>}
+            </ModalForm>
         </div>
       );
   }
@@ -76,11 +72,11 @@ ContainerCreate.propTypes = {
 }
 
 const mapStateToProps = (state) => {
-  const { isSaving, submitError, modalVisible } = state.containers;
+  const { isCreating, createError, createModalVisible } = state.containers;
   return { 
-    isSaving,
-    submitError,
-    modalVisible
+    isCreating,
+    createError,
+    createModalVisible
   };
 }
 

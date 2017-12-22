@@ -6,15 +6,29 @@ import {
   REQUEST_CREATE_CONTAINER,
   SUCCESS_CREATE_CONTAINER,
   FAILURE_CREATE_CONTAINER,
+  OPEN_UPDATE_CONTAINER,
+  CLOSE_UPDATE_CONTAINER,
+  REQUEST_UPDATE_CONTAINER,
+  SUCCESS_UPDATE_CONTAINER,
+  FAILURE_UPDATE_CONTAINER
 } from './ContainerActions';
 
 const initialState = {
   isFetching: false,
-  items: []
+  items: [],
+  createModalVisible: false,
+  isCreating: false,
+  createError: null,
+  selected: null,
+  updateModalVisible: false,
+  isUpdating: false,
+  updateError: null
 };
 
 function containers(state = initialState, action) {
   switch (action.type) {
+
+    // List containers
     case REQUEST_CONTAINERS:
       return Object.assign({}, state, {
         isFetching: true,
@@ -24,32 +38,64 @@ function containers(state = initialState, action) {
         isFetching: false,
         items: action.containers
       });
+
+    // Create container
     case OPEN_CREATE_CONTAINER:
       return Object.assign({}, state, {
-        modalVisible: true
+        createModalVisible: true
       });
     case CLOSE_CREATE_CONTAINER:
       return Object.assign({}, state, {
-        modalVisible: false,
-        isSaving: false,
-        submitError: null
+        createModalVisible: false,
+        isCreating: false,
+        createError: null
       });
     case REQUEST_CREATE_CONTAINER:
       return Object.assign({}, state, {
-        isSaving: true
+        isCreating: true
       });
     case SUCCESS_CREATE_CONTAINER:
       return Object.assign({}, state, {
-        modalVisible: false,
-        isSaving: false,
-        submitError: null
+        createModalVisible: false,
+        isCreating: false,
+        createError: null
       });
     case FAILURE_CREATE_CONTAINER:
-      console.log(action.error)
       return Object.assign({}, state, {
-        isSaving: false,
-        submitError: action.error
+        isCreating: false,
+        createError: action.error
       });
+
+    // Update container
+    case OPEN_UPDATE_CONTAINER:
+      return Object.assign({}, state, {
+        updateModalVisible: true,
+        selected: action.container
+      });
+    case CLOSE_UPDATE_CONTAINER:
+      return Object.assign({}, state, {
+        updateModalVisible: false,
+        isUpdating: false,
+        updateError: null,
+        selected: null
+      });
+    case REQUEST_UPDATE_CONTAINER:
+      return Object.assign({}, state, {
+        isUpdating: true
+      });
+    case SUCCESS_UPDATE_CONTAINER:
+      return Object.assign({}, state, {
+        updateModalVisible: false,
+        isUpdating: false,
+        updateError: null,
+        selected: null
+      });
+    case FAILURE_UPDATE_CONTAINER:
+      return Object.assign({}, state, {
+        isUpdating: false,
+        updateError: action.error
+      });
+      
     default:
       return state;
   }
