@@ -31,7 +31,7 @@ class ContainerPanelHeader extends React.Component {
         <div style={{float: "right", marginRight: "10px", marginTop: "-5px"}}>
           <ButtonGroup style={ButtonStyle}>
             <Button disabled icon="user"/>
-            <Button icon="edit" onClick={() => { this.showUpdateModal(container) }}/>
+            <Button icon="edit" onClick={(e) => { e.stopPropagation(); this.showUpdateModal(container); }}/>
             <Button icon="share-alt"/>
           </ButtonGroup>
           <Button icon="hdd" style={ButtonStyle}><Badge count={container.datasources.length} showZero style={{backgroundColor: '#616161'}} /></Button>
