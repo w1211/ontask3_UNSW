@@ -10,6 +10,9 @@ export const CLOSE_UPDATE_CONTAINER = 'CLOSE_UPDATE_CONTAINER';
 export const REQUEST_UPDATE_CONTAINER = 'REQUEST_UPDATE_CONTAINER';
 export const SUCCESS_UPDATE_CONTAINER = 'SUCCESS_UPDATE_CONTAINER';
 export const FAILURE_UPDATE_CONTAINER = 'FAILURE_UPDATE_CONTAINER';
+export const REQUEST_DELETE_CONTAINER = 'REQUEST_DELETE_CONTAINER';
+export const SUCCESS_DELETE_CONTAINER = 'SUCCESS_DELETE_CONTAINER';
+export const FAILURE_DELETE_CONTAINER = 'FAILURE_DELETE_CONTAINER';
 
 const requestContainers = () => ({
   type: REQUEST_CONTAINERS
@@ -128,5 +131,42 @@ export const updateContainer = (id, payload) => dispatch => {
   })
   .catch(error => {
     dispatch(failureCreateContainer('Failed to contact server. Please try again.'));
+  })
+};
+
+const requestDeleteContainer = () => ({
+  type: REQUEST_DELETE_CONTAINER
+});
+
+const successDeleteContainer = () => ({
+  type: SUCCESS_DELETE_CONTAINER
+});
+
+const failureDeleteContainer = (error) => ({
+  type: FAILURE_DELETE_CONTAINER,
+  error
+});
+
+export const deleteContainer = (id) => dispatch => {
+  dispatch(requestDeleteContainer());
+  fetch(`/container/${id}/`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(response => {
+    if (response.status >= 400 && response.status < 600) {
+      response.json().then(error => {
+        dispatch(failureDeleteContainer(error[0]));
+      });
+    } else {
+      dispatch(successDeleteContainer());
+      dispatch(fetchContainers());
+    }
+  })
+  .catch(error => {
+    dispatch(failureDeleteContainer('Failed to contact server. Please try again.'));
   })
 };

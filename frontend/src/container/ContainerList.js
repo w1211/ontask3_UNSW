@@ -1,7 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 // import { Route } from 'react-router-dom';
-import { Button, Collapse, Card, Col, Row } from 'antd';
+import { Button, Collapse, Card, Col, Row, notification } from 'antd';
+import { connect } from 'react-redux';
 
 import ContainerPanelHeader from './ContainerPanelHeader';
 
@@ -10,6 +11,16 @@ const { Meta } = Card;
 
 
 class ContainerList extends React.Component {
+
+  componentWillReceiveProps(nextProps) {
+    if (!this.props.didDelete && nextProps.didDelete) {
+      notification['success']({
+        message: 'Container deleted',
+        description: 'The container and its asssociated data sources and workflows has been successfully deleted.',
+      });
+    }
+  }
+
   render() {
     const { containers } = this.props;
 
@@ -59,7 +70,15 @@ class ContainerList extends React.Component {
 }
 
 ContainerList.propTypes = {
+  dispatch: PropTypes.func.isRequired,
   containers: PropTypes.array.isRequired
-};
+}
 
-export default ContainerList;
+const mapStateToProps = (state) => {
+  const { didDelete } = state.containers;
+  return {
+    didDelete
+  };
+}
+
+export default connect(mapStateToProps)(ContainerList)

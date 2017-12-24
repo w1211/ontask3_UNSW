@@ -10,7 +10,10 @@ import {
   CLOSE_UPDATE_CONTAINER,
   REQUEST_UPDATE_CONTAINER,
   SUCCESS_UPDATE_CONTAINER,
-  FAILURE_UPDATE_CONTAINER
+  FAILURE_UPDATE_CONTAINER,
+  REQUEST_DELETE_CONTAINER,
+  SUCCESS_DELETE_CONTAINER,
+  FAILURE_DELETE_CONTAINER
 } from './ContainerActions';
 
 const initialState = {
@@ -22,7 +25,9 @@ const initialState = {
   selected: null,
   updateModalVisible: false,
   isUpdating: false,
-  updateError: null
+  updateError: null,
+  isDeleting: false,
+  didDelete: false
 };
 
 function containers(state = initialState, action) {
@@ -31,7 +36,7 @@ function containers(state = initialState, action) {
     // List containers
     case REQUEST_CONTAINERS:
       return Object.assign({}, state, {
-        isFetching: true,
+        isFetching: true
       });
     case RECEIVE_CONTAINERS:
       return Object.assign({}, state, {
@@ -99,7 +104,24 @@ function containers(state = initialState, action) {
         isUpdating: false,
         updateError: action.error
       });
-      
+    
+    // Delete container
+    case REQUEST_DELETE_CONTAINER:
+      return Object.assign({}, state, {
+        isDeleting: true,
+        didDelete: false
+      });
+    case SUCCESS_DELETE_CONTAINER:
+      return Object.assign({}, state, {
+        isDeleting: false,
+        didDelete: true
+      });
+    case FAILURE_DELETE_CONTAINER:
+      return Object.assign({}, state, {
+        isDeleting: false,
+        didDelete: false
+      });
+
     default:
       return state;
   }
