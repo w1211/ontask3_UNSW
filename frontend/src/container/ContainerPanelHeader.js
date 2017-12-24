@@ -16,7 +16,7 @@ const ButtonStyle = {
   marginRight: '10px',
 }
 
-class ContainerHeader extends React.Component {
+class ContainerPanelHeader extends React.Component {
   showUpdateModal = (container) => {
     const { dispatch } = this.props;
     dispatch(openUpdateContainer(container));
@@ -43,9 +43,9 @@ class ContainerHeader extends React.Component {
   }
 }
 
-ContainerHeader.propTypes = {
+ContainerPanelHeader.propTypes = {
   dispatch: PropTypes.func.isRequired,
   container: PropTypes.object.isRequired
 }
 
-export default connect()(ContainerHeader)
+export default connect()(ContainerPanelHeader)
