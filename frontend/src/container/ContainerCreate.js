@@ -2,7 +2,7 @@ import React from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 
-import { Button, Alert } from 'antd';
+import { Button, Alert, notification } from 'antd';
 
 import ModalForm from '../shared/ModalForm';
 import ContainerForm from './ContainerForm';
@@ -42,6 +42,13 @@ class ContainerCreate extends React.Component {
     ) {
       this.form.resetFields();
     }
+
+    if (nextProps.didCreate) {
+      notification['success']({
+        message: 'Container created',
+        description: 'Next you should consider adding data sources and workflows to the container.',
+      });
+    }
   }
 
   render() {
@@ -72,11 +79,12 @@ ContainerCreate.propTypes = {
 }
 
 const mapStateToProps = (state) => {
-  const { isCreating, createError, createModalVisible } = state.containers;
+  const { isCreating, createError, createModalVisible, didCreate } = state.containers;
   return { 
     isCreating,
     createError,
-    createModalVisible
+    createModalVisible,
+    didCreate
   };
 }
 

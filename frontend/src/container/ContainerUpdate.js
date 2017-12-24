@@ -2,7 +2,7 @@ import React from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 
-import { Alert } from 'antd';
+import { Alert, notification } from 'antd';
 
 import ModalForm from '../shared/ModalForm';
 import ContainerForm from './ContainerForm';
@@ -31,6 +31,14 @@ class ContainerUpdate extends React.Component {
 
   componentWillReceiveProps(nextProps) {
     if (nextProps.selected === null) this.form.resetFields();
+
+    if (nextProps.didUpdate) {
+      notification['success']({
+        message: 'Container updated',
+        description: 'The container was successfuly updated.',
+      });
+    }
+
   }
 
   render() {
@@ -56,12 +64,13 @@ ContainerUpdate.propTypes = {
 }
 
 const mapStateToProps = (state) => {
-  const { isUpdating, updateError, updateModalVisible, selected } = state.containers;
+  const { isUpdating, updateError, updateModalVisible, selected, didUpdate } = state.containers;
   return { 
     isUpdating,
     updateError,
     updateModalVisible,
-    selected
+    selected,
+    didUpdate
   };
 }
 

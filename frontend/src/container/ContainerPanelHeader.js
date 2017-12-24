@@ -32,7 +32,7 @@ class ContainerPanelHeader extends React.Component {
           <ButtonGroup style={ButtonStyle}>
             <Button disabled icon="user"/>
             <Button icon="edit" onClick={(e) => { e.stopPropagation(); this.showUpdateModal(container); }}/>
-            <Button icon="share-alt"/>
+            <Button disabled icon="share-alt"/>
           </ButtonGroup>
           <Button icon="hdd" style={ButtonStyle}><Badge count={container.datasources.length} showZero style={{backgroundColor: '#616161'}} /></Button>
           <Button style={ButtonStyle}><Icon type="plus"/>New Workflow</Button>
