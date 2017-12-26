@@ -40,7 +40,7 @@ const ContainerList = ({ containers, onEditContainer, onDeleteContainer, onCreat
             onDeleteContainer={onDeleteContainer} 
             onCreateWorkflow={onCreateWorkflow}
           />}
-          key={key}
+          key={container.code}
         >
         { container.workflows.length > 0 ?
           <Row gutter={16} type="flex">
