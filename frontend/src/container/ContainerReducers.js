@@ -13,21 +13,24 @@ import {
   FAILURE_UPDATE_CONTAINER,
   REQUEST_DELETE_CONTAINER,
   SUCCESS_DELETE_CONTAINER,
-  FAILURE_DELETE_CONTAINER
+  FAILURE_DELETE_CONTAINER,
+  OPEN_CREATE_WORKFLOW,
+  CLOSE_CREATE_WORKFLOW,
+  REQUEST_CREATE_WORKFLOW,
+  SUCCESS_CREATE_WORKFLOW,
+  FAILURE_CREATE_WORKFLOW,
+  OPEN_UPDATE_WORKFLOW,
+  CLOSE_UPDATE_WORKFLOW,
+  REQUEST_UPDATE_WORKFLOW,
+  SUCCESS_UPDATE_WORKFLOW,
+  FAILURE_UPDATE_WORKFLOW,
+  REQUEST_DELETE_WORKFLOW,
+  SUCCESS_DELETE_WORKFLOW,
+  FAILURE_DELETE_WORKFLOW
 } from './ContainerActions';
 
 const initialState = {
-  isFetching: false,
-  items: [],
-  createModalVisible: false,
-  isCreating: false,
-  createError: null,
-  selected: null,
-  updateModalVisible: false,
-  isUpdating: false,
-  updateError: null,
-  isDeleting: false,
-  didDelete: false
+  items: []
 };
 
 function containers(state = initialState, action) {
@@ -50,11 +53,12 @@ function containers(state = initialState, action) {
     // Create container
     case OPEN_CREATE_CONTAINER:
       return Object.assign({}, state, {
-        createModalVisible: true
+        createContainerVisible: true
       });
     case CLOSE_CREATE_CONTAINER:
       return Object.assign({}, state, {
-        createModalVisible: false
+        createContainerVisible: false,
+        createError: null
       });
     case REQUEST_CREATE_CONTAINER:
       return Object.assign({}, state, {
@@ -62,10 +66,11 @@ function containers(state = initialState, action) {
       });
     case SUCCESS_CREATE_CONTAINER:
       return Object.assign({}, state, {
-        createModalVisible: false,
+        createContainerVisible: false,
         isCreating: false,
         createError: null,
-        didCreate: true
+        didCreate: true,
+        model: 'container'
       });
     case FAILURE_CREATE_CONTAINER:
       return Object.assign({}, state, {
@@ -76,13 +81,12 @@ function containers(state = initialState, action) {
     // Update container
     case OPEN_UPDATE_CONTAINER:
       return Object.assign({}, state, {
-        updateModalVisible: true,
-        selectedContainer: action.container,
-        didUpdate: false
+        updateContainerVisible: true,
+        selectedContainer: action.container
       });
     case CLOSE_UPDATE_CONTAINER:
       return Object.assign({}, state, {
-        updateModalVisible: false,
+        updateContainerVisible: false,
         isUpdating: false,
         updateError: null,
       });
@@ -92,10 +96,11 @@ function containers(state = initialState, action) {
       });
     case SUCCESS_UPDATE_CONTAINER:
       return Object.assign({}, state, {
-        updateModalVisible: false,
+        updateContainerVisible: false,
         isUpdating: false,
         updateError: null,
-        didUpdate: true
+        didUpdate: true,
+        model: 'container'
       });
     case FAILURE_UPDATE_CONTAINER:
       return Object.assign({}, state, {
@@ -106,19 +111,94 @@ function containers(state = initialState, action) {
     // Delete container
     case REQUEST_DELETE_CONTAINER:
       return Object.assign({}, state, {
-        isDeleting: true,
-        didDelete: false
+        isDeleting: true
       });
     case SUCCESS_DELETE_CONTAINER:
       return Object.assign({}, state, {
         isDeleting: false,
-        didDelete: true
+        didDelete: true,
+        model: 'container'
       });
     case FAILURE_DELETE_CONTAINER:
       return Object.assign({}, state, {
-        isDeleting: false,
-        didDelete: false
+        isDeleting: false
       });
+
+    // Create workflow
+    case OPEN_CREATE_WORKFLOW:
+      return Object.assign({}, state, {
+        createWorkflowVisible: true,
+        selectedContainer: action.container
+      });
+    case CLOSE_CREATE_WORKFLOW:
+      return Object.assign({}, state, {
+        createWorkflowVisible: false,
+        createError: null
+      });
+    case REQUEST_CREATE_WORKFLOW:
+      return Object.assign({}, state, {
+        isCreating: true
+      });
+    case SUCCESS_CREATE_WORKFLOW:
+      return Object.assign({}, state, {
+        createWorkflowVisible: false,
+        isCreating: false,
+        createError: null,
+        didCreate: true,
+        model: 'workflow'
+      });
+    case FAILURE_CREATE_WORKFLOW:
+      return Object.assign({}, state, {
+        isCreating: false,
+        createError: action.error
+      });
+
+    // Update workflow
+    case OPEN_UPDATE_WORKFLOW:
+    return Object.assign({}, state, {
+      updateWorkflowVisible: true,
+      selectedContainer: action.container,
+      selectedWorkflow: action.workflow
+    });
+  case CLOSE_UPDATE_WORKFLOW:
+    return Object.assign({}, state, {
+      updateWorkflowVisible: false,
+      isUpdating: false,
+      updateError: null,
+    });
+  case REQUEST_UPDATE_WORKFLOW:
+    return Object.assign({}, state, {
+      isUpdating: true
+    });
+  case SUCCESS_UPDATE_WORKFLOW:
+    return Object.assign({}, state, {
+      updateWorkflowVisible: false,
+      isUpdating: false,
+      updateError: null,
+      didUpdate: true,
+      model: 'workflow'
+    });
+  case FAILURE_UPDATE_WORKFLOW:
+    return Object.assign({}, state, {
+      isUpdating: false,
+      updateError: action.error
+    });
+
+    // Delete workflow
+    case REQUEST_DELETE_WORKFLOW:
+    return Object.assign({}, state, {
+      isDeleting: true
+    });
+  case SUCCESS_DELETE_WORKFLOW:
+    return Object.assign({}, state, {
+      isDeleting: false,
+      didDelete: true,
+      model: 'workflow'
+    });
+  case FAILURE_DELETE_WORKFLOW:
+    return Object.assign({}, state, {
+      isDeleting: false
+    });
 
     default:
       return state;

@@ -12,7 +12,7 @@ const ButtonStyle = {
   marginRight: '10px',
 }
 
-const ContainerPanelHeader = ({ container, onEditContainer, onDeleteContainer }) => (
+const ContainerPanelHeader = ({ container, onEditContainer, onDeleteContainer, onCreateWorkflow }) => (
   <div>
   {container.code}
   <div style={{float: "right", marginRight: "10px", marginTop: "-5px"}}>
@@ -22,18 +22,26 @@ const ContainerPanelHeader = ({ container, onEditContainer, onDeleteContainer })
       <Button disabled icon="share-alt"/>
     </ButtonGroup>
     <Button icon="hdd" style={ButtonStyle}><Badge count={container.datasources.length} showZero style={{backgroundColor: '#616161'}} /></Button>
-    <Button style={ButtonStyle}><Icon type="plus"/>New Workflow</Button>
+    <Button style={ButtonStyle} onClick={(e) => { e.stopPropagation(); onCreateWorkflow(container); }}><Icon type="plus"/>New Workflow</Button>
     <Button type="danger" icon="delete" style={ButtonStyle} onClick={(e) => { e.stopPropagation(); onDeleteContainer(container); }}/>
   </div>
 </div>
 );
 
-const ContainerList = ({ containers, onEditContainer, onDeleteContainer }) => (
+const ContainerList = ({ containers, onEditContainer, onDeleteContainer, onCreateWorkflow, onEditWorkflow, onDeleteWorkflow }) => (
   <Collapse accordion>
   { containers.map((container, key) => {
     return (
-      <Panel header={
-        <ContainerPanelHeader container={container} onEditContainer={onEditContainer} onDeleteContainer={onDeleteContainer}/>} key={key}>
+      <Panel 
+        header={
+          <ContainerPanelHeader 
+            container={container} 
+            onEditContainer={onEditContainer} 
+            onDeleteContainer={onDeleteContainer} 
+            onCreateWorkflow={onCreateWorkflow}
+          />}
+          key={key}
+        >
         { container.workflows.length > 0 ?
           <Row gutter={16} type="flex">
           { container.workflows.map((workflow, n) => {
@@ -44,10 +52,10 @@ const ContainerList = ({ containers, onEditContainer, onDeleteContainer }) => (
                     bodyStyle={{flex: 1}}
                     title={workflow.name}
                     actions={[
-                      <Button icon="user"/>,
-                      <Button icon="edit"/>, 
-                      <Button icon="share-alt"/>, 
-                      <Button type="danger" icon="delete"/>
+                      <Button icon="user" disabled/>,
+                      <Button icon="edit"  onClick={() => { onEditWorkflow(container, workflow) }}/>, 
+                      <Button icon="share-alt" disabled/>, 
+                      <Button type="danger" icon="delete" onClick={() => { onDeleteWorkflow(workflow) }}/>
                     ]}
                     >
                     <Meta

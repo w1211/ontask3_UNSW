@@ -7,6 +7,7 @@ import { Icon, Button, Modal, notification } from 'antd';
 import { fetchContainers } from './ContainerActions';
 import ContainerForm from './ContainerForm';
 import ContainerList from './ContainerList';
+import WorkflowForm from './WorkflowForm';
 
 import * as ContainerActionCreators from './ContainerActions';
 
@@ -23,31 +24,65 @@ class Container extends React.Component {
 
   componentWillReceiveProps(nextProps) {
     if (nextProps.didCreate) {
-      notification['success']({
-        message: 'Container created',
-        description: 'Next you should consider adding data sources and workflows to the container.'
-      });
+      switch (nextProps.model) {
+        case 'container':
+          notification['success']({
+            message: 'Container created',
+            description: 'Next you should consider adding data sources and workflows to the container.'
+          });
+          this.containerCreateForm.resetFields();
+          break;
+        case 'workflow':
+          notification['success']({
+            message: 'Workflow created',
+            description: 'The workflow was successfuly created.'
+          });
+          this.workflowCreateForm.resetFields();
+          break;
+        default:
+          break;
+      }
     }
 
     if (nextProps.didUpdate) {
-      notification['success']({
-        message: 'Container updated',
-        description: 'The container was successfuly updated.',
-      });
-      this.containerUpdateForm.resetFields();
+      switch (nextProps.model) {
+        case 'container':
+          notification['success']({
+            message: 'Container updated',
+            description: 'The container was successfuly updated.',
+          });
+          this.containerUpdateForm.resetFields();
+          break;
+        case 'workflow':
+          notification['success']({
+            message: 'Workflow updated',
+            description: 'The workflow was successfuly updated.'
+          });
+          break;
+        default:
+          break;
+      }
     }
 
     if (nextProps.didDelete) {
-      notification['success']({
-        message: 'Container deleted',
-        description: 'The container and its asssociated data sources and workflows has been successfully deleted.',
-      });
+      switch (nextProps.model) {
+        case 'container':
+          notification['success']({
+            message: 'Container deleted',
+            description: 'The container and its asssociated data sources and workflows have been successfully deleted.',
+          });
+          break;
+        case 'workflow':
+          notification['success']({
+            message: 'Workflow deleted',
+            description: 'The workflow and its asssociated data matrices and rules have been successfully deleted.',
+          });
+          break;
+        default:
+          break;
+      }
     }
 
-  }
-
-  containerUpdateFormRef = (form) => {
-    this.containerUpdateForm = form;
   }
 
   onDeleteContainer = (container) => {
@@ -64,11 +99,26 @@ class Container extends React.Component {
     });
   }
 
+  onDeleteWorkflow = (workflow) => {
+    let deleteWorkflow = this.boundActionCreators.deleteWorkflow;
+    confirm({
+      title: 'Confirm workflow deletion',
+      content: 'All associated data matrices and rules will be irrevocably deleted with the workflow.',
+      okText: 'Continue with deletion',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk() {
+        deleteWorkflow(workflow);
+      }
+    });
+  }
+
   render() {
     const { 
       containers, dispatch, 
-      createModalVisible, isCreating, createError,
-      updateModalVisible, isUpdating, updateError, selectedContainer
+      createContainerVisible, isCreating, createError,
+      updateContainerVisible, isUpdating, updateError, selectedContainer,
+      createWorkflowVisible, updateWorkflowVisible, selectedWorkflow
     } = this.props;
 
     return (
@@ -84,9 +134,10 @@ class Container extends React.Component {
         <ContainerForm 
           onOk={this.boundActionCreators.createContainer} 
           onCancel={() => {dispatch(this.boundActionCreators.closeCreateContainer)}} 
-          visible={createModalVisible}
+          visible={createContainerVisible}
           loading={isCreating}
           error={createError}
+          ref={(form) => {this.containerCreateForm = form}}
         />
         
         { containers.length > 0 ?
@@ -94,16 +145,38 @@ class Container extends React.Component {
             <ContainerForm 
               onOk={this.boundActionCreators.updateContainer}
               onCancel={() => {dispatch(this.boundActionCreators.closeUpdateContainer)}} 
-              visible={updateModalVisible}
+              visible={updateContainerVisible}
               loading={isUpdating}
               error={updateError}
               container={selectedContainer}
-              ref={this.containerUpdateFormRef}
+              ref={(form) => {this.containerUpdateForm = form}}
+            />
+            <WorkflowForm 
+              onOk={this.boundActionCreators.createWorkflow}
+              onCancel={() => {dispatch(this.boundActionCreators.closeCreateWorkflow)}} 
+              visible={createWorkflowVisible}
+              loading={isCreating}
+              error={createError}
+              container={selectedContainer}
+              ref={(form) => {this.workflowCreateForm = form}}
+            />
+            <WorkflowForm 
+              onOk={this.boundActionCreators.updateWorkflow}
+              onCancel={() => {dispatch(this.boundActionCreators.closeUpdateWorkflow)}} 
+              visible={updateWorkflowVisible}
+              loading={isUpdating}
+              error={updateError}
+              container={selectedContainer}
+              workflow={selectedWorkflow}
+              ref={(form) => {this.workflowUpdateForm = form}}
             />
             <ContainerList
               containers={containers} 
               onEditContainer={(container) => {dispatch(this.boundActionCreators.openUpdateContainer(container))}}
               onDeleteContainer={this.onDeleteContainer}
+              onCreateWorkflow={(container) => {dispatch(this.boundActionCreators.openCreateWorkflow(container))}}
+              onEditWorkflow={(container, workflow) => {dispatch(this.boundActionCreators.openUpdateWorkflow(container, workflow))}}
+              onDeleteWorkflow={this.onDeleteWorkflow}
             />
           </div>
         :
@@ -125,30 +198,35 @@ class Container extends React.Component {
 
 Container.propTypes = {
   dispatch: PropTypes.func.isRequired,
-  isFetching: PropTypes.bool.isRequired,
   containers: PropTypes.array.isRequired
 }
 
 const mapStateToProps = (state) => {
   const { 
     isFetching, items: containers, 
-    createModalVisible, isCreating, didCreate, createError,
-    updateModalVisible, isUpdating, didUpdate, updateError, selectedContainer,
-    didDelete
+    isCreating, didCreate, createError,
+    isUpdating, didUpdate, updateError, 
+    didDelete, model, selectedContainer, selectedWorkflow,
+    createContainerVisible, updateContainerVisible, 
+    createWorkflowVisible, updateWorkflowVisible
   } = state.containers;
   return { 
     isFetching, 
     containers,
-    createModalVisible,
     isCreating,
     didCreate,
     createError,
-    updateModalVisible,
     isUpdating,
     didUpdate,
     updateError,
-    selectedContainer, 
-    didDelete
+    didDelete,
+    model,
+    selectedContainer,
+    selectedWorkflow,
+    createContainerVisible,
+    updateContainerVisible,
+    createWorkflowVisible,
+    updateWorkflowVisible
   };
 }
 
