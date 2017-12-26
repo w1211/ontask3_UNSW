@@ -109,9 +109,9 @@ const failureUpdateContainer = (error) => ({
   error
 });
 
-export const updateContainer = (id, payload) => dispatch => {
+export const updateContainer = (selected, payload) => dispatch => {
   dispatch(requestUpdateContainer());
-  fetch(`/container/${id}/`, {
+  fetch(`/container/${selected._id['$oid']}/`, {
     method: 'PUT',
     headers: {
       'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
@@ -147,9 +147,9 @@ const failureDeleteContainer = (error) => ({
   error
 });
 
-export const deleteContainer = (id) => dispatch => {
+export const deleteContainer = (selected) => dispatch => {
   dispatch(requestDeleteContainer());
-  fetch(`/container/${id}/`, {
+  fetch(`/container/${selected._id['$oid']}/`, {
     method: 'DELETE',
     headers: {
       'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',

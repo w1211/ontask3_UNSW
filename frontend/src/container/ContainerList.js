@@ -1,84 +1,75 @@
 import React from 'react';
-import PropTypes from 'prop-types';
-// import { Route } from 'react-router-dom';
-import { Button, Collapse, Card, Col, Row, notification } from 'antd';
-import { connect } from 'react-redux';
-
-import ContainerPanelHeader from './ContainerPanelHeader';
+import { Button, Collapse, Card, Col, Row, Badge, Icon } from 'antd';
 
 const Panel = Collapse.Panel;
 const { Meta } = Card;
+const ButtonGroup = Button.Group;
 
+const ButtonStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  verticalAlign: 'middle',
+  marginRight: '10px',
+}
 
-class ContainerList extends React.Component {
+const ContainerPanelHeader = ({ container, onEditContainer, onDeleteContainer }) => (
+  <div>
+  {container.code}
+  <div style={{float: "right", marginRight: "10px", marginTop: "-5px"}}>
+    <ButtonGroup style={ButtonStyle}>
+      <Button disabled icon="user"/>
+      <Button icon="edit" onClick={(e) => { e.stopPropagation(); onEditContainer(container); }}/>
+      <Button disabled icon="share-alt"/>
+    </ButtonGroup>
+    <Button icon="hdd" style={ButtonStyle}><Badge count={container.datasources.length} showZero style={{backgroundColor: '#616161'}} /></Button>
+    <Button style={ButtonStyle}><Icon type="plus"/>New Workflow</Button>
+    <Button type="danger" icon="delete" style={ButtonStyle} onClick={(e) => { e.stopPropagation(); onDeleteContainer(container); }}/>
+  </div>
+</div>
+);
 
-  componentWillReceiveProps(nextProps) {
-    if (!this.props.didDelete && nextProps.didDelete) {
-      notification['success']({
-        message: 'Container deleted',
-        description: 'The container and its asssociated data sources and workflows has been successfully deleted.',
-      });
-    }
-  }
-
-  render() {
-    const { containers } = this.props;
-
+const ContainerList = ({ containers, onEditContainer, onDeleteContainer }) => (
+  <Collapse accordion>
+  { containers.map((container, key) => {
     return (
-      <Collapse accordion>
-      { containers.map((container, key) => {
-        return (
-          <Panel header={<ContainerPanelHeader container={container}/>} key={key}>
-            { container.workflows.length > 0 ?
-              <Row gutter={16} type="flex">
-              { container.workflows.map((workflow, n) => {
-                  return (
-                    <Col span={6} key={n} style={{minHeight: '100%', marginBottom: '20px'}}>
-                      <Card
-                        style={{minHeight: '100%', display: 'flex', flexDirection: 'column', boxShadow: '0 3px 1px -2px rgba(0,0,0,.2), 0 2px 2px 0 rgba(0,0,0,.14), 0 1px 5px 0 rgba(0,0,0,.12)'}}
-                        bodyStyle={{flex: 1}}
-                        title={workflow.name}
-                        actions={[
-                          <Button icon="user"/>,
-                          <Button icon="edit"/>, 
-                          <Button icon="share-alt"/>, 
-                          <Button type="danger" icon="delete"/>
-                        ]}
-                        >
-                        <Meta
-                          description={ workflow.description ?
-                            workflow.description
-                          :
-                            'No description provided'
-                          }
-                        />
-                      </Card>
-                    </Col>
-                  )
-                })
-              }
-              </Row>
-            :
-              <p style={{margin: 0}}>No workflows have been created yet.</p>
-            }
-          </Panel>        
-        )
-      })}
-    </Collapse>
+      <Panel header={
+        <ContainerPanelHeader container={container} onEditContainer={onEditContainer} onDeleteContainer={onDeleteContainer}/>} key={key}>
+        { container.workflows.length > 0 ?
+          <Row gutter={16} type="flex">
+          { container.workflows.map((workflow, n) => {
+              return (
+                <Col span={6} key={n} style={{minHeight: '100%', marginBottom: '20px'}}>
+                  <Card
+                    style={{minHeight: '100%', display: 'flex', flexDirection: 'column', boxShadow: '0 3px 1px -2px rgba(0,0,0,.2), 0 2px 2px 0 rgba(0,0,0,.14), 0 1px 5px 0 rgba(0,0,0,.12)'}}
+                    bodyStyle={{flex: 1}}
+                    title={workflow.name}
+                    actions={[
+                      <Button icon="user"/>,
+                      <Button icon="edit"/>, 
+                      <Button icon="share-alt"/>, 
+                      <Button type="danger" icon="delete"/>
+                    ]}
+                    >
+                    <Meta
+                      description={ workflow.description ?
+                        workflow.description
+                      :
+                        'No description provided'
+                      }
+                    />
+                  </Card>
+                </Col>
+              )
+            })
+          }
+          </Row>
+        :
+          <p style={{margin: 0}}>No workflows have been created yet.</p>
+        }
+      </Panel>        
     )
-  }
-}
+  })}
+</Collapse>
+)
 
-ContainerList.propTypes = {
-  dispatch: PropTypes.func.isRequired,
-  containers: PropTypes.array.isRequired
-}
-
-const mapStateToProps = (state) => {
-  const { didDelete } = state.containers;
-  return {
-    didDelete
-  };
-}
-
-export default connect(mapStateToProps)(ContainerList)
+export default ContainerList;

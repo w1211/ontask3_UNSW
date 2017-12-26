@@ -36,7 +36,10 @@ function containers(state = initialState, action) {
     // List containers
     case REQUEST_CONTAINERS:
       return Object.assign({}, state, {
-        isFetching: true
+        isFetching: true,
+        didCreate: false,
+        didUpdate: false,
+        didDelete: false
       });
     case RECEIVE_CONTAINERS:
       return Object.assign({}, state, {
@@ -47,14 +50,11 @@ function containers(state = initialState, action) {
     // Create container
     case OPEN_CREATE_CONTAINER:
       return Object.assign({}, state, {
-        createModalVisible: true,
-        didCreate: false
+        createModalVisible: true
       });
     case CLOSE_CREATE_CONTAINER:
       return Object.assign({}, state, {
-        createModalVisible: false,
-        isCreating: false,
-        createError: null
+        createModalVisible: false
       });
     case REQUEST_CREATE_CONTAINER:
       return Object.assign({}, state, {
@@ -77,7 +77,7 @@ function containers(state = initialState, action) {
     case OPEN_UPDATE_CONTAINER:
       return Object.assign({}, state, {
         updateModalVisible: true,
-        selected: action.container,
+        selectedContainer: action.container,
         didUpdate: false
       });
     case CLOSE_UPDATE_CONTAINER:
@@ -85,7 +85,6 @@ function containers(state = initialState, action) {
         updateModalVisible: false,
         isUpdating: false,
         updateError: null,
-        selected: null
       });
     case REQUEST_UPDATE_CONTAINER:
       return Object.assign({}, state, {
@@ -96,7 +95,6 @@ function containers(state = initialState, action) {
         updateModalVisible: false,
         isUpdating: false,
         updateError: null,
-        selected: null,
         didUpdate: true
       });
     case FAILURE_UPDATE_CONTAINER:
