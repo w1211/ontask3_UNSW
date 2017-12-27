@@ -17,26 +17,26 @@ const formItemLayout = {
   },
 };
 
-const handleOk = (form, container, onOk) => {
+const handleOk = (form, container, onCreate, onUpdate) => {
   form.validateFields((err, values) => {
     if (err) {
       return;
     }
     if (container) {
-      onOk(container, values);
+      onUpdate(container, values);
     } else {
-      onOk(values)
+      onCreate(values)
     }
   });
 }
 
-const ContainerForm = ({ form, container, visible, loading, onCancel, onOk, error }) => (
+const ContainerForm = ({ form, container, visible, loading, onCancel, onCreate, onUpdate, error }) => (
   <Modal
     visible={visible}
     title={container ? 'Update container' : 'Create container'}
     okText={container ? 'Update' : 'Create'}
     onCancel={onCancel}
-    onOk={() => {handleOk(form, container, onOk)}}
+    onOk={() => {handleOk(form, container, onCreate, onUpdate)}}
     confirmLoading={loading}
   >
     <Form layout="horizontal">

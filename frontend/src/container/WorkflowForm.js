@@ -17,26 +17,26 @@ const formItemLayout = {
   },
 };
 
-const handleOk = (form, container, workflow, onOk) => {
+const handleOk = (form, container, workflow, onCreate, onUpdate) => {
   form.validateFields((err, values) => {
     if (err) {
       return;
     }
     if (workflow) {
-      onOk(container, workflow, values);
+      onUpdate(container, workflow, values);
     } else {
-      onOk(container, values)
+      onCreate(container, values)
     }
   });
 }
 
-const WorkflowForm = ({ form, container, workflow, visible, loading, onCancel, onOk, error }) => (
+const WorkflowForm = ({ form, container, workflow, visible, loading, onCancel, onCreate, onUpdate, error }) => (
   <Modal
     visible={visible}
     title={workflow ? 'Update workflow' : 'Create workflow'}
     okText={workflow ? 'Update' : 'Create'}
     onCancel={onCancel}
-    onOk={() => {handleOk(form, container, workflow, onOk)}}
+    onOk={() => {handleOk(form, container, workflow, onCreate, onUpdate)}}
     confirmLoading={loading}
   >
     <Form layout="horizontal">

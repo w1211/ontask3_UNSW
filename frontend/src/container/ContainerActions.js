@@ -1,37 +1,21 @@
 export const REQUEST_CONTAINERS = 'REQUEST_CONTAINERS';
 export const RECEIVE_CONTAINERS = 'RECEIVE_CONTAINERS';
 
-export const OPEN_CREATE_CONTAINER = 'OPEN_CREATE_CONTAINER';
-export const CLOSE_CREATE_CONTAINER = 'CLOSE_CREATE_CONTAINER';
-export const REQUEST_CREATE_CONTAINER = 'REQUEST_CREATE_CONTAINER';
+export const OPEN_CONTAINER_MODAL = 'OPEN_CONTAINER_MODAL';
+export const CLOSE_CONTAINER_MODAL = 'CLOSE_CONTAINER_MODAL';
+export const BEGIN_REQUEST_CONTAINER = 'BEGIN_REQUEST_CONTAINER';
+export const FAILURE_REQUEST_CONTAINER = 'FAILURE_CREATE_CONTAINER';
 export const SUCCESS_CREATE_CONTAINER = 'SUCCESS_CREATE_CONTAINER';
-export const FAILURE_CREATE_CONTAINER = 'FAILURE_CREATE_CONTAINER';
-
-export const OPEN_UPDATE_CONTAINER = 'OPEN_UPDATE_CONTAINER';
-export const CLOSE_UPDATE_CONTAINER = 'CLOSE_UPDATE_CONTAINER';
-export const REQUEST_UPDATE_CONTAINER = 'REQUEST_UPDATE_CONTAINER';
 export const SUCCESS_UPDATE_CONTAINER = 'SUCCESS_UPDATE_CONTAINER';
-export const FAILURE_UPDATE_CONTAINER = 'FAILURE_UPDATE_CONTAINER';
-
-export const REQUEST_DELETE_CONTAINER = 'REQUEST_DELETE_CONTAINER';
 export const SUCCESS_DELETE_CONTAINER = 'SUCCESS_DELETE_CONTAINER';
-export const FAILURE_DELETE_CONTAINER = 'FAILURE_DELETE_CONTAINER';
 
-export const OPEN_CREATE_WORKFLOW = 'OPEN_CREATE_WORKFLOW';
-export const CLOSE_CREATE_WORKFLOW = 'CLOSE_CREATE_WORKFLOW';
-export const REQUEST_CREATE_WORKFLOW = 'REQUEST_CREATE_WORKFLOW';
+export const OPEN_WORKFLOW_MODAL = 'OPEN_WORKFLOW_MODAL';
+export const CLOSE_WORKFLOW_MODAL = 'CLOSE_WORKFLOW_MODAL';
+export const BEGIN_REQUEST_WORKFLOW = 'BEGIN_REQUEST_WORKFLOW';
+export const FAILURE_REQUEST_WORKFLOW = 'FAILURE_REQUEST_WORKFLOW';
 export const SUCCESS_CREATE_WORKFLOW = 'SUCCESS_CREATE_WORKFLOW';
-export const FAILURE_CREATE_WORKFLOW = 'FAILURE_CREATE_WORKFLOW';
-
-export const OPEN_UPDATE_WORKFLOW = 'OPEN_UPDATE_WORKFLOW';
-export const CLOSE_UPDATE_WORKFLOW = 'CLOSE_UPDATE_WORKFLOW';
-export const REQUEST_UPDATE_WORKFLOW = 'REQUEST_UPDATE_WORKFLOW';
 export const SUCCESS_UPDATE_WORKFLOW = 'SUCCESS_UPDATE_WORKFLOW';
-export const FAILURE_UPDATE_WORKFLOW = 'FAILURE_UPDATE_WORKFLOW';
-
-export const REQUEST_DELETE_WORKFLOW = 'REQUEST_DELETE_WORKFLOW';
 export const SUCCESS_DELETE_WORKFLOW = 'SUCCESS_DELETE_WORKFLOW';
-export const FAILURE_DELETE_WORKFLOW = 'FAILURE_DELETE_WORKFLOW';
 
 
 const requestContainers = () => ({
@@ -61,29 +45,30 @@ export const fetchContainers = () => dispatch => {
 };
 
 
-export const openCreateContainer = () => ({
-  type: OPEN_CREATE_CONTAINER
+export const openContainerModal = (container) => ({
+  type: OPEN_CONTAINER_MODAL,
+  container
 });
 
-export const closeCreateContainer = () => ({
-  type: CLOSE_CREATE_CONTAINER
+export const closeContainerModal = () => ({
+  type: CLOSE_CONTAINER_MODAL
 });
 
-const requestCreateContainer = () => ({
-  type: REQUEST_CREATE_CONTAINER
+const beginRequestContainer = () => ({
+  type: BEGIN_REQUEST_CONTAINER
+});
+
+const failureRequestContainer = (error) => ({
+  type: FAILURE_REQUEST_CONTAINER,
+  error
 });
 
 const successCreateContainer = () => ({
   type: SUCCESS_CREATE_CONTAINER
 });
 
-const failureCreateContainer = (error) => ({
-  type: FAILURE_CREATE_CONTAINER,
-  error
-});
-
 export const createContainer = (container) => dispatch => {
-  dispatch(requestCreateContainer());
+  dispatch(beginRequestContainer());
   fetch('/container/', {
     method: 'POST',
     headers: {
@@ -95,7 +80,7 @@ export const createContainer = (container) => dispatch => {
   .then(response => {
     if (response.status >= 400 && response.status < 600) {
       response.json().then(error => {
-        dispatch(failureCreateContainer(error[0]));
+        dispatch(failureRequestContainer(error[0]));
       });
     } else {
       dispatch(successCreateContainer());
@@ -103,36 +88,16 @@ export const createContainer = (container) => dispatch => {
     }
   })
   .catch(error => {
-    dispatch(failureCreateContainer('Failed to contact server. Please try again.'));
+    dispatch(failureRequestContainer('Failed to contact server. Please try again.'));
   })
 };
-
-
-export const openUpdateContainer = (container) => ({
-  type: OPEN_UPDATE_CONTAINER,
-  container
-});
-
-export const closeUpdateContainer = () => ({
-  type: CLOSE_UPDATE_CONTAINER
-});
-
-const requestUpdateContainer = (container) => ({
-  type: REQUEST_UPDATE_CONTAINER,
-  container
-});
 
 const successUpdateContainer = () => ({
   type: SUCCESS_UPDATE_CONTAINER
 });
 
-const failureUpdateContainer = (error) => ({
-  type: FAILURE_UPDATE_CONTAINER,
-  error
-});
-
 export const updateContainer = (selected, payload) => dispatch => {
-  dispatch(requestUpdateContainer());
+  dispatch(beginRequestContainer());
   fetch(`/container/${selected._id['$oid']}/`, {
     method: 'PUT',
     headers: {
@@ -144,7 +109,7 @@ export const updateContainer = (selected, payload) => dispatch => {
   .then(response => {
     if (response.status >= 400 && response.status < 600) {
       response.json().then(error => {
-        dispatch(failureUpdateContainer(error[0]));
+        dispatch(failureRequestContainer(error[0]));
       });
     } else {
       dispatch(successUpdateContainer());
@@ -152,26 +117,16 @@ export const updateContainer = (selected, payload) => dispatch => {
     }
   })
   .catch(error => {
-    dispatch(failureCreateContainer('Failed to contact server. Please try again.'));
+    dispatch(failureRequestContainer('Failed to contact server. Please try again.'));
   })
 };
-
-
-const requestDeleteContainer = () => ({
-  type: REQUEST_DELETE_CONTAINER
-});
 
 const successDeleteContainer = () => ({
   type: SUCCESS_DELETE_CONTAINER
 });
 
-const failureDeleteContainer = (error) => ({
-  type: FAILURE_DELETE_CONTAINER,
-  error
-});
-
 export const deleteContainer = (selected) => dispatch => {
-  dispatch(requestDeleteContainer());
+  dispatch(beginRequestContainer());
   fetch(`/container/${selected._id['$oid']}/`, {
     method: 'DELETE',
     headers: {
@@ -182,7 +137,7 @@ export const deleteContainer = (selected) => dispatch => {
   .then(response => {
     if (response.status >= 400 && response.status < 600) {
       response.json().then(error => {
-        dispatch(failureDeleteContainer(error[0]));
+        dispatch(failureRequestContainer(error[0]));
       });
     } else {
       dispatch(successDeleteContainer());
@@ -190,36 +145,37 @@ export const deleteContainer = (selected) => dispatch => {
     }
   })
   .catch(error => {
-    dispatch(failureDeleteContainer('Failed to contact server. Please try again.'));
+    dispatch(failureRequestContainer('Failed to contact server. Please try again.'));
   })
 };
 
 
-export const openCreateWorkflow = (container) => ({
-  type: OPEN_CREATE_WORKFLOW,
-  container
+export const openWorkflowModal = (container, workflow) => ({
+  type: OPEN_WORKFLOW_MODAL,
+  container,
+  workflow
 });
 
-export const closeCreateWorkflow = () => ({
-  type: CLOSE_CREATE_WORKFLOW
+export const closeWorkflowModal = () => ({
+  type: CLOSE_WORKFLOW_MODAL
 });
 
-const requestCreateWorkflow = () => ({
-  type: REQUEST_CREATE_WORKFLOW
+const beginRequestWorkflow = () => ({
+  type: BEGIN_REQUEST_WORKFLOW
+});
+
+const failureRequestWorkflow = (error) => ({
+  type: FAILURE_REQUEST_WORKFLOW,
+  error
 });
 
 const successCreateWorkflow = () => ({
   type: SUCCESS_CREATE_WORKFLOW
 });
 
-const failureCreateWorkflow = (error) => ({
-  type: FAILURE_CREATE_WORKFLOW,
-  error
-});
-
 export const createWorkflow = (container, workflow) => dispatch => {
   workflow.container = container._id['$oid'];
-  dispatch(requestCreateWorkflow());
+  dispatch(beginRequestWorkflow());
   fetch('/workflow/', {
     method: 'POST',
     headers: {
@@ -232,7 +188,7 @@ export const createWorkflow = (container, workflow) => dispatch => {
     if (response.status >= 400 && response.status < 600) {
       response.json().then(error => {
         console.log(error);
-        dispatch(failureCreateWorkflow(error[0]));
+        dispatch(failureRequestWorkflow(error[0]));
       });
     } else {
       dispatch(successCreateWorkflow());
@@ -240,37 +196,17 @@ export const createWorkflow = (container, workflow) => dispatch => {
     }
   })
   .catch(error => {
-    dispatch(failureCreateWorkflow('Failed to contact server. Please try again.'));
+    dispatch(failureRequestWorkflow('Failed to contact server. Please try again.'));
   })
 };
-
-export const openUpdateWorkflow = (container, workflow) => ({
-  type: OPEN_UPDATE_WORKFLOW,
-  container,
-  workflow
-});
-
-export const closeUpdateWorkflow= () => ({
-  type: CLOSE_UPDATE_WORKFLOW
-});
-
-const requestUpdateWorkflow = (workflow) => ({
-  type: REQUEST_UPDATE_WORKFLOW,
-  workflow
-});
 
 const successUpdateWorkflow = () => ({
   type: SUCCESS_UPDATE_WORKFLOW
 });
 
-const failureUpdateWorkflow = (error) => ({
-  type: FAILURE_UPDATE_WORKFLOW,
-  error
-});
-
 export const updateWorkflow = (container, selected, payload) => dispatch => {
   payload.container = container._id['$oid'];
-  dispatch(requestUpdateWorkflow());
+  dispatch(beginRequestWorkflow());
   fetch(`/workflow/${selected._id['$oid']}/`, {
     method: 'PUT',
     headers: {
@@ -282,7 +218,7 @@ export const updateWorkflow = (container, selected, payload) => dispatch => {
   .then(response => {
     if (response.status >= 400 && response.status < 600) {
       response.json().then(error => {
-        dispatch(failureUpdateWorkflow(error[0]));
+        dispatch(failureRequestWorkflow(error[0]));
       });
     } else {
       dispatch(successUpdateWorkflow());
@@ -290,25 +226,16 @@ export const updateWorkflow = (container, selected, payload) => dispatch => {
     }
   })
   .catch(error => {
-    dispatch(failureCreateWorkflow('Failed to contact server. Please try again.'));
+    dispatch(failureRequestWorkflow('Failed to contact server. Please try again.'));
   })
 };
-
-const requestDeleteWorkflow = () => ({
-  type: REQUEST_DELETE_WORKFLOW
-});
 
 const successDeleteWorkflow = () => ({
   type: SUCCESS_DELETE_WORKFLOW
 });
 
-const failureDeleteWorkflow = (error) => ({
-  type: FAILURE_DELETE_WORKFLOW,
-  error
-});
-
 export const deleteWorkflow = (selected) => dispatch => {
-  dispatch(requestDeleteWorkflow());
+  dispatch(beginRequestWorkflow());
   fetch(`/workflow/${selected._id['$oid']}/`, {
     method: 'DELETE',
     headers: {
@@ -319,7 +246,7 @@ export const deleteWorkflow = (selected) => dispatch => {
   .then(response => {
     if (response.status >= 400 && response.status < 600) {
       response.json().then(error => {
-        dispatch(failureDeleteWorkflow(error[0]));
+        dispatch(failureRequestWorkflow(error[0]));
       });
     } else {
       dispatch(successDeleteWorkflow());
@@ -327,6 +254,6 @@ export const deleteWorkflow = (selected) => dispatch => {
     }
   })
   .catch(error => {
-    dispatch(failureDeleteWorkflow('Failed to contact server. Please try again.'));
+    dispatch(failureRequestWorkflow('Failed to contact server. Please try again.'));
   })
 };
