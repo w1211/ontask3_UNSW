@@ -98,16 +98,17 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         # Data passed in to the DataSource model must be a list of dicts of the form {column_name: value}
         # TO DO: if isDynamic, then store values into lists as objects with timestamps
         connection = self.request.data['connection']
-        data = self.get_datasource_data(connection)
         
         # Encrypt the db password of the data source
         cipher = Fernet(DATASOURCE_KEY)
-        if connection['password']:
+        if hasattr(connection, 'password'):
             # If a new password is provided then encrypt it and overwrite the old one
             connection['password'] = cipher.encrypt(str(connection['password']))
         else:
             # Otherwise simply keep the old password (which is already encrypted)
             connection['password'] = self.get_object()['connection']['password']
+
+        data = self.get_datasource_data(connection)
 
         serializer.save(
             owner = self.request.user.id,

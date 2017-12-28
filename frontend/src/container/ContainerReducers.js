@@ -1,6 +1,7 @@
 import {
   REQUEST_CONTAINERS,
   RECEIVE_CONTAINERS,
+  RESELECT_CONTAINER,
   OPEN_CONTAINER_MODAL,
   CLOSE_CONTAINER_MODAL,
   BEGIN_REQUEST_CONTAINER,
@@ -15,6 +16,14 @@ import {
   SUCCESS_CREATE_WORKFLOW,
   SUCCESS_UPDATE_WORKFLOW,
   SUCCESS_DELETE_WORKFLOW,
+  OPEN_DATASOURCE_MODAL,
+  CLOSE_DATASOURCE_MODAL,
+  CHANGE_DATASOURCE,
+  BEGIN_REQUEST_DATASOURCE,
+  FAILURE_REQUEST_DATASOURCE,
+  SUCCESS_CREATE_DATASOURCE,
+  SUCCESS_UPDATE_DATASOURCE,
+  SUCCESS_DELETE_DATASOURCE
 } from './ContainerActions';
 
 const initialState = {
@@ -39,6 +48,10 @@ function containers(state = initialState, action) {
       });
 
     // Shared container actions
+    case RESELECT_CONTAINER:
+      return Object.assign({}, state, {
+        selectedContainer: action.container
+      });
     case OPEN_CONTAINER_MODAL:
       return Object.assign({}, state, {
         containerModalVisible: true,
@@ -47,7 +60,8 @@ function containers(state = initialState, action) {
     case CLOSE_CONTAINER_MODAL:
       return Object.assign({}, state, {
         containerModalVisible: false,
-        containerError: null
+        containerError: null,
+        containerLoading: false,
       });
     case BEGIN_REQUEST_CONTAINER:
       return Object.assign({}, state, {
@@ -93,7 +107,8 @@ function containers(state = initialState, action) {
     case CLOSE_WORKFLOW_MODAL:
       return Object.assign({}, state, {
         workflowModalVisible: false,
-        workflowError: null
+        workflowError: null,
+        workflowLoading: false
       });
     case BEGIN_REQUEST_WORKFLOW:
       return Object.assign({}, state, {
@@ -127,6 +142,57 @@ function containers(state = initialState, action) {
         workflowLoading: false,
         didDelete: true,
         model: 'workflow'
+      });
+
+    // Shared container actions
+    case OPEN_DATASOURCE_MODAL:
+      return Object.assign({}, state, {
+        datasourceModalVisible: true,
+        selectedContainer: action.container
+      });
+    case CLOSE_DATASOURCE_MODAL:
+      return Object.assign({}, state, {
+        datasourceModalVisible: false,
+        datasourceError: null,
+        datasourceLoading: false
+      });
+    case CHANGE_DATASOURCE:
+      return Object.assign({}, state, {
+        selectedDatasource: action.datasource
+      });
+    case BEGIN_REQUEST_DATASOURCE:
+      return Object.assign({}, state, {
+        datasourceLoading: true
+      });
+    case FAILURE_REQUEST_DATASOURCE:
+      return Object.assign({}, state, {
+        datasourceLoading: false,
+        datasourceError: action.error
+      });
+
+    // Specific datasource actions
+    case SUCCESS_CREATE_DATASOURCE:
+      return Object.assign({}, state, {
+        datasourceModalVisible: false,
+        datasourceLoading: false,
+        datasourceError: null,
+        didCreate: true,
+        model: 'datasource'
+      });
+      case SUCCESS_UPDATE_DATASOURCE:
+      return Object.assign({}, state, {
+        datasourceModalVisible: false,
+        datasourceLoading: false,
+        datasourceError: null,
+        didUpdate: true,
+        model: 'datasource'
+      });
+    case SUCCESS_DELETE_DATASOURCE:
+      return Object.assign({}, state, {
+        datasourceLoading: false,
+        didDelete: true,
+        model: 'datasource',
+        selectedDatasource: null
       });
 
     default:

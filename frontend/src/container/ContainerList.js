@@ -12,7 +12,7 @@ const ButtonStyle = {
   marginRight: '10px',
 }
 
-const ContainerPanelHeader = ({ container, onEditContainer, onDeleteContainer, onCreateWorkflow }) => (
+const ContainerPanelHeader = ({ container, onEditContainer, onDeleteContainer, onCreateWorkflow, onOpenDatasource }) => (
   <div>
   {container.code}
   <div style={{float: "right", marginRight: "10px", marginTop: "-5px"}}>
@@ -21,14 +21,14 @@ const ContainerPanelHeader = ({ container, onEditContainer, onDeleteContainer, o
       <Button icon="edit" onClick={(e) => { e.stopPropagation(); onEditContainer(container); }}/>
       <Button disabled icon="share-alt"/>
     </ButtonGroup>
-    <Button icon="hdd" style={ButtonStyle}><Badge count={container.datasources.length} showZero style={{backgroundColor: '#616161'}} /></Button>
+    <Button icon="hdd" style={ButtonStyle} onClick={(e) => { e.stopPropagation(); onOpenDatasource(container); }}><Badge count={container.datasources.length} showZero style={{backgroundColor: '#616161'}} /></Button>
     <Button style={ButtonStyle} onClick={(e) => { e.stopPropagation(); onCreateWorkflow(container); }}><Icon type="plus"/>New Workflow</Button>
     <Button type="danger" icon="delete" style={ButtonStyle} onClick={(e) => { e.stopPropagation(); onDeleteContainer(container); }}/>
   </div>
 </div>
 );
 
-const ContainerList = ({ containers, onEditContainer, onDeleteContainer, onCreateWorkflow, onEditWorkflow, onDeleteWorkflow }) => (
+const ContainerList = ({ containers, onEditContainer, onDeleteContainer, onCreateWorkflow, onEditWorkflow, onDeleteWorkflow, onOpenDatasource }) => (
   <Collapse accordion>
   { containers.map((container, key) => {
     return (
@@ -39,6 +39,7 @@ const ContainerList = ({ containers, onEditContainer, onDeleteContainer, onCreat
             onEditContainer={onEditContainer} 
             onDeleteContainer={onDeleteContainer} 
             onCreateWorkflow={onCreateWorkflow}
+            onOpenDatasource={onOpenDatasource}
           />}
           key={container.code}
         >

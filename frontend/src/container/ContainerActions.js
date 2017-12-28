@@ -1,5 +1,6 @@
 export const REQUEST_CONTAINERS = 'REQUEST_CONTAINERS';
 export const RECEIVE_CONTAINERS = 'RECEIVE_CONTAINERS';
+export const RESELECT_CONTAINER = 'RESELECT_CONTAINER';
 
 export const OPEN_CONTAINER_MODAL = 'OPEN_CONTAINER_MODAL';
 export const CLOSE_CONTAINER_MODAL = 'CLOSE_CONTAINER_MODAL';
@@ -17,6 +18,14 @@ export const SUCCESS_CREATE_WORKFLOW = 'SUCCESS_CREATE_WORKFLOW';
 export const SUCCESS_UPDATE_WORKFLOW = 'SUCCESS_UPDATE_WORKFLOW';
 export const SUCCESS_DELETE_WORKFLOW = 'SUCCESS_DELETE_WORKFLOW';
 
+export const OPEN_DATASOURCE_MODAL = 'OPEN_DATASOURCE_MODAL';
+export const CLOSE_DATASOURCE_MODAL = 'CLOSE_DATASOURCE_MODAL';
+export const CHANGE_DATASOURCE = 'CHANGE_DATASOURCE';
+export const BEGIN_REQUEST_DATASOURCE = 'BEGIN_REQUEST_DATASOURCE';
+export const FAILURE_REQUEST_DATASOURCE = 'FAILURE_REQUEST_DATASOURCE';
+export const SUCCESS_CREATE_DATASOURCE = 'SUCCESS_CREATE_DATASOURCE';
+export const SUCCESS_UPDATE_DATASOURCE = 'SUCCESS_UPDATE_DATASOURCE';
+export const SUCCESS_DELETE_DATASOURCE = 'SUCCESS_DELETE_DATASOURCE';
 
 const requestContainers = () => ({
   type: REQUEST_CONTAINERS
@@ -25,6 +34,11 @@ const requestContainers = () => ({
 const receiveContainers = containers => ({
   type: RECEIVE_CONTAINERS,
   containers
+});
+
+export const reselectContainer = (container) => ({
+  type: RESELECT_CONTAINER,
+  container
 });
 
 export const fetchContainers = () => dispatch => {
@@ -255,5 +269,117 @@ export const deleteWorkflow = (selected) => dispatch => {
   })
   .catch(error => {
     dispatch(failureRequestWorkflow('Failed to contact server. Please try again.'));
+  })
+};
+
+export const openDatasourceModal = (container) => ({
+  type: OPEN_DATASOURCE_MODAL,
+  container
+});
+
+export const closeDatasourceModal = () => ({
+  type: CLOSE_DATASOURCE_MODAL
+});
+
+export const changeDatasource = (datasource) => ({
+  type: CHANGE_DATASOURCE,
+  datasource
+});
+
+const beginRequestDatasource = () => ({
+  type: BEGIN_REQUEST_DATASOURCE
+});
+
+const failureRequestDatasource = (error) => ({
+  type: FAILURE_REQUEST_DATASOURCE,
+  error
+});
+
+const successCreateDatasource = () => ({
+  type: SUCCESS_CREATE_DATASOURCE
+});
+
+export const createDatasource = (container, datasource) => dispatch => {
+  datasource.container = container._id['$oid'];
+  dispatch(beginRequestDatasource());
+  fetch('/datasource/', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(datasource)
+  })
+  .then(response => {
+    if (response.status >= 400 && response.status < 600) {
+      response.json().then(error => {
+        console.log(error);
+        dispatch(failureRequestDatasource(error[0]));
+      });
+    } else {
+      dispatch(successCreateDatasource());
+      dispatch(fetchContainers());
+    }
+  })
+  .catch(error => {
+    dispatch(failureRequestDatasource('Failed to contact server. Please try again.'));
+  })
+};
+
+const successUpdateDatasource = () => ({
+  type: SUCCESS_UPDATE_DATASOURCE
+});
+
+export const updateDatasource = (container, selected, payload) => dispatch => {
+  payload.container = container._id['$oid'];
+  dispatch(beginRequestDatasource());
+  fetch(`/datasource/${selected._id['$oid']}/`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  })
+  .then(response => {
+    if (response.status >= 400 && response.status < 600) {
+      response.json().then(error => {
+        dispatch(failureRequestDatasource(error[0]));
+      });
+    } else {
+      dispatch(successUpdateDatasource());
+      dispatch(fetchContainers());
+    }
+  })
+  .catch(error => {
+    dispatch(failureRequestDatasource('Failed to contact server. Please try again.'));
+  })
+};
+
+const successDeleteDatasource = () => ({
+  type: SUCCESS_DELETE_DATASOURCE
+});
+
+export const deleteDatasource = (selected) => dispatch => {
+  dispatch(beginRequestDatasource());
+  fetch(`/datasource/${selected._id['$oid']}/`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(response => {
+    if (response.status >= 400 && response.status < 600) {
+      response.json().then(error => {
+        dispatch(failureRequestDatasource(error[0]));
+      });
+    } else {
+      dispatch(successDeleteDatasource());
+      dispatch(fetchContainers());
+    }
+  })
+  .catch(error => {
+    dispatch(failureRequestDatasource('Failed to contact server. Please try again.'));
   })
 };
