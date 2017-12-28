@@ -23,7 +23,8 @@ import {
   FAILURE_REQUEST_DATASOURCE,
   SUCCESS_CREATE_DATASOURCE,
   SUCCESS_UPDATE_DATASOURCE,
-  SUCCESS_DELETE_DATASOURCE
+  SUCCESS_DELETE_DATASOURCE,
+  CHANGE_ACTIVE_ACCORDION
 } from './ContainerActions';
 
 const initialState = {
@@ -45,6 +46,11 @@ function containers(state = initialState, action) {
       return Object.assign({}, state, {
         isFetching: false,
         items: action.containers
+      });
+    case CHANGE_ACTIVE_ACCORDION:
+      console.log(action.key)
+      return Object.assign({}, state, {
+        activeAccordionKey: action.key
       });
 
     // Shared container actions

@@ -1,6 +1,7 @@
 export const REQUEST_CONTAINERS = 'REQUEST_CONTAINERS';
 export const RECEIVE_CONTAINERS = 'RECEIVE_CONTAINERS';
 export const RESELECT_CONTAINER = 'RESELECT_CONTAINER';
+export const CHANGE_ACTIVE_ACCORDION = 'CHANGE_ACTIVE_ACCORDION';
 
 export const OPEN_CONTAINER_MODAL = 'OPEN_CONTAINER_MODAL';
 export const CLOSE_CONTAINER_MODAL = 'CLOSE_CONTAINER_MODAL';
@@ -34,6 +35,11 @@ const requestContainers = () => ({
 const receiveContainers = containers => ({
   type: RECEIVE_CONTAINERS,
   containers
+});
+
+export const changeActiveAccordion = (key) => ({
+  type: CHANGE_ACTIVE_ACCORDION,
+  key
 });
 
 export const reselectContainer = (container) => ({

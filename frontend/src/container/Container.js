@@ -143,7 +143,7 @@ class Container extends React.Component {
 
   render() {
     const { 
-      containers, dispatch,
+      containers, dispatch, activeAccordionKey,
       containerModalVisible, containerLoading, containerError, selectedContainer,
       workflowModalVisible, workflowLoading, workflowError, selectedWorkflow,
       datasourceModalVisible, datasourceLoading, datasourceError, selectedDatasource
@@ -196,7 +196,9 @@ class Container extends React.Component {
               ref={(form) => {this.datasourceForm = form}}
             />
             <ContainerList
-              containers={containers} 
+              containers={containers}
+              activeKey={activeAccordionKey}
+              changeActiveAccordion={(key) => {dispatch(this.boundActionCreators.changeActiveAccordion(key))}}
               onEditContainer={(container) => {dispatch(this.boundActionCreators.openContainerModal(container))}}
               onDeleteContainer={this.onDeleteContainer}
               onCreateWorkflow={(container) => {dispatch(this.boundActionCreators.openWorkflowModal(container))}}
@@ -229,14 +231,14 @@ Container.propTypes = {
 
 const mapStateToProps = (state) => {
   const { 
-    isFetching, items: containers, 
+    isFetching, items: containers, activeAccordionKey,
     containerModalVisible, containerLoading, containerError, selectedContainer,
     workflowModalVisible, workflowLoading, workflowError, selectedWorkflow,
     datasourceModalVisible, datasourceLoading, datasourceError, selectedDatasource,
     didCreate, didUpdate, didDelete, model
   } = state.containers;
   return { 
-    isFetching, containers,
+    isFetching, containers, activeAccordionKey,
     containerModalVisible, containerLoading, containerError, selectedContainer,
     workflowModalVisible, workflowLoading, workflowError, selectedWorkflow,
     datasourceModalVisible, datasourceLoading, datasourceError, selectedDatasource,
