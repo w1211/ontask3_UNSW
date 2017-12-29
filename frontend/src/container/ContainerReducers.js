@@ -48,7 +48,6 @@ function containers(state = initialState, action) {
         items: action.containers
       });
     case CHANGE_ACTIVE_ACCORDION:
-      console.log(action.key)
       return Object.assign({}, state, {
         activeAccordionKey: action.key
       });

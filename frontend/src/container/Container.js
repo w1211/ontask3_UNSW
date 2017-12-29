@@ -2,7 +2,8 @@ import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
-import { Icon, Button, Modal, notification } from 'antd';
+import { Link } from 'react-router-dom';
+import { Layout, Breadcrumb, Icon, Button, Modal, notification, Spin } from 'antd';
 
 import { fetchContainers } from './ContainerActions';
 import ContainerForm from './ContainerForm';
@@ -13,6 +14,7 @@ import DatasourceForm from './DatasourceForm';
 import * as ContainerActionCreators from './ContainerActions';
 
 const confirm = Modal.confirm;
+const { Content } = Layout;
 
 
 class Container extends React.Component {
@@ -143,77 +145,90 @@ class Container extends React.Component {
 
   render() {
     const { 
-      containers, dispatch, activeAccordionKey,
+      containers, dispatch, activeAccordionKey, isFetching,
       containerModalVisible, containerLoading, containerError, selectedContainer,
       workflowModalVisible, workflowLoading, workflowError, selectedWorkflow,
       datasourceModalVisible, datasourceLoading, datasourceError, selectedDatasource
     } = this.props;
 
     return (
-      <div>
-        <h1>Containers</h1>
-
-        <Button 
-          onClick={() => {dispatch(this.boundActionCreators.openContainerModal())}} 
-          type="primary" icon="plus" size="large" style={{marginBottom: '20px'}}
-        >
-          New container
-        </Button>
-        <ContainerForm 
-          onCreate={this.boundActionCreators.createContainer}
-          onUpdate={this.boundActionCreators.updateContainer}
-          onCancel={() => {dispatch(this.boundActionCreators.closeContainerModal)}} 
-          visible={containerModalVisible}
-          loading={containerLoading}
-          error={containerError}
-          container={selectedContainer}
-          ref={(form) => {this.containerForm = form}}
-        />
-        { containers.length > 0 ?
-          <div>
-            <WorkflowForm 
-              onCreate={this.boundActionCreators.createWorkflow}
-              onUpdate={this.boundActionCreators.updateWorkflow}
-              onCancel={() => {dispatch(this.boundActionCreators.closeWorkflowModal)}} 
-              visible={workflowModalVisible}
-              loading={workflowLoading}
-              error={workflowError}
-              container={selectedContainer}
-              workflow={selectedWorkflow}
-              ref={(form) => {this.workflowForm = form}}
-            />
-            <DatasourceForm
-              onChange={this.boundActionCreators.changeDatasource}
-              onCreate={this.boundActionCreators.createDatasource}
-              onUpdate={this.boundActionCreators.updateDatasource}
-              onDelete={this.onDeleteDatasource}
-              onCancel={() => {dispatch(this.boundActionCreators.closeDatasourceModal)}}
-              visible={datasourceModalVisible}
-              loading={datasourceLoading}
-              error={datasourceError}
-              container={selectedContainer}
-              datasource={selectedDatasource}
-              ref={(form) => {this.datasourceForm = form}}
-            />
-            <ContainerList
-              containers={containers}
-              activeKey={activeAccordionKey}
-              changeActiveAccordion={(key) => {dispatch(this.boundActionCreators.changeActiveAccordion(key))}}
-              onEditContainer={(container) => {dispatch(this.boundActionCreators.openContainerModal(container))}}
-              onDeleteContainer={this.onDeleteContainer}
-              onCreateWorkflow={(container) => {dispatch(this.boundActionCreators.openWorkflowModal(container))}}
-              onEditWorkflow={(container, workflow) => {dispatch(this.boundActionCreators.openWorkflowModal(container, workflow))}}
-              onDeleteWorkflow={this.onDeleteWorkflow}
-              onOpenDatasource={(container) => {dispatch(this.boundActionCreators.openDatasourceModal(container))}}
-            />
-          </div>
-        :
-          <h2>
-            <Icon type="info-circle-o" style={{marginRight: '10px'}}/>
-            Get started by creating your first container.
-          </h2>
-        }
-      </div>
+      <Content style={{ padding: '0 50px' }}>
+        <Breadcrumb style={{ margin: '16px 0' }}>
+          <Breadcrumb.Item><Link to="/">Dashboard</Link></Breadcrumb.Item>
+          <Breadcrumb.Item>Containers</Breadcrumb.Item>
+        </Breadcrumb>
+        <Layout style={{ padding: '24px 0', background: '#fff' }}>
+          <Content style={{ padding: '0 24px', minHeight: 280 }}>
+            <h1>Containers</h1>
+          { isFetching ? 
+            <Spin size="large" />
+          :
+            <div>
+              <Button
+                onClick={() => {dispatch(this.boundActionCreators.openContainerModal())}} 
+                type="primary" icon="plus" size="large" style={{marginBottom: '20px'}}
+              >
+                New container
+              </Button>
+              <ContainerForm 
+                onCreate={this.boundActionCreators.createContainer}
+                onUpdate={this.boundActionCreators.updateContainer}
+                onCancel={() => {dispatch(this.boundActionCreators.closeContainerModal)}} 
+                visible={containerModalVisible}
+                loading={containerLoading}
+                error={containerError}
+                container={selectedContainer}
+                ref={(form) => {this.containerForm = form}}
+              />
+              { containers.length > 0 ?
+                <div>
+                  <WorkflowForm 
+                    onCreate={this.boundActionCreators.createWorkflow}
+                    onUpdate={this.boundActionCreators.updateWorkflow}
+                    onCancel={() => {dispatch(this.boundActionCreators.closeWorkflowModal)}} 
+                    visible={workflowModalVisible}
+                    loading={workflowLoading}
+                    error={workflowError}
+                    container={selectedContainer}
+                    workflow={selectedWorkflow}
+                    ref={(form) => {this.workflowForm = form}}
+                  />
+                  <DatasourceForm
+                    onChange={this.boundActionCreators.changeDatasource}
+                    onCreate={this.boundActionCreators.createDatasource}
+                    onUpdate={this.boundActionCreators.updateDatasource}
+                    onDelete={this.onDeleteDatasource}
+                    onCancel={() => {dispatch(this.boundActionCreators.closeDatasourceModal)}}
+                    visible={datasourceModalVisible}
+                    loading={datasourceLoading}
+                    error={datasourceError}
+                    container={selectedContainer}
+                    datasource={selectedDatasource}
+                    ref={(form) => {this.datasourceForm = form}}
+                  />
+                  <ContainerList
+                    containers={containers}
+                    activeKey={activeAccordionKey}
+                    changeActiveAccordion={(key) => {dispatch(this.boundActionCreators.changeActiveAccordion(key))}}
+                    onEditContainer={(container) => {dispatch(this.boundActionCreators.openContainerModal(container))}}
+                    onDeleteContainer={this.onDeleteContainer}
+                    onCreateWorkflow={(container) => {dispatch(this.boundActionCreators.openWorkflowModal(container))}}
+                    onEditWorkflow={(container, workflow) => {dispatch(this.boundActionCreators.openWorkflowModal(container, workflow))}}
+                    onDeleteWorkflow={this.onDeleteWorkflow}
+                    onOpenDatasource={(container) => {dispatch(this.boundActionCreators.openDatasourceModal(container))}}
+                  />
+                </div>
+              :
+                <h2>
+                  <Icon type="info-circle-o" style={{marginRight: '10px'}}/>
+                  Get started by creating your first container.
+                </h2>
+              }
+            </div>
+          }
+          </Content>
+        </Layout>
+      </Content>
     );
   };
 
