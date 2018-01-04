@@ -29,13 +29,16 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         return DataSource.objects.all()
 
     def get_datasource_data(self, connection):
+        cipher = Fernet(DATASOURCE_KEY)
+        decrypted_password = cipher.decrypt(connection['password'].encode('utf-8'))
+
         if connection['dbType'] == 'mysql':
             try:
                 dbConnection = mysql.connector.connect(
                     host = connection['host'],
                     database = connection['database'],
                     user = connection['user'],
-                    password = connection['password']
+                    password = decrypted_password
                 )
                 cursor = dbConnection.cursor(dictionary=True)
                 cursor.execute(connection['query'])
@@ -51,7 +54,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
                     host = connection['host'],
                     dbname = connection['database'],
                     user = connection['user'],
-                    password = connection['password']
+                    password = decrypted_password
                 )
                 cursor = dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
                 cursor.execute(connection['query'])
