@@ -18,7 +18,6 @@ class SecondaryColumn(EmbeddedDocument):
     isCustom = fields.BooleanField()
 
 class Matrix(EmbeddedDocument):
-    name = fields.StringField(required=True)
     primaryColumn = fields.EmbeddedDocumentField(PrimaryColumn, required=True)
     secondaryColumns = fields.EmbeddedDocumentListField(SecondaryColumn)
 

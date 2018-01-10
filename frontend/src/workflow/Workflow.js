@@ -1,52 +1,32 @@
 import React from 'react';
-// import { bindActionCreators } from 'redux';
-// import { connect } from 'react-redux';
-// import PropTypes from 'prop-types';
+import { bindActionCreators } from 'redux';
+import { connect } from 'react-redux';
+import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
-import { Breadcrumb, Layout, Menu, Icon, Button, Modal, notification } from 'antd';
-import { BrowserRouter as Router, Switch, Route, Redirect } from 'react-router-dom';
+import { Breadcrumb, Layout, Menu, Icon, Spin } from 'antd';
+import { Switch, Route, Redirect } from 'react-router-dom';
+
+import { fetchWorkflow } from './WorkflowActions';
+import MatrixDefinitionForm from './MatrixDefinitionForm';
+import DataView from './DataView';
+import RulesForm from './RulesForm';
+
+import * as WorkflowActionCreators from './WorkflowActions';
 
 const { Content, Sider } = Layout;
 
-// import { fetchContainers } from './ContainerActions';
-
-// import * as ContainerActionCreators from './ContainerActions';
-
-// const confirm = Modal.confirm;
-
-
-const MatrixDefinition = () => (
-  <div>
-    matrix definition view
-  </div>
-);
-const DataView = () => (
-  <div>
-    data view
-  </div>
-);
-const Rules = () => (
-  <div>
-    rules view
-  </div>
-);
-
 
 class Workflow extends React.Component {
-  // constructor(props) { 
-  //   super(props);
-  //   const { dispatch } = props;
+  constructor(props) { 
+    super(props);
+    const { dispatch } = props;
 
-  //   // this.boundActionCreators = bindActionCreators(ContainerActionCreators, dispatch)
-  // }
-
-  // componentWillReceiveProps(nextProps) {
-  //   const { dispatch } = this.props;
-  // }
+    this.boundActionCreators = bindActionCreators(WorkflowActionCreators, dispatch)
+  }
 
   render() {
     const { 
-      dispatch, match, location
+      match, location, isFetching, name
     } = this.props;
     
     return (
@@ -94,14 +74,18 @@ class Workflow extends React.Component {
               </Sider>
               <Content style={{ padding: '0 24px', minHeight: 280 }}>
                 <div style={{display: 'flex', alignItems: 'center', marginBottom: '1em'}}>
-                  <h1 style={{display: 'inline-block', margin: 0}}>Workflow</h1>
+                  <h1 style={{display: 'inline-block', margin: 0}}>{name}</h1>
                 </div>
-                <Switch>
-                  <Redirect exact from={match.url} to={`${match.url}/matrix`}/>
-                  <Route exact path={`${match.path}/matrix`} component={MatrixDefinition}/>
-                  <Route exact path={`${match.path}/data`} component={DataView}/>
-                  <Route exact path={`${match.path}/rules`} component={Rules}/>
-                </Switch>
+                { isFetching ? 
+                  <Spin size="large" />
+                :
+                  <Switch>
+                    <Redirect exact from={match.url} to={`${match.url}/matrix`}/>
+                    <Route path={`${match.url}/matrix`}  component={MatrixDefinitionForm}/>
+                    <Route path={`${match.path}/data`} component={DataView}/>
+                    <Route path={`${match.path}/rules`} component={RulesForm}/>
+                  </Switch>
+                }
               </Content>
             </Layout>
           </Content>
@@ -110,27 +94,24 @@ class Workflow extends React.Component {
     );
   };
 
-  // componentDidMount() {
-  //   const { dispatch } = this.props;
-  //   // dispatch(fetchContainers());
-  // };
+  componentDidMount() {
+    const { dispatch, match } = this.props;
+    dispatch(fetchWorkflow(match.params.id));
+  };
 
 };
 
-// Workflow.propTypes = {
-//   dispatch: PropTypes.func.isRequired,
-//   // containers: PropTypes.array.isRequired
-// }
+Workflow.propTypes = {
+  dispatch: PropTypes.func.isRequired
+}
 
-// const mapStateToProps = (state) => {
-//   const { 
-//     isFetching
-//   } = state.workflow;
-//   return { 
-//     isFetching
-//   };
-// }
+const mapStateToProps = (state) => {
+  const {
+    isFetching, name, matrix, actions
+  } = state.workflow;
+  return {
+    isFetching, name, matrix, actions
+  };
+}
 
-export default Workflow;
-
-// export default connect(mapStateToProps)(Workflow)
+export default connect(mapStateToProps)(Workflow)

@@ -185,7 +185,7 @@ class Container extends React.Component {
                   <WorkflowForm 
                     onCreate={this.boundActionCreators.createWorkflow}
                     onUpdate={this.boundActionCreators.updateWorkflow}
-                    onCancel={() => {dispatch(this.boundActionCreators.closeWorkflowModal)}} 
+                    onCancel={() => {dispatch(this.boundActionCreators.closeWorkflowModal)}}
                     visible={workflowModalVisible}
                     loading={workflowLoading}
                     error={workflowError}
