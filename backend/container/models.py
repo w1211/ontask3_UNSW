@@ -6,7 +6,7 @@ class Sharing(EmbeddedDocument):
 
 class Container(Document):
     owner = fields.IntField()
-    sharing = fields.EmbeddedDocumentField(Sharing)
+    sharing = fields.EmbeddedDocumentField(Sharing, default=Sharing)
     code = fields.StringField(required=True)
     school = fields.StringField(null=True)
     faculty = fields.StringField(null=True)

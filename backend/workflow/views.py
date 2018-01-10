@@ -3,10 +3,14 @@ from rest_framework_mongoengine.validators import ValidationError
 from rest_framework.decorators import detail_route
 
 from django.http import JsonResponse
+import json
+from bson.json_util import dumps
 
 from .serializers import WorkflowSerializer
 from .models import Workflow
 from .permissions import WorkflowPermissions
+
+from action.models import Action
 
 from collections import defaultdict
 
@@ -100,3 +104,15 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         data = combine_data(workflow.matrix)
         return JsonResponse(data, safe=False)
+    
+    @detail_route(methods=['get'])
+    def retrieve_workflow(self, request, id=None):
+        workflow = Workflow.objects.get(id=id)
+        self.check_object_permissions(self.request, workflow)
+        
+        # Convert the workflow to a python dict
+        workflow = json.loads(workflow.to_json())
+        # Convert the actions to a list of python dicts and add it as a key to the workflow dict
+        workflow['actions'] = json.loads(Action.objects.filter(workflow = id).to_json())
+
+        return JsonResponse(workflow, safe=False)

@@ -5,7 +5,7 @@ from mongoengine.queryset.visitor import Q
 
 from django.http import JsonResponse
 import json
-from bson import json_util, ObjectId
+from bson.json_util import dumps
 
 from .serializers import ContainerSerializer
 from .models import Container
@@ -19,9 +19,9 @@ class ContainerViewSet(viewsets.ModelViewSet):
 
     @list_route(methods=['get'])
     def retrieve_containers(self, request):
-        # Retrieve containers owned by or shared with the current user, ncluding the associated workflows & data sources
+        # Retrieve containers owned by or shared with the current user, including the associated workflows & data sources
         # Consumed by the containers list interface
-        # We are not using the provided get_queryset generic Django Rest Framework function as serialization on the objects returned
+        # We are not using the provided get_queryset generic Django Rest Framework function as serialization occurs on the objects returned
         # Given that we are joining workflow & datasource models manually, we must use a custom function/endpoint
         pipeline = [
             {
@@ -48,7 +48,7 @@ class ContainerViewSet(viewsets.ModelViewSet):
             }
         ]
         containers = list(Container.objects.aggregate(*pipeline))
-        return JsonResponse(json.loads(json_util.dumps(containers)), safe=False)
+        return JsonResponse(json.loads(dumps(containers)), safe=False)
 
     def get_queryset(self):
         return Container.objects.filter(
