@@ -24,3 +24,4 @@ class DataSource(Document):
     connection = fields.EmbeddedDocumentField(Connection)
     metadata = fields.EmbeddedDocumentField(Metadata)
     data = fields.ListField(fields.DictField())
+    fields = fields.ListField(fields.StringField())

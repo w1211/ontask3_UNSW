@@ -74,7 +74,12 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         if not len(data):
             raise ValidationError('The query returned no data')
 
-        return data
+        # Assuming that every record in the returned queryset has the same columns,
+        # We can map the column names to know what fields are available from the data source
+        # Field names consumed by workflow matrix definition
+        fields = data[0].keys()
+
+        return (data, fields)
 
     def perform_create(self, serializer):
         self.check_object_permissions(self.request, None)
@@ -86,13 +91,14 @@ class DataSourceViewSet(viewsets.ModelViewSet):
 
         # Encrypt the db password of the data source
         cipher = Fernet(DATASOURCE_KEY)
-        connection['password'] = cipher.encrypt(str.encode(connection['password']))
+        connection['password'] = cipher.encrypt(str(connection['password']))
 
-        data = self.get_datasource_data(connection)
+        (data, fields) = self.get_datasource_data(connection)
 
         serializer.save(
             connection = connection,
-            data = data
+            data = data,
+            fields = fields
         )
 
     def perform_update(self, serializer):
@@ -112,12 +118,13 @@ class DataSourceViewSet(viewsets.ModelViewSet):
             # Otherwise simply keep the old password (which is already encrypted)
             connection['password'] = self.get_object()['connection']['password']
 
-        data = self.get_datasource_data(connection)
+        (data, fields) = self.get_datasource_data(connection)
 
         serializer.save(
             owner = self.request.user.id,
             connection = connection,
-            data = data
+            data = data,
+            fields = fields
         )
         
     def perform_destroy(self, obj):

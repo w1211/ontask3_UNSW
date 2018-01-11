@@ -11,6 +11,7 @@ from .models import Workflow
 from .permissions import WorkflowPermissions
 
 from action.models import Action
+from datasource.models import DataSource
 
 from collections import defaultdict
 
@@ -114,7 +115,10 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         workflow = json.loads(workflow.to_json())
 
         # Convert the actions to a list of python dicts and add it as a key to the workflow dict
-        actions = Action.objects.filter(workflow = id)
+        actions = Action.objects(workflow = id)
         workflow['actions'] = json.loads(actions.to_json())
+
+        datasources = DataSource.objects(container=workflow['container']['$oid']).only('id', 'name', 'fields')
+        workflow['datasources'] = json.loads(datasources.to_json())
 
         return JsonResponse(workflow, safe=False)
