@@ -86,10 +86,10 @@ class DataSourceViewSet(viewsets.ModelViewSet):
 
         # Encrypt the db password of the data source
         cipher = Fernet(DATASOURCE_KEY)
-        connection['password'] = cipher.encrypt(str(connection['password']))
+        connection['password'] = cipher.encrypt(str.encode(connection['password']))
 
         data = self.get_datasource_data(connection)
-        
+
         serializer.save(
             connection = connection,
             data = data
@@ -107,7 +107,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         cipher = Fernet(DATASOURCE_KEY)
         if hasattr(connection, 'password'):
             # If a new password is provided then encrypt it and overwrite the old one
-            connection['password'] = cipher.encrypt(str(connection['password']))
+            connection['password'] = cipher.encrypt(str.encode(connection['password']))
         else:
             # Otherwise simply keep the old password (which is already encrypted)
             connection['password'] = self.get_object()['connection']['password']
