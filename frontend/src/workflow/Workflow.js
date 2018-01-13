@@ -3,7 +3,7 @@ import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
-import { Breadcrumb, Layout, Menu, Icon, Spin } from 'antd';
+import { Breadcrumb, Layout, Menu, Icon, Spin, notification } from 'antd';
 import { Switch, Route, Redirect } from 'react-router-dom';
 
 import { fetchWorkflow } from './WorkflowActions';
@@ -24,9 +24,18 @@ class Workflow extends React.Component {
     this.boundActionCreators = bindActionCreators(WorkflowActionCreators, dispatch)
   }
 
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.didUpdate) {
+      notification['success']({
+        message: `${nextProps.model.charAt(0).toUpperCase() + nextProps.model.slice(1)} updated`,
+        description: `The ${nextProps.model} was successfuly updated.`,
+      });
+    }
+  }
+
   render() {
     const { 
-      match, location, isFetching, name
+      match, location, isFetching, name, datasources, matrix
     } = this.props;
     
     return (
@@ -81,7 +90,16 @@ class Workflow extends React.Component {
                 :
                   <Switch>
                     <Redirect exact from={match.url} to={`${match.url}/matrix`}/>
-                    <Route path={`${match.url}/matrix`}  component={MatrixDefinitionForm}/>
+                    <Route path={`${match.url}/matrix`} render={()=>
+                      <MatrixDefinitionForm 
+                        datasources={datasources} 
+                        matrix={matrix}
+                        addSecondaryColumn={this.boundActionCreators.addSecondaryColumn}
+                        deleteSecondaryColumn={this.boundActionCreators.deleteSecondaryColumn}
+                        ref={(form) => {this.matrixDefinitionForm = form}}
+                        onUpdate={(matrix) => {this.boundActionCreators.defineMatrix(match.params.id, matrix)}}
+                      />}
+                    />
                     <Route path={`${match.path}/data`} component={DataView}/>
                     <Route path={`${match.path}/rules`} component={RulesForm}/>
                   </Switch>
@@ -107,10 +125,12 @@ Workflow.propTypes = {
 
 const mapStateToProps = (state) => {
   const {
-    isFetching, name, matrix, actions
+    isFetching, name, matrix, actions, datasources, 
+    workflowLoading, workflowError, didUpdate, model
   } = state.workflow;
   return {
-    isFetching, name, matrix, actions
+    isFetching, name, matrix, actions, datasources,
+    workflowLoading, workflowError, didUpdate, model
   };
 }
 

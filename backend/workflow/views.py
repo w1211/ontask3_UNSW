@@ -4,7 +4,6 @@ from rest_framework.decorators import detail_route
 
 from django.http import JsonResponse
 import json
-from bson.json_util import dumps
 
 from .serializers import WorkflowSerializer
 from .models import Workflow
@@ -111,14 +110,12 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         workflow = Workflow.objects.get(id=id)
         self.check_object_permissions(self.request, workflow)
 
-        # Convert the workflow to a python dict
-        workflow = json.loads(workflow.to_json())
+        serializer = WorkflowSerializer(instance=workflow)
 
-        # Convert the actions to a list of python dicts and add it as a key to the workflow dict
         actions = Action.objects(workflow = id)
-        workflow['actions'] = json.loads(actions.to_json())
+        serializer.instance.actions = actions
 
-        datasources = DataSource.objects(container=workflow['container']['$oid']).only('id', 'name', 'fields')
-        workflow['datasources'] = json.loads(datasources.to_json())
+        datasources = DataSource.objects(container=workflow.container.id).only('id', 'name', 'fields')
+        serializer.instance.datasources = datasources
 
-        return JsonResponse(workflow, safe=False)
+        return JsonResponse(serializer.data, safe=False)
