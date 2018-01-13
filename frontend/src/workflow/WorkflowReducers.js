@@ -14,6 +14,7 @@ const initialState = {
   name: 'Workflow',
   matrix: null,
   data: [],
+  columns: [],
   actions: [],
   datasources: []
 };
@@ -63,12 +64,14 @@ function workflow(state = initialState, action) {
       return Object.assign({}, state, {
         isFetchingData: false,
         data: action.data,
+        columns: action.columns,
         dataError: null
       });
     case FAILURE_REQUEST_DATA:
       return Object.assign({}, state, {
         isFetchingData: false,
         data: null,
+        columns: null,
         dataError: action.error
       });
     default:

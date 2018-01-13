@@ -66,9 +66,14 @@ def combine_data(matrix):
         # E.g. { id: 1, firstName: 'John', lastName: 'Smith' }
         # And then we append this to the list of joined items which will be returned to the front-end
         data.append(item)
-    
-    return data
 
+    # Define the field (and retain their order) to be consumed by the matrix data table
+    columns = [primaryColumn.field] + [secondary_column.field for secondary_column in matrix['secondaryColumns']]
+    
+    response = {}
+    response['data'] = data
+    response['columns'] = columns
+    return response
 
 class WorkflowViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'

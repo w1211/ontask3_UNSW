@@ -8,7 +8,7 @@ class DataView extends React.Component {
 
   render() {
     const { 
-      isFetchingData, dataError, data
+      isFetchingData, dataError, data, columns
     } = this.props;
     
     return (
@@ -26,7 +26,7 @@ class DataView extends React.Component {
           :
           data && data.length > 0 ? 
             <Table 
-              columns={Object.keys(data[0]).map(field => {
+              columns={columns.map(field => {
                 return {
                   title: field,
                   dataIndex: field,

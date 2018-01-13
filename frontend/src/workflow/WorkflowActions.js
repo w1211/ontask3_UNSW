@@ -105,9 +105,10 @@ const beginRequestData = () => ({
   type: BEGIN_REQUEST_DATA
 });
 
-const successRequestData = (data) => ({
+const successRequestData = (data, columns) => ({
   type: SUCCESS_REQUEST_DATA,
-  data
+  data,
+  columns
 });
 
 const failureRequestData = (error) => ({
@@ -130,8 +131,8 @@ export const fetchMatrixData = (id) => dispatch => {
         dispatch(failureRequestData(error));
       });
     } else {
-      response.json().then(data => {
-        dispatch(successRequestData(data));
+      response.json().then(response => {
+        dispatch(successRequestData(response.data, response.columns));
       });
     }
   })
