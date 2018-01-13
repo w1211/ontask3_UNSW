@@ -35,7 +35,7 @@ class Workflow extends React.Component {
 
   render() {
     const { 
-      match, location, isFetching, name, datasources, matrix
+      match, location, isFetching, name, datasources, matrix, workflowLoading
     } = this.props;
     
     return (
@@ -98,6 +98,7 @@ class Workflow extends React.Component {
                         deleteSecondaryColumn={this.boundActionCreators.deleteSecondaryColumn}
                         ref={(form) => {this.matrixDefinitionForm = form}}
                         onUpdate={(matrix) => {this.boundActionCreators.defineMatrix(match.params.id, matrix)}}
+                        loading={workflowLoading}
                       />}
                     />
                     <Route path={`${match.path}/data`} component={DataView}/>

@@ -78,7 +78,7 @@ const handleClear = (form) => {
   });
 }
 
-const MatrixDefinitionForm = ({ form, matrix, datasources, addSecondaryColumn, deleteSecondaryColumn, onUpdate, error }) => (
+const MatrixDefinitionForm = ({ form, matrix, datasources, addSecondaryColumn, deleteSecondaryColumn, onUpdate, loading, error }) => (
   <Form layout="horizontal">
     <h3>Primary column</h3>
     <Row style={{...panelLayout}}>
@@ -188,7 +188,7 @@ const MatrixDefinitionForm = ({ form, matrix, datasources, addSecondaryColumn, d
     }
     { error && <Alert message={error} type="error"/>}
     <Button style={{marginRight: '10px'}}size="large" onClick={() => handleClear(form)}>Clear Changes</Button>
-    <Button type="primary" size="large" onClick={() => handleUpdate(form, onUpdate)}>Update Matrix</Button>
+    <Button loading={loading} type="primary" size="large" onClick={() => handleUpdate(form, onUpdate)}>Update Matrix</Button>
   </Form>
 )
 
