@@ -4,6 +4,10 @@ export const REFRESH_MATRIX = 'REFRESH_MATRIX';
 export const BEGIN_REQUEST_MATRIX = 'BEGIN_REQUEST_MATRIX';
 export const FAILURE_REQUEST_MATRIX = 'FAILURE_REQUEST_MATRIX';
 export const SUCCESS_UPDATE_MATRIX = 'SUCCESS_UPDATE_MATRIX';
+export const BEGIN_REQUEST_DATA = 'BEGIN_REQUEST_DATA';
+export const SUCCESS_REQUEST_DATA = 'SUCCESS_REQUEST_DATA';
+export const FAILURE_REQUEST_DATA = 'FAILURE_REQUEST_DATA';
+
 
 const requestWorkflow = () => ({
   type: REQUEST_WORKFLOW
@@ -94,5 +98,44 @@ export const defineMatrix = (id, payload) => dispatch => {
   })
   .catch(error => {
     dispatch(failureRequestMatrix('Failed to contact server. Please try again.'));
+  });
+};
+
+const beginRequestData = () => ({
+  type: BEGIN_REQUEST_DATA
+});
+
+const successRequestData = (data) => ({
+  type: SUCCESS_REQUEST_DATA,
+  data
+});
+
+const failureRequestData = (error) => ({
+  type: FAILURE_REQUEST_DATA,
+  error
+});
+
+export const fetchMatrixData = (id) => dispatch => {
+  dispatch(beginRequestData());
+  fetch(`/workflow/${id}/get_matrix_data/`, {
+    method: 'GET',
+    headers: {
+      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(response => {
+    if (response.status >= 400 && response.status < 600) {
+      response.json().then(error => {
+        dispatch(failureRequestData(error));
+      });
+    } else {
+      response.json().then(data => {
+        dispatch(successRequestData(data));
+      });
+    }
+  })
+  .catch(error => {
+    dispatch(failureRequestData('Failed to contact server. Please try again.'));
   });
 };

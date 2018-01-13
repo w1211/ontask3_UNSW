@@ -43,7 +43,7 @@ def combine_data(matrix):
                     field_name = column.field # E.g. "firstName"
                     field_value = row[field_name] # E.g. John
                     column_data[field_name][matching_column_value] = field_value
-                except KeyError:
+                except (KeyError, ValueError):
                     raise ValidationError('The matching column for \'{0}\' is incorrectly configured'.format(column.field))
 
     primaryColumn = matrix['primaryColumn']

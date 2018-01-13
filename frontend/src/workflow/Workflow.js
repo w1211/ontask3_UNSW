@@ -35,7 +35,8 @@ class Workflow extends React.Component {
 
   render() {
     const { 
-      match, location, isFetching, name, datasources, matrix, workflowLoading
+      match, location, isFetching, name, datasources, matrix, workflowLoading,
+      isFetchingData, data, dataError
     } = this.props;
     
     return (
@@ -101,7 +102,14 @@ class Workflow extends React.Component {
                         loading={workflowLoading}
                       />}
                     />
-                    <Route path={`${match.path}/data`} component={DataView}/>
+                    <Route path={`${match.url}/data`} render={()=>
+                      <DataView 
+                        fetchMatrixData={() => { this.boundActionCreators.fetchMatrixData(match.params.id) }}
+                        isFetchingData={isFetchingData}
+                        data={data}
+                        dataError={dataError}
+                      />}
+                    />
                     <Route path={`${match.path}/rules`} component={RulesForm}/>
                   </Switch>
                 }
@@ -127,11 +135,13 @@ Workflow.propTypes = {
 const mapStateToProps = (state) => {
   const {
     isFetching, name, matrix, actions, datasources, 
-    workflowLoading, workflowError, didUpdate, model
+    workflowLoading, workflowError, didUpdate, model,
+    isFetchingData, data, dataError
   } = state.workflow;
   return {
     isFetching, name, matrix, actions, datasources,
-    workflowLoading, workflowError, didUpdate, model
+    workflowLoading, workflowError, didUpdate, model,
+    isFetchingData, data, dataError
   };
 }
 

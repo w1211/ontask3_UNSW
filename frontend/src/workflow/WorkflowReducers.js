@@ -4,7 +4,10 @@ import {
   REFRESH_MATRIX,
   BEGIN_REQUEST_MATRIX,
   FAILURE_REQUEST_MATRIX,
-  SUCCESS_UPDATE_MATRIX
+  SUCCESS_UPDATE_MATRIX,
+  BEGIN_REQUEST_DATA,
+  SUCCESS_REQUEST_DATA,
+  FAILURE_REQUEST_DATA
 } from './WorkflowActions';
 
 const initialState = {
@@ -51,6 +54,22 @@ function workflow(state = initialState, action) {
         workflowError: null,
         didUpdate: true,
         model: 'matrix'
+      });
+    case BEGIN_REQUEST_DATA:
+      return Object.assign({}, state, {
+        isFetchingData: true
+      });
+    case SUCCESS_REQUEST_DATA:
+      return Object.assign({}, state, {
+        isFetchingData: false,
+        data: action.data,
+        dataError: null
+      });
+    case FAILURE_REQUEST_DATA:
+      return Object.assign({}, state, {
+        isFetchingData: false,
+        data: null,
+        dataError: action.error
       });
     default:
       return state;
