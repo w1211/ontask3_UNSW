@@ -159,7 +159,8 @@ function containers(state = initialState, action) {
       return Object.assign({}, state, {
         datasourceModalVisible: false,
         datasourceError: null,
-        datasourceLoading: false
+        datasourceLoading: false,
+        selectedDatasource: null
       });
     case CHANGE_DATASOURCE:
       return Object.assign({}, state, {

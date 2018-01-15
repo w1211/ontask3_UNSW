@@ -109,7 +109,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         data = combine_data(workflow.matrix)
         return JsonResponse(data, safe=False)
-    
+
     @detail_route(methods=['get'])
     def retrieve_workflow(self, request, id=None):
         workflow = Workflow.objects.get(id=id)
