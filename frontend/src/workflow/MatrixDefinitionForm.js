@@ -91,7 +91,7 @@ const MatrixDefinitionForm = ({ form, matrix, datasources, addSecondaryColumn, d
           rules: [{ required: true, message: 'Field is required' }]
         })(
           <Cascader placeholder='' options={[
-            { value: 'Datasource', label: 'Datasources', disabled: true },
+            { value: 'Datasource', label: 'Datasource', disabled: true },
             ...datasources.map((datasource) => {
               return { 
                 value: datasource.id, 
