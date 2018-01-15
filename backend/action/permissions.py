@@ -1,6 +1,6 @@
 from rest_framework import permissions
 
-from container.models import Container
+from workflow.models import Workflow
 
 class ActionPermissions(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
@@ -10,7 +10,7 @@ class ActionPermissions(permissions.BasePermission):
             # Only owners of the parent container or users given read & write access can create an action associated with that container
             # Action model hasn't been saved yet, therefore the associated workflow/container does not yet refer to an actual document in the db
             # Therefore we must find the associated workflow/container with a db call first
-            workflow = Container.objects.get(id=request.data['workflow'])
+            workflow = Workflow.objects.get(id=request.data['workflow'])
             return request_user == workflow.container.owner or request_user in workflow.container.sharing.readWrite
         elif request.method in ['PATCH', 'PUT']:
             # Only owners of the associated workflow's parent container or users given read & write access can update the workflow
