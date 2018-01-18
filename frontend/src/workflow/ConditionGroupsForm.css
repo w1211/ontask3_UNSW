@@ -1,0 +1,7 @@
+
+.queryBuilder.ant-tree li .ant-tree-node-content-wrapper, .queryBuilder.ant-tree li .ant-tree-node-content-wrapper:hover {
+  background: none !important;
+}
+.queryBuilder .ant-input, .queryBuilder .ant-cascader-picker {
+  width: auto !important;
+} 

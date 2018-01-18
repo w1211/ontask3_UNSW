@@ -2,10 +2,15 @@ from mongoengine import Document, EmbeddedDocument, fields
 
 from workflow.models import Workflow
 
+class Formula(EmbeddedDocument):
+    field = fields.StringField()
+    operator = fields.StringField()
+    comparator = fields.StringField()
 
 class Condition(EmbeddedDocument):
     name = fields.StringField(required=True)
-    formula = fields.StringField(required=True)
+    type = fields.StringField(choices=('and', 'or'), default='and')
+    formulas = fields.EmbeddedDocumentListField(Formula)
 
 class ConditionGroup(EmbeddedDocument):
     name = fields.StringField(required=True)
