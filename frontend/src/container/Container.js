@@ -1,17 +1,15 @@
 import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
-import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
 import { Layout, Breadcrumb, Icon, Button, Modal, notification, Spin } from 'antd';
 
-import { fetchContainers } from './ContainerActions';
+import * as ContainerActionCreators from './ContainerActions';
+
 import ContainerForm from './ContainerForm';
 import ContainerList from './ContainerList';
 import WorkflowForm from './WorkflowForm';
 import DatasourceForm from './DatasourceForm';
-
-import * as ContainerActionCreators from './ContainerActions';
 
 const confirm = Modal.confirm;
 const { Content } = Layout;
@@ -26,41 +24,22 @@ class Container extends React.Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    const { dispatch } = this.props;
+    if (!(nextProps.didCreate || nextProps.didUpdate || nextProps.didDelete)) return;  
 
-    if (this.props.containerModalVisible && !nextProps.containerModalVisible) this.containerForm.resetFields();
-    if (this.props.workflowModalVisible && !nextProps.workflowModalVisible) this.workflowForm.resetFields();
-    if ((this.props.selectedDatasource && !nextProps.selectedDatasource) || (this.props.didCreate && this.props.model === 'datasource')) {
-      this.datasourceForm.resetFields()
-    }
-
-    // If there is a container selected, and the list of containers is refreshed, then reselect the container
-    if (this.props.isFetching && this.props.selectedContainer && !nextProps.isFetching) {
-      let container = nextProps.containers.find(container => {
-        return container._id['$oid'] === this.props.selectedContainer._id['$oid']
-      });
-      dispatch(this.boundActionCreators.reselectContainer(container));
-    }
-
+    let message;
+    let description;
+    
     if (nextProps.didCreate) {
+      message = `${nextProps.model.charAt(0).toUpperCase() + nextProps.model.slice(1)} created`;
       switch (nextProps.model) {
         case 'container':
-          notification['success']({
-            message: 'Container created',
-            description: 'Next you should consider adding data sources and workflows to the container.'
-          });
+          description = 'Next you should consider adding data sources and workflows to the container.';
           break;
         case 'workflow':
-          notification['success']({
-            message: 'Workflow created',
-            description: 'The workflow was successfuly created.'
-          });
+          description = 'The workflow was successfuly created.';
           break;
         case 'datasource':
-          notification['success']({
-            message: 'Datasource created',
-            description: 'The datasource was successfuly created.'
-          });
+          description = 'The datasource was successfuly created.';
           break;
         default:
           break;
@@ -68,40 +47,34 @@ class Container extends React.Component {
     }
 
     if (nextProps.didUpdate) {
-      notification['success']({
-        message: `${nextProps.model.charAt(0).toUpperCase() + nextProps.model.slice(1)} updated`,
-        description: `The ${nextProps.model} was successfuly updated.`,
-      });
+      message = `${nextProps.model.charAt(0).toUpperCase() + nextProps.model.slice(1)} updated`;
+      description = `The ${nextProps.model} was successfuly updated.`;
     }
 
     if (nextProps.didDelete) {
+      message = `${nextProps.model.charAt(0).toUpperCase() + nextProps.model.slice(1)} deleted`;
       switch (nextProps.model) {
         case 'container':
-          notification['success']({
-            message: 'Container deleted',
-            description: 'The container and its asssociated data sources and workflows have been successfully deleted.',
-          });
+          description = 'The container and its asssociated data sources and workflows have been successfully deleted.';
           break;
         case 'workflow':
-          notification['success']({
-            message: 'Workflow deleted',
-            description: 'The workflow and its asssociated data matrices and rules have been successfully deleted.',
-          });
+          description = 'The workflow and its asssociated data matrices and rules have been successfully deleted.';
           break;
         case 'datasource':
-          notification['success']({
-            message: 'Datasource deleted',
-            description: 'The datasource was successfully deleted.',
-          });
+          description = 'The datasource was successfully deleted.';
           break;
         default:
           break;
       }
     }
-
+    
+    notification['success']({
+      message: message,
+      description: description
+    });
   }
 
-  onDeleteContainer = (container) => {
+  confirmContainerDelete = (containerId) => {
     let deleteContainer = this.boundActionCreators.deleteContainer;
     confirm({
       title: 'Confirm container deletion',
@@ -110,12 +83,12 @@ class Container extends React.Component {
       okType: 'danger',
       cancelText: 'Cancel',
       onOk() {
-        deleteContainer(container);
+        deleteContainer(containerId);
       }
     });
   }
 
-  onDeleteWorkflow = (workflow) => {
+  confirmWorkflowDelete = (workflowId) => {
     let deleteWorkflow = this.boundActionCreators.deleteWorkflow;
     confirm({
       title: 'Confirm workflow deletion',
@@ -124,12 +97,12 @@ class Container extends React.Component {
       okType: 'danger',
       cancelText: 'Cancel',
       onOk() {
-        deleteWorkflow(workflow);
+        deleteWorkflow(workflowId);
       }
     });
   }
 
-  onDeleteDatasource = (datasource) => {
+  confirmDatasourceDelete = (datasourceId) => {
     let deleteDatasource = this.boundActionCreators.deleteDatasource;
     confirm({
       title: 'Confirm datasource deletion',
@@ -138,17 +111,21 @@ class Container extends React.Component {
       okType: 'danger',
       cancelText: 'Cancel',
       onOk() {
-        deleteDatasource(datasource);
+        deleteDatasource(datasourceId);
       }
     });
   }
 
+  componentDidMount() {
+    this.boundActionCreators.fetchContainers();
+  };
+
   render() {
     const { 
-      containers, dispatch, activeAccordionKey, isFetching,
-      containerModalVisible, containerLoading, containerError, selectedContainer,
-      workflowModalVisible, workflowLoading, workflowError, selectedWorkflow,
-      datasourceModalVisible, datasourceLoading, datasourceError, selectedDatasource
+      dispatch, isFetching, containers, containerAccordionKey, containerId,
+      containerModalVisible, containerLoading, containerError, container,
+      workflowModalVisible, workflowLoading, workflowError, workflow,
+      datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources
     } = this.props;
 
     return (
@@ -165,62 +142,68 @@ class Container extends React.Component {
           :
             <div>
               <Button
-                onClick={() => {dispatch(this.boundActionCreators.openContainerModal())}} 
-                type="primary" icon="plus" size="large" style={{marginBottom: '20px'}}
+                onClick={() => { dispatch(this.boundActionCreators.openContainerModal()) }} 
+                type="primary" icon="plus" size="large" style={{ marginBottom: '20px' }}
               >
                 New container
               </Button>
-              <ContainerForm 
-                onCreate={this.boundActionCreators.createContainer}
-                onUpdate={this.boundActionCreators.updateContainer}
-                onCancel={() => {dispatch(this.boundActionCreators.closeContainerModal)}} 
+              <ContainerForm
+                ref={(form) => { this.containerForm = form }}
                 visible={containerModalVisible}
                 loading={containerLoading}
                 error={containerError}
-                container={selectedContainer}
-                ref={(form) => {this.containerForm = form}}
+                container={container}
+
+                onCreate={this.boundActionCreators.createContainer}
+                onUpdate={this.boundActionCreators.updateContainer}
+                onCancel={() => { dispatch(this.boundActionCreators.closeContainerModal()) }} 
               />
-              { containers.length > 0 ?
+              { containers && containers.length > 0 ?
                 <div>
                   <WorkflowForm 
-                    onCreate={this.boundActionCreators.createWorkflow}
-                    onUpdate={this.boundActionCreators.updateWorkflow}
-                    onCancel={() => {dispatch(this.boundActionCreators.closeWorkflowModal)}}
+                    ref={(form) => { this.workflowForm = form }}
                     visible={workflowModalVisible}
                     loading={workflowLoading}
                     error={workflowError}
-                    container={selectedContainer}
-                    workflow={selectedWorkflow}
-                    ref={(form) => {this.workflowForm = form}}
+                    containerId={containerId}
+                    workflow={workflow}
+
+                    onCreate={this.boundActionCreators.createWorkflow}
+                    onUpdate={this.boundActionCreators.updateWorkflow}
+                    onCancel={() => { dispatch(this.boundActionCreators.closeWorkflowModal()) }}
                   />
                   <DatasourceForm
+                    ref={(form) => { this.datasourceForm = form }}
+                    visible={datasourceModalVisible}
+                    loading={datasourceLoading}
+                    error={datasourceError}
+                    containerId={containerId}
+                    datasources={datasources}
+                    datasource={datasource}
+
                     onChange={this.boundActionCreators.changeDatasource}
                     onCreate={this.boundActionCreators.createDatasource}
                     onUpdate={this.boundActionCreators.updateDatasource}
                     onDelete={this.onDeleteDatasource}
-                    onCancel={() => {dispatch(this.boundActionCreators.closeDatasourceModal)}}
-                    visible={datasourceModalVisible}
-                    loading={datasourceLoading}
-                    error={datasourceError}
-                    container={selectedContainer}
-                    datasource={selectedDatasource}
-                    ref={(form) => {this.datasourceForm = form}}
+                    onCancel={() => { dispatch(this.boundActionCreators.closeDatasourceModal()) }}
                   />
                   <ContainerList
                     containers={containers}
-                    activeKey={activeAccordionKey}
-                    changeActiveAccordion={(key) => {dispatch(this.boundActionCreators.changeActiveAccordion(key))}}
-                    onEditContainer={(container) => {dispatch(this.boundActionCreators.openContainerModal(container))}}
-                    onDeleteContainer={this.onDeleteContainer}
-                    onCreateWorkflow={(container) => {dispatch(this.boundActionCreators.openWorkflowModal(container))}}
-                    onEditWorkflow={(container, workflow) => {dispatch(this.boundActionCreators.openWorkflowModal(container, workflow))}}
-                    onDeleteWorkflow={this.onDeleteWorkflow}
-                    onOpenDatasource={(container) => {dispatch(this.boundActionCreators.openDatasourceModal(container))}}
+                    activeKey={containerAccordionKey}
+                    changeAccordionKey={(key) => { dispatch(this.boundActionCreators.changeContainerAccordion(key)) }}
+                    
+                    openContainerModal={(container) => { dispatch(this.boundActionCreators.openContainerModal(container)) }}
+                    confirmContainerDelete={this.confirmContainerDelete}
+                    
+                    openWorkflowModal={(containerId, workflow) => { dispatch(this.boundActionCreators.openWorkflowModal(containerId, workflow)) }}
+                    confirmWorkflowDelete={this.confirmWorkflowDelete}
+
+                    openDatasourceModal={(containerId, datasources) => { dispatch(this.boundActionCreators.openDatasourceModal(containerId, datasources)) }}
                   />
                 </div>
               :
                 <h2>
-                  <Icon type="info-circle-o" style={{marginRight: '10px'}}/>
+                  <Icon type="info-circle-o" style={{ marginRight: '10px' }}/>
                   Get started by creating your first container.
                 </h2>
               }
@@ -232,32 +215,22 @@ class Container extends React.Component {
     );
   };
 
-  componentDidMount() {
-    const { dispatch } = this.props;
-    dispatch(fetchContainers());
-  };
-
 };
-
-Container.propTypes = {
-  dispatch: PropTypes.func.isRequired,
-  containers: PropTypes.array.isRequired
-}
 
 const mapStateToProps = (state) => {
   const { 
-    isFetching, items: containers, activeAccordionKey,
-    containerModalVisible, containerLoading, containerError, selectedContainer,
-    workflowModalVisible, workflowLoading, workflowError, selectedWorkflow,
-    datasourceModalVisible, datasourceLoading, datasourceError, selectedDatasource,
-    didCreate, didUpdate, didDelete, model
+    isFetching, containers, containerAccordionKey, containerId,
+    didCreate, didUpdate, didDelete, model,
+    containerModalVisible, containerLoading, containerError, container,
+    workflowModalVisible, workflowLoading, workflowError, workflow,
+    datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources
   } = state.containers;
   return { 
-    isFetching, containers, activeAccordionKey,
-    containerModalVisible, containerLoading, containerError, selectedContainer,
-    workflowModalVisible, workflowLoading, workflowError, selectedWorkflow,
-    datasourceModalVisible, datasourceLoading, datasourceError, selectedDatasource,
-    didCreate, didUpdate, didDelete, model
+    isFetching, containers, containerAccordionKey, containerId,
+    didCreate, didUpdate, didDelete, model,
+    containerModalVisible, containerLoading, containerError, container,
+    workflowModalVisible, workflowLoading, workflowError, workflow,
+    datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources
   };
 }
 

@@ -1,7 +1,6 @@
 export const REQUEST_CONTAINERS = 'REQUEST_CONTAINERS';
 export const RECEIVE_CONTAINERS = 'RECEIVE_CONTAINERS';
-export const RESELECT_CONTAINER = 'RESELECT_CONTAINER';
-export const CHANGE_ACTIVE_ACCORDION = 'CHANGE_ACTIVE_ACCORDION';
+export const CHANGE_CONTAINER_ACCORDION = 'CHANGE_CONTAINER_ACCORDION';
 
 export const OPEN_CONTAINER_MODAL = 'OPEN_CONTAINER_MODAL';
 export const CLOSE_CONTAINER_MODAL = 'CLOSE_CONTAINER_MODAL';
@@ -28,23 +27,19 @@ export const SUCCESS_CREATE_DATASOURCE = 'SUCCESS_CREATE_DATASOURCE';
 export const SUCCESS_UPDATE_DATASOURCE = 'SUCCESS_UPDATE_DATASOURCE';
 export const SUCCESS_DELETE_DATASOURCE = 'SUCCESS_DELETE_DATASOURCE';
 
+
 const requestContainers = () => ({
   type: REQUEST_CONTAINERS
 });
 
-const receiveContainers = containers => ({
+const receiveContainers = (containers) => ({
   type: RECEIVE_CONTAINERS,
   containers
 });
 
-export const changeActiveAccordion = (key) => ({
-  type: CHANGE_ACTIVE_ACCORDION,
+export const changeContainerAccordion = (key) => ({
+  type: CHANGE_CONTAINER_ACCORDION,
   key
-});
-
-export const reselectContainer = (container) => ({
-  type: RESELECT_CONTAINER,
-  container
 });
 
 export const fetchContainers = () => dispatch => {
@@ -63,7 +58,6 @@ export const fetchContainers = () => dispatch => {
     console.error(error);
   });
 };
-
 
 export const openContainerModal = (container) => ({
   type: OPEN_CONTAINER_MODAL,
@@ -87,7 +81,7 @@ const successCreateContainer = () => ({
   type: SUCCESS_CREATE_CONTAINER
 });
 
-export const createContainer = (container) => dispatch => {
+export const createContainer = (payload) => dispatch => {
   dispatch(beginRequestContainer());
   fetch('/container/', {
     method: 'POST',
@@ -95,7 +89,7 @@ export const createContainer = (container) => dispatch => {
       'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify(container)
+    body: JSON.stringify(payload)
   })
   .then(response => {
     if (response.status >= 400 && response.status < 600) {
@@ -116,9 +110,9 @@ const successUpdateContainer = () => ({
   type: SUCCESS_UPDATE_CONTAINER
 });
 
-export const updateContainer = (selected, payload) => dispatch => {
+export const updateContainer = (containerId, payload) => dispatch => {
   dispatch(beginRequestContainer());
-  fetch(`/container/${selected._id['$oid']}/`, {
+  fetch(`/container/${containerId}/`, {
     method: 'PUT',
     headers: {
       'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
@@ -145,9 +139,9 @@ const successDeleteContainer = () => ({
   type: SUCCESS_DELETE_CONTAINER
 });
 
-export const deleteContainer = (selected) => dispatch => {
+export const deleteContainer = (containerId) => dispatch => {
   dispatch(beginRequestContainer());
-  fetch(`/container/${selected._id['$oid']}/`, {
+  fetch(`/container/${containerId}/`, {
     method: 'DELETE',
     headers: {
       'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
@@ -169,10 +163,9 @@ export const deleteContainer = (selected) => dispatch => {
   })
 };
 
-
-export const openWorkflowModal = (container, workflow) => ({
+export const openWorkflowModal = (containerId, workflow) => ({
   type: OPEN_WORKFLOW_MODAL,
-  container,
+  containerId,
   workflow
 });
 
@@ -193,8 +186,8 @@ const successCreateWorkflow = () => ({
   type: SUCCESS_CREATE_WORKFLOW
 });
 
-export const createWorkflow = (container, workflow) => dispatch => {
-  workflow.container = container._id['$oid'];
+export const createWorkflow = (containerId, payload) => dispatch => {
+  payload.container = containerId;
   dispatch(beginRequestWorkflow());
   fetch('/workflow/', {
     method: 'POST',
@@ -202,12 +195,11 @@ export const createWorkflow = (container, workflow) => dispatch => {
       'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify(workflow)
+    body: JSON.stringify(payload)
   })
   .then(response => {
     if (response.status >= 400 && response.status < 600) {
       response.json().then(error => {
-        console.log(error);
         dispatch(failureRequestWorkflow(error[0]));
       });
     } else {
@@ -224,11 +216,10 @@ const successUpdateWorkflow = () => ({
   type: SUCCESS_UPDATE_WORKFLOW
 });
 
-export const updateWorkflow = (container, selected, payload) => dispatch => {
-  payload.container = container._id['$oid'];
+export const updateWorkflow = (workflowId, payload) => dispatch => {
   dispatch(beginRequestWorkflow());
-  fetch(`/workflow/${selected._id['$oid']}/`, {
-    method: 'PUT',
+  fetch(`/workflow/${workflowId}/`, {
+    method: 'PATCH',
     headers: {
       'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
       'Content-Type': 'application/json'
@@ -254,9 +245,9 @@ const successDeleteWorkflow = () => ({
   type: SUCCESS_DELETE_WORKFLOW
 });
 
-export const deleteWorkflow = (selected) => dispatch => {
+export const deleteWorkflow = (workflowId) => dispatch => {
   dispatch(beginRequestWorkflow());
-  fetch(`/workflow/${selected._id['$oid']}/`, {
+  fetch(`/workflow/${workflowId}/`, {
     method: 'DELETE',
     headers: {
       'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
@@ -278,9 +269,10 @@ export const deleteWorkflow = (selected) => dispatch => {
   })
 };
 
-export const openDatasourceModal = (container) => ({
+export const openDatasourceModal = (containerId, datasources) => ({
   type: OPEN_DATASOURCE_MODAL,
-  container
+  containerId,
+  datasources
 });
 
 export const closeDatasourceModal = () => ({
@@ -305,8 +297,8 @@ const successCreateDatasource = () => ({
   type: SUCCESS_CREATE_DATASOURCE
 });
 
-export const createDatasource = (container, datasource) => dispatch => {
-  datasource.container = container._id['$oid'];
+export const createDatasource = (containerId, payload) => dispatch => {
+  payload.container = containerId;
   dispatch(beginRequestDatasource());
   fetch('/datasource/', {
     method: 'POST',
@@ -314,12 +306,11 @@ export const createDatasource = (container, datasource) => dispatch => {
       'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify(datasource)
+    body: JSON.stringify(payload)
   })
   .then(response => {
     if (response.status >= 400 && response.status < 600) {
       response.json().then(error => {
-        console.log(error);
         dispatch(failureRequestDatasource(error[0]));
       });
     } else {
@@ -336,11 +327,10 @@ const successUpdateDatasource = () => ({
   type: SUCCESS_UPDATE_DATASOURCE
 });
 
-export const updateDatasource = (container, selected, payload) => dispatch => {
-  payload.container = container._id['$oid'];
+export const updateDatasource = (datasourceId, payload) => dispatch => {
   dispatch(beginRequestDatasource());
-  fetch(`/datasource/${selected._id['$oid']}/`, {
-    method: 'PUT',
+  fetch(`/datasource/${datasourceId}/`, {
+    method: 'PATCH',
     headers: {
       'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
       'Content-Type': 'application/json'
@@ -366,9 +356,9 @@ const successDeleteDatasource = () => ({
   type: SUCCESS_DELETE_DATASOURCE
 });
 
-export const deleteDatasource = (selected) => dispatch => {
+export const deleteDatasource = (datasourceId) => dispatch => {
   dispatch(beginRequestDatasource());
-  fetch(`/datasource/${selected._id['$oid']}/`, {
+  fetch(`/datasource/${datasourceId}/`, {
     method: 'DELETE',
     headers: {
       'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',

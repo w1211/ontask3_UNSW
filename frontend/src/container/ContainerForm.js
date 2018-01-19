@@ -1,10 +1,8 @@
 import React from 'react';
-
 import { Modal, Form, Input, Alert } from 'antd';
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
-
 
 const formItemLayout = {
   labelCol: {
@@ -17,26 +15,30 @@ const formItemLayout = {
   },
 };
 
+
 const handleOk = (form, container, onCreate, onUpdate) => {
   form.validateFields((err, values) => {
     if (err) {
       return;
     }
     if (container) {
-      onUpdate(container, values);
+      onUpdate(container._id['$oid'], values);
     } else {
       onCreate(values)
     }
   });
 }
 
-const ContainerForm = ({ form, container, visible, loading, onCancel, onCreate, onUpdate, error }) => (
+const ContainerForm = ({ 
+  form, visible, loading, error, 
+  container, onCreate, onUpdate, onCancel 
+}) => (
   <Modal
     visible={visible}
     title={container ? 'Update container' : 'Create container'}
     okText={container ? 'Update' : 'Create'}
-    onCancel={onCancel}
-    onOk={() => {handleOk(form, container, onCreate, onUpdate)}}
+    onCancel={() => { form.resetFields(); onCancel() }}
+    onOk={() => { handleOk(form, container, onCreate, onUpdate) }}
     confirmLoading={loading}
   >
     <Form layout="horizontal">

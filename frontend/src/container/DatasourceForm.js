@@ -17,32 +17,36 @@ const formItemLayout = {
   },
 };
 
-const handleOk = (form, container, datasource, onCreate, onUpdate) => {
+
+const handleOk = (form, containerId, datasource, onCreate, onUpdate) => {
   form.validateFields((err, values) => {
     if (err) {
       return;
     }
     if (datasource) {
-      onUpdate(container, datasource, values);
+      onUpdate(datasource._id['$oid'], values);
     } else {
-      onCreate(container, values)
+      onCreate(containerId, values)
     }
   });
 }
 
-const handleChange = (selected, onChange, form, datasources) => {
+const handleChange = (selectedId, onChange, form, datasources) => {
   form.resetFields();
-  selected = datasources.find(datasource => {return datasource._id['$oid'] === selected});
-  onChange(selected);
+  const datasource = datasources.find(datasource => { return datasource._id['$oid'] === selectedId });
+  onChange(datasource);
 }
 
-const DatasourceForm = ({ form, container, datasource, visible, loading, onChange, onCancel, onCreate, onUpdate, onDelete, error }) => (
+const DatasourceForm = ({ 
+  form, visible, loading, error, containerId, datasources,
+  datasource, onChange, onCreate, onUpdate, onCancel, onDelete 
+}) => (
   <Modal
     visible={visible}
     title='Datasources'
     okText={datasource ? 'Update' : 'Create'}
-    onCancel={onCancel}
-    onOk={() => {handleOk(form, container, datasource, onCreate, onUpdate)}}
+    onCancel={() => { form.resetFields(); onCancel(); }}
+    onOk={() => { handleOk(form, containerId, datasource, onCreate, onUpdate) }}
     confirmLoading={loading}
   >
     <Form layout="horizontal">
@@ -50,14 +54,14 @@ const DatasourceForm = ({ form, container, datasource, visible, loading, onChang
         {...formItemLayout}
         label="Datasource"
       >
-        <div style={{display: 'inline-flex', width: '100%'}}>
-          <Select value={datasource ? datasource._id['$oid'] : null} onChange={(selected) => {handleChange(selected, onChange, form, container.datasources)}} defaultValue={null}>
+        <div style={{ display: 'inline-flex', width: '100%' }}>
+          <Select value={datasource ? datasource._id['$oid'] : null} onChange={(selected) => { handleChange(selected, onChange, form, datasources) }} defaultValue={null}>
             <Option value={null} key={0}><i>Create new datasource</i></Option>
-            { container ? container.datasources.map((datasource) => {
+            { datasources ? datasources.map((datasource) => {
               return <Option value={datasource._id['$oid']} key={datasource.name}>{datasource.name}</Option>
             }) : ''}
           </Select>
-          <Button disabled={datasource ? false : true} onClick={() => {onDelete(datasource)}} type="danger" icon="delete" style={{marginLeft: '10px'}}/>
+          <Button disabled={datasource ? false : true} onClick={() => { onDelete(datasource) }} type="danger" icon="delete" style={{ marginLeft: '10px' }}/>
         </div>
       </FormItem>
       <FormItem

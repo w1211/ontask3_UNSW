@@ -135,6 +135,8 @@ class ActionViewSet(viewsets.ModelViewSet):
         condition_group = self.request.data
         conditions_passed = self.validate_condition_group(action, condition_group) 
 
+        print(conditions_passed)
+
         result = action.update(push__conditionGroups=condition_group)
 
         return JsonResponse(result, safe=False)
@@ -147,6 +149,8 @@ class ActionViewSet(viewsets.ModelViewSet):
         updated_condition_group = self.request.data
         conditions_passed = self.validate_condition_group(action, updated_condition_group) 
         selected_name = updated_condition_group['originalName']
+
+        print(conditions_passed)
 
         condition_groups = action.conditionGroups
         for i in range(len(condition_groups)):

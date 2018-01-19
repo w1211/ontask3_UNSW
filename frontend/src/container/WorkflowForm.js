@@ -1,5 +1,4 @@
 import React from 'react';
-
 import { Modal, Form, Input, Alert } from 'antd';
 
 const FormItem = Form.Item;
@@ -17,26 +16,29 @@ const formItemLayout = {
   },
 };
 
-const handleOk = (form, container, workflow, onCreate, onUpdate) => {
+const handleOk = (form, containerId, workflow, onCreate, onUpdate) => {
   form.validateFields((err, values) => {
     if (err) {
       return;
     }
     if (workflow) {
-      onUpdate(container, workflow, values);
+      onUpdate(workflow._id['$oid'], values);
     } else {
-      onCreate(container, values)
+      onCreate(containerId, values)
     }
   });
 }
 
-const WorkflowForm = ({ form, container, workflow, visible, loading, onCancel, onCreate, onUpdate, error }) => (
+const WorkflowForm = ({ 
+  form, visible, loading, error, containerId,
+  workflow, onCreate, onUpdate, onCancel
+}) => (
   <Modal
     visible={visible}
     title={workflow ? 'Update workflow' : 'Create workflow'}
     okText={workflow ? 'Update' : 'Create'}
-    onCancel={onCancel}
-    onOk={() => {handleOk(form, container, workflow, onCreate, onUpdate)}}
+    onCancel={() => { form.resetFields(); onCancel(); }}
+    onOk={() => { handleOk(form, containerId, workflow, onCreate, onUpdate) }}
     confirmLoading={loading}
   >
     <Form layout="horizontal">
