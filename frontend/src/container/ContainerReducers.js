@@ -26,7 +26,9 @@ import {
   FAILURE_REQUEST_DATASOURCE,
   SUCCESS_CREATE_DATASOURCE,
   SUCCESS_UPDATE_DATASOURCE,
-  SUCCESS_DELETE_DATASOURCE
+  SUCCESS_DELETE_DATASOURCE,
+
+  UPLOAD_CSV_FILE
 
 } from './ContainerActions';
 
@@ -56,7 +58,7 @@ function containers(state = {}, action) {
     case OPEN_CONTAINER_MODAL:
       return Object.assign({}, state, {
         containerModalVisible: true,
-        container: action.container 
+        container: action.container
       });
     case CLOSE_CONTAINER_MODAL:
       return Object.assign({}, state, {
@@ -174,7 +176,8 @@ function containers(state = {}, action) {
       });
     case CHANGE_DATASOURCE:
       return Object.assign({}, state, {
-        datasource: action.datasource
+        datasource: action.datasource,
+        uploadCsvFile: action.isCsvFile
       });
     case BEGIN_REQUEST_DATASOURCE:
       return Object.assign({}, state, {
@@ -217,6 +220,11 @@ function containers(state = {}, action) {
         datasources: null,
         didDelete: true,
         model: 'datasource'
+      });
+
+    case UPLOAD_CSV_FILE:
+      return Object.assign({}, state, {
+        uploadCsvFile: action.isCsvFile
       });
 
     default:

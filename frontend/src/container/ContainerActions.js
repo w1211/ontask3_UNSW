@@ -27,6 +27,8 @@ export const SUCCESS_CREATE_DATASOURCE = 'SUCCESS_CREATE_DATASOURCE';
 export const SUCCESS_UPDATE_DATASOURCE = 'SUCCESS_UPDATE_DATASOURCE';
 export const SUCCESS_DELETE_DATASOURCE = 'SUCCESS_DELETE_DATASOURCE';
 
+export const UPLOAD_CSV_FILE = 'UPLOAD_CSV_FILE';
+
 
 const requestContainers = () => ({
   type: REQUEST_CONTAINERS
@@ -279,9 +281,10 @@ export const closeDatasourceModal = () => ({
   type: CLOSE_DATASOURCE_MODAL
 });
 
-export const changeDatasource = (datasource) => ({
+export const changeDatasource = (datasource, isCsvFile) => ({
   type: CHANGE_DATASOURCE,
-  datasource
+  datasource,
+  isCsvFile
 });
 
 const beginRequestDatasource = () => ({
@@ -300,27 +303,56 @@ const successCreateDatasource = () => ({
 export const createDatasource = (containerId, payload) => dispatch => {
   payload.container = containerId;
   dispatch(beginRequestDatasource());
-  fetch('/datasource/', {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(payload)
-  })
-  .then(response => {
-    if (response.status >= 400 && response.status < 600) {
-      response.json().then(error => {
-        dispatch(failureRequestDatasource(error[0]));
-      });
-    } else {
-      dispatch(successCreateDatasource());
-      dispatch(fetchContainers());
-    }
-  })
-  .catch(error => {
-    dispatch(failureRequestDatasource('Failed to contact server. Please try again.'));
-  })
+  if(payload.connection.dbType==='csv'){
+    console.log("creating csv db");
+    fetch('/datasource/', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+        'Content-Type': 'multipart/form-data'
+      },
+      body: JSON.stringify(payload)
+    })
+    .then(response => {
+      if (response.status >= 400 && response.status < 600) {
+        response.json().then(error => {
+          dispatch(failureRequestDatasource(error[0]));
+        });
+      } else {
+        dispatch(successCreateDatasource());
+        dispatch(fetchContainers());
+      }
+    })
+    .catch(error => {
+      dispatch(failureRequestDatasource('Failed to contact server. Please try again.'));
+    })
+  }
+  else{
+    console.log("creating NOT csv db");
+    fetch('/datasource/', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    })
+    .then(response => {
+      if (response.status >= 400 && response.status < 600) {
+        response.json().then(error => {
+          dispatch(failureRequestDatasource(error[0]));
+        });
+      } else {
+        dispatch(successCreateDatasource());
+        dispatch(fetchContainers());
+      }
+    })
+    .catch(error => {
+      dispatch(failureRequestDatasource('Failed to contact server. Please try again.'));
+    })
+  }
+
+
 };
 
 const successUpdateDatasource = () => ({
@@ -379,3 +411,8 @@ export const deleteDatasource = (datasourceId) => dispatch => {
     dispatch(failureRequestDatasource('Failed to contact server. Please try again.'));
   })
 };
+
+export const handleDatasourceTypeSelction = (isCsvFile) => ({
+  type: UPLOAD_CSV_FILE,
+  isCsvFile
+});

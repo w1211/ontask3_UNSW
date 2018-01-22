@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Modal, Form, Input, Alert, Select, Button } from 'antd';
+import { Modal, Form, Input, Alert, Select, Button, Upload, Icon, message} from 'antd';
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
@@ -34,12 +34,58 @@ const handleOk = (form, containerId, datasource, onCreate, onUpdate) => {
 const handleChange = (selectedId, onChange, form, datasources) => {
   form.resetFields();
   const datasource = datasources.find(datasource => { return datasource._id['$oid'] === selectedId });
-  onChange(datasource);
+  if(datasource!==undefined && datasource.connection.dbType==='csv'){
+    onChange(datasource, true);
+  }
+  else{
+    onChange(datasource, false);
+  }
 }
 
-const DatasourceForm = ({ 
+const handleDatasourceTypeSelction = (selected, onSelect) => {
+  console.log(`selected ${selected}`);
+  if(selected==='csv'){
+    onSelect(true);
+  }
+  else{
+    onSelect(false);
+  }
+}
+
+const Dragger = Upload.Dragger;
+
+const uploadFileProps = {
+  name: 'file',
+  multiple: true,
+  action: '',
+  onChange(info) {
+    const status = info.file.status;
+    if (status !== 'uploading') {
+      console.log(info.file, info.fileList);
+    }
+    if (status === 'done') {
+      message.success(`${info.file.name} file uploaded successfully.`);
+    } else if (status === 'error') {
+      message.error(`${info.file.name} file upload failed.`);
+    }
+  },
+  beforeUpload(file) {
+    const isCSV = file.type === 'csv';
+    if (!isCSV) {
+      message.error('You can only upload CSV file!');
+    }
+    const isLt2G = file.size / 1024 < 2;
+    if (!isLt2G) {
+      message.error('Image must smaller than 2GB!');
+    }
+    return isCSV && isLt2G;
+  }
+};
+
+const DatasourceForm = ({
   form, visible, loading, error, containerId, datasources,
-  datasource, onChange, onCreate, onUpdate, onCancel, onDelete 
+  datasource, onChange, onCreate, onUpdate, onCancel, onDelete, onSelect,
+  uploadCsvFile
 }) => (
   <Modal
     visible={visible}
@@ -49,105 +95,172 @@ const DatasourceForm = ({
     onOk={() => { handleOk(form, containerId, datasource, onCreate, onUpdate) }}
     confirmLoading={loading}
   >
-    <Form layout="horizontal">
-      <FormItem
-        {...formItemLayout}
-        label="Datasource"
-      >
-        <div style={{ display: 'inline-flex', width: '100%' }}>
-          <Select value={datasource ? datasource._id['$oid'] : null} onChange={(selected) => { handleChange(selected, onChange, form, datasources) }} defaultValue={null}>
-            <Option value={null} key={0}><i>Create new datasource</i></Option>
-            { datasources ? datasources.map((datasource) => {
-              return <Option value={datasource._id['$oid']} key={datasource.name}>{datasource.name}</Option>
-            }) : ''}
-          </Select>
-          <Button disabled={datasource ? false : true} onClick={() => { onDelete(datasource) }} type="danger" icon="delete" style={{ marginLeft: '10px' }}/>
-        </div>
-      </FormItem>
-      <FormItem
-        {...formItemLayout}
-        label="Name"
-      >
-        {form.getFieldDecorator('name', {
-          initialValue: datasource ? datasource.name : null,
-          rules: [{ required: true, message: 'Name is required' }]
-        })(
-          <Input/>
-        )}
-      </FormItem>
-      <FormItem
-        {...formItemLayout}
-        label="Database type"
-      >
-        {form.getFieldDecorator('connection.dbType', {
-          initialValue: datasource ? datasource.connection.dbType : null,
-          rules: [{ required: true, message: 'Database type is required' }]
-        })(
-          <Select>
-            <Option value="mysql">MySQL</Option>
-            <Option value="postgresql">PostgreSQL</Option>
-            <Option value="sqlite" disabled>SQLite</Option>
-            <Option value="mssql" disabled>MSSQL</Option>
-          </Select>
-        )}
-      </FormItem>
-      <FormItem
-        {...formItemLayout}
-        label="Host"
-      >
-        {form.getFieldDecorator('connection.host', {
-          initialValue: datasource ? datasource.connection.host : null,
-          rules: [{ required: true, message: 'Host is required' }]
-        })(
-          <Input/>
-        )}
-      </FormItem>
-      <FormItem
-        {...formItemLayout}
-        label="Database"
-      >
-        {form.getFieldDecorator('connection.database', {
-          initialValue: datasource ? datasource.connection.database : null,
-          rules: [{ required: true, message: 'Database is required' }]
-        })(
-          <Input/>
-        )}
-      </FormItem>
-      <FormItem
-        {...formItemLayout}
-        label="User"
-      >
-        {form.getFieldDecorator('connection.user', {
-          initialValue: datasource ? datasource.connection.user : null,
-          rules: [{ required: true, message: 'Database user is required' }]
-        })(
-          <Input/>
-        )}
-      </FormItem>
-      <FormItem
-        {...formItemLayout}
-        label="Password"
-      >
-        {form.getFieldDecorator('connection.password', {
-          rules: [{ required: datasource ? false : true, message: 'Database password is required' }]
-        })(
-          <Input type="password" placeholder={datasource ? 'Change password' : ''}/>
-        )}
-      </FormItem>
-      <FormItem
-        {...formItemLayout}
-        label="Query"
-      >
-        {form.getFieldDecorator('connection.query', {
-          initialValue: datasource ? datasource.connection.query : null,
-          rules: [{ required: true, message: 'Database query is required' }]
-        })(
-          <TextArea rows={2}/>
-        )}
-      </FormItem>
-      { error && <Alert message={error} type="error"/>}
-    </Form>
-  </Modal>
+    {uploadCsvFile ?
+      <Form layout="horizontal">
+        <FormItem
+          {...formItemLayout}
+          label="Datasource"
+        >
+          <div style={{ display: 'inline-flex', width: '100%' }}>
+            <Select value={datasource ? datasource._id['$oid'] : null} onChange={(selected) => { handleChange(selected, onChange, form, datasources) }} defaultValue={null}>
+              <Option value={null} key={0}><i>Create new datasource</i></Option>
+              { datasources ? datasources.map((datasource) => {
+                return <Option value={datasource._id['$oid']} key={datasource.name}>{datasource.name}</Option>
+              }) : ''}
+            </Select>
+            <Button disabled={datasource ? false : true} onClick={() => { onDelete(datasource) }} type="danger" icon="delete" style={{ marginLeft: '10px' }}/>
+          </div>
+        </FormItem>
+        <FormItem
+          {...formItemLayout}
+          label="Database type"
+        >
+          {form.getFieldDecorator('connection.dbType', {
+            initialValue: datasource ? datasource.connection.dbType : null,
+            rules: [{ required: true, message: 'Database type is required' }]
+          })(
+            <Select onChange={(selected) => handleDatasourceTypeSelction(selected, onSelect)}>
+              <Option value="mysql">MySQL</Option>
+              <Option value="postgresql">PostgreSQL</Option>
+              <Option value="csv">CSV File</Option>
+              <Option value="sqlite" disabled>SQLite</Option>
+              <Option value="mssql" disabled>MSSQL</Option>
+            </Select>
+          )}
+        </FormItem>
+        <FormItem
+          {...formItemLayout}
+          label="Name"
+        >
+          {form.getFieldDecorator('name', {
+            initialValue: datasource ? datasource.name : null,
+            rules: [{ required: true, message: 'Name is required' }]
+          })(
+            <Input/>
+          )}
+        </FormItem>
+        <Dragger {...uploadFileProps}>
+          <p className="ant-upload-drag-icon">
+            <Icon type="inbox" />
+          </p>
+          <p className="ant-upload-text">Click or drag CSV file to this area to upload</p>
+          <p className="ant-upload-hint">Support for a single or bulk upload.</p>
+        </Dragger>
+        <br/>
+        <FormItem
+          {...formItemLayout}
+          label="Query"
+        >
+          {form.getFieldDecorator('connection.query', {
+            initialValue: datasource ? datasource.connection.query : null
+          })(
+            <TextArea rows={2}/>
+          )}
+        </FormItem>
+        { error && <Alert message={error} type="error"/>}
+      </Form>
+      :
+      <Form layout="horizontal">
+        <FormItem
+          {...formItemLayout}
+          label="Datasource"
+        >
+          <div style={{ display: 'inline-flex', width: '100%' }}>
+            <Select value={datasource ? datasource._id['$oid'] : null} onChange={(selected) => { handleChange(selected, onChange, form, datasources) }} defaultValue={null}>
+              <Option value={null} key={0}><i>Create new datasource</i></Option>
+              { datasources ? datasources.map((datasource) => {
+                return <Option value={datasource._id['$oid']} key={datasource.name}>{datasource.name}</Option>
+              }) : ''}
+            </Select>
+            <Button disabled={datasource ? false : true} onClick={() => { onDelete(datasource) }} type="danger" icon="delete" style={{ marginLeft: '10px' }}/>
+          </div>
+        </FormItem>
+        <FormItem
+          {...formItemLayout}
+          label="Database type"
+        >
+          {form.getFieldDecorator('connection.dbType', {
+            initialValue: datasource ? datasource.connection.dbType : null,
+            rules: [{ required: true, message: 'Database type is required' }]
+          })(
+            <Select onChange={(selected) => handleDatasourceTypeSelction(selected, onSelect)}>
+              <Option value="mysql">MySQL</Option>
+              <Option value="postgresql">PostgreSQL</Option>
+              <Option value="csv">CSV File</Option>
+              <Option value="sqlite" disabled>SQLite</Option>
+              <Option value="mssql" disabled>MSSQL</Option>
+            </Select>
+          )}
+        </FormItem>
+        <FormItem
+          {...formItemLayout}
+          label="Name"
+        >
+          {form.getFieldDecorator('name', {
+            initialValue: datasource ? datasource.name : null,
+            rules: [{ required: true, message: 'Name is required' }]
+          })(
+            <Input/>
+          )}
+        </FormItem>
+        <FormItem
+          {...formItemLayout}
+          label="Host"
+        >
+          {form.getFieldDecorator('connection.host', {
+            initialValue: datasource ? datasource.connection.host : null,
+            rules: [{ required: true, message: 'Host is required' }]
+          })(
+            <Input/>
+          )}
+        </FormItem>
+        <FormItem
+          {...formItemLayout}
+          label="Database"
+        >
+          {form.getFieldDecorator('connection.database', {
+            initialValue: datasource ? datasource.connection.database : null,
+            rules: [{ required: true, message: 'Database is required' }]
+          })(
+            <Input/>
+          )}
+        </FormItem>
+        <FormItem
+          {...formItemLayout}
+          label="User"
+        >
+          {form.getFieldDecorator('connection.user', {
+            initialValue: datasource ? datasource.connection.user : null,
+            rules: [{ required: true, message: 'Database user is required' }]
+          })(
+            <Input/>
+          )}
+        </FormItem>
+        <FormItem
+          {...formItemLayout}
+          label="Password"
+        >
+          {form.getFieldDecorator('connection.password', {
+            rules: [{ required: datasource ? false : true, message: 'Database password is required' }]
+          })(
+            <Input type="password" placeholder={datasource ? 'Change password' : ''}/>
+          )}
+        </FormItem>
+        <FormItem
+          {...formItemLayout}
+          label="Query"
+        >
+          {form.getFieldDecorator('connection.query', {
+            initialValue: datasource ? datasource.connection.query : null,
+            rules: [{ required: true, message: 'Database query is required' }]
+          })(
+            <TextArea rows={2}/>
+          )}
+        </FormItem>
+        { error && <Alert message={error} type="error"/>}
+      </Form>
+    }
+    </Modal>
 )
 
 export default Form.create()(DatasourceForm)

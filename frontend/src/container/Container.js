@@ -16,7 +16,7 @@ const { Content } = Layout;
 
 
 class Container extends React.Component {
-  constructor(props) { 
+  constructor(props) {
     super(props);
     const { dispatch } = props;
 
@@ -24,11 +24,11 @@ class Container extends React.Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (!(nextProps.didCreate || nextProps.didUpdate || nextProps.didDelete)) return;  
+    if (!(nextProps.didCreate || nextProps.didUpdate || nextProps.didDelete)) return;
 
     let message;
     let description;
-    
+
     if (nextProps.didCreate) {
       message = `${nextProps.model.charAt(0).toUpperCase() + nextProps.model.slice(1)} created`;
       switch (nextProps.model) {
@@ -67,7 +67,7 @@ class Container extends React.Component {
           break;
       }
     }
-    
+
     notification['success']({
       message: message,
       description: description
@@ -121,11 +121,12 @@ class Container extends React.Component {
   };
 
   render() {
-    const { 
+    const {
       dispatch, isFetching, containers, containerAccordionKey, containerId,
       containerModalVisible, containerLoading, containerError, container,
       workflowModalVisible, workflowLoading, workflowError, workflow,
-      datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources
+      datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
+      uploadCsvFile
     } = this.props;
 
     return (
@@ -137,12 +138,12 @@ class Container extends React.Component {
         <Layout style={{ padding: '24px 0', background: '#fff' }}>
           <Content style={{ padding: '0 24px', minHeight: 280 }}>
             <h1>Containers</h1>
-          { isFetching ? 
+          { isFetching ?
             <Spin size="large" />
           :
             <div>
               <Button
-                onClick={() => { dispatch(this.boundActionCreators.openContainerModal()) }} 
+                onClick={() => { dispatch(this.boundActionCreators.openContainerModal()) }}
                 type="primary" icon="plus" size="large" style={{ marginBottom: '20px' }}
               >
                 New container
@@ -156,11 +157,11 @@ class Container extends React.Component {
 
                 onCreate={this.boundActionCreators.createContainer}
                 onUpdate={this.boundActionCreators.updateContainer}
-                onCancel={() => { dispatch(this.boundActionCreators.closeContainerModal()) }} 
+                onCancel={() => { dispatch(this.boundActionCreators.closeContainerModal()) }}
               />
               { containers && containers.length > 0 ?
                 <div>
-                  <WorkflowForm 
+                  <WorkflowForm
                     ref={(form) => { this.workflowForm = form }}
                     visible={workflowModalVisible}
                     loading={workflowLoading}
@@ -180,21 +181,24 @@ class Container extends React.Component {
                     containerId={containerId}
                     datasources={datasources}
                     datasource={datasource}
+                    uploadCsvFile={uploadCsvFile}
 
                     onChange={this.boundActionCreators.changeDatasource}
                     onCreate={this.boundActionCreators.createDatasource}
                     onUpdate={this.boundActionCreators.updateDatasource}
                     onDelete={this.onDeleteDatasource}
                     onCancel={() => { dispatch(this.boundActionCreators.closeDatasourceModal()) }}
+
+                    onSelect={this.boundActionCreators.handleDatasourceTypeSelction}
                   />
                   <ContainerList
                     containers={containers}
                     activeKey={containerAccordionKey}
                     changeAccordionKey={(key) => { dispatch(this.boundActionCreators.changeContainerAccordion(key)) }}
-                    
+
                     openContainerModal={(container) => { dispatch(this.boundActionCreators.openContainerModal(container)) }}
                     confirmContainerDelete={this.confirmContainerDelete}
-                    
+
                     openWorkflowModal={(containerId, workflow) => { dispatch(this.boundActionCreators.openWorkflowModal(containerId, workflow)) }}
                     confirmWorkflowDelete={this.confirmWorkflowDelete}
 
@@ -218,19 +222,21 @@ class Container extends React.Component {
 };
 
 const mapStateToProps = (state) => {
-  const { 
+  const {
     isFetching, containers, containerAccordionKey, containerId,
     didCreate, didUpdate, didDelete, model,
     containerModalVisible, containerLoading, containerError, container,
     workflowModalVisible, workflowLoading, workflowError, workflow,
-    datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources
+    datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
+    uploadCsvFile
   } = state.containers;
-  return { 
+  return {
     isFetching, containers, containerAccordionKey, containerId,
     didCreate, didUpdate, didDelete, model,
     containerModalVisible, containerLoading, containerError, container,
     workflowModalVisible, workflowLoading, workflowError, workflow,
-    datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources
+    datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
+    uploadCsvFile
   };
 }
 
