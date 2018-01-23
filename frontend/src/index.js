@@ -14,7 +14,6 @@ import './index.css';
 
 import rootReducer from './Reducers';
 
-
 const store = createStore(
   rootReducer,
   applyMiddleware(thunk)

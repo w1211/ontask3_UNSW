@@ -27,8 +27,23 @@ export const SUCCESS_CREATE_DATASOURCE = 'SUCCESS_CREATE_DATASOURCE';
 export const SUCCESS_UPDATE_DATASOURCE = 'SUCCESS_UPDATE_DATASOURCE';
 export const SUCCESS_DELETE_DATASOURCE = 'SUCCESS_DELETE_DATASOURCE';
 
+//actions for interacting with datasource form uploading file list
 export const UPLOAD_CSV_FILE = 'UPLOAD_CSV_FILE';
+export const REMOVE_FROM_FILE_LIST = 'REMOVE_FROM_FILE_LIST';
+export const ADD_TO_FILE_LIST = 'ADD_TO_FILE_LIST';
 
+
+//actions for interacting with datasource form uploading file list
+export const addToFileList = (fileId, file) => ({
+  type: ADD_TO_FILE_LIST,
+  fileId,
+  file
+});
+
+export const removeFromFileList = (fileId) => ({
+  type: REMOVE_FROM_FILE_LIST,
+  fileId
+});
 
 const requestContainers = () => ({
   type: REQUEST_CONTAINERS
@@ -351,8 +366,6 @@ export const createDatasource = (containerId, payload) => dispatch => {
       dispatch(failureRequestDatasource('Failed to contact server. Please try again.'));
     })
   }
-
-
 };
 
 const successUpdateDatasource = () => ({

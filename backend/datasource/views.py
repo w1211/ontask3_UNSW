@@ -43,11 +43,12 @@ class DataSourceViewSet(viewsets.ModelViewSet):
                 cursor = dbConnection.cursor(dictionary=True)
                 cursor.execute(connection['query'])
                 data = list(cursor)
+                print(data)
                 cursor.close()
                 dbConnection.close()
-            except: 
+            except:
                 raise ValidationError('Error connecting to database')
-                
+
         elif connection['dbType'] == 'postgresql':
             try:
                 dbConnection = psycopg2.connect(
@@ -61,15 +62,25 @@ class DataSourceViewSet(viewsets.ModelViewSet):
                 data = list(cursor)
                 cursor.close()
                 dbConnection.close()
-            except: 
+            except:
                 raise ValidationError('Error connecting to database')
 
         # TO DO: implement MS SQL and SQLite imports
         elif connection['dbType'] == 'sqlite':
             pass
-        
+
         elif connection['dbType'] == 'mssql':
             pass
+
+        #csv file
+        elif connection['dbType'] == 'csv':
+            csv_file = connection.FILES["csv_file"]
+            print(csv_file)
+            if not csv_file.name.endswith('.csv'):
+                messages.error(request,'File is not CSV type')
+                return HttpResponseRedirect()
+            # parsing csv file here
+
 
         if not len(data):
             raise ValidationError('The query returned no data')
@@ -108,7 +119,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         # Data passed in to the DataSource model must be a list of dicts of the form {column_name: value}
         # TO DO: if isDynamic, then store values into lists as objects with timestamps
         connection = self.request.data['connection']
-        
+
         # Encrypt the db password of the data source
         cipher = Fernet(DATASOURCE_KEY)
         if hasattr(connection, 'password'):
@@ -126,13 +137,13 @@ class DataSourceViewSet(viewsets.ModelViewSet):
             data = data,
             fields = fields
         )
-        
+
     def perform_destroy(self, obj):
          # Ensure that the request.user is the owner of the object
         self.check_object_permissions(self.request, obj)
-        
+
         # Ensure that no workflow is currently using this datasource
-        # Because the matrix secondaryColumns field is a list of SecondaryColumn embedded documents, we use 
+        # Because the matrix secondaryColumns field is a list of SecondaryColumn embedded documents, we use
         # $elemMatch which is aliased to "match" in mongoengine
         queryset = Workflow.objects.filter(
             Q(matrix__secondaryColumns__match = { "datasource": obj }) | Q(matrix__primaryColumn__datasource = obj)

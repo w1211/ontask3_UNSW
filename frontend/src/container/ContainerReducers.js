@@ -28,14 +28,19 @@ import {
   SUCCESS_UPDATE_DATASOURCE,
   SUCCESS_DELETE_DATASOURCE,
 
-  UPLOAD_CSV_FILE
+//actions for interacting with datasource form uploading file list
+  UPLOAD_CSV_FILE,
+  ADD_TO_FILE_LIST,
+  REMOVE_FROM_FILE_LIST
 
 } from './ContainerActions';
 
+const initialState = {
+  uploadingFileList: []
+}
 
-function containers(state = {}, action) {
+function containers(state = initialState, action) {
   switch (action.type) {
-
     // List containers
     case REQUEST_CONTAINERS:
       return Object.assign({}, state, {
@@ -225,6 +230,25 @@ function containers(state = {}, action) {
     case UPLOAD_CSV_FILE:
       return Object.assign({}, state, {
         uploadCsvFile: action.isCsvFile
+      });
+
+    //for interacting with datasource form uploaidng file list
+    case ADD_TO_FILE_LIST:
+      console.log("in reducers");
+      console.log(state.uploadingFileList);
+      console.log(state);
+      return Object.assign({}, state, {
+        uploadingFileList: [ ...state.uploadingFileList, action.file]
+      });
+
+    case REMOVE_FROM_FILE_LIST:
+      console.log("in reducer REMOVE_FROM_FILE_LIST");
+      const prunedIds = state.uploadingFileList.filter(file => {
+        return file.uid !== action.fileId // return all the items not matching the action.id
+      });
+      console.log(prunedIds);
+      return Object.assign({}, state, {
+        uploadingFileList: prunedIds
       });
 
     default:

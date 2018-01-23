@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Modal, Form, Input, Alert, Select, Button, Upload, Icon, message} from 'antd';
+import { Modal, Form, Input, Alert, Select, Button, Upload, Icon, message, List} from 'antd';
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
@@ -52,40 +52,38 @@ const handleDatasourceTypeSelction = (selected, onSelect) => {
   }
 }
 
+//actions for interacting with datasource form uploading file list
 const Dragger = Upload.Dragger;
 
-const uploadFileProps = {
-  name: 'file',
-  multiple: true,
-  action: '',
-  onChange(info) {
-    const status = info.file.status;
-    if (status !== 'uploading') {
-      console.log(info.file, info.fileList);
-    }
-    if (status === 'done') {
-      message.success(`${info.file.name} file uploaded successfully.`);
-    } else if (status === 'error') {
-      message.error(`${info.file.name} file upload failed.`);
-    }
-  },
-  beforeUpload(file) {
-    const isCSV = file.type === 'csv';
-    if (!isCSV) {
-      message.error('You can only upload CSV file!');
-    }
-    const isLt2G = file.size / 1024 < 2;
-    if (!isLt2G) {
-      message.error('Image must smaller than 2GB!');
-    }
-    return isCSV && isLt2G;
+const fileValidation = (file) => {
+  const isCSV = file.type === 'text/csv';
+  console.log(file.type);
+  if (!isCSV) {
+    message.error('You can only upload CSV file!');
   }
+  const isLt2G = file.size / 1024 < 2;
+  if (!isLt2G) {
+    message.error('Image must smaller than 2GB!');
+  }
+  return false;
 };
 
+const handleDraggerChange = (info, addToFileList) => {
+  console.log(info.file.uid);
+  console.log(addToFileList);
+  console.log(info.file);
+    addToFileList(info.file.uid, info.file);
+};
+
+const handleUploadingFileDlete = (fileId, removeFromFileList) => {
+  console.log(fileId);
+  removeFromFileList(fileId);
+}
+
 const DatasourceForm = ({
-  form, visible, loading, error, containerId, datasources,
+  form, visible, loading, error, containerId, datasources, uploadingFileList,
   datasource, onChange, onCreate, onUpdate, onCancel, onDelete, onSelect,
-  uploadCsvFile
+  uploadCsvFile, addToFileList, removeFromFileList
 }) => (
   <Modal
     visible={visible}
@@ -139,13 +137,29 @@ const DatasourceForm = ({
             <Input/>
           )}
         </FormItem>
-        <Dragger {...uploadFileProps}>
+        <Dragger
+          name = 'file'
+          multiple = {true}
+          action = ''
+          onChange = {(info) => handleDraggerChange(info, addToFileList)}
+          beforeUpload = {(file) => fileValidation(file)}
+        >
           <p className="ant-upload-drag-icon">
             <Icon type="inbox" />
           </p>
           <p className="ant-upload-text">Click or drag CSV file to this area to upload</p>
           <p className="ant-upload-hint">Support for a single or bulk upload.</p>
         </Dragger>
+        <List
+          bordered
+          dataSource={uploadingFileList}
+          renderItem={file =>(
+            <List.Item
+                actions={[<Button type="danger" icon="close" onClick={() => { handleUploadingFileDlete(file.uid, removeFromFileList) }} />]}
+            >
+              {file.name}
+            </List.Item>)}
+        />
         <br/>
         <FormItem
           {...formItemLayout}
