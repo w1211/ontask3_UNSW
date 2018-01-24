@@ -27,4 +27,6 @@ Thumbs.db
 backend/config/dev.*
 backend/config/prod.*
 
+# Virtual Environment files
 ontask_venv/
+scheduler_env
