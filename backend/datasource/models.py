@@ -20,7 +20,7 @@ class Metadata(EmbeddedDocument):
 class DataSource(Document):
     # Owner of the datasource can be determined from container.owner
     container = fields.ReferenceField(Container, required=True, reverse_delete_rule=2) # Cascade delete if container is deleted
-    name = fields.StringField(required=True, unique_with='container')    
+    name = fields.StringField(required=True, unique_with='container')
     connection = fields.EmbeddedDocumentField(Connection)
     metadata = fields.EmbeddedDocumentField(Metadata)
     data = fields.ListField(fields.DictField())

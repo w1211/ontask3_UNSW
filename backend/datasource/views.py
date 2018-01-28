@@ -3,9 +3,15 @@ from rest_framework_mongoengine.validators import ValidationError
 from datetime import datetime
 from mongoengine.queryset.visitor import Q
 
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+
 # Imports to connect to data sources
 import mysql.connector
 import psycopg2
+
+import json
+import csv
+import io
 
 # Imports for encrypting the datasource db password
 from cryptography.fernet import Fernet
@@ -22,6 +28,7 @@ from workflow.models import Workflow
 class DataSourceViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
     serializer_class = DataSourceSerializer
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
     permission_classes = [DataSourcePermissions]
 
     # TO DO: make this filter based on permissions
@@ -43,7 +50,6 @@ class DataSourceViewSet(viewsets.ModelViewSet):
                 cursor = dbConnection.cursor(dictionary=True)
                 cursor.execute(connection['query'])
                 data = list(cursor)
-                print(data)
                 cursor.close()
                 dbConnection.close()
             except:
@@ -72,16 +78,6 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         elif connection['dbType'] == 'mssql':
             pass
 
-        #csv file
-        elif connection['dbType'] == 'csv':
-            csv_file = connection.FILES["csv_file"]
-            print(csv_file)
-            if not csv_file.name.endswith('.csv'):
-                messages.error(request,'File is not CSV type')
-                return HttpResponseRedirect()
-            # parsing csv file here
-
-
         if not len(data):
             raise ValidationError('The query returned no data')
 
@@ -92,25 +88,44 @@ class DataSourceViewSet(viewsets.ModelViewSet):
 
         return (data, fields)
 
+    def get_csv_data(self, csv_file):
+        #checking file format
+        if not csv_file.name.endswith('.csv'):
+            raise ValidationError('File is not CSV type')
+            return
+        reader = csv.DictReader(io.StringIO(csv_file.read().decode('utf-8')))
+        data = list(reader)
+        fields = data[0].keys()
+        return (data, fields)
+
+
     def perform_create(self, serializer):
+
         self.check_object_permissions(self.request, None)
 
         # Connect to specified database and get the data from the query
         # Data passed in to the DataSource model must be a list of dicts of the form {column_name: value}
         # TO DO: if isDynamic, then store values into lists as objects with timestamps
-        connection = self.request.data['connection']
+        if self.request.data['dbType']=='csv':
+            csv_file = self.request.data['file']
+            (data, fields) = self.get_csv_data(csv_file)
+            #reformating
+            serializer.save(
+                data = data,
+                fields = fields
+            )
+        else:
+            # Encrypt the db password of the data source
+            connection = self.request.data['connection']
+            cipher = Fernet(DATASOURCE_KEY)
+            connection['password'] = cipher.encrypt(str(connection['password']))
 
-        # Encrypt the db password of the data source
-        cipher = Fernet(DATASOURCE_KEY)
-        connection['password'] = cipher.encrypt(str(connection['password']))
-
-        (data, fields) = self.get_datasource_data(connection)
-
-        serializer.save(
-            connection = connection,
-            data = data,
-            fields = fields
-        )
+            (data, fields) = self.get_datasource_data(connection)
+            serializer.save(
+                connection = connection,
+                data = data,
+                fields = fields
+            )
 
     def perform_update(self, serializer):
         self.check_object_permissions(self.request, self.get_object())

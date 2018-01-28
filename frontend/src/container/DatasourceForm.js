@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Modal, Form, Input, Alert, Select, Button, Upload, Icon, message, List} from 'antd';
+import { Modal, Form, Input, Alert, Select, Button, Upload, Icon, message} from 'antd';
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
@@ -18,7 +18,7 @@ const formItemLayout = {
 };
 
 
-const handleOk = (form, containerId, datasource, onCreate, onUpdate) => {
+const handleOk = (form, containerId, datasource, onCreate, onUpdate, uploadingFile) => {
   form.validateFields((err, values) => {
     if (err) {
       return;
@@ -26,7 +26,13 @@ const handleOk = (form, containerId, datasource, onCreate, onUpdate) => {
     if (datasource) {
       onUpdate(datasource._id['$oid'], values);
     } else {
-      onCreate(containerId, values)
+      values['dbType'] = values.connection.dbType;
+      console.log(values);
+      if (values.connection.dbType==='csv' && uploadingFile===undefined) {
+        message.error('Please add CSV file');
+      }else{
+        onCreate(containerId, values, uploadingFile)
+      }
     }
   });
 }
@@ -56,6 +62,7 @@ const handleDatasourceTypeSelction = (selected, onSelect) => {
 const Dragger = Upload.Dragger;
 
 const fileValidation = (file) => {
+  console.log("call handle file validation");
   const isCSV = file.type === 'text/csv';
   console.log(file.type);
   if (!isCSV) {
@@ -65,32 +72,27 @@ const fileValidation = (file) => {
   if (!isLt2G) {
     message.error('Image must smaller than 2GB!');
   }
-  return false;
+  return isCSV && isLt2G;
 };
 
-const handleDraggerChange = (info, addToFileList) => {
-  console.log(info.file.uid);
-  console.log(addToFileList);
-  console.log(info.file);
-    addToFileList(info.file.uid, info.file);
+const handleDraggerChange = (info, addUploadingFile) => {
+  console.log("call handle dragger");
+  if (fileValidation(info.file)){
+    addUploadingFile(info.file);
+  }
 };
-
-const handleUploadingFileDlete = (fileId, removeFromFileList) => {
-  console.log(fileId);
-  removeFromFileList(fileId);
-}
 
 const DatasourceForm = ({
-  form, visible, loading, error, containerId, datasources, uploadingFileList,
+  form, visible, loading, error, containerId, datasources, uploadingFile,
   datasource, onChange, onCreate, onUpdate, onCancel, onDelete, onSelect,
-  uploadCsvFile, addToFileList, removeFromFileList
+  uploadCsvFile, addUploadingFile
 }) => (
   <Modal
     visible={visible}
     title='Datasources'
     okText={datasource ? 'Update' : 'Create'}
     onCancel={() => { form.resetFields(); onCancel(); }}
-    onOk={() => { handleOk(form, containerId, datasource, onCreate, onUpdate) }}
+    onOk={() => { handleOk(form, containerId, datasource, onCreate, onUpdate, uploadingFile) }}
     confirmLoading={loading}
   >
     {uploadCsvFile ?
@@ -139,10 +141,10 @@ const DatasourceForm = ({
         </FormItem>
         <Dragger
           name = 'file'
-          multiple = {true}
+          multiple = {false}
           action = ''
-          onChange = {(info) => handleDraggerChange(info, addToFileList)}
-          beforeUpload = {(file) => fileValidation(file)}
+          onChange = {(info) => handleDraggerChange(info, addUploadingFile)}
+          beforeUpload = {() => {return false}}
         >
           <p className="ant-upload-drag-icon">
             <Icon type="inbox" />
@@ -150,27 +152,11 @@ const DatasourceForm = ({
           <p className="ant-upload-text">Click or drag CSV file to this area to upload</p>
           <p className="ant-upload-hint">Support for a single or bulk upload.</p>
         </Dragger>
-        <List
-          bordered
-          dataSource={uploadingFileList}
-          renderItem={file =>(
-            <List.Item
-                actions={[<Button type="danger" icon="close" onClick={() => { handleUploadingFileDlete(file.uid, removeFromFileList) }} />]}
-            >
-              {file.name}
-            </List.Item>)}
-        />
-        <br/>
-        <FormItem
-          {...formItemLayout}
-          label="Query"
-        >
-          {form.getFieldDecorator('connection.query', {
-            initialValue: datasource ? datasource.connection.query : null
-          })(
-            <TextArea rows={2}/>
-          )}
-        </FormItem>
+        {uploadingFile ?
+          <span><Icon type='paper-clip'/>{uploadingFile.name}</span>
+          :
+          <br/>
+        }
         { error && <Alert message={error} type="error"/>}
       </Form>
       :

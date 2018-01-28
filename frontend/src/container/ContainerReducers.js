@@ -30,8 +30,8 @@ import {
 
 //actions for interacting with datasource form uploading file list
   UPLOAD_CSV_FILE,
-  ADD_TO_FILE_LIST,
-  REMOVE_FROM_FILE_LIST
+  ADD_UPLOADING_FILE,
+  REMOVE_UPLOADING_FILE
 
 } from './ContainerActions';
 
@@ -177,7 +177,8 @@ function containers(state = initialState, action) {
         datasourceError: null,
         datasourceLoading: false,
         datasource: null,
-        datasources: null
+        datasources: null,
+        uploadingFile: null
       });
     case CHANGE_DATASOURCE:
       return Object.assign({}, state, {
@@ -233,24 +234,16 @@ function containers(state = initialState, action) {
       });
 
     //for interacting with datasource form uploaidng file list
-    case ADD_TO_FILE_LIST:
+    case ADD_UPLOADING_FILE:
       console.log("in reducers");
-      console.log(state.uploadingFileList);
-      console.log(state);
       return Object.assign({}, state, {
-        uploadingFileList: [ ...state.uploadingFileList, action.file]
+        uploadingFile: action.file
       });
 
-    case REMOVE_FROM_FILE_LIST:
-      console.log("in reducer REMOVE_FROM_FILE_LIST");
-      const prunedIds = state.uploadingFileList.filter(file => {
-        return file.uid !== action.fileId // return all the items not matching the action.id
-      });
-      console.log(prunedIds);
+    case REMOVE_UPLOADING_FILE:
       return Object.assign({}, state, {
-        uploadingFileList: prunedIds
+        uploadingFile: null
       });
-
     default:
       return state;
   }

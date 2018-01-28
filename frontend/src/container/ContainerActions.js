@@ -29,20 +29,14 @@ export const SUCCESS_DELETE_DATASOURCE = 'SUCCESS_DELETE_DATASOURCE';
 
 //actions for interacting with datasource form uploading file list
 export const UPLOAD_CSV_FILE = 'UPLOAD_CSV_FILE';
-export const REMOVE_FROM_FILE_LIST = 'REMOVE_FROM_FILE_LIST';
-export const ADD_TO_FILE_LIST = 'ADD_TO_FILE_LIST';
+export const ADD_UPLOADING_FILE = 'ADD_UPLOADING_FILE';
+export const REMOVE_UPLOADING_FILE = 'REMOVE_UPLOADING_FILE';
 
 
 //actions for interacting with datasource form uploading file list
-export const addToFileList = (fileId, file) => ({
-  type: ADD_TO_FILE_LIST,
-  fileId,
+export const addUploadingFile = (file) => ({
+  type: ADD_UPLOADING_FILE,
   file
-});
-
-export const removeFromFileList = (fileId) => ({
-  type: REMOVE_FROM_FILE_LIST,
-  fileId
 });
 
 const requestContainers = () => ({
@@ -315,18 +309,29 @@ const successCreateDatasource = () => ({
   type: SUCCESS_CREATE_DATASOURCE
 });
 
-export const createDatasource = (containerId, payload) => dispatch => {
+const removeUploadingFile = () => ({
+  type: REMOVE_UPLOADING_FILE
+})
+
+export const createDatasource = (containerId, payload, file) => dispatch => {
   payload.container = containerId;
   dispatch(beginRequestDatasource());
-  if(payload.connection.dbType==='csv'){
+  //for creating csv file
+  if(payload.dbType==='csv'){
     console.log("creating csv db");
+    //uploading file
+    let data = new FormData();
+    data.append('file', file);
+    data.append('container', containerId);
+    data.append('name', payload.name);
+    data.append('connection', JSON.stringify(payload.connection));
+    data.append('dbType', payload.dbType);
     fetch('/datasource/', {
       method: 'POST',
       headers: {
-        'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
-        'Content-Type': 'multipart/form-data'
+        'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd'
       },
-      body: JSON.stringify(payload)
+      body: data
     })
     .then(response => {
       if (response.status >= 400 && response.status < 600) {
@@ -336,14 +341,15 @@ export const createDatasource = (containerId, payload) => dispatch => {
       } else {
         dispatch(successCreateDatasource());
         dispatch(fetchContainers());
+        dispatch(removeUploadingFile());
       }
     })
     .catch(error => {
       dispatch(failureRequestDatasource('Failed to contact server. Please try again.'));
     })
+
   }
   else{
-    console.log("creating NOT csv db");
     fetch('/datasource/', {
       method: 'POST',
       headers: {

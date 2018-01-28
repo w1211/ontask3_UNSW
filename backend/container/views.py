@@ -47,12 +47,13 @@ class ContainerViewSet(viewsets.ModelViewSet):
                 }
             }
         ]
+        print("here in container view")
         containers = list(Container.objects.aggregate(*pipeline))
         return JsonResponse(json.loads(dumps(containers)), safe=False)
 
     def get_queryset(self):
         return Container.objects.filter(
-            Q(owner = self.request.user.id) | Q(sharing__readOnly__contains = self.request.user.id) | Q(sharing__readWrite__contains = self.request.user.id) 
+            Q(owner = self.request.user.id) | Q(sharing__readOnly__contains = self.request.user.id) | Q(sharing__readWrite__contains = self.request.user.id)
         )
 
     def perform_create(self, serializer):
@@ -87,6 +88,6 @@ class ContainerViewSet(viewsets.ModelViewSet):
          # Ensure that the request.user is the owner of the object
         self.check_object_permissions(self.request, obj)
 
-        # The delete function cascades down datasources & matrices 
+        # The delete function cascades down datasources & matrices
         # This is done via the container field of the datasource & workflow models
         obj.delete()

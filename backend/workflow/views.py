@@ -24,15 +24,15 @@ def combine_data(matrix):
     # }
     # I.e. User with id 1 is John Smith
     column_data = defaultdict(dict)
-    
+
     # Group secondary columns by datasource
     secondary_column_datasource = defaultdict(list)
+    primary_is_integer = True if matrix['primaryColumn'].type == 'number' else False # Dict key for secondary column is string or integer dependant on the primary field type
     for column in matrix['secondaryColumns']:
         secondary_column_datasource[column.datasource].append(column)
 
     for datasource, secondary_columns in secondary_column_datasource.items():
         data = datasource.data # Imported data source which was saved as a dictField in the Matrix model
-        primary_is_integer = True if matrix['primaryColumn'].type == 'number' else False # Dict key for secondary column is string or integer dependant on the primary field type
         for row in data:
             for column in secondary_columns:
                 # Each secondary column is represented by a dict in the column_data defaultdict
@@ -50,7 +50,7 @@ def combine_data(matrix):
     primaryField = primaryColumn.field
     primaryData = primaryColumn.datasource.data
     data = []
-    
+
     for row in primaryData:
         # Construct a dict which will represent a single joined record
         item = {}
@@ -59,7 +59,7 @@ def combine_data(matrix):
         for secondary_column in matrix['secondaryColumns']:
             try:
                 # E.g. item['firstName'] = column_data['firstName'][1] gets the firstName of user with id 1
-                item[secondary_column.field] = column_data[secondary_column.field][row[primaryField]]
+                item[secondary_column.field] = column_data[secondary_column.field][int(row[primaryField]) if primary_is_integer else str(row[primaryField])]
             except KeyError:
                 raise ValidationError('The \'type\' of the primary column is incorrectly configured')
         # We end up with a joined single record
@@ -69,7 +69,7 @@ def combine_data(matrix):
 
     # Define the field (and retain their order) to be consumed by the matrix data table
     columns = [primaryColumn.field] + [secondary_column.field for secondary_column in matrix['secondaryColumns']]
-    
+
     response = {}
     response['data'] = data
     response['columns'] = columns
@@ -96,7 +96,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     def define_matrix(self, request, id=None):
         workflow = Workflow.objects.get(id=id)
         self.check_object_permissions(self.request, workflow)
-
         serializer = WorkflowSerializer(instance=workflow, data={'matrix': request.data}, partial=True)
         serializer.is_valid()
         serializer.save()
@@ -106,7 +105,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     def get_matrix_data(self, request, id=None):
         workflow = Workflow.objects.get(id=id)
         self.check_object_permissions(self.request, workflow)
-
         data = combine_data(workflow.matrix)
         return JsonResponse(data, safe=False)
 

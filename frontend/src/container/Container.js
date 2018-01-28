@@ -126,7 +126,7 @@ class Container extends React.Component {
       containerModalVisible, containerLoading, containerError, container,
       workflowModalVisible, workflowLoading, workflowError, workflow,
       datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
-      uploadCsvFile, uploadingFileList
+      uploadCsvFile, uploadingFile
     } = this.props;
 
     return (
@@ -182,7 +182,7 @@ class Container extends React.Component {
                     datasources={datasources}
                     datasource={datasource}
                     uploadCsvFile={uploadCsvFile}
-                    uploadingFileList={uploadingFileList}
+                    uploadingFile={uploadingFile}
 
                     onChange={this.boundActionCreators.changeDatasource}
                     onCreate={this.boundActionCreators.createDatasource}
@@ -192,7 +192,7 @@ class Container extends React.Component {
 
                     //actions for interacting with datasource form uploading file list
                     onSelect={this.boundActionCreators.handleDatasourceTypeSelction}
-                    addToFileList={this.boundActionCreators.addToFileList}
+                    addUploadingFile={this.boundActionCreators.addUploadingFile}
                     removeFromFileList={this.boundActionCreators.removeFromFileList}
                   />
                   <ContainerList
@@ -232,7 +232,7 @@ const mapStateToProps = (state) => {
     containerModalVisible, containerLoading, containerError, container,
     workflowModalVisible, workflowLoading, workflowError, workflow,
     datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
-    uploadCsvFile, uploadingFileList
+    uploadCsvFile, uploadingFile
   } = state.containers;
   return {
     isFetching, containers, containerAccordionKey, containerId,
@@ -240,7 +240,7 @@ const mapStateToProps = (state) => {
     containerModalVisible, containerLoading, containerError, container,
     workflowModalVisible, workflowLoading, workflowError, workflow,
     datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
-    uploadCsvFile, uploadingFileList
+    uploadCsvFile, uploadingFile
   };
 }
 
