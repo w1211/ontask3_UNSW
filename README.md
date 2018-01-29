@@ -32,7 +32,8 @@ NOSQL_URI = '' # Connection string e.g. 'mongodb://localhost/dbname'
 ## Running the application
 1. Ensure that the virtual environment in which the backend python dependencies were installed is currently active
 2. Start the backend by running `python3 backend/manage.py runserver`
-3. Start the frontend by changing the working directory to `frontend` and running `npm start`
+3. Ensure that the frontend dependencies are installed by changing the working directory to `frontend` and running `npm install`
+4. Start the frontend `npm start` while in the `frontend` working directory
 
 ## Development
 1. Download and install [postgresql](https://www.postgresql.org/)
