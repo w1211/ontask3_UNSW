@@ -138,7 +138,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
             connection['password'] = cipher.encrypt(bytes(connection['password'], encoding="UTF-8"))
         else:
             # Otherwise simply keep the old password (which is already encrypted)
-            connection['password'] = self.get_object()['connection']['password']
+            connection['password'] = bytes(self.get_object()['connection']['password'], encoding="UTF-8")
 
         (data, fields) = self.get_datasource_data(connection)
 
