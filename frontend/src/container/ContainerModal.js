@@ -22,16 +22,16 @@ const handleOk = (form, container, onCreate, onUpdate) => {
       return;
     }
     if (container) {
-      onUpdate(container._id['$oid'], values);
+      onUpdate(container.id, values);
     } else {
       onCreate(values)
     }
   });
 }
 
-const ContainerForm = ({ 
-  form, visible, loading, error, 
-  container, onCreate, onUpdate, onCancel 
+const ContainerModal = ({ 
+  form, visible, loading, error, container, 
+  onCreate, onUpdate, onCancel 
 }) => (
   <Modal
     visible={visible}
@@ -89,4 +89,4 @@ const ContainerForm = ({
   </Modal>
 )
 
-export default Form.create()(ContainerForm)
+export default Form.create()(ContainerModal)

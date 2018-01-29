@@ -1,20 +1,18 @@
 import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
-import PropTypes from 'prop-types';
-import { Link } from 'react-router-dom';
-import { Breadcrumb, Layout, Menu, Icon, Spin, notification, Modal } from 'antd';
-import { Switch, Route, Redirect } from 'react-router-dom';
-
-import { fetchWorkflow } from './WorkflowActions';
-import MatrixDefinitionForm from './MatrixDefinitionForm';
-import DataView from './DataView';
-import Rules from './Rules';
+import { Link, Switch, Route, Redirect } from 'react-router-dom';
+import { Layout, Breadcrumb, Icon, Modal, notification, Spin, Menu } from 'antd';
 
 import * as WorkflowActionCreators from './WorkflowActions';
 
-const { Content, Sider } = Layout;
+import Details from './Details';
+import DataView from './DataView';
+import Action from './Action';
+import ConditionGroupModal from './ConditionGroupModal';
+
 const confirm = Modal.confirm;
+const { Content, Sider } = Layout;
 
 
 class Workflow extends React.Component {
@@ -60,21 +58,7 @@ class Workflow extends React.Component {
     }
   }
 
-  onDeleteRule = (workflow, rule) => {
-    let deleteRule = this.boundActionCreators.deleteRule;
-    confirm({
-      title: 'Confirm rule deletion',
-      content: 'Are you sure you want to delete this rule?',
-      okText: 'Yes, delete it',
-      okType: 'danger',
-      cancelText: 'Cancel',
-      onOk() {
-        deleteRule(workflow, rule);
-      }
-    });
-  }
-
-  onDeleteConditionGroup = (workflow, rule, conditionGroupIndex) => {
+  confirmConditionGroupDelete = (workflowId, conditionGroupIndex) => {
     let deleteRule = this.boundActionCreators.deleteConditionGroup;
     confirm({
       title: 'Confirm condition group deletion',
@@ -83,18 +67,24 @@ class Workflow extends React.Component {
       okType: 'danger',
       cancelText: 'Cancel',
       onOk() {
-        deleteRule(workflow, rule, conditionGroupIndex);
+        deleteRule(workflowId, conditionGroupIndex);
       }
     });
   }
 
+  componentDidMount() {
+    const { match } = this.props;
+    this.boundActionCreators.fetchWorkflow(match.params.id);
+  };
+
   render() {
     const { 
-      dispatch, match, location, isFetching, name, datasources, matrix, workflowLoading, actions,
-      isFetchingData, data, columns, dataError,
-      ruleModalVisible, selectedRule, ruleLoading, ruleError, activeRuleAccordion,
-      conditionGroupModalVisible, selectedConditionGroup, conditionGroupLoading, conditionGroupError, transitoryConditionGroup,
-      conditionGroupForm
+      dispatch, isFetching, match, location, name, details, conditionGroups, datasources,
+      detailsLoading, detailsError,
+      dataLoading, dataError, data, columns,
+      conditionGroupModalVisible, conditionGroupLoading, conditionGroupError, conditionGroup, conditionGroupFormState,
+      actionEditorState, actionContentLoading, actionContentError, content,
+      previewContentModalVisible, previewContentLoading, previewContent
     } = this.props;
     
     return (
@@ -106,7 +96,7 @@ class Workflow extends React.Component {
         </Breadcrumb>
         <Layout style={{ padding: '24px 0', background: '#fff' }}>
           <Content style={{ padding: '0 24px', minHeight: 280 }}>
-            <Layout style={{background: '#fff'}}>
+            <Layout style={{ background: '#fff' }}>
               <Sider width={200}>
                 <Menu
                   mode="inline"
@@ -120,10 +110,10 @@ class Workflow extends React.Component {
                     </Link>
                   </Menu.Item>
                   <Menu.Divider/>
-                  <Menu.Item key="matrix">
-                    <Link to={`${match.url}/matrix`}>
+                  <Menu.Item key="details">
+                    <Link to={`${match.url}/details`}>
                       <Icon type="appstore" />
-                      <span>Matrix definition</span>
+                      <span>Details</span>
                     </Link>
                   </Menu.Item>
                   <Menu.Item key="data">
@@ -132,77 +122,89 @@ class Workflow extends React.Component {
                       <span>Data view</span>
                     </Link>
                   </Menu.Item>
-                  <Menu.Item key="rules">
-                    <Link to={`${match.url}/rules`}>
+                  <Menu.Item key="action">
+                    <Link to={`${match.url}/action`}>
                       <Icon type="form" />
-                      <span>Rules</span>
+                      <span>Action</span>
                     </Link>
                   </Menu.Item>
                 </Menu>
               </Sider>
               <Content style={{ padding: '0 24px', minHeight: 280 }}>
-                <div style={{display: 'flex', alignItems: 'center', marginBottom: '1em'}}>
-                  <h1 style={{display: 'inline-block', margin: 0}}>{name}</h1>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1em' }}>
+                  <h1 style={{ display: 'inline-block', margin: 0 }}>{name}</h1>
                 </div>
                 { isFetching ? 
                   <Spin size="large" />
                 :
                   <Switch>
-                    <Redirect exact from={match.url} to={`${match.url}/matrix`}/>
-                    <Route path={`${match.url}/matrix`} render={()=>
-                      <MatrixDefinitionForm 
+                    <Redirect exact from={match.url} to={`${match.url}/details`}/>
+                    <Route path={`${match.url}/details`} render={()=>
+                      <Details 
+                        loading={detailsLoading}
+                        error={detailsError}
                         datasources={datasources} 
-                        matrix={matrix}
+                        details={details}
+
                         addSecondaryColumn={this.boundActionCreators.addSecondaryColumn}
                         deleteSecondaryColumn={this.boundActionCreators.deleteSecondaryColumn}
-                        ref={(form) => {this.matrixDefinitionForm = form}}
-                        onUpdate={(matrix) => {this.boundActionCreators.defineMatrix(match.params.id, matrix)}}
-                        loading={workflowLoading}
+                        onUpdate={(details) => { this.boundActionCreators.updateDetails(match.params.id, details) }}
                       />}
                     />
                     <Route path={`${match.url}/data`} render={()=>
                       <DataView 
-                        fetchMatrixData={() => { this.boundActionCreators.fetchMatrixData(match.params.id) }}
-                        isFetchingData={isFetchingData}
+                        loading={dataLoading}
+                        error={dataError}
                         data={data}
                         columns={columns}
-                        dataError={dataError}
+                        
+                        fetchData={() => { this.boundActionCreators.fetchData(match.params.id) }}
                       />}
                     />
-                    <Route path={`${match.url}/rules`} render={()=>
-                      <Rules 
-                        ruleModalVisible = {ruleModalVisible}
-                        selectedRule = {selectedRule}
-                        ruleLoading = {ruleLoading}
-                        ruleError = {ruleError}
-                        openRuleModal= {(rule) => { dispatch(this.boundActionCreators.openRuleModal(rule)) }}
-                        onCancelRule = {() => { dispatch(this.boundActionCreators.closeRuleModal) }}
-                        onCreateRule = {(rule) => this.boundActionCreators.createRule(match.params.id, rule)}
-                        onUpdateRule = {(rule, payload) => this.boundActionCreators.updateRule(match.params.id, rule, payload)}
-                        rules = {actions}
-                        activeRuleAccordion = {activeRuleAccordion}
-                        changeActiveAccordion = {(key) => this.boundActionCreators.changeActiveRuleAccordion(key)}
-                        onDeleteRule = {(rule) => { this.onDeleteRule(match.params.id, rule) }}
-                        conditionGroupModalVisible = {conditionGroupModalVisible}
-                        selectedConditionGroup = {selectedConditionGroup}
-                        conditionGroupLoading = {conditionGroupLoading}
-                        conditionGroupError = {conditionGroupError}
-                        openConditionGroupModal = {(rule) => { dispatch(this.boundActionCreators.openConditionGroupModal(rule)) }}
-                        onCancelConditionGroup = {() => { dispatch(this.boundActionCreators.closeConditionGroupModal) }}
-                        onChangeConditionGroup = {this.boundActionCreators.changeConditionGroup}
-                        onCreateConditionGroup = {(actionId, payload) => this.boundActionCreators.createConditionGroup(match.params.id, actionId, payload)}
-                        onUpdateConditionGroup = {(actionId, selected, payload) => this.boundActionCreators.updateConditionGroup(match.params.id, actionId, selected, payload)}
-                        onDeleteConditionGroup = {(actionId, index) => this.onDeleteConditionGroup(match.params.id, actionId, index)}
-                        matrix = {matrix}
-                        transitoryConditionGroup = {transitoryConditionGroup}
-                        addCondition = {this.boundActionCreators.addCondition}
-                        addFormula = {(conditionIndex) => { this.boundActionCreators.addFormula(conditionIndex) }}
-                        deleteCondition = {(index) => { this.boundActionCreators.deleteCondition(index) }}
-                        deleteFormula = {(conditionIndex, formulaIndex) => { this.boundActionCreators.deleteFormula(conditionIndex, formulaIndex) }}
-                        conditionGroupForm = {conditionGroupForm}
-                        updateConditionGroupForm = {(payload) => { dispatch(this.boundActionCreators.mergeConditionGroupForm(payload)) }}
-                      />}
-                    />
+                    <Route path={`${match.url}/action`} render={()=>
+                      <div>
+                        <ConditionGroupModal
+                          visible={conditionGroupModalVisible}
+                          loading={conditionGroupLoading}
+                          error={conditionGroupError}
+                          details={details}
+                          conditionGroup={conditionGroup}
+                          formState={conditionGroupFormState}
+
+                          onCreate={(payload) => { this.boundActionCreators.createConditionGroup(match.params.id, payload) }}
+                          onUpdate={(conditionGroup, payload) => { this.boundActionCreators.updateConditionGroup(match.params.id, conditionGroup, payload) }}
+                          onCancel={() => { dispatch(this.boundActionCreators.closeConditionGroupModal()) }}
+
+                          addCondition={this.boundActionCreators.addCondition}
+                          deleteCondition={this.boundActionCreators.deleteCondition}
+                          addFormula={this.boundActionCreators.addFormula}
+                          deleteFormula={this.boundActionCreators.deleteFormula}
+                          updateFormState={this.boundActionCreators.updateConditionGroupFormState}
+                        />
+                        <Action
+                          contentLoading={actionContentLoading}
+                          error={actionContentError}
+                          conditionGroups={conditionGroups}
+                          editorState={actionEditorState}
+                          content={content}
+
+                          openFilterModal={(filter) => { dispatch(this.boundActionCreators.openFilterModal(filter)) }}
+                          confirmFilterDelete={this.confirmFilterDelete}
+
+                          openConditionGroupModal={(conditionGroup) => { dispatch(this.boundActionCreators.openConditionGroupModal(conditionGroup)) }}
+                          confirmConditionGroupDelete={(conditionGroupIndex) => { this.confirmConditionGroupDelete(match.params.id, conditionGroupIndex) }}
+
+                          updateEditorState={(payload) => { dispatch(this.boundActionCreators.updateEditorState(payload)) }}
+                          onUpdateContent={(payload) => { this.boundActionCreators.updateContent(match.params.id, payload) }}
+
+                          previewLoading={previewContentLoading}
+                          previewVisible={previewContentModalVisible}
+                          previewContent={previewContent}
+                          onPreviewContent={(payload) => { this.boundActionCreators.previewContent(match.params.id, payload) }}
+                          onClosePreview={() => { dispatch(this.boundActionCreators.closePreviewContent()) }}
+                        />
+                      </div>
+                    }/>
                   </Switch>
                 }
               </Content>
@@ -213,33 +215,26 @@ class Workflow extends React.Component {
     );
   };
 
-  componentDidMount() {
-    const { dispatch, match } = this.props;
-    dispatch(fetchWorkflow(match.params.id));
-  };
-
 };
-
-Workflow.propTypes = {
-  dispatch: PropTypes.func.isRequired
-}
 
 const mapStateToProps = (state) => {
   const {
-    isFetching, name, matrix, actions, datasources, didCreate, didUpdate, didDelete,
-    workflowLoading, workflowError, model,
-    isFetchingData, data, columns, dataError,
-    ruleModalVisible, selectedRule, ruleLoading, ruleError, activeRuleAccordion,
-    conditionGroupModalVisible, selectedConditionGroup, conditionGroupLoading, conditionGroupError, transitoryConditionGroup,
-    conditionGroupForm
+    isFetching, name, details, conditionGroups, datasources,
+    didCreate, didUpdate, didDelete, model,
+    detailsLoading, detailsError,
+    dataLoading, dataError, data, columns,
+    conditionGroupModalVisible, conditionGroupLoading, conditionGroupError, conditionGroup, conditionGroupFormState,
+    actionEditorState, actionContentLoading, actionContentError, content,
+    previewContentModalVisible, previewContentLoading, previewContent
   } = state.workflow;
   return {
-    isFetching, name, matrix, actions, datasources, didCreate, didUpdate, didDelete,
-    workflowLoading, workflowError, model,
-    isFetchingData, data, columns, dataError,
-    ruleModalVisible, selectedRule, ruleLoading, ruleError, activeRuleAccordion,
-    conditionGroupModalVisible, selectedConditionGroup, conditionGroupLoading, conditionGroupError, transitoryConditionGroup,
-    conditionGroupForm
+    isFetching, name, details, conditionGroups, datasources,
+    didCreate, didUpdate, didDelete, model,
+    detailsLoading, detailsError,
+    dataLoading, dataError, data, columns,
+    conditionGroupModalVisible, conditionGroupLoading, conditionGroupError, conditionGroup, conditionGroupFormState,
+    actionEditorState, actionContentLoading, actionContentError, content,
+    previewContentModalVisible, previewContentLoading, previewContent
   };
 }
 

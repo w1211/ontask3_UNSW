@@ -1,31 +1,35 @@
 import {
   REQUEST_WORKFLOW,
   RECEIVE_WORKFLOW,
-  REFRESH_MATRIX,
-  BEGIN_REQUEST_MATRIX,
-  FAILURE_REQUEST_MATRIX,
-  SUCCESS_UPDATE_MATRIX,
+
+  REFRESH_DETAILS,
+  BEGIN_REQUEST_DETAILS,
+  FAILURE_REQUEST_DETAILS,
+  SUCCESS_UPDATE_DETAILS,
+
   BEGIN_REQUEST_DATA,
   SUCCESS_REQUEST_DATA,
   FAILURE_REQUEST_DATA,
-  OPEN_RULE_MODAL,
-  CLOSE_RULE_MODAL,
-  BEGIN_REQUEST_RULE_FORM,
-  FAILURE_REQUEST_RULE_FORM,
-  SUCCESS_CREATE_RULE,
-  CHANGE_ACTIVE_RULE_ACCORDION,
-  SUCCESS_UPDATE_RULE,
-  SUCCESS_DELETE_RULE,
+
   OPEN_CONDITION_GROUP_MODAL,
   CLOSE_CONDITION_GROUP_MODAL,
-  CHANGE_CONDITION_GROUP,
+  REFRESH_CONDITION_GROUP_FORM_STATE,
+  UPDATE_CONDITION_GROUP_FORM_STATE,
   BEGIN_REQUEST_CONDITION_GROUP,
   FAILURE_REQUEST_CONDITION_GROUP,
   SUCCESS_CREATE_CONDITION_GROUP,
-  UPDATE_CONDITION_GROUP_FORM,
-  MERGE_CONDITION_GROUP_FORM,
   SUCCESS_UPDATE_CONDITION_GROUP,
-  SUCCESS_DELETE_CONDITION_GROUP
+  SUCCESS_DELETE_CONDITION_GROUP,
+
+  UPDATE_EDITOR_STATE,
+  BEGIN_REQUEST_CONTENT,
+  FAILURE_REQUEST_CONTENT,
+  SUCCESS_UPDATE_CONTENT,
+  
+  BEGIN_REQUEST_PREVIEW_CONTENT,
+  FAILURE_REQUEST_PREVIEW_CONTENT,
+  SUCCESS_PREVIEW_CONTENT,
+  CLOSE_PREVIEW_CONTENT
 } from './WorkflowActions';
 
 import _ from 'lodash';
@@ -55,123 +59,83 @@ function workflow(state = initialState, action) {
       return Object.assign({}, state, {
         isFetching: false,
         name: action.name,
-        matrix: action.matrix,
-        actions: action.actions,
-        datasources: action.datasources
+        details: action.details,
+        conditionGroups: action.conditionGroups,
+        datasources: action.datasources,
+        content: action.content
       });
     
-    // Matrix actions
-    case REFRESH_MATRIX:
+    // Details actions
+    case REFRESH_DETAILS:
       return Object.assign({}, state, {
-        matrix: action.matrix,
-        didUpdate: false,
+        details: action.details,
+        didUpdate: false
       });
-    case BEGIN_REQUEST_MATRIX:
+    case BEGIN_REQUEST_DETAILS:
       return Object.assign({}, state, {
-        workflowLoading: true,
+        detailsLoading: true,
       });
-    case FAILURE_REQUEST_MATRIX:
+    case FAILURE_REQUEST_DETAILS:
       return Object.assign({}, state, {
-        workflowLoading: false,
-        workflowError: action.error
+        detailsLoading: false,
+        detailsError: action.error
       });
-    case SUCCESS_UPDATE_MATRIX:
+    case SUCCESS_UPDATE_DETAILS:
       return Object.assign({}, state, {
-        workflowLoading: false,
-        workflowError: null,
+        detailsLoading: false,
+        detailsError: null,
         didUpdate: true,
-        model: 'matrix'
+        model: 'details'
       });
 
-    // Matrix data actions
+    // Data actions
     case BEGIN_REQUEST_DATA:
       return Object.assign({}, state, {
-        isFetchingData: true
+        dataLoading: true
       });
     case SUCCESS_REQUEST_DATA:
       return Object.assign({}, state, {
-        isFetchingData: false,
+        dataLoading: false,
         data: action.data,
         columns: action.columns,
         dataError: null
       });
     case FAILURE_REQUEST_DATA:
       return Object.assign({}, state, {
-        isFetchingData: false,
+        dataLoading: false,
         data: null,
         columns: null,
         dataError: action.error
-      });
-
-    // Shared rule actions
-    case OPEN_RULE_MODAL:
-      return Object.assign({}, state, {
-        ruleModalVisible: true,
-        selectedRule: action.rule
-      });
-    case CLOSE_RULE_MODAL:
-      return Object.assign({}, state, {
-        ruleModalVisible: false,
-        ruleError: null,
-        ruleLoading: false
-      });
-    case BEGIN_REQUEST_RULE_FORM:
-      return Object.assign({}, state, {
-        ruleLoading: true,
-      });
-    case FAILURE_REQUEST_RULE_FORM:
-      return Object.assign({}, state, {
-        ruleLoading: false,
-        ruleError: action.error
-      });
-    case CHANGE_ACTIVE_RULE_ACCORDION:
-      return Object.assign({}, state, {
-        activeRuleAccordion: action.key
-      });
-
-    // Specific rule actions
-    case SUCCESS_CREATE_RULE:
-      return Object.assign({}, state, {
-        ruleModalVisible: false,
-        ruleLoading: false,
-        ruleError: null,
-        didCreate: true,
-        model: 'rule'
-      });
-    case SUCCESS_UPDATE_RULE:
-      return Object.assign({}, state, {
-        ruleModalVisible: false,
-        ruleLoading: false,
-        ruleError: null,
-        didUpdate: true,
-        model: 'rule'
-      });
-    case SUCCESS_DELETE_RULE:
-      return Object.assign({}, state, {
-        ruleLoading: false,
-        didDelete: true,
-        model: 'rule'
       });
 
     // Shared condition group actions
     case OPEN_CONDITION_GROUP_MODAL:
       return Object.assign({}, state, {
         conditionGroupModalVisible: true,
-        selectedRule: action.rule,
-        conditionGroupForm: action.conditionGroupForm
+        conditionGroup: action.conditionGroup,
+        conditionGroupFormState: action.formState
       });
     case CLOSE_CONDITION_GROUP_MODAL:
       return Object.assign({}, state, {
         conditionGroupModalVisible: false,
         conditionGroupError: null,
         conditionGroupLoading: false,
-        selectedConditionGroup: null,
-        conditionGroupForm: null
+        conditionGroup: null,
+        conditionGroupFormState: null
       });
-    case CHANGE_CONDITION_GROUP:
+    // Used when a condition or formula is added to a condition group
+    case REFRESH_CONDITION_GROUP_FORM_STATE:
       return Object.assign({}, state, {
-        selectedConditionGroup: action.conditionGroup,
-        conditionGroupForm: action.conditionGroupForm
+        conditionGroupFormState: action.payload
+      });
+    // Used when a field is changed in the condition group form
+    case UPDATE_CONDITION_GROUP_FORM_STATE:
+      return Object.assign({}, state, {
+        // By design in ant design forms, if a field belonging to a list is updated, then the payload is given by:
+        // [null, null, updated_field, null] where null are the unchanged fields in the list
+        // Therefore, when updating the form state we must ensure that the null fields do not overwrite the values of those fields in the state
+        // This is handled by the merge function from lodash, a third party plugin
+        conditionGroupFormState: _.merge(state.conditionGroupFormState, action.payload)
       });
     case BEGIN_REQUEST_CONDITION_GROUP:
       return Object.assign({}, state, {
@@ -191,7 +155,7 @@ function workflow(state = initialState, action) {
         conditionGroupError: null,
         didCreate: true,
         model: 'condition group',
-        conditionGroupForm: null
+        conditionGroupFormState: null
       });
     case SUCCESS_UPDATE_CONDITION_GROUP:
       return Object.assign({}, state, {
@@ -200,8 +164,8 @@ function workflow(state = initialState, action) {
         conditionGroupError: null,
         didUpdate: true,
         model: 'condition group',
-        conditionGroupForm: null,
-        selectedConditionGroup: null
+        conditionGroupFormState: null,
+        conditionGroup: null
       });
     case SUCCESS_DELETE_CONDITION_GROUP:
       return Object.assign({}, state, {
@@ -211,22 +175,52 @@ function workflow(state = initialState, action) {
         didDelete: true,
         model: 'condition group',
         conditionGroupForm: null,
-        selectedConditionGroup: null
+        conditionGroup: null
+      });
+    
+    // Action actions
+    case UPDATE_EDITOR_STATE:
+      return Object.assign({}, state, {
+        actionEditorState: action.payload
+      });  
+    case BEGIN_REQUEST_CONTENT:
+      return Object.assign({}, state, {
+        actionContentLoading: true
+      });
+    case FAILURE_REQUEST_CONTENT:
+      return Object.assign({}, state, {
+        actionContentLoading: false,
+        actionContentError: action.error
+      });
+    case SUCCESS_UPDATE_CONTENT:
+      return Object.assign({}, state, {
+        actionContentLoading: false,
+        actionContentError: null,
+        didUpdate: true,
+        model: 'content'
+      });
+    case BEGIN_REQUEST_PREVIEW_CONTENT:
+      return Object.assign({}, state, {
+        previewContentLoading: true
+      });
+    case FAILURE_REQUEST_PREVIEW_CONTENT:
+      return Object.assign({}, state, {
+        previewContentLoading: false,
+        actionContentError: action.error
+      });
+    case SUCCESS_PREVIEW_CONTENT:
+      return Object.assign({}, state, {
+        previewContentLoading: false,
+        actionContentError: null,
+        previewContentModalVisible: true,
+        previewContent: action.preview
+      });
+    case CLOSE_PREVIEW_CONTENT:
+      return Object.assign({}, state, {
+        previewContentModalVisible: false,
+        previewContent: null
       });
 
-    case UPDATE_CONDITION_GROUP_FORM:
-      return Object.assign({}, state, {
-        conditionGroupForm: action.payload
-      });
-    case MERGE_CONDITION_GROUP_FORM:
-      return Object.assign({}, state, {
-        // TO DO: explain why lodash merge is used here
-        // Nested form list field onfieldchange is returned as [null, null, updated_field, null]
-        // So we need to use a third-party object merge function to avoid overwiting list elements with null
-        conditionGroupForm: _.merge(state.conditionGroupForm, action.payload)
-      });
-      
-      
     default:
       return state;
   }

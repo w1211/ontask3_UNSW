@@ -26,15 +26,15 @@ const ContainerPanelHeader = ({ container, openContainerModal, confirmContainerD
       <Button disabled icon="share-alt"/>
     </ButtonGroup>
     <Tooltip title="Modify datasources">
-      <Button icon="hdd" style={ButtonStyle} onClick={(e) => { e.stopPropagation(); openDatasourceModal(container._id['$oid'], container.datasources); }}>
+      <Button icon="hdd" style={ButtonStyle} onClick={(e) => { e.stopPropagation(); openDatasourceModal(container.id, container.datasources); }}>
         <Badge count={container.datasources.length} showZero style={{ backgroundColor: '#616161' }} />
       </Button>
     </Tooltip>
-    <Button style={ButtonStyle} onClick={(e) => { e.stopPropagation(); openWorkflowModal(container._id['$oid']); }}>
+    <Button style={ButtonStyle} onClick={(e) => { e.stopPropagation(); openWorkflowModal(container.id); }}>
       <Icon type="plus"/>New Workflow
     </Button>
     <Tooltip title="Delete container">
-      <Button type="danger" icon="delete" style={ButtonStyle} onClick={(e) => { e.stopPropagation(); confirmContainerDelete(container._id['$oid']); }}/>
+      <Button type="danger" icon="delete" style={ButtonStyle} onClick={(e) => { e.stopPropagation(); confirmContainerDelete(container.id); }}/>
     </Tooltip>
   </div>
 </div>
@@ -81,15 +81,15 @@ const ContainerList = ({
                   title={<WorkflowCardHeader title={workflow.name}/>}
                   actions={[
                     <Tooltip title="Enter workflow">
-                      <Link to={`/workflow/${workflow._id['$oid']}`}>
+                      <Link to={`/workflow/${workflow.id}`}>
                         <Button icon="arrow-right"/>
                       </Link>
                     </Tooltip>,
                     <Tooltip title="Edit workflow">
-                      <Button icon="edit"  onClick={() => { openWorkflowModal(container._id['$oid'], workflow) }}/>
+                      <Button icon="edit"  onClick={() => { openWorkflowModal(container.id, workflow) }}/>
                     </Tooltip>,
                     <Tooltip title="Delete workflow">
-                      <Button type="danger" icon="delete" onClick={() => { confirmWorkflowDelete(workflow._id['$oid']) }}/>
+                      <Button type="danger" icon="delete" onClick={() => { confirmWorkflowDelete(workflow.id) }}/>
                     </Tooltip>
                   ]}
                   >

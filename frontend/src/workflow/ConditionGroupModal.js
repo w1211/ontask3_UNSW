@@ -1,8 +1,7 @@
 import React from 'react';
-
 import { Modal, Form, Input, Alert, Select, Button, Row, Tree, Cascader, Icon } from 'antd';
 
-import './ConditionGroupsForm.css';
+import './ConditionGroupModal.css';
 
 const TreeNode = Tree.TreeNode;
 const FormItem = Form.Item;
@@ -28,16 +27,15 @@ const panelLayout = {
   position: 'relative'
 };
 
-const ConditionGroupsForm = ({ 
-  form, visible, loading, error,
-  onChange, onCreate, onUpdate, onCancel, onDelete,
-  matrix, groups, selected,
-  addCondition, addFormula, deleteCondition, deleteFormula,
-  updateConditionGroupForm, conditionGroupForm
+
+const ConditionGroupModal = ({ 
+  form, visible, loading, error, details, conditionGroup, formState,
+  onCreate, onUpdate, onCancel,
+  addCondition, addFormula, deleteCondition, deleteFormula, updateFormState
 }) => {
   
   // Initialize the options for the field/operator cascader
-  const options = matrix ? matrix.secondaryColumns.map(secondaryColumn => {
+  const options = details ? details.secondaryColumns.map(secondaryColumn => {
     return {
       value: secondaryColumn.field,
       label: secondaryColumn.field,
@@ -61,17 +59,13 @@ const ConditionGroupsForm = ({
   return (
     <Modal
       visible={visible}
-      title='Condition Groups'
-      okText={selected ? 'Update' : 'Create'}
+      title={conditionGroup ? 'Update condition group' : 'Create condition group'}
+      okText={conditionGroup ? 'Update' : 'Create'}
       onCancel={() => { form.resetFields(); onCancel(); }}
-      onOk={() => { handleOk(form, selected, onCreate, onUpdate) }}
+      onOk={() => { handleOk(form, conditionGroup, onCreate, onUpdate); }}
       confirmLoading={loading}
     >
       <Form layout="horizontal">
-        <FormItem {...formItemLayout} label="Condition Group">
-          <GroupPicker form={form} onChange={onChange} onDelete={onDelete} groups={groups} selected={selected}/>
-        </FormItem>
-        
         <FormItem {...formItemLayout} label="Name">
           {form.getFieldDecorator('name', {
             rules: [{ required: true, message: 'Name is required' }]
@@ -80,14 +74,14 @@ const ConditionGroupsForm = ({
           )}
         </FormItem>
 
-        <Button onClick={(e) => { e.stopPropagation(); addCondition()}} style={{textAlign: 'right', marginBottom: '5px'}}>
+        <Button onClick={(e) => { e.stopPropagation(); addCondition(); }} style={{ textAlign: 'right', marginBottom: '5px' }}>
           <Icon type="plus"/>Add Condition
         </Button>
         
         <QueryBuilder 
           form={form} options={options}
           addFormula={addFormula} deleteCondition={deleteCondition} deleteFormula={deleteFormula}
-          conditionGroupForm={conditionGroupForm} 
+          formState={formState} 
         />
 
         { error && <Alert message={error} type="error"/>}
@@ -100,38 +94,14 @@ const ConditionGroupsForm = ({
   )
 }
 
-const GroupPicker = ({ form, onChange, onDelete, groups, selected }) => {
-  return (
-    <div style={{display: 'inline-flex', width: '100%'}}>
-      <Select value={selected ? selected.name : null} onChange={(value) => { handleChange(form, onChange, groups, value) }}>
-        <Option value={null} key={null}><i>Create new condition group</i></Option>
-        { groups && groups.map((group, index) => (
-          <Option value={group.name} key={index}>{group.name}</Option>
-        ))}
-      </Select>
-      <Button disabled={selected ? false : true} onClick={() => { onDelete(groups.findIndex(group => group.name === selected.name)) }} type="danger" icon="delete" style={{marginLeft: '10px'}}/>
-    </div>
-  )
-}
-
-const handleChange = (form, onChange, groups, value) => {
-  form.resetFields();
-  let selected = groups.find(group => { return group.name === value });
-  onChange(selected);
-}
-
-const QueryBuilder = ({ 
-  form, options,
-  addFormula, deleteCondition, deleteFormula,
-  conditionGroupForm
-}) => {
+const QueryBuilder = ({ form, options, formState, addFormula, deleteCondition, deleteFormula }) => {
   return (
     
-    <Row style={{...panelLayout}}>
-      {conditionGroupForm && conditionGroupForm.conditions && conditionGroupForm.conditions.length > 0 ? 
-        <Tree showLine defaultExpandAll={true} className="queryBuilder" expandedKeys={conditionGroupForm.conditions.map((_, i) => { return i.toString()})}>
-          { conditionGroupForm.conditions.map((condition, i) => {
-            const conditionCount = conditionGroupForm.conditions.length;
+    <Row style={{ ...panelLayout }}>
+      {formState && formState.conditions && formState.conditions.length > 0 ? 
+        <Tree showLine defaultExpandAll={true} className="queryBuilder" expandedKeys={formState.conditions.map((_, i) => { return i.toString()})}>
+          { formState.conditions.map((condition, i) => {
+            const conditionCount = formState.conditions.length;
             const formulaCount = condition.formulas.length;
             return (
               <TreeNode title={<Condition form={form} conditionCount={conditionCount} formulaCount={formulaCount} addFormula={addFormula} deleteCondition={deleteCondition} index={i}/>} key={i}>
@@ -151,7 +121,7 @@ const QueryBuilder = ({
 
 const Condition = ({ form, index, conditionCount, formulaCount, addFormula, deleteCondition }) => {
   return (
-    <div style={{display:'flex'}}> 
+    <div style={{ display:'flex' }}> 
       {form.getFieldDecorator(`conditions[${index}].name`, {
         rules: [{ required: true, message: 'Name is required' }]
       })(
@@ -164,7 +134,7 @@ const Condition = ({ form, index, conditionCount, formulaCount, addFormula, dele
 
 const ConditionControls = ({ form, type, index, conditionCount, formulaCount, addFormula, deleteCondition }) => {
   return (
-    <div style={{display:'flex'}}> 
+    <div style={{ display:'flex' }}> 
       {/* 
       <Dropdown overlay={
         <Menu>
@@ -172,21 +142,21 @@ const ConditionControls = ({ form, type, index, conditionCount, formulaCount, ad
           <Menu.Item key="1">Add group</Menu.Item>
         </Menu>
       } trigger={['click']}>
-        <Button size="small" icon="plus" shape="circle" style={{marginLeft:'3px'}}/>
+        <Button size="small" icon="plus" shape="circle" style={{ marginLeft:'3px' }}/>
       </Dropdown>
       */}
-      <Button onClick={(e) => {  e.stopPropagation(); addFormula(index) }} size="small" icon="plus" shape="circle" style={{marginLeft:'3px'}}/>
+      <Button onClick={(e) => {  e.stopPropagation(); addFormula(index) }} size="small" icon="plus" shape="circle" style={{ marginLeft:'3px' }}/>
       {formulaCount > 1 && form.getFieldDecorator(`conditions[${index}].type`, {
         rules: [{ required: true, message: 'Type is required' }],
         initialValue: "and"
       })(
-        <Select size="small" style={{marginLeft: '3px', width: '66px'}}>
+        <Select size="small" style={{ marginLeft: '3px', width: '66px' }}>
           <Option value="and">AND</Option>
           <Option value="or">OR</Option>
         </Select>
       )}
       {conditionCount > 1 && (
-        <Button onClick={(e) => {  e.stopPropagation(); deleteCondition(index) }} disabled={conditionCount < 2} size="small" type="danger" icon="delete" shape="circle" style={{marginLeft:'3px'}}/>
+        <Button onClick={(e) => { e.stopPropagation(); deleteCondition(index); }} disabled={conditionCount < 2} size="small" type="danger" icon="delete" shape="circle" style={{ marginLeft:'3px' }}/>
       )}
       </div>
   );
@@ -194,7 +164,7 @@ const ConditionControls = ({ form, type, index, conditionCount, formulaCount, ad
 
 const Field = ({ form, options, formula, i, j, formulaCount, deleteFormula }) => {
   return (
-    <div style={{display:'flex'}}> 
+    <div style={{ display:'flex' }}> 
       {form.getFieldDecorator(`conditions[${i}].formulas[${j}].fieldOperator`, {
         rules: [{ required: true, message: 'Formula is required' }]
       })(
@@ -203,22 +173,22 @@ const Field = ({ form, options, formula, i, j, formulaCount, deleteFormula }) =>
       {form.getFieldDecorator(`conditions[${i}].formulas[${j}].comparator`, {
         rules: [{ required: true, message: 'Comparator is required' }]
       })(
-        <Input size="small" placeholder="Comparator" style={{marginLeft:'3px'}}/>
+        <Input size="small" placeholder="Comparator" style={{ marginLeft:'3px' }}/>
       )}
       {formulaCount > 1 && (
-        <Button onClick={(e) => {  e.stopPropagation(); deleteFormula(i, j) }} size="small" type="danger" icon="delete" shape="circle" style={{marginLeft:'3px'}}/>
+        <Button onClick={(e) => { e.stopPropagation(); deleteFormula(i, j); }} size="small" type="danger" icon="delete" shape="circle" style={{ marginLeft:'3px' }}/>
       )}
       </div>
   )
 }
 
-const handleOk = (form, selected, onCreate, onUpdate) => {
+const handleOk = (form, conditionGroup, onCreate, onUpdate) => {
   form.validateFields((err, values) => {
     if (err) {
       return;
     }
-    if (selected) {
-      onUpdate(selected, values);
+    if (conditionGroup) {
+      onUpdate(conditionGroup, values);
     } else {
       onCreate(values)
     }
@@ -228,7 +198,7 @@ const handleOk = (form, selected, onCreate, onUpdate) => {
 
 export default Form.create({
   onFieldsChange(props, payload) {
-    props.updateConditionGroupForm(payload)
+    props.updateFormState(payload)
   },
   // Map the form object from Redux into a list of FormField objects, where the
   // key is the field name (nested fields included)
@@ -236,26 +206,26 @@ export default Form.create({
     let fields = {}
     
     fields.name = Form.createFormField(
-      props.conditionGroupForm && props.conditionGroupForm.name ? {
-        ...props.conditionGroupForm.name,
-        value: props.conditionGroupForm.name.value
+      props.formState && props.formState.name ? {
+        ...props.formState.name,
+        value: props.formState.name.value
       } : {}
     );
     
-    if (props.conditionGroupForm && props.conditionGroupForm.conditions) {
-      props.conditionGroupForm.conditions.forEach((condition, i) => {
+    if (props.formState && props.formState.conditions) {
+      props.formState.conditions.forEach((condition, i) => {
 
           fields[`conditions[${i}].name`] = Form.createFormField(
-            props.conditionGroupForm.conditions[i].name ? {
-              ...props.conditionGroupForm.conditions[i].name,
-              value: props.conditionGroupForm.conditions[i].name.value
+            props.formState.conditions[i].name ? {
+              ...props.formState.conditions[i].name,
+              value: props.formState.conditions[i].name.value
             } : {}
           );
 
           fields[`conditions[${i}].type`] = Form.createFormField(
-            props.conditionGroupForm.conditions[i].type ? {
-              ...props.conditionGroupForm.conditions[i].type,
-              value: props.conditionGroupForm.conditions[i].type.value
+            props.formState.conditions[i].type ? {
+              ...props.formState.conditions[i].type,
+              value: props.formState.conditions[i].type.value
             } : {}
           );
 
@@ -263,16 +233,16 @@ export default Form.create({
             condition.formulas.forEach((formula, j) => {
               
               fields[`conditions[${i}].formulas[${j}].fieldOperator`] = Form.createFormField(
-                props.conditionGroupForm.conditions[i].formulas[j].fieldOperator ? {
-                  ...props.conditionGroupForm.conditions[i].formulas[j].fieldOperator,
-                  value: props.conditionGroupForm.conditions[i].formulas[j].fieldOperator.value
+                props.formState.conditions[i].formulas[j].fieldOperator ? {
+                  ...props.formState.conditions[i].formulas[j].fieldOperator,
+                  value: props.formState.conditions[i].formulas[j].fieldOperator.value
                 } : {}
               );
 
               fields[`conditions[${i}].formulas[${j}].comparator`] = Form.createFormField(
-                props.conditionGroupForm.conditions[i].formulas[j].comparator ? {
-                  ...props.conditionGroupForm.conditions[i].formulas[j].comparator,
-                  value: props.conditionGroupForm.conditions[i].formulas[j].comparator.value
+                props.formState.conditions[i].formulas[j].comparator ? {
+                  ...props.formState.conditions[i].formulas[j].comparator,
+                  value: props.formState.conditions[i].formulas[j].comparator.value
                 } : {}
               );
               
@@ -284,4 +254,4 @@ export default Form.create({
 
     return fields;
   }
-})(ConditionGroupsForm)
+})(ConditionGroupModal)

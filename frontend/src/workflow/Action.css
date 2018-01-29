@@ -1,0 +1,12 @@
+.action .editor {
+  border: 1px solid #F1F1F1;
+  padding: 0 10px;
+  min-height: 300px;
+  max-height: 300px;
+  overflow-y: scroll;
+}
+
+/* Padding fix for toolbar modals in content editor */
+.action .editor-wrapper * {
+  box-sizing: initial !important;
+}

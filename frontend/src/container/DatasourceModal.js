@@ -24,7 +24,7 @@ const handleOk = (form, containerId, datasource, onCreate, onUpdate, uploadingFi
       return;
     }
     if (datasource) {
-      onUpdate(datasource._id['$oid'], values);
+      onUpdate(datasource.id, values);
     } else {
       values['dbType'] = values.connection.dbType;
       console.log(values);
@@ -39,7 +39,7 @@ const handleOk = (form, containerId, datasource, onCreate, onUpdate, uploadingFi
 
 const handleChange = (selectedId, onChange, form, datasources) => {
   form.resetFields();
-  const datasource = datasources.find(datasource => { return datasource._id['$oid'] === selectedId });
+  const datasource = datasources.find(datasource => { return datasource.id === selectedId });
   if(datasource!==undefined && datasource.connection.dbType==='csv'){
     onChange(datasource, true);
   }
@@ -82,10 +82,10 @@ const handleDraggerChange = (info, addUploadingFile) => {
   }
 };
 
-const DatasourceForm = ({
-  form, visible, loading, error, containerId, datasources, uploadingFile,
-  datasource, onChange, onCreate, onUpdate, onCancel, onDelete, onSelect,
-  uploadCsvFile, addUploadingFile
+const DatasourceModal = ({
+  form, visible, loading, error, containerId, datasources,
+  datasource, onChange, onCreate, onUpdate, onCancel, onDelete, 
+  uploadingFile, uploadCsvFile, addUploadingFile, onSelect
 }) => (
   <Modal
     visible={visible}
@@ -102,10 +102,10 @@ const DatasourceForm = ({
           label="Datasource"
         >
           <div style={{ display: 'inline-flex', width: '100%' }}>
-            <Select value={datasource ? datasource._id['$oid'] : null} onChange={(selected) => { handleChange(selected, onChange, form, datasources) }} defaultValue={null}>
+            <Select value={datasource ? datasource.id : null} onChange={(selected) => { handleChange(selected, onChange, form, datasources) }} defaultValue={null}>
               <Option value={null} key={0}><i>Create new datasource</i></Option>
               { datasources ? datasources.map((datasource) => {
-                return <Option value={datasource._id['$oid']} key={datasource.name}>{datasource.name}</Option>
+                return <Option value={datasource.id} key={datasource.name}>{datasource.name}</Option>
               }) : ''}
             </Select>
             <Button disabled={datasource ? false : true} onClick={() => { onDelete(datasource) }} type="danger" icon="delete" style={{ marginLeft: '10px' }}/>
@@ -166,10 +166,10 @@ const DatasourceForm = ({
           label="Datasource"
         >
           <div style={{ display: 'inline-flex', width: '100%' }}>
-            <Select value={datasource ? datasource._id['$oid'] : null} onChange={(selected) => { handleChange(selected, onChange, form, datasources) }} defaultValue={null}>
+            <Select value={datasource ? datasource.id : null} onChange={(selected) => { handleChange(selected, onChange, form, datasources) }} defaultValue={null}>
               <Option value={null} key={0}><i>Create new datasource</i></Option>
               { datasources ? datasources.map((datasource) => {
-                return <Option value={datasource._id['$oid']} key={datasource.name}>{datasource.name}</Option>
+                return <Option value={datasource.id} key={datasource.name}>{datasource.name}</Option>
               }) : ''}
             </Select>
             <Button disabled={datasource ? false : true} onClick={() => { onDelete(datasource) }} type="danger" icon="delete" style={{ marginLeft: '10px' }}/>
@@ -263,4 +263,4 @@ const DatasourceForm = ({
     </Modal>
 )
 
-export default Form.create()(DatasourceForm)
+export default Form.create()(DatasourceModal)

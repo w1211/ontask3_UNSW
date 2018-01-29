@@ -5,7 +5,7 @@ from mongoengine.queryset.visitor import Q
 
 from django.http import JsonResponse
 import json
-from bson.json_util import dumps
+import re 
 
 from .serializers import ContainerSerializer
 from .models import Container
@@ -21,8 +21,7 @@ class ContainerViewSet(viewsets.ModelViewSet):
     def retrieve_containers(self, request):
         # Retrieve containers owned by or shared with the current user, including the associated workflows & data sources
         # Consumed by the containers list interface
-        # We are not using the provided get_queryset generic Django Rest Framework function as serialization occurs on the objects returned
-        # Given that we are joining workflow & datasource models manually, we must use a custom function/endpoint
+        # Perform a lookup on each container object so that we can attach its associated workflows & data sources
         pipeline = [
             {
                 '$lookup': {
@@ -47,9 +46,15 @@ class ContainerViewSet(viewsets.ModelViewSet):
                 }
             }
         ]
-        print("here in container view")
         containers = list(Container.objects.aggregate(*pipeline))
-        return JsonResponse(json.loads(dumps(containers)), safe=False)
+        # Convert the queryset response into a string so that we can apply regex to it
+        # When trying to convert the above queryset directly into JSON, ObjectId's are represented in the form { $oid: "x" }
+        # This is inconsistent with the simple representation of ObjectId's { "id": "x" } when using the DRF serializer
+        # Therefore, convert ObjectId's to this simple representation ourselves using regex sub
+        # Also requires us to convert single quotes (returned from queryset) to double quotes (expected for valid JSON)
+        containers = re.sub(r'(ObjectId\(\'(.*?)\'\))', r"'\2'", str(containers)).replace("'", '"').replace('"_id":', '"id":')
+
+        return JsonResponse(json.loads(containers), safe=False)
 
     def get_queryset(self):
         return Container.objects.filter(

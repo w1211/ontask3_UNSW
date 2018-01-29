@@ -3,23 +3,21 @@ import React from 'react';
 import { Spin, Alert, Table } from 'antd';
 
 
-
 class DataView extends React.Component {
-
   render() {
     const { 
-      isFetchingData, dataError, data, columns
+      loading, error, data, columns
     } = this.props;
     
     return (
       <div>
-        { isFetchingData ? 
+        { loading ? 
           <Spin size="large" />
         :
-          dataError ? 
+          error ? 
           <Alert
             message={"Error"}
-            description={dataError}
+            description={error}
             type="error"
             showIcon
           />
@@ -51,8 +49,8 @@ class DataView extends React.Component {
   };
 
   componentDidMount() {
-    const { fetchMatrixData } = this.props;
-    fetchMatrixData();
+    const { fetchData } = this.props;
+    fetchData();
   };
 
 };

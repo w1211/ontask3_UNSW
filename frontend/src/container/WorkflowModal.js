@@ -1,9 +1,9 @@
 import React from 'react';
-
 import { Modal, Form, Input, Alert } from 'antd';
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
+
 
 const formItemLayout = {
   labelCol: {
@@ -16,26 +16,29 @@ const formItemLayout = {
   },
 };
 
-const handleOk = (form, rule, onCreate, onUpdate) => {
+const handleOk = (form, containerId, workflow, onCreate, onUpdate) => {
   form.validateFields((err, values) => {
     if (err) {
       return;
     }
-    if (rule) {
-      onUpdate(rule, values);
+    if (workflow) {
+      onUpdate(workflow.id, values);
     } else {
-      onCreate(values)
+      onCreate(containerId, values)
     }
   });
 }
 
-const RuleForm = ({ form, rule, visible, loading, onCancel, onCreate, onUpdate, error }) => (
+const WorkflowModal = ({ 
+  form, visible, loading, error, containerId, workflow, 
+  onCreate, onUpdate, onCancel
+}) => (
   <Modal
     visible={visible}
-    title={rule ? 'Update rule' : 'Create rule'}
-    okText={rule ? 'Update' : 'Create'}
-    onCancel={() => {form.resetFields(); onCancel()}}
-    onOk={() => {handleOk(form, rule, onCreate, onUpdate)}}
+    title={workflow ? 'Update workflow' : 'Create workflow'}
+    okText={workflow ? 'Update' : 'Create'}
+    onCancel={() => { form.resetFields(); onCancel(); }}
+    onOk={() => { handleOk(form, containerId, workflow, onCreate, onUpdate) }}
     confirmLoading={loading}
   >
     <Form layout="horizontal">
@@ -44,7 +47,7 @@ const RuleForm = ({ form, rule, visible, loading, onCancel, onCreate, onUpdate, 
         label="Name"
       >
         {form.getFieldDecorator('name', {
-          initialValue: rule ? rule.name : null,
+          initialValue: workflow ? workflow.name : null,
           rules: [{ required: true, message: 'Name is required' }]
         })(
           <Input/>
@@ -55,7 +58,8 @@ const RuleForm = ({ form, rule, visible, loading, onCancel, onCreate, onUpdate, 
         label="Description"
       >
         {form.getFieldDecorator('description', {
-          initialValue: rule ? rule.description : null
+          initialValue: workflow ? workflow.description : null,
+          rules: [{ required: true, message: 'Description is required' }]
         })(
           <TextArea rows={4}/>
         )}
@@ -65,4 +69,4 @@ const RuleForm = ({ form, rule, visible, loading, onCancel, onCreate, onUpdate, 
   </Modal>
 )
 
-export default Form.create()(RuleForm)
+export default Form.create()(WorkflowModal)

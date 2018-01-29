@@ -1,8 +1,7 @@
 import React from 'react';
+import { Form, Alert, Cascader, Row, Select, Divider, Button, Modal } from 'antd';
 
-import { Form, Alert, Cascader, Row, Select, Divider, Button, Icon, Modal } from 'antd';
-
-import './MatrixDefinitionForm.css';
+import './Details.css';
 
 const confirm = Modal.confirm;
 const FormItem = Form.Item;
@@ -40,13 +39,14 @@ const secondaryColumnRender = (labels, selectedOptions) => labels.map((label, i)
   return <span key={option.value}>{label} / </span>;
 });
 
+
 const handleUpdate = (form, onUpdate) => {
   form.validateFields((err, values) => {
     if (err) {
       return;
     }
     // Map the cascader values to the API's expected input
-    let matrix = {
+    let details = {
       primaryColumn: {
         datasource: values.primaryColumn.field[0],
         field: values.primaryColumn.field[1],
@@ -61,7 +61,7 @@ const handleUpdate = (form, onUpdate) => {
         }
       }) : []
     } 
-    onUpdate(matrix);
+    onUpdate(details);
   });
 }
 
@@ -78,16 +78,20 @@ const handleClear = (form) => {
   });
 }
 
-const MatrixDefinitionForm = ({ form, matrix, datasources, addSecondaryColumn, deleteSecondaryColumn, onUpdate, loading, error }) => (
+const Details = ({ 
+  form, loading, error,
+  datasources, details,
+  addSecondaryColumn, deleteSecondaryColumn, onUpdate
+}) => (
   <Form layout="horizontal">
     <h3>Primary column</h3>
-    <Row style={{...panelLayout}}>
+    <Row style={{ ...panelLayout }}>
       <FormItem
         {...formItemLayout}
         label="Field"
       >
         {form.getFieldDecorator('primaryColumn.field', {
-          initialValue: matrix ? [matrix.primaryColumn.datasource, matrix.primaryColumn.field] : [],
+          initialValue: details ? [details.primaryColumn.datasource, details.primaryColumn.field] : [],
           rules: [{ required: true, message: 'Field is required' }]
         })(
           <Cascader placeholder='' options={[
@@ -111,7 +115,7 @@ const MatrixDefinitionForm = ({ form, matrix, datasources, addSecondaryColumn, d
         label="Type"
       >
         {form.getFieldDecorator('primaryColumn.type', {
-          initialValue: matrix ? matrix.primaryColumn.type: null,
+          initialValue: details ? details.primaryColumn.type: null,
           rules: [{ required: true, message: 'Type is required' }]
         })(
           <Select>
@@ -124,11 +128,13 @@ const MatrixDefinitionForm = ({ form, matrix, datasources, addSecondaryColumn, d
 
     <Divider dashed />
 
-    <h3>Secondary columns</h3>
-    <Button onClick={() => addSecondaryColumn()}><Icon type="plus"/>New Secondary Column</Button>
-    { matrix && matrix.secondaryColumns.length > 0 ?
-      matrix.secondaryColumns.map((secondaryColumn, i) => {
-        return <Row style={{...panelLayout, marginTop:'10px'}} key={i}>
+    <h3>
+      Secondary columns
+      <Button onClick={() => addSecondaryColumn()} style={{ marginLeft: '10px' }} shape="circle" icon="plus" />
+    </h3>
+    { details && details.secondaryColumns.length > 0 ?
+      details.secondaryColumns.map((secondaryColumn, i) => {
+        return <Row style={{ ...panelLayout, marginTop:'10px' }} key={i}>
           <FormItem
             {...formItemLayout}
             label="Field"
@@ -180,16 +186,19 @@ const MatrixDefinitionForm = ({ form, matrix, datasources, addSecondaryColumn, d
               </Select>
             )}
           </FormItem>
-          <Button onClick={() => deleteSecondaryColumn(i)} shape="circle" icon="delete" type="danger" style={{position: 'absolute', top: 10, right: 10}}/>
+          <Button onClick={() => deleteSecondaryColumn(i)} shape="circle" icon="delete" type="danger" style={{ position: 'absolute', top: 10, right: 10 }}/>
         </Row>
       })
     : 
-      <p style={{margin: '1em 0'}}>Get started by adding the first secondary column.</p>
+      <p style={{ margin: '1em 0' }}>Get started by adding the first secondary column.</p>
     }
+
+    <Divider dashed />
+
     { error && <Alert message={error} type="error"/>}
-    <Button style={{marginRight: '10px'}}size="large" onClick={() => handleClear(form)}>Clear Changes</Button>
-    <Button loading={loading} type="primary" size="large" onClick={() => handleUpdate(form, onUpdate)}>Update Matrix</Button>
+    <Button style={{ marginRight: '10px' }} size="large" onClick={() => handleClear(form)}>Clear Changes</Button>
+    <Button loading={loading} type="primary" size="large" onClick={() => handleUpdate(form, onUpdate)}>Update Details</Button>
   </Form>
 )
 
-export default Form.create()(MatrixDefinitionForm)
+export default Form.create()(Details)

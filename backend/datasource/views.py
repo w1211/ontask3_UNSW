@@ -37,8 +37,8 @@ class DataSourceViewSet(viewsets.ModelViewSet):
 
     def get_datasource_data(self, connection):
         cipher = Fernet(DATASOURCE_KEY)
-        decrypted_password = cipher.decrypt(connection['password'].encode('utf-8'))
-
+        decrypted_password = cipher.decrypt(connection['password'])
+        
         if connection['dbType'] == 'mysql':
             try:
                 dbConnection = mysql.connector.connect(
@@ -83,8 +83,8 @@ class DataSourceViewSet(viewsets.ModelViewSet):
 
         # Assuming that every record in the returned queryset has the same columns,
         # We can map the column names to know what fields are available from the data source
-        # Field names consumed by workflow matrix definition
-        fields = data[0].keys()
+        # Field names consumed by workflow details definition
+        fields = list(data[0].keys())
 
         return (data, fields)
 
@@ -115,12 +115,14 @@ class DataSourceViewSet(viewsets.ModelViewSet):
                 fields = fields
             )
         else:
-            # Encrypt the db password of the data source
             connection = self.request.data['connection']
-            cipher = Fernet(DATASOURCE_KEY)
-            connection['password'] = cipher.encrypt(str(connection['password']))
 
+            # Encrypt the db password of the data source
+            cipher = Fernet(DATASOURCE_KEY)
+            connection['password'] = cipher.encrypt(bytes(connection['password'], encoding="UTF-8"))
+            
             (data, fields) = self.get_datasource_data(connection)
+
             serializer.save(
                 connection = connection,
                 data = data,
@@ -139,7 +141,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         cipher = Fernet(DATASOURCE_KEY)
         if hasattr(connection, 'password'):
             # If a new password is provided then encrypt it and overwrite the old one
-            connection['password'] = cipher.encrypt(str.encode(connection['password']))
+            connection['password'] = cipher.encrypt(bytes(connection['password'], encoding="UTF-8"))
         else:
             # Otherwise simply keep the old password (which is already encrypted)
             connection['password'] = self.get_object()['connection']['password']
@@ -158,10 +160,10 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         self.check_object_permissions(self.request, obj)
 
         # Ensure that no workflow is currently using this datasource
-        # Because the matrix secondaryColumns field is a list of SecondaryColumn embedded documents, we use
+        # Because the details secondaryColumns field is a list of SecondaryColumn embedded documents, we use 
         # $elemMatch which is aliased to "match" in mongoengine
         queryset = Workflow.objects.filter(
-            Q(matrix__secondaryColumns__match = { "datasource": obj }) | Q(matrix__primaryColumn__datasource = obj)
+            Q(details__secondaryColumns__match = { "datasource": obj }) | Q(details__primaryColumn__datasource = obj)
         )
         if queryset.count():
             raise ValidationError('This datasource is being used by a workflow')

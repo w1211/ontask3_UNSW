@@ -6,10 +6,10 @@ import { Layout, Breadcrumb, Icon, Button, Modal, notification, Spin } from 'ant
 
 import * as ContainerActionCreators from './ContainerActions';
 
-import ContainerForm from './ContainerForm';
+import ContainerModal from './ContainerModal';
 import ContainerList from './ContainerList';
-import WorkflowForm from './WorkflowForm';
-import DatasourceForm from './DatasourceForm';
+import WorkflowModal from './WorkflowModal';
+import DatasourceModal from './DatasourceModal';
 
 const confirm = Modal.confirm;
 const { Content } = Layout;
@@ -148,8 +148,7 @@ class Container extends React.Component {
               >
                 New container
               </Button>
-              <ContainerForm
-                ref={(form) => { this.containerForm = form }}
+              <ContainerModal
                 visible={containerModalVisible}
                 loading={containerLoading}
                 error={containerError}
@@ -161,8 +160,7 @@ class Container extends React.Component {
               />
               { containers && containers.length > 0 ?
                 <div>
-                  <WorkflowForm
-                    ref={(form) => { this.workflowForm = form }}
+                  <WorkflowModal
                     visible={workflowModalVisible}
                     loading={workflowLoading}
                     error={workflowError}
@@ -173,8 +171,7 @@ class Container extends React.Component {
                     onUpdate={this.boundActionCreators.updateWorkflow}
                     onCancel={() => { dispatch(this.boundActionCreators.closeWorkflowModal()) }}
                   />
-                  <DatasourceForm
-                    ref={(form) => { this.datasourceForm = form }}
+                  <DatasourceModal
                     visible={datasourceModalVisible}
                     loading={datasourceLoading}
                     error={datasourceError}
