@@ -316,9 +316,8 @@ const removeUploadingFile = () => ({
 export const createDatasource = (containerId, payload, file) => dispatch => {
   payload.container = containerId;
   dispatch(beginRequestDatasource());
-  //for creating csv file
-  if(payload.dbType==='csv'){
-    //uploading file
+
+  if (payload.dbType === 'csv' ) {
     let data = new FormData();
     data.append('file', file);
     data.append('container', containerId);
@@ -346,9 +345,7 @@ export const createDatasource = (containerId, payload, file) => dispatch => {
     .catch(error => {
       dispatch(failureRequestDatasource('Failed to contact server. Please try again.'));
     })
-
-  }
-  else{
+  } else {
     fetch('/datasource/', {
       method: 'POST',
       headers: {
@@ -371,35 +368,66 @@ export const createDatasource = (containerId, payload, file) => dispatch => {
       dispatch(failureRequestDatasource('Failed to contact server. Please try again.'));
     })
   }
+
 };
 
 const successUpdateDatasource = () => ({
   type: SUCCESS_UPDATE_DATASOURCE
 });
 
-export const updateDatasource = (datasourceId, payload) => dispatch => {
+export const updateDatasource = (datasourceId, payload, file) => dispatch => {
   dispatch(beginRequestDatasource());
-  fetch(`/datasource/${datasourceId}/`, {
-    method: 'PATCH',
-    headers: {
-      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(payload)
-  })
-  .then(response => {
-    if (response.status >= 400 && response.status < 600) {
-      response.json().then(error => {
-        dispatch(failureRequestDatasource(error[0]));
-      });
-    } else {
-      dispatch(successUpdateDatasource());
-      dispatch(fetchContainers());
-    }
-  })
-  .catch(error => {
-    dispatch(failureRequestDatasource('Failed to contact server. Please try again.'));
-  })
+  
+  if (payload.dbType === 'csv' ) {
+    let data = new FormData();
+    if (file) data.append('file', file);
+    data.append('name', payload.name);
+    data.append('connection', JSON.stringify(payload.connection));
+    data.append('dbType', payload.dbType);
+    fetch(`/datasource/${datasourceId}/`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd'
+      },
+      body: data
+    })
+    .then(response => {
+      if (response.status >= 400 && response.status < 600) {
+        response.json().then(error => {
+          dispatch(failureRequestDatasource(error[0]));
+        });
+      } else {
+        dispatch(successUpdateDatasource());
+        dispatch(fetchContainers());
+        dispatch(removeUploadingFile());
+      }
+    })
+    .catch(error => {
+      dispatch(failureRequestDatasource('Failed to contact server. Please try again.'));
+    })
+  } else {
+    fetch(`/datasource/${datasourceId}/`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    })
+    .then(response => {
+      if (response.status >= 400 && response.status < 600) {
+        response.json().then(error => {
+          dispatch(failureRequestDatasource(error[0]));
+        });
+      } else {
+        dispatch(successUpdateDatasource());
+        dispatch(fetchContainers());
+      }
+    })
+    .catch(error => {
+      dispatch(failureRequestDatasource('Failed to contact server. Please try again.'));
+    })
+  }
 };
 
 const successDeleteDatasource = () => ({

@@ -126,24 +126,28 @@ class DataSourceViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         self.check_object_permissions(self.request, self.get_object())
 
-        # Connect to specified database and get the data from the query
-        # Data passed in to the DataSource model must be a list of dicts of the form {column_name: value}
-        # TO DO: if isDynamic, then store values into lists as objects with timestamps
         connection = self.request.data['connection']
 
-        # Encrypt the db password of the data source
-        cipher = Fernet(DATASOURCE_KEY)
-        if hasattr(connection, 'password'):
-            # If a new password is provided then encrypt it and overwrite the old one
-            connection['password'] = cipher.encrypt(bytes(connection['password'], encoding="UTF-8"))
+        if self.request.data['connection']['dbType']=='csv':
+            if hasattr(self.request.data, 'file'):
+                csv_file = self.request.data['file']
+                (data, fields) = self.get_csv_data(csv_file)
+            else:
+                data = self.get_object()['data']
+                fields = self.get_object()['fields']
         else:
-            # Otherwise simply keep the old password (which is already encrypted)
-            connection['password'] = bytes(self.get_object()['connection']['password'], encoding="UTF-8")
+            if hasattr(connection, 'password'):
+                # Encrypt the db password of the data source
+                cipher = Fernet(DATASOURCE_KEY)
+                # If a new password is provided then encrypt it and overwrite the old one
+                connection['password'] = cipher.encrypt(bytes(connection['password'], encoding="UTF-8"))
+            else:
+                # Otherwise simply keep the old password (which is already encrypted)
+                connection['password'] = bytes(self.get_object()['connection']['password'], encoding="UTF-8")
 
-        (data, fields) = self.get_datasource_data(connection)
+            (data, fields) = self.get_datasource_data(connection)
 
         serializer.save(
-            owner = self.request.user.id,
             connection = connection,
             data = data,
             fields = fields
@@ -162,8 +166,3 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         if queryset.count():
             raise ValidationError('This datasource is being used by a workflow')
         obj.delete()
-
-
-# Decrypt the encrypted datasource db password as follows:
-# cipher = Fernet(DATASOURCE_KEY)
-# password = cipher.decrypt(encrypted_password)

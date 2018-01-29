@@ -24,7 +24,7 @@ const handleOk = (form, containerId, datasource, onCreate, onUpdate, uploadingFi
       return;
     }
     if (datasource) {
-      onUpdate(datasource.id, values);
+      onUpdate(datasource.id, values, uploadingFile);
     } else {
       values['dbType'] = values.connection.dbType;
       if (values.connection.dbType==='csv' && uploadingFile===undefined) {
