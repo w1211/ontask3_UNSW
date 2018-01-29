@@ -26,9 +26,13 @@ def combine_data(details):
     column_data = defaultdict(dict)
 
     # Group secondary columns by datasource
+
     secondary_column_datasource = defaultdict(list)
+    if details is None:
+        raise ValidationError('Data view is not available until the workflow details have been configured')
+    
     primary_is_integer = True if details['primaryColumn'].type == 'number' else False # Dict key for secondary column is string or integer dependant on the primary field type
-            
+
     for column in details['secondaryColumns']:
         secondary_column_datasource[column.datasource].append(column)
 
