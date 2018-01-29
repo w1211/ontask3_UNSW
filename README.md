@@ -42,9 +42,9 @@ NOSQL_URI = '' # Connection string e.g. 'mongodb://localhost/dbname'
 4. Store the created user's password in the `PASSWORD` variable in `dev/seed.py`
 5. Run `pip3 install -r dev/requirements.txt`
 6. Seed data using by running `python3 dev/seed.py`
-    - Now there is a populated database with which we can create our first data sources & workflows
+    - The postgresql database created in step 2 has been given seed data
+    - An example csv file has been created at `/dev/students.csv`
 7. Add `export DJANGO_DEVELOPMENT=true` to your `~/.bash_profile` (Mac OS) or `~/.bashrc` (Linux)
-8. Run `python3 backend/manage.py runserver`
 
 ## Production
 - https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
