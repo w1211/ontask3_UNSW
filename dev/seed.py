@@ -56,7 +56,7 @@ try:
   cursor.executemany('INSERT INTO grades(student_id, grade) VALUES (%(studentId)s, %(grade)s)', grades)
 
   # for writing csv file
-  ofile = open('students.csv', 'wb')
+  ofile = open('dev/students.csv', 'w')
   writer = csv.writer(ofile)
   with ofile:
       writer = csv.writer(ofile)
