@@ -184,7 +184,7 @@ class Container extends React.Component {
                     onChange={this.boundActionCreators.changeDatasource}
                     onCreate={this.boundActionCreators.createDatasource}
                     onUpdate={this.boundActionCreators.updateDatasource}
-                    onDelete={this.onDeleteDatasource}
+                    onDelete={this.confirmDatasourceDelete}
                     onCancel={() => { dispatch(this.boundActionCreators.closeDatasourceModal()) }}
 
                     //actions for interacting with datasource form uploading file list

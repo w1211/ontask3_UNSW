@@ -178,7 +178,8 @@ function containers(state = initialState, action) {
         datasourceLoading: false,
         datasource: null,
         datasources: null,
-        uploadingFile: null
+        uploadingFile: null,
+        uploadCsvFile: false
       });
     case CHANGE_DATASOURCE:
       return Object.assign({}, state, {
@@ -220,6 +221,7 @@ function containers(state = initialState, action) {
       });
     case SUCCESS_DELETE_DATASOURCE:
       return Object.assign({}, state, {
+        datasourceModalVisible: false,
         datasourceLoading: false,
         datasource: null,
         containerId: null,
@@ -241,7 +243,8 @@ function containers(state = initialState, action) {
 
     case REMOVE_UPLOADING_FILE:
       return Object.assign({}, state, {
-        uploadingFile: null
+        uploadingFile: null,
+        uploadCsvFile: false
       });
     default:
       return state;
