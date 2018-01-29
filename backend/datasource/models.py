@@ -5,12 +5,12 @@ from container.models import Container
 
 
 class Connection(EmbeddedDocument):
-    dbType = fields.StringField(choices=('mysql', 'postgresql', 'sqlite', 'mssql'), required=True)
-    host = fields.StringField(required=True)
-    database = fields.StringField(required=True)
-    user = fields.StringField(required=True)
-    password = fields.StringField(null=True)
-    query = fields.StringField(required=True)
+    dbType = fields.StringField(choices=('mysql', 'postgresql', 'sqlite', 'mssql', 'csv'), required=True)
+    host = fields.StringField()
+    database = fields.StringField()
+    user = fields.StringField()
+    password = fields.StringField()
+    query = fields.StringField()
 
 class Metadata(EmbeddedDocument):
     isDynamic = fields.BooleanField()

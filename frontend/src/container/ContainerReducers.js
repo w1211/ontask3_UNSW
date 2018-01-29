@@ -235,7 +235,6 @@ function containers(state = initialState, action) {
 
     //for interacting with datasource form uploaidng file list
     case ADD_UPLOADING_FILE:
-      console.log("in reducers");
       return Object.assign({}, state, {
         uploadingFile: action.file
       });

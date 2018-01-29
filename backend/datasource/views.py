@@ -100,34 +100,28 @@ class DataSourceViewSet(viewsets.ModelViewSet):
 
 
     def perform_create(self, serializer):
-
         self.check_object_permissions(self.request, None)
 
         # Connect to specified database and get the data from the query
         # Data passed in to the DataSource model must be a list of dicts of the form {column_name: value}
         # TO DO: if isDynamic, then store values into lists as objects with timestamps
         if self.request.data['dbType']=='csv':
+            connection = {}
+            connection['dbType'] = 'csv'
             csv_file = self.request.data['file']
             (data, fields) = self.get_csv_data(csv_file)
-            #reformating
-            serializer.save(
-                data = data,
-                fields = fields
-            )
         else:
             connection = self.request.data['connection']
-
             # Encrypt the db password of the data source
             cipher = Fernet(DATASOURCE_KEY)
             connection['password'] = cipher.encrypt(bytes(connection['password'], encoding="UTF-8"))
-            
             (data, fields) = self.get_datasource_data(connection)
 
-            serializer.save(
-                connection = connection,
-                data = data,
-                fields = fields
-            )
+        serializer.save(
+            connection = connection,
+            data = data,
+            fields = fields
+        )
 
     def perform_update(self, serializer):
         self.check_object_permissions(self.request, self.get_object())

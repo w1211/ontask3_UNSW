@@ -26,3 +26,6 @@ backend/config/prod.*
 
 # Frontend dependencies
 frontend/node_modules
+
+# Virtual environment
+ontask_env/

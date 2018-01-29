@@ -318,7 +318,6 @@ export const createDatasource = (containerId, payload, file) => dispatch => {
   dispatch(beginRequestDatasource());
   //for creating csv file
   if(payload.dbType==='csv'){
-    console.log("creating csv db");
     //uploading file
     let data = new FormData();
     data.append('file', file);

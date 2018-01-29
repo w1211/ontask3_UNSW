@@ -27,7 +27,6 @@ const handleOk = (form, containerId, datasource, onCreate, onUpdate, uploadingFi
       onUpdate(datasource.id, values);
     } else {
       values['dbType'] = values.connection.dbType;
-      console.log(values);
       if (values.connection.dbType==='csv' && uploadingFile===undefined) {
         message.error('Please add CSV file');
       }else{
@@ -40,7 +39,7 @@ const handleOk = (form, containerId, datasource, onCreate, onUpdate, uploadingFi
 const handleChange = (selectedId, onChange, form, datasources) => {
   form.resetFields();
   const datasource = datasources.find(datasource => { return datasource.id === selectedId });
-  if(datasource!==undefined && datasource.connection.dbType==='csv'){
+  if(datasource && datasource.connection.dbType==='csv'){
     onChange(datasource, true);
   }
   else{
@@ -49,7 +48,6 @@ const handleChange = (selectedId, onChange, form, datasources) => {
 }
 
 const handleDatasourceTypeSelction = (selected, onSelect) => {
-  console.log(`selected ${selected}`);
   if(selected==='csv'){
     onSelect(true);
   }
@@ -62,9 +60,7 @@ const handleDatasourceTypeSelction = (selected, onSelect) => {
 const Dragger = Upload.Dragger;
 
 const fileValidation = (file) => {
-  console.log("call handle file validation");
   const isCSV = file.type === 'text/csv';
-  console.log(file.type);
   if (!isCSV) {
     message.error('You can only upload CSV file!');
   }
@@ -76,7 +72,6 @@ const fileValidation = (file) => {
 };
 
 const handleDraggerChange = (info, addUploadingFile) => {
-  console.log("call handle dragger");
   if (fileValidation(info.file)){
     addUploadingFile(info.file);
   }
