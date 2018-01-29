@@ -3,9 +3,15 @@ from rest_framework_mongoengine.validators import ValidationError
 from datetime import datetime
 from mongoengine.queryset.visitor import Q
 
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+
 # Imports to connect to data sources
 import mysql.connector
 import psycopg2
+
+import json
+import csv
+import io
 
 # Imports for encrypting the datasource db password
 from cryptography.fernet import Fernet
@@ -13,146 +19,152 @@ from ontask.settings import DATASOURCE_KEY
 
 from .serializers import DataSourceSerializer
 from .models import DataSource
-from matrix.models import Matrix
-from container.models import Container
 from .permissions import DataSourcePermissions
+
+from container.models import Container
+from workflow.models import Workflow
 
 
 class DataSourceViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
     serializer_class = DataSourceSerializer
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
     permission_classes = [DataSourcePermissions]
 
+    # TO DO: make this filter based on permissions
     def get_queryset(self):
-        # Find any containers that the user is owner of, or has readOnly or readWrite access to
-        containers_with_access = Container.objects.filter(
-            Q(owner = self.request.user.id) | Q(sharing__readOnly__contains = self.request.user.id) | Q(sharing__readWrite__contains = self.request.user.id) 
-        )
-        # Return data sources that belong to the containers found
-        return DataSource.objects.filter(
-            container__in = containers_with_access
-        )
+        return DataSource.objects.all()
 
     def get_datasource_data(self, connection):
+        cipher = Fernet(DATASOURCE_KEY)
+        decrypted_password = cipher.decrypt(connection['password'].encode('utf-8'))
+
         if connection['dbType'] == 'mysql':
             try:
                 dbConnection = mysql.connector.connect(
                     host = connection['host'],
                     database = connection['database'],
                     user = connection['user'],
-                    password = connection['password']
+                    password = decrypted_password
                 )
                 cursor = dbConnection.cursor(dictionary=True)
                 cursor.execute(connection['query'])
                 data = list(cursor)
                 cursor.close()
                 dbConnection.close()
-            except: 
+            except:
                 raise ValidationError('Error connecting to database')
-                
+
         elif connection['dbType'] == 'postgresql':
             try:
                 dbConnection = psycopg2.connect(
                     host = connection['host'],
                     dbname = connection['database'],
                     user = connection['user'],
-                    password = connection['password']
+                    password = decrypted_password
                 )
                 cursor = dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
                 cursor.execute(connection['query'])
                 data = list(cursor)
                 cursor.close()
                 dbConnection.close()
-            except: 
+            except:
                 raise ValidationError('Error connecting to database')
 
         # TO DO: implement MS SQL and SQLite imports
         elif connection['dbType'] == 'sqlite':
             pass
-        
+
         elif connection['dbType'] == 'mssql':
             pass
 
         if not len(data):
             raise ValidationError('The query returned no data')
 
-        return data
+        # Assuming that every record in the returned queryset has the same columns,
+        # We can map the column names to know what fields are available from the data source
+        # Field names consumed by workflow matrix definition
+        fields = data[0].keys()
+
+        return (data, fields)
+
+    def get_csv_data(self, csv_file):
+        #checking file format
+        if not csv_file.name.endswith('.csv'):
+            raise ValidationError('File is not CSV type')
+            return
+        reader = csv.DictReader(io.StringIO(csv_file.read().decode('utf-8')))
+        data = list(reader)
+        fields = data[0].keys()
+        return (data, fields)
+
 
     def perform_create(self, serializer):
-        # Check that the data source to be created is unique on (owner, name)
-        queryset = DataSource.objects.filter(
-            owner = self.request.user.id,
-            metadata__name = self.request.data['metadata']['name']
-        )
-        if queryset.count():
-            raise ValidationError('A data source with this name already exists')
+
+        self.check_object_permissions(self.request, None)
 
         # Connect to specified database and get the data from the query
         # Data passed in to the DataSource model must be a list of dicts of the form {column_name: value}
         # TO DO: if isDynamic, then store values into lists as objects with timestamps
-        connection = self.request.data['connection']
-        data = self.get_datasource_data(connection)
+        if self.request.data['dbType']=='csv':
+            csv_file = self.request.data['file']
+            (data, fields) = self.get_csv_data(csv_file)
+            #reformating
+            serializer.save(
+                data = data,
+                fields = fields
+            )
+        else:
+            # Encrypt the db password of the data source
+            connection = self.request.data['connection']
+            cipher = Fernet(DATASOURCE_KEY)
+            connection['password'] = cipher.encrypt(str(connection['password']))
 
-        # Encrypt the db password of the data source
-        cipher = Fernet(DATASOURCE_KEY)
-        connection['password'] = cipher.encrypt(str(connection['password']))
-
-        serializer.save(
-            owner = self.request.user.id,
-            connection = connection,
-            data = data
-        )
+            (data, fields) = self.get_datasource_data(connection)
+            serializer.save(
+                connection = connection,
+                data = data,
+                fields = fields
+            )
 
     def perform_update(self, serializer):
         self.check_object_permissions(self.request, self.get_object())
-        # Check that the data source to be created is unique on (owner, name)
-        queryset = DataSource.objects.filter(
-            # We only want to check against the documents that are not the document being updated
-            # I.e. only include objects in the filter that do not have the same id as the current object
-            # id != self.kwargs.get(self.lookup_field) is syntactically incorrect
-            # So instead we are making use of a query operator [field]__ne (i.e. field not equal to)
-            # Refer to http://docs.mongoengine.org/guide/querying.html#query-operators for more information
-            id__ne = self.kwargs.get(self.lookup_field), # Get the id of the object from the url route as defined by the lookup_field
-            owner = self.request.user.id,
-            metadata__name = self.request.data['metadata']['name']
-        )
-        if queryset.count():
-            raise ValidationError('A data source with this name already exists')
 
         # Connect to specified database and get the data from the query
         # Data passed in to the DataSource model must be a list of dicts of the form {column_name: value}
         # TO DO: if isDynamic, then store values into lists as objects with timestamps
         connection = self.request.data['connection']
-        data = self.get_datasource_data(connection)
-        
+
         # Encrypt the db password of the data source
         cipher = Fernet(DATASOURCE_KEY)
-        if connection['password']:
+        if hasattr(connection, 'password'):
             # If a new password is provided then encrypt it and overwrite the old one
-            connection['password'] = cipher.encrypt(str(connection['password']))
+            connection['password'] = cipher.encrypt(str.encode(connection['password']))
         else:
             # Otherwise simply keep the old password (which is already encrypted)
             connection['password'] = self.get_object()['connection']['password']
 
+        (data, fields) = self.get_datasource_data(connection)
+
         serializer.save(
             owner = self.request.user.id,
             connection = connection,
-            data = data
+            data = data,
+            fields = fields
         )
-        
+
     def perform_destroy(self, obj):
          # Ensure that the request.user is the owner of the object
         self.check_object_permissions(self.request, obj)
-        
-        # Ensure that no matrix is currently using this datasource
-        # Because the secondaryColumns field is a list of SecondaryColumn embedded documents, we use 
+
+        # Ensure that no workflow is currently using this datasource
+        # Because the matrix secondaryColumns field is a list of SecondaryColumn embedded documents, we use
         # $elemMatch which is aliased to "match" in mongoengine
-        queryset = Matrix.objects.filter(
-            owner = self.request.user.id,
-            secondaryColumns__match = { "datasource": obj }
+        queryset = Workflow.objects.filter(
+            Q(matrix__secondaryColumns__match = { "datasource": obj }) | Q(matrix__primaryColumn__datasource = obj)
         )
         if queryset.count():
-            raise ValidationError('This datasource is being used by a matrix')
+            raise ValidationError('This datasource is being used by a workflow')
         obj.delete()
 
 

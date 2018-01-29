@@ -4,7 +4,7 @@
 1. Run `xcode-select --install` (Mac OS) or `sudo apt-get install build-essential` (Linux)
 2. Set up & run a Python [virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtualenv/)
     - Always ensure that you are in the created virtual environment when running the backend or performing these initial setup steps
-3. Run `pip install backend/requirements.txt`
+3. Run `pip install -r backend/requirements.txt`
 4. Create a django super user by running `python backend/manage.py createsuperuser`
 5. Create environment files `dev.py` and `prod.py` in `backend/config`
 6. In a Python shell, run the following:

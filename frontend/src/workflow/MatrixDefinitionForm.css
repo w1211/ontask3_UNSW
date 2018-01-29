@@ -1,0 +1,4 @@
+.ant-cascader-menu-item-disabled {
+  cursor: default !important;
+  text-decoration: underline;
+}

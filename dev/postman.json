@@ -65,7 +65,7 @@
 					"response": []
 				},
 				{
-					"name": "List (user 2)",
+					"name": "Retrieve (workflows, data sources)",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -76,14 +76,14 @@
 						],
 						"body": {},
 						"url": {
-							"raw": "localhost:8000/container/",
+							"raw": "localhost:8000/container/retrieve_containers",
 							"host": [
 								"localhost"
 							],
 							"port": "8000",
 							"path": [
 								"container",
-								""
+								"retrieve_containers"
 							]
 						},
 						"description": ""
@@ -106,7 +106,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"code\": \"COMP9021\",\n\t\"sharedWith\": [2],\n\t\"title\": \"COMP 9021 grades\",\n\t\"school\": \"UNSW\",\n\t\"faculty\": \"CSE\",\n\t\"description\": \"Grades for COMP 9021 students\"\n}"
+							"raw": "{\n\t\"code\": \"COMP9021\",\n\t\"school\": \"UNSW\",\n\t\"faculty\": \"CSE\",\n\t\"description\": \"Grades for COMP 9021 students\",\n\t\"sharing\": {\n\t\t\"readOnly\": [],\n\t\t\"readWrite\": []\n\t}\n}"
 						},
 						"url": {
 							"raw": "localhost:8000/container/",
@@ -139,17 +139,17 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"code\": \"COMP9021\",\n\t\"sharedWith\": [2],\n\t\"title\": \"COMP 9021 grades (edited)\",\n\t\"school\": \"UNSW\",\n\t\"faculty\": \"CSE\",\n\t\"description\": \"Grades for COMP 9021 students\"\n}"
+							"raw": "{\n\t\"code\": \"COMP9021 (edited)\",\n\t\"school\": \"UNSW\",\n\t\"faculty\": \"CSE\",\n\t\"description\": \"Grades for COMP 9021 students\",\n\t\"sharing\": {\n\t\t\"readOnly\": [],\n\t\t\"readWrite\": []\n\t}\n}"
 						},
 						"url": {
-							"raw": "localhost:8000/container/5a27bbf127abdf74b4c678b7/",
+							"raw": "localhost:8000/container/5a3b6c02f5ec4eca1a5519a9/",
 							"host": [
 								"localhost"
 							],
 							"port": "8000",
 							"path": [
 								"container",
-								"5a27bbf127abdf74b4c678b7",
+								"5a3b6c02f5ec4eca1a5519a9",
 								""
 							]
 						},
@@ -169,82 +169,14 @@
 						],
 						"body": {},
 						"url": {
-							"raw": "localhost:8000/container/5a24cf83f5ec4eafbfae363f/",
+							"raw": "localhost:8000/container/5a3b61fdf5ec4eacf56b8698/",
 							"host": [
 								"localhost"
 							],
 							"port": "8000",
 							"path": [
 								"container",
-								"5a24cf83f5ec4eafbfae363f",
-								""
-							]
-						},
-						"description": ""
-					},
-					"response": []
-				},
-				{
-					"name": "Detail",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "{{token}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n\t\"code\": \"COMP9021\",\n\t\"sharedWith\": [2],\n\t\"title\": \"COMP 9021 grades (edited)\",\n\t\"school\": \"UNSW\",\n\t\"faculty\": \"CSE\",\n\t\"description\": \"Grades for COMP 9021 students\"\n}"
-						},
-						"url": {
-							"raw": "localhost:8000/container/5a27bbf127abdf74b4c678b7/",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"container",
-								"5a27bbf127abdf74b4c678b7",
-								""
-							]
-						},
-						"description": ""
-					},
-					"response": []
-				},
-				{
-					"name": "Detail (user 2)",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "{{token_2}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n\t\"code\": \"COMP9021\",\n\t\"sharedWith\": [2],\n\t\"title\": \"COMP 9021 grades (edited)\",\n\t\"school\": \"UNSW\",\n\t\"faculty\": \"CSE\",\n\t\"description\": \"Grades for COMP 9021 students\"\n}"
-						},
-						"url": {
-							"raw": "localhost:8000/container/5a27bbf127abdf74b4c678b7/",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"container",
-								"5a27bbf127abdf74b4c678b7",
+								"5a3b61fdf5ec4eacf56b8698",
 								""
 							]
 						},
@@ -285,7 +217,7 @@
 					"response": []
 				},
 				{
-					"name": "Create",
+					"name": "Create (students)",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -300,7 +232,40 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"container\": \"5a27bbf127abdf74b4c678b7\",\n\t\"sharedWith\": [2],\n\t\"connection\": {\n\t\t\"dbType\": \"postgresql\",\n\t\t\"host\": \"localhost\",\n\t\t\"database\": \"ontask_seed\",\n\t\t\"user\": \"ontask\",\n\t\t\"password\": \"ontask\",\n\t\t\"query\": \"select * from grades;\"\n\t},\n\t\"metadata\": {\n\t\t\"name\": \"Grades\",\n\t\t\"isDynamic\": false\n\t}\n}"
+							"raw": "{\n\t\"container\": \"5a3b6c02f5ec4eca1a5519a9\",\n\t\"name\": \"Students\",\n\t\"connection\": {\n\t\t\"dbType\": \"postgresql\",\n\t\t\"host\": \"localhost\",\n\t\t\"database\": \"ontask_seed\",\n\t\t\"user\": \"ontask\",\n\t\t\"password\": \"ontask\",\n\t\t\"query\": \"select * from students;\"\n\t},\n\t\"metadata\": {\n\t\t\"isDynamic\": false\n\t}\n}"
+						},
+						"url": {
+							"raw": "localhost:8000/datasource/",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"datasource",
+								""
+							]
+						},
+						"description": "\t"
+					},
+					"response": []
+				},
+				{
+					"name": "Create (grades)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"container\": \"5a3b6c02f5ec4eca1a5519a9\",\n\t\"name\": \"Grades\",\n\t\"connection\": {\n\t\t\"dbType\": \"postgresql\",\n\t\t\"host\": \"localhost\",\n\t\t\"database\": \"ontask_seed\",\n\t\t\"user\": \"ontask\",\n\t\t\"password\": \"ontask\",\n\t\t\"query\": \"select * from grades;\"\n\t},\n\t\"metadata\": {\n\t\t\"isDynamic\": false\n\t}\n}"
 						},
 						"url": {
 							"raw": "localhost:8000/datasource/",
@@ -333,17 +298,17 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"container\": \"5a27bbf127abdf74b4c678b7\",\n\t\"sharedWith\": [2],\n\t\"connection\": {\n\t\t\"dbType\": \"postgresql\",\n\t\t\"host\": \"localhost\",\n\t\t\"database\": \"ontask_seed\",\n\t\t\"user\": \"ontask\",\n\t\t\"password\": \"\",\n\t\t\"query\": \"select * from grades;\"\n\t},\n\t\"metadata\": {\n\t\t\"name\": \"Grades (edited)\",\n\t\t\"isDynamic\": false\n\t}\n}"
+							"raw": "{\n\t\"container\": \"5a3b61fdf5ec4eacf56b8698\",\n\t\"name\": \"Grades (edited)\",\n\t\"connection\": {\n\t\t\"dbType\": \"postgresql\",\n\t\t\"host\": \"localhost\",\n\t\t\"database\": \"ontask_seed\",\n\t\t\"user\": \"ontask\",\n\t\t\"password\": \"\",\n\t\t\"query\": \"select * from grades;\"\n\t},\n\t\"metadata\": {\n\t\t\"isDynamic\": false\n\t}\n}"
 						},
 						"url": {
-							"raw": "localhost:8000/datasource/5a27de9327abdfc08b03b3df/",
+							"raw": "localhost:8000/datasource/5a3b644df5ec4eb3831c953b/",
 							"host": [
 								"localhost"
 							],
 							"port": "8000",
 							"path": [
 								"datasource",
-								"5a27de9327abdfc08b03b3df",
+								"5a3b644df5ec4eb3831c953b",
 								""
 							]
 						},
@@ -363,14 +328,41 @@
 						],
 						"body": {},
 						"url": {
-							"raw": "localhost:8000/datasource/5a24cf83f5ec4eafbfae363f/",
+							"raw": "localhost:8000/datasource/5a3b6fc8f5ec4ed5234634f6/",
 							"host": [
 								"localhost"
 							],
 							"port": "8000",
 							"path": [
 								"datasource",
-								"5a24cf83f5ec4eafbfae363f",
+								"5a3b6fc8f5ec4ed5234634f6",
+								""
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "Detail",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}"
+							}
+						],
+						"body": {},
+						"url": {
+							"raw": "localhost:8000/datasource/5a28b1cbf5ec4e26cecf4ba1/",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"datasource",
+								"5a28b1cbf5ec4e26cecf4ba1",
 								""
 							]
 						},
@@ -381,7 +373,7 @@
 			]
 		},
 		{
-			"name": "Matrices",
+			"name": "Action",
 			"description": "",
 			"item": [
 				{
@@ -396,13 +388,147 @@
 						],
 						"body": {},
 						"url": {
-							"raw": "localhost:8000/matrix/",
+							"raw": "localhost:8000/action/",
 							"host": [
 								"localhost"
 							],
 							"port": "8000",
 							"path": [
-								"matrix",
+								"action",
+								""
+							]
+						},
+						"description": ""
+					},
+					"response": []
+				},
+				{
+					"name": "Create (condition group error)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"workflow\": \"5a3b6231f5ec4eacf56b869a\",\n    \"name\": \"Action test\",\n    \"description\": \"This is an example of an action.\",\n    \"filter\": \"\",\n    \"conditionGroups\": [\n    \t{\n    \t\t\"name\": \"condition group 1\",\n    \t\t\"conditions\": [\n\t    \t\t{\n\t\t    \t\t\"name\": \"grade_match\",\n\t\t    \t\t\"formula\": \"({{ grade }} > 50)\"\n\t\t    \t},\n\t    \t\t{\n\t\t    \t\t\"name\": \"name_match\",\n\t\t    \t\t\"formula\": \"({{ first_name }} == 'Ruth')\"\n\t\t    \t}\n\t\t\t]\n    \t}\n\t],\n\t\"content\": \"This is test content. {% if grade_match %} grade matched {% else %} grade not matched {% endif %}. {% if name_match %} name matched {% else %} name not matched {% endif %}.\"\n}"
+						},
+						"url": {
+							"raw": "localhost:8000/action/",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"action",
+								""
+							]
+						},
+						"description": "\t"
+					},
+					"response": []
+				},
+				{
+					"name": "Create (succeed)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"workflow\": \"5a44d58ff5ec4e485c7784fd\",\n    \"name\": \"Action test 2\",\n    \"description\": \"This is an example of an action.\",\n    \"filter\": \"\",\n    \"conditionGroups\": [\n        {\n            \"name\": \"condition group 1\",\n            \"conditions\": [\n                {\n                    \"name\": \"low_grade\",\n                    \"formula\": \"({{ grade }} <= 50)\"\n                },\n                {\n                    \"name\": \"high_grade\",\n                    \"formula\": \"({{ grade }} >= 50)\"\n                }\n            ]\n        }\n    ],\n    \"content\": \"This is test content. {% if low_grade %}low grade with {{ grade }}{% endif %}{% if high_grade %}high grade with {{ grade }}{% endif %}\"\n}"
+						},
+						"url": {
+							"raw": "localhost:8000/action/",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"action",
+								""
+							]
+						},
+						"description": "\t"
+					},
+					"response": []
+				},
+				{
+					"name": "Create (if statement)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"workflow\": \"5a3b6231f5ec4eacf56b869a\",\n    \"name\": \"Action test 3\",\n    \"description\": \"This is an example of an action.\",\n    \"filter\": \"\",\n    \"conditionGroups\": [\n        {\n            \"name\": \"condition group 1\",\n            \"conditions\": [\n                {\n                    \"name\": \"low_grade\",\n                    \"formula\": \"({{ grade }} <= 50)\"\n                },\n                {\n                    \"name\": \"high_grade\",\n                    \"formula\": \"({{ grade }} >= 50)\"\n                }\n            ]\n        }\n    ],\n    \"content\": \"This is test content. {% if low_grade %}Low grade{% else %}High grade{% endif %} with {{ grade }}/100. {% if high_grade %}Congrats on achieving a high grade.{% endif %}\"\n}"
+						},
+						"url": {
+							"raw": "localhost:8000/action/",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"action",
+								""
+							]
+						},
+						"description": "\t"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Workflow",
+			"description": "",
+			"item": [
+				{
+					"name": "List",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Smashed avo2\",\n    \"mealType\": \"Breakfast\",\n    \"instructions\": \"test\",\n    \"ingredient\": \"5a2273834e3aeb7134c9ccc4\",\n    \"ingredients\": [\n    \t{ \n    \t\t\"item\": \"5a2273834e3aeb7134c9ccc4\",\n    \t\t\"unit\": \"slice\",\n    \t\t\"quantity\": 1\n    \t}\n    ]\n}"
+						},
+						"url": {
+							"raw": "localhost:8000/workflow/",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"workflow",
 								""
 							]
 						},
@@ -426,20 +552,20 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"name\": \"Student grades\",\n    \"container\": \"5a276cf94e3aeb1209b0152a\",\n    \"primaryColumn\": {\n    \t\"field\": \"id\",\n    \t\"isInteger\": true,\n    \t\"datasource\": \"5a27d4b927abdfab3eb3d4e4\"\n    },\n    \"secondaryColumns\": [\n    \t{\n    \t\t\"field\": \"first_name\",\n    \t\t\"datasource\": \"5a27d4b927abdfab3eb3d4e4\",\n    \t\t\"matchesWith\": \"id\"\n    \t},\n       \t{\n    \t\t\"field\": \"last_name\",\n    \t\t\"datasource\": \"5a27d4b927abdfab3eb3d4e4\",\n    \t\t\"matchesWith\": \"id\"\n    \t},\n    \t{\n    \t\t\"field\": \"email\",\n    \t\t\"datasource\": \"5a27d4b927abdfab3eb3d4e4\",\n    \t\t\"matchesWith\": \"id\"\n    \t},\n    \t{\n    \t\t\"field\": \"grade\",\n    \t\t\"datasource\": \"5a27d4e227abdfab3eb3d4e5\",\n    \t\t\"matchesWith\": \"student_id\"\n    \t}\n    ]\n}"
+							"raw": "{\n    \"name\": \"Workflow test\",\n    \"description\": \"This is a test workflow.\",\n    \"container\": \"5a3b6c02f5ec4eca1a5519a9\"\n}"
 						},
 						"url": {
-							"raw": "localhost:8000/matrix/",
+							"raw": "localhost:8000/workflow/",
 							"host": [
 								"localhost"
 							],
 							"port": "8000",
 							"path": [
-								"matrix",
+								"workflow",
 								""
 							]
 						},
-						"description": "\t"
+						"description": ""
 					},
 					"response": []
 				},
@@ -459,17 +585,17 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"name\": \"Student grades (edited)\",\n    \"container\": \"5a27bbf127abdf74b4c678b7\",\n    \"primaryColumn\": {\n    \t\"field\": \"id\",\n    \t\"isInteger\": true,\n    \t\"datasource\": \"5a2784ea4e3aeb4b1e84fa47\"\n    },\n    \"secondaryColumns\": [\n    \t{\n    \t\t\"field\": \"first_name\",\n    \t\t\"datasource\": \"5a2784ea4e3aeb4b1e84fa47\",\n    \t\t\"matchesWith\": \"id\"\n    \t},\n       \t{\n    \t\t\"field\": \"last_name\",\n    \t\t\"datasource\": \"5a2784ea4e3aeb4b1e84fa47\",\n    \t\t\"matchesWith\": \"id\"\n    \t},\n    \t{\n    \t\t\"field\": \"grade\",\n    \t\t\"datasource\": \"5a27d4e227abdfab3eb3d4e5\",\n    \t\t\"matchesWith\": \"student_id\"\n    \t}\n    ]\n}"
+							"raw": "{\n    \"name\": \"Workflow test2233\",\n    \"container\": \"5a3b50aff5ec4e7a83addc91\"\n}"
 						},
 						"url": {
-							"raw": "localhost:8000/matrix/5a27d57927abdfac9aa59fc7/",
+							"raw": "localhost:8000/workflow/5a3b552cf5ec4e8852091820/",
 							"host": [
 								"localhost"
 							],
 							"port": "8000",
 							"path": [
-								"matrix",
-								"5a27d57927abdfac9aa59fc7",
+								"workflow",
+								"5a3b552cf5ec4e8852091820",
 								""
 							]
 						},
@@ -478,83 +604,72 @@
 					"response": []
 				},
 				{
-					"name": "Delete",
+					"name": "Define matrix",
 					"request": {
-						"method": "DELETE",
+						"method": "PUT",
 						"header": [
 							{
 								"key": "Authorization",
 								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
 							}
 						],
-						"body": {},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"primaryColumn\": {\n    \t\"field\": \"id\",\n    \t\"type\": \"number\",\n    \t\"datasource\": \"5a4db470f5ec4e3447570589\"\n    },\n    \"secondaryColumns\": [\n       \t{\n    \t\t\"field\": \"grade\",\n    \t\t\"datasource\": \"5a4db470f5ec4e3447570589\",\n    \t\t\"matchesWith\": \"id\",\n    \t\t\"type\": \"number\"\n    \t}\n    ]\n}"
+						},
 						"url": {
-							"raw": "localhost:8000/matrix/5a276e014e3aeb1209b0152f/",
+							"raw": "localhost:8000/workflow/5a44d58ff5ec4e485c7784fd/define_matrix/",
 							"host": [
 								"localhost"
 							],
 							"port": "8000",
 							"path": [
-								"matrix",
-								"5a276e014e3aeb1209b0152f",
+								"workflow",
+								"5a44d58ff5ec4e485c7784fd",
+								"define_matrix",
 								""
 							]
 						},
-						"description": ""
+						"description": "\t"
 					},
 					"response": []
 				},
 				{
-					"name": "Data",
+					"name": "Get matrix data",
 					"request": {
 						"method": "GET",
 						"header": [
 							{
 								"key": "Authorization",
 								"value": "{{token}}"
-							}
-						],
-						"body": {},
-						"url": {
-							"raw": "localhost:8000/matrix/5a27c39227abdf8617ba9819/get_data",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"matrix",
-								"5a27c39227abdf8617ba9819",
-								"get_data"
-							]
-						},
-						"description": ""
-					},
-					"response": []
-				},
-				{
-					"name": "Data (user 2)",
-					"request": {
-						"method": "GET",
-						"header": [
+							},
 							{
-								"key": "Authorization",
-								"value": "{{token_2}}"
+								"key": "Content-Type",
+								"value": "application/json"
 							}
 						],
-						"body": {},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Student grades2\",\n    \"container\": \"5a3b5ce4f5ec4e9e72f780b5\",\n    \"primaryColumn\": {\n    \t\"field\": \"id\",\n    \t\"type\": \"number\",\n    \t\"datasource\": \"5a3b5cedf5ec4e9e72f780b6\"\n    },\n    \"secondaryColumns\": [\n    \t{\n    \t\t\"field\": \"first_name\",\n    \t\t\"datasource\": \"5a3b5cedf5ec4e9e72f780b6\",\n    \t\t\"matchesWith\": \"id\",\n    \t\t\"type\": \"number\"\n    \t},\n       \t{\n    \t\t\"field\": \"last_name\",\n    \t\t\"datasource\": \"5a3b5cedf5ec4e9e72f780b6\",\n    \t\t\"matchesWith\": \"id\",\n    \t\t\"type\": \"text\"\n    \t},\n    \t{\n    \t\t\"field\": \"email\",\n    \t\t\"datasource\": \"5a3b5cedf5ec4e9e72f780b6\",\n    \t\t\"matchesWith\": \"id\",\n    \t\t\"type\": \"text\"\n    \t}\n    ]\n}"
+						},
 						"url": {
-							"raw": "localhost:8000/matrix/5a27c39227abdf8617ba9819/get_data",
+							"raw": "localhost:8000/workflow/5a44d58ff5ec4e485c7784fd/get_matrix_data/",
 							"host": [
 								"localhost"
 							],
 							"port": "8000",
 							"path": [
-								"matrix",
-								"5a27c39227abdf8617ba9819",
-								"get_data"
+								"workflow",
+								"5a44d58ff5ec4e485c7784fd",
+								"get_matrix_data",
+								""
 							]
 						},
-						"description": ""
+						"description": "\t"
 					},
 					"response": []
 				}
