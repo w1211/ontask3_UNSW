@@ -28,4 +28,4 @@ backend/config/prod.*
 frontend/node_modules
 
 # Virtual environment
-ontask_env/
+/ontask_env
