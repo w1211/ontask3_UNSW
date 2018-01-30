@@ -40,10 +40,17 @@ class ContainerViewSet(viewsets.ModelViewSet):
                 }
             },
             {
-                # Exclude the data from each datasource
+                # Exclude fields that are not used in the containers component
                 '$project': {
-                    'datasources.data': 0
-                }
+                    'datasources.container': 0,
+                    'datasources.data': 0,
+                    'datasources.connection.password': 0,
+                    'datasources.fields': 0,
+                    'workflows.container': 0,
+                    'workflows.conditionGroups': 0,
+                    'workflows.details': 0,
+                    'workflows.content': 0
+                },
             }
         ]
         containers = list(Container.objects.aggregate(*pipeline))
