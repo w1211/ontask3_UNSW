@@ -1,35 +1,58 @@
-from sqlalchemy import create_engine
-from sqlalchemy.engine.url import URL
+#!/usr/bin/env python3
 
-def read_data_from_external_database(connection, query):
-    ''' Reads data from an external database based 
-        on the connection details and the raw SQL
-        query passed as parameters'''
-    # Initialize the DB connection parameters dictionary
-    db_connection_parameters = {'drivername': connection['driver'],\
-                             'username': connection['username'],\
-                             'password': connection['password'],\
-                             'host': connection['host'],\
-                             'port': connection['port']}
-    # SQL alchemy code to add connect to the external
-    # DB generically to access the query data
-    engine = create_engine(URL(**db_connection_parameters))
-    conn = engine.connect()
-    query_result_set = conn.execute(query)
-    conn.close()
-    return query_result_set
+import smtplib
 
-def create_data_source_container(connection, query_results, owner):
-    ''' Creates a document for the data imported from 
-        an external data source '''
-    data = []
-    for row in query_results:
-        dictionary = dict(zip(row.keys(),row))
-        data.append(dictionary)
-    data = [dict(zip(row.keys(),row)) for row in results]
-    data_source = {'owner' : owner,\
-                   'connection': connection,\
-                   'data': data}
-    # Save to collection
-    
-    
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+
+def send_email(sender_address, recipient_address, email_subject, text_content, html_content, password):
+    '''Generic service to send email from the application'''
+
+    try:
+
+        # Create message container - the correct MIME type is multipart/alternative.
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = email_subject
+        msg['From'] = sender_address
+        msg['To'] = recipient_address
+
+        # Create the body of the message (a plain-text and an HTML version).
+        # text = "Hi!\nHow are you?\nHere is the link you wanted:\nhttps://www.python.org"
+        # html = """\
+        # <html>
+        # <head></head>
+        # <body>
+        #     <p>Hi!<br>
+        #     How are you?<br>
+        #     Here is the <a href="https://www.python.org">link</a> you wanted.
+        #     </p>
+        # </body>
+        # </html>
+        # """
+
+        # Record the MIME types of both parts - text/plain and text/html.
+        part1 = MIMEText(text_content, 'plain')
+        part2 = MIMEText(html_content, 'html')
+
+        # Attach parts into message container.
+        # According to RFC 2046, the last part of a multipart message, in this case
+        # the HTML message, is best and preferred.
+        msg.attach(part1)
+        msg.attach(part2)
+
+        # Send the message via SMTP server.
+        # TO-DO: make the mail server entries a config entry
+        s = smtplib.SMTP(host='smtp.office365.com', port=587)
+        s.starttls()
+        # TO-DO: add the login as a config
+        s.login("zLNTLada@ad.unsw.edu.au", "Dataj3f3!")
+        # sendmail function takes 3 arguments: sender's address, recipient's address
+        # and message to send - here it is sent as one string.
+        s.sendmail(sender_address, recipient_address, msg.as_string())
+        s.quit()
+        print("Email sent successfully")
+        return True
+    except Exception as exception:
+        print("Error sending email")
+        return False
