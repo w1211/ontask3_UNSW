@@ -29,7 +29,7 @@ def combine_data(details):
 
     secondary_column_datasource = defaultdict(list)
     if details is None:
-        raise ValidationError('Data view is not available until the workflow details have been configured')
+        raise ValidationError('This is not available until the workflow details have been configured')
     
     primary_is_integer = True if details['primaryColumn'].type == 'number' else False # Dict key for secondary column is string or integer dependant on the primary field type
 
@@ -374,6 +374,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         self.check_object_permissions(self.request, workflow)
 
         updated_content = self.request.data
+        updated_content = updated_content.replace('"', "'")
 
         # Run the populate content function to validate the provided content before saving it
         self.populate_content(workflow, updated_content)
