@@ -54,10 +54,10 @@ export const fetchWorkflow = (workflowId) => dispatch => {
   .then(response => response.json())
   .then(workflow => {
     dispatch(receiveWorkflow(
-      workflow['name'], 
-      workflow['details'], 
-      workflow['conditionGroups'], 
-      workflow['datasources'], 
+      workflow['name'],
+      workflow['details'],
+      workflow['conditionGroups'],
+      workflow['datasources'],
       workflow['content'])
     );
   })
@@ -85,7 +85,7 @@ export const deleteSecondaryColumn = (index) => (dispatch, getState) => {
   // Clone the current details from state, as we should never directly modify the state object
   let details = Object.assign({}, workflow.details)
   details.secondaryColumns.splice(index, 1);
-  
+
   dispatch(refreshDetails(details));
 };
 
@@ -184,10 +184,10 @@ export const openConditionGroupModal = (conditionGroup) => {
 
       condition.formulas.forEach((formula, j) => {
         formState.conditions[i].formulas.push({})
-        formState.conditions[i].formulas[j].fieldOperator = { 
+        formState.conditions[i].formulas[j].fieldOperator = {
           name: `conditions[${i}].formulas[${j}].fieldOperator`, value: [formula.field, formula.operator]
         }
-        formState.conditions[i].formulas[j].comparator = { 
+        formState.conditions[i].formulas[j].comparator = {
           name: `conditions[${i}].formulas[${j}].comparator`, value: formula.comparator
         }
       })
@@ -196,7 +196,7 @@ export const openConditionGroupModal = (conditionGroup) => {
   } else {
     formState.conditions.push({ formulas: [{}] });
   }
-  
+
   return {
     type: OPEN_CONDITION_GROUP_MODAL,
     conditionGroup,
@@ -282,7 +282,7 @@ export const deleteFormula = (conditionIndex, formulaIndex) => (dispatch, getSta
   const { workflow } = getState();
   let formState = Object.assign({}, workflow.conditionGroupFormState)
   formState.conditions[conditionIndex].formulas.splice(formulaIndex, 1);
-  
+
   dispatch(refreshConditionGroupFormState(formState));
 };
 

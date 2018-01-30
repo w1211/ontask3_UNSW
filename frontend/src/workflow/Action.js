@@ -1,5 +1,5 @@
 import React from 'react';
-import { Divider, Button, Dropdown, Menu, Alert, Modal, Icon } from 'antd';
+import { Divider, Button, Dropdown, Menu, Alert, Modal, Icon, Input, Tabs, Cascader } from 'antd';
 import { convertToRaw, EditorState, ContentState } from 'draft-js';
 import { Editor } from 'react-draft-wysiwyg';
 import draftToHtml from 'draftjs-to-html';
@@ -8,6 +8,7 @@ import htmlToDraft from 'html-to-draftjs';
 import 'react-draft-wysiwyg/dist/react-draft-wysiwyg.css';
 import './Action.css';
 
+const TabPane = Tabs.TabPane;
 
 const handleConditionGroupMenuClick = (e, openConditionGroupModal, confirmConditionGroupDelete, conditionGroup, i) => {
   switch (e.key) {
@@ -30,8 +31,15 @@ const handleContent = (editorState, contentFunction) => {
 const Action = ({
   contentLoading, error, conditionGroups, editorState, content, onUpdateContent,
   previewLoading, previewVisible, previewContent, onPreviewContent, onClosePreview,
-  openConditionGroupModal, confirmConditionGroupDelete, updateEditorState
-}) => { 
+  openConditionGroupModal, confirmConditionGroupDelete, updateEditorState, details
+}) => {
+
+  const options = details ? details.secondaryColumns.map(secondaryColumn => {
+    return {
+      value: secondaryColumn.field,
+      label: secondaryColumn.field,
+    }
+  }) : [];
 
   if (content && !editorState) {
     const blocksFromHtml = htmlToDraft(content);
@@ -57,13 +65,13 @@ const Action = ({
       { conditionGroups && conditionGroups.length > 0 ?
         conditionGroups.map((conditionGroup, i) => {
           return (
-            <Dropdown.Button 
+            <Dropdown.Button
               overlay={
                 <Menu onClick={(e) => { handleConditionGroupMenuClick(e, openConditionGroupModal, confirmConditionGroupDelete, conditionGroup, i) }}>
                   <Menu.Item key="edit">Edit</Menu.Item>
                   <Menu.Item key="delete">Delete</Menu.Item>
                 </Menu>
-              } 
+              }
               key={i} type="primary" trigger={['click']}
               style={{ marginRight: '5px' }}
             >
@@ -74,9 +82,20 @@ const Action = ({
       :
         'No condition groups have been added yet.'
       }
-      
+
       <Divider dashed />
 
+      <Tabs defaultActiveKey="1">
+        <TabPane tab="Email" key="1">
+          <h3>Email Column</h3>
+          <Cascader options={options} placeholder="Email columns"/>
+          <Divider dashed />
+          <h3>Email Subject</h3>
+          <Input placeholder="Enter subject" />
+          <Divider dashed />
+        </TabPane>
+        <TabPane tab="URL" key="2"></TabPane>
+    </Tabs>
       <h3>Content</h3>
       <Editor
         toolbar={{
@@ -89,9 +108,9 @@ const Action = ({
         onEditorStateChange={updateEditorState}
       />
 
-      <PreviewModal 
-        content={previewContent} 
-        visible={previewVisible} 
+      <PreviewModal
+        content={previewContent}
+        visible={previewVisible}
         onCancel={onClosePreview}
       />
 
@@ -106,12 +125,12 @@ const Action = ({
 
 class PreviewModal extends React.Component {
   state = { index: 0 };
-  
+
   render() {
-    const { 
+    const {
       content, visible, onCancel
     } = this.props;
-    
+
     return (
       <Modal
         visible={visible}
@@ -123,19 +142,19 @@ class PreviewModal extends React.Component {
           <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'center' }}>
             <Button.Group size="large" style={{ marginBottom: '10px' }}>
               <Button type="primary" disabled={this.state.index === 0}
-                onClick={() => { 
+                onClick={() => {
                   this.setState(prevState => {
                     return { index: prevState.index - 1 }
-                  }) 
+                  })
                 }}
               >
                 <Icon type="left" />Previous
               </Button>
-              <Button type="primary" disabled={this.state.index === content.length - 1} 
-                onClick={() => { 
+              <Button type="primary" disabled={this.state.index === content.length - 1}
+                onClick={() => {
                   this.setState(prevState => {
                     return { index: prevState.index + 1 }
-                  }) 
+                  })
                 }}
               >
                 Next<Icon type="right" />
@@ -143,7 +162,7 @@ class PreviewModal extends React.Component {
             </Button.Group>
 
             <div style={{ padding: '10px', border: '1px solid #F1F1F1' }}
-              dangerouslySetInnerHTML={{__html: content[this.state.index]}} 
+              dangerouslySetInnerHTML={{__html: content[this.state.index]}}
             />
 
           </div>
