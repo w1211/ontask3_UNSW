@@ -4,9 +4,18 @@
   min-height: 300px;
   max-height: 300px;
   overflow-y: scroll;
+  transition: border 0.2s linear;
 }
 
 /* Padding fix for toolbar modals in content editor */
 .action .editor-wrapper * {
   box-sizing: initial !important;
+}
+
+.action .conditionGroupBtn button:first-child {
+  cursor: move;
+}
+
+.action .isInside {
+  border-color: #9E9E9E;
 }

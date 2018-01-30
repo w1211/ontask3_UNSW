@@ -73,15 +73,11 @@ const ConditionGroupModal = ({
             <Input/>
           )}
         </FormItem>
-
-        <Button onClick={(e) => { e.stopPropagation(); addCondition(); }} style={{ textAlign: 'right', marginBottom: '5px' }}>
-          <Icon type="plus"/>Add Condition
-        </Button>
         
         <QueryBuilder 
           form={form} options={options}
-          addFormula={addFormula} deleteCondition={deleteCondition} deleteFormula={deleteFormula}
-          formState={formState} 
+          addCondition={addCondition} addFormula={addFormula} deleteCondition={deleteCondition} deleteFormula={deleteFormula}
+          formState={formState}
         />
 
         { error && <Alert message={error} type="error"/>}
@@ -94,28 +90,33 @@ const ConditionGroupModal = ({
   )
 }
 
-const QueryBuilder = ({ form, options, formState, addFormula, deleteCondition, deleteFormula }) => {
+const QueryBuilder = ({ form, options, formState, addCondition, addFormula, deleteCondition, deleteFormula }) => {
   return (
-    
-    <Row style={{ ...panelLayout }}>
-      {formState && formState.conditions && formState.conditions.length > 0 ? 
-        <Tree showLine defaultExpandAll={true} className="queryBuilder" expandedKeys={formState.conditions.map((_, i) => { return i.toString()})}>
-          { formState.conditions.map((condition, i) => {
-            const conditionCount = formState.conditions.length;
-            const formulaCount = condition.formulas.length;
-            return (
-              <TreeNode title={<Condition form={form} conditionCount={conditionCount} formulaCount={formulaCount} addFormula={addFormula} deleteCondition={deleteCondition} index={i}/>} key={i}>
-                { condition.formulas && condition.formulas.map((formula, j) => (
-                  <TreeNode title={<Field form={form} formula={formula} i={i} j={j} options={options} formulaCount={formulaCount} deleteFormula={deleteFormula}/>} key={`${i}_${j}`}/>
-                ))}
-              </TreeNode>
-            )
-          })}
-        </Tree>
-      :
-        <div>Get started by adding the first condition.</div>
-      }
-    </Row>
+    <div>
+      <Button onClick={(e) => { e.stopPropagation(); addCondition(); }} style={{ textAlign: 'right', marginBottom: '5px' }}>
+        <Icon type="plus"/>Add Condition
+      </Button>
+
+      <Row style={{ ...panelLayout }}>
+        {formState && formState.conditions && formState.conditions.length > 0 ? 
+          <Tree showLine defaultExpandAll={true} className="queryBuilder" expandedKeys={formState.conditions.map((_, i) => { return i.toString()})}>
+            { formState.conditions.map((condition, i) => {
+              const conditionCount = formState.conditions.length;
+              const formulaCount = condition.formulas.length;
+              return (
+                <TreeNode title={<Condition form={form} conditionCount={conditionCount} formulaCount={formulaCount} addFormula={addFormula} deleteCondition={deleteCondition} index={i}/>} key={i}>
+                  { condition.formulas && condition.formulas.map((formula, j) => (
+                    <TreeNode title={<Field form={form} formula={formula} i={i} j={j} options={options} formulaCount={formulaCount} deleteFormula={deleteFormula}/>} key={`${i}_${j}`}/>
+                  ))}
+                </TreeNode>
+              )
+            })}
+          </Tree>
+        :
+          <div>Get started by adding the first condition.</div>
+        }
+      </Row>
+    </div>
   )
 }
 

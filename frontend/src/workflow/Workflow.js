@@ -83,7 +83,7 @@ class Workflow extends React.Component {
       detailsLoading, detailsError,
       dataLoading, dataError, data, columns,
       conditionGroupModalVisible, conditionGroupLoading, conditionGroupError, conditionGroup, conditionGroupFormState,
-      actionEditorState, actionContentLoading, actionContentError, content,
+      actionEditorState, actionContentLoading, actionContentError,
       previewContentModalVisible, previewContentLoading, previewContent
     } = this.props;
     
@@ -186,7 +186,6 @@ class Workflow extends React.Component {
                           error={actionContentError}
                           conditionGroups={conditionGroups}
                           editorState={actionEditorState}
-                          content={content}
 
                           openFilterModal={(filter) => { dispatch(this.boundActionCreators.openFilterModal(filter)) }}
                           confirmFilterDelete={this.confirmFilterDelete}
@@ -224,7 +223,7 @@ const mapStateToProps = (state) => {
     detailsLoading, detailsError,
     dataLoading, dataError, data, columns,
     conditionGroupModalVisible, conditionGroupLoading, conditionGroupError, conditionGroup, conditionGroupFormState,
-    actionEditorState, actionContentLoading, actionContentError, content,
+    actionEditorState, actionContentLoading, actionContentError,
     previewContentModalVisible, previewContentLoading, previewContent
   } = state.workflow;
   return {
@@ -233,7 +232,7 @@ const mapStateToProps = (state) => {
     detailsLoading, detailsError,
     dataLoading, dataError, data, columns,
     conditionGroupModalVisible, conditionGroupLoading, conditionGroupError, conditionGroup, conditionGroupFormState,
-    actionEditorState, actionContentLoading, actionContentError, content,
+    actionEditorState, actionContentLoading, actionContentError,
     previewContentModalVisible, previewContentLoading, previewContent
   };
 }

@@ -1,3 +1,6 @@
+import { EditorState, ContentState } from 'draft-js';
+import htmlToDraft from 'html-to-draftjs';
+
 export const REQUEST_WORKFLOW = 'REQUEST_WORKFLOW';
 export const RECEIVE_WORKFLOW = 'RECEIVE_WORKFLOW';
 
@@ -34,13 +37,13 @@ const requestWorkflow = () => ({
   type: REQUEST_WORKFLOW
 });
 
-const receiveWorkflow = (name, details, conditionGroups, datasources, content) => ({
+const receiveWorkflow = (name, details, conditionGroups, datasources, editorState) => ({
   type: RECEIVE_WORKFLOW,
   name,
   details,
   conditionGroups,
   datasources,
-  content
+  editorState
 });
 
 export const fetchWorkflow = (workflowId) => dispatch => {
@@ -53,13 +56,21 @@ export const fetchWorkflow = (workflowId) => dispatch => {
   })
   .then(response => response.json())
   .then(workflow => {
+    let editorState = null;
+    if (workflow['content']) {
+      const blocksFromHtml = htmlToDraft(workflow['content']);
+      const { contentBlocks, entityMap } = blocksFromHtml;
+      const contentState = ContentState.createFromBlockArray(contentBlocks, entityMap);
+      editorState = EditorState.createWithContent(contentState);
+    }
+
     dispatch(receiveWorkflow(
       workflow['name'], 
       workflow['details'], 
       workflow['conditionGroups'], 
       workflow['datasources'], 
-      workflow['content'])
-    );
+      editorState
+    ));
   })
   .catch(error => {
     console.error(error);
