@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+from mongoengine import Document, fields
 
-from django.db import models
 
-# Create your models here.
+class OneTimeToken(Document):
+    user = fields.StringField()
+    token = fields.StringField()

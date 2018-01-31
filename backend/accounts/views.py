@@ -5,6 +5,11 @@ from .auth_wrapper import AAFAuthHandler, LTIAuthHandler
 from .auth_router import AuthRouter
 from rest_framework.response import Response
 
+import jwt
+from ontask.settings import SECRET_KEY
+from .models import OneTimeToken
+from django.contrib.auth.models import User
+
 
 class AAFAuthRouter(APIView):
     '''Hosts the logic to handle the post request from AAF and authenticate the
@@ -19,7 +24,6 @@ class AAFAuthRouter(APIView):
         auth_router = AuthRouter()
         return auth_router.authenticate(request, aaf_authhandler)
       
-
 class LTIAuthRouter(APIView):
     '''Hosts the logic to handle the post request from LTI and authenticate the
     user to the application'''
@@ -33,22 +37,28 @@ class LTIAuthRouter(APIView):
         auth_router = AuthRouter()
         return auth_router.authenticate(request, lti_authhandler)
 
-class RetrieveUser(APIView):
-    '''Retrieves the user ID of a user logged in'''
+class ValidateOneTimeToken(APIView):
+    '''Validates the one time token received and returns a long term token'''
+
     authentication_classes = ()
     permission_classes = ()
-    def get(self, request, format=None):
-        response =  Response({"error":"User not logged in"})
-        try:
-            if request.session['_auth_user_id']:
-                response =  Response({"user_id":request.session['_auth_user_id'],"token":request.session['token']})
-            else:
-                response =  Response({"error":"User not logged in"})
-            return response
-        except Exception as exception:
-            print(exception)
-            return Response({"error":"User not logged in"})
-
-
+    def post(self, request, format=None):
+        one_time_token = request.data['token']
         
+        # Ensure that the token has not expired
+        try:
+            decrypted_token = jwt.decode(one_time_token, SECRET_KEY, algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            return Response({ "error": "Token expired" }, status=HTTP_401_UNAUTHORIZED)
 
+        # Ensure that the token exists in the one time token document
+        # Otherwise it must have already been used, or was never generated (is fake)
+        token = OneTimeToken.objects.get(token=one_time_token)
+        if token:
+            # Delete the one time token so that it cannot be used again
+            token.delete()
+            user = User.objects.get(id=decrypted_token['id'])
+            long_term_token = Token.objects.get_or_create(user=user)
+            return Response({ "token": long_term_token })
+
+        return Response({ "error": "Token does not exist" }, status=HTTP_401_UNAUTHORIZED)
