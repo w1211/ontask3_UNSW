@@ -22,6 +22,7 @@ class AuthRouter(object):
             if user:
                 login(request, user)
                 token, _ = Token.objects.get_or_create(user=user)
+                request.session['token'] = token.key
                 return Response({"token": token.key, "name":user.name, "email":user.email})
         except Exception as e:
             # TODO logging
