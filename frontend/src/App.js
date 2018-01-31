@@ -2,33 +2,55 @@ import React from 'react';
 import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
 
 import { Layout, Menu } from 'antd';
-import logo from './logo.png'; // Tell Webpack this JS file uses this image
+import logo from './img/logo.png'; // Tell Webpack this JS file uses this image
 
 import Login from './login/Login';
 import Container from './container/Container';
 import Workflow from './workflow/Workflow';
 
+const queryString = require('query-string');
+
 const { Header, Footer } = Layout;
 
-const LogoStyle = {
-  width: '120px',
-  height: '31px',
-  margin: '16px 28px 16px 0',
-  float: 'left'
-};
-
-const HeaderStyle = {
-  lineHeight: '64px',
-  borderBottom: '1px solid #e8e8e8',
-  background: '#fff'
-}
 
 class App extends React.Component {
+
+  componentDidMount() {
+    const oneTimeToken = queryString.parse(window.location.search).tkn;
+    const authToken = localStorage.getItem('token');
+    const requestBody = { token: oneTimeToken };
+
+    if (!authToken && oneTimeToken) {
+      fetch('http://uat-ontask2.teaching.unsw.edu.au/user/token/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      })
+      .then(response => {
+        if (response.status >= 400 && response.status < 600) {
+          response.json().then(error => {
+            console.log(error);
+          });
+        } else {
+          response.json().then(response => {
+            localStorage.setItem('token', response.token);
+          })
+        }
+      })
+      .catch(error => {
+        console.log(error);
+      })
+    }
+
+  }
+
   render() {
     return (
       <Layout style={{ minHeight: '100%' }}>
-        <Header style={HeaderStyle}>
-          <img src={logo} alt="Logo" style={LogoStyle}/>
+        <Header style={{ lineHeight: '64px', borderBottom: '1px solid #e8e8e8', background: '#fff' }}>
+          <img src={logo} alt="Logo" style={{ width: '120px', height: '31px', margin: '16px 28px 16px 0', float: 'left' }}/>
           <Menu mode="horizontal" defaultSelectedKeys={['1']} style={{ lineHeight: '62px' }}>
             <Menu.Item key="1">Dashboard</Menu.Item>
             <Menu.Item key="2">About</Menu.Item>
