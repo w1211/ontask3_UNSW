@@ -63,7 +63,11 @@ class ValidateOneTimeToken(APIView):
         if token:
             # Delete the one time token so that it cannot be used again
             token.delete()
+            # Get the user from the one time token
             User = get_user_model()
             user = User.objects.get(id=decrypted_token['id'])
-            long_term_token = Token.objects.get_or_create(user=user)
+            # Get or create a long term token for this user
+            long_term_token, _ = Token.objects.get_or_create(user=user)
+            # Convert the token into string format, to be sent as a JSON object in the response body
+            long_term_token = str(long_term_token)
             return Response({ "token": long_term_token })
