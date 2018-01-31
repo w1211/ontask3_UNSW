@@ -58,7 +58,7 @@ export const fetchContainers = () => dispatch => {
   fetch('/container/retrieve_containers', {
     method: 'GET',
     headers: {
-      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd'
+      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5'
     }
   })
   .then(response => response.json())
@@ -97,7 +97,7 @@ export const createContainer = (payload) => dispatch => {
   fetch('/container/', {
     method: 'POST',
     headers: {
-      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5',
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(payload)
@@ -126,7 +126,7 @@ export const updateContainer = (containerId, payload) => dispatch => {
   fetch(`/container/${containerId}/`, {
     method: 'PUT',
     headers: {
-      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5',
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(payload)
@@ -155,7 +155,7 @@ export const deleteContainer = (containerId) => dispatch => {
   fetch(`/container/${containerId}/`, {
     method: 'DELETE',
     headers: {
-      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5',
       'Content-Type': 'application/json'
     }
   })
@@ -203,7 +203,7 @@ export const createWorkflow = (containerId, payload) => dispatch => {
   fetch('/workflow/', {
     method: 'POST',
     headers: {
-      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5',
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(payload)
@@ -232,7 +232,7 @@ export const updateWorkflow = (workflowId, payload) => dispatch => {
   fetch(`/workflow/${workflowId}/`, {
     method: 'PATCH',
     headers: {
-      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5',
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(payload)
@@ -261,7 +261,7 @@ export const deleteWorkflow = (workflowId) => dispatch => {
   fetch(`/workflow/${workflowId}/`, {
     method: 'DELETE',
     headers: {
-      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5',
       'Content-Type': 'application/json'
     }
   })
@@ -327,7 +327,7 @@ export const createDatasource = (containerId, payload, file) => dispatch => {
     fetch('/datasource/', {
       method: 'POST',
       headers: {
-        'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd'
+        'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5'
       },
       body: data
     })
@@ -349,7 +349,7 @@ export const createDatasource = (containerId, payload, file) => dispatch => {
     fetch('/datasource/', {
       method: 'POST',
       headers: {
-        'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+        'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(payload)
@@ -387,7 +387,7 @@ export const updateDatasource = (datasourceId, payload, file) => dispatch => {
     fetch(`/datasource/${datasourceId}/`, {
       method: 'PATCH',
       headers: {
-        'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd'
+        'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5'
       },
       body: data
     })
@@ -409,7 +409,7 @@ export const updateDatasource = (datasourceId, payload, file) => dispatch => {
     fetch(`/datasource/${datasourceId}/`, {
       method: 'PATCH',
       headers: {
-        'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+        'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(payload)
@@ -439,7 +439,7 @@ export const deleteDatasource = (datasourceId) => dispatch => {
   fetch(`/datasource/${datasourceId}/`, {
     method: 'DELETE',
     headers: {
-      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5',
       'Content-Type': 'application/json'
     }
   })

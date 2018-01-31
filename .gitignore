@@ -9,16 +9,15 @@
 .settings/
 *.sublime-workspace
 .eslintrc
-
-# IDE - VSCode
-.vscode/*
+.vscode/
 
 # System Files
 .DS_Store
 Thumbs.db
 
 # Python files
-*.pyc
+__pycache__/
+*.py[cod]
 
 # Backend config files
 backend/config/dev.*
@@ -29,6 +28,7 @@ frontend/node_modules
 
 # Virtual environment
 ontask_env/
+ontask_venv/
 
 # Dev files
 dev/*.csv

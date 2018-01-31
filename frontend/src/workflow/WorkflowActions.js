@@ -51,7 +51,7 @@ export const fetchWorkflow = (workflowId) => dispatch => {
   fetch(`/workflow/${workflowId}/retrieve_workflow`, {
     method: 'GET',
     headers: {
-      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd'
+      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5'
     }
   })
   .then(response => response.json())
@@ -118,7 +118,7 @@ export const updateDetails = (workflowId, payload) => dispatch => {
   fetch(`/workflow/${workflowId}/update_details/`, {
     method: 'PUT',
     headers: {
-      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5',
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(payload)
@@ -160,7 +160,7 @@ export const fetchData = (workflowId) => dispatch => {
   fetch(`/workflow/${workflowId}/get_data/`, {
     method: 'GET',
     headers: {
-      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5',
       'Content-Type': 'application/json'
     }
   })
@@ -237,7 +237,7 @@ export const createConditionGroup = (workflowId, payload) => dispatch => {
   fetch(`/workflow/${workflowId}/create_condition_group/`, {
     method: 'PUT',
     headers: {
-      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5',
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(payload)
@@ -312,7 +312,7 @@ export const updateConditionGroup = (workflowId, conditionGroup, payload) => dis
   fetch(`/workflow/${workflowId}/update_condition_group/`, {
     method: 'PUT',
     headers: {
-      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5',
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(payload)
@@ -344,7 +344,7 @@ export const deleteConditionGroup = (workflowId, index) => dispatch => {
   fetch(`/workflow/${workflowId}/delete_condition_group/`, {
     method: 'PUT',
     headers: {
-      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5',
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({ index: index })
@@ -387,7 +387,7 @@ export const updateContent = (workflowId, payload) => dispatch => {
   fetch(`/workflow/${workflowId}/update_content/`, {
     method: 'PUT',
     headers: {
-      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5',
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(payload)
@@ -433,7 +433,7 @@ export const previewContent = (workflowId, payload) => dispatch => {
   fetch(`/workflow/${workflowId}/preview_content/`, {
     method: 'PUT',
     headers: {
-      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5',
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(payload)

@@ -70,21 +70,21 @@ class AAFAuthHandler(UserAuthHandler):
                 #self.status = 403
                 #TODO logging
                 #self.response.write('Error: Not for this audience')
-                print "############ 403 Not Authorized ##############"
+                print("############ 403 Not Authorized ##############")
                 return "NOT_AUTHORIZED"
         except ExpiredSignature:
             #self.status = 403
             #TODO logging
             #self.response.write('Error: Security cookie has expired')
-            print "############ 403 ExpiredSignature ##############"
+            print("############ 403 ExpiredSignature ##############")
             return "EXPIRED_SIGNATURE"
-	except Exception as e:
-            print "################### GENERIC EXCEPTION ##################"
+        except Exception:
+            print("################### GENERIC EXCEPTION ##################")
             # TODO loggin
-            print traceback.print_exc()
-            print "################### GENERIC EXCEPTION ##################"
+            print(traceback.print_exc())
+            print("################### GENERIC EXCEPTION ##################")
         return None
-
+            
     def extract_user_role(self, user_role_mapping):
         '''Retrieves the correct role mapping to set the
         permissions against user authenticated against AAF'''
@@ -96,4 +96,3 @@ class AAFAuthHandler(UserAuthHandler):
             if role in self.config['role_mappings']['staff']:
                 return 'STAFF'
         return 'STUDENT'
-
