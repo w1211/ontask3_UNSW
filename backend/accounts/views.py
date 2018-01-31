@@ -4,11 +4,13 @@ from rest_framework.views import APIView
 from .auth_wrapper import AAFAuthHandler, LTIAuthHandler
 from .auth_router import AuthRouter
 from rest_framework.response import Response
+from rest_framework.status import HTTP_401_UNAUTHORIZED
 
 import jwt
 from ontask.settings import SECRET_KEY
 from .models import OneTimeToken
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+from rest_framework.authtoken.models import Token
 
 
 class AAFAuthRouter(APIView):
@@ -53,12 +55,15 @@ class ValidateOneTimeToken(APIView):
 
         # Ensure that the token exists in the one time token document
         # Otherwise it must have already been used, or was never generated (is fake)
-        token = OneTimeToken.objects.get(token=one_time_token)
+        try:
+            token = OneTimeToken.objects.get(token=one_time_token)
+        except:
+            return Response({ "error": "Token does not exist" }, status=HTTP_401_UNAUTHORIZED)
+
         if token:
             # Delete the one time token so that it cannot be used again
             token.delete()
+            User = get_user_model()
             user = User.objects.get(id=decrypted_token['id'])
             long_term_token = Token.objects.get_or_create(user=user)
             return Response({ "token": long_term_token })
-
-        return Response({ "error": "Token does not exist" }, status=HTTP_401_UNAUTHORIZED)
