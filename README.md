@@ -1,14 +1,21 @@
 # onTask v2.5
 
 ## Initial setup
-1. Run `xcode-select --install` (Mac OS) or `sudo apt-get install build-essential` (Linux)
+1. Install the system packages required to compile dependencies
+    - Mac OS
+        - `xcode-select --install`
+    - CentOS 
+        - `sudo yum install python36`
+        - `sudo yum install python36-setuptools`
+        - `sudo yum install python36-devel`
 2. Install MongoDB
-3. Set up & run a Python3 [virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtualenv/)
+3. Install the Python3 [virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtualenv/) module by `python3 -m pip install virtualenv`
+4. Set up & run a Python3 virtual environment
     - Always ensure that you are in the created virtual environment when running the backend or performing these initial setup steps
-4. Run `pip3 install -r backend/requirements.txt`
-5. Create a django super user by running `python3 backend/manage.py createsuperuser`
-6. Create environment files `dev.py` and `prod.py` in `backend/config`
-7. In a Python shell, run the following:
+5. Run `pip3 install -r backend/requirements.txt`
+6. Create a django super user by running `python3 backend/manage.py createsuperuser`
+7. Create environment files `dev.py` and `prod.py` in `backend/config`
+8. In a Python shell, run the following:
 ```python
 from cryptography.fernet import Fernet
 # This key will be stored as DATASOURCE_SECRET in the config files
@@ -17,7 +24,7 @@ from cryptography.fernet import Fernet
 # I.e. major data loss, as users will be forced to re-enter their passwords for every data source
 Fernet.generate_key()
 ```
-8. Provide environment variables for each environment file (created in step 5) as follows:
+9. Provide environment variables for each environment file (created in step 5) as follows:
 ```python
 SECRET_KEY = '' # https://docs.djangoproject.com/en/1.11/ref/settings/#secret-key
 DATASOURCE_KEY = '' # Used for encrypting datasource db passwords, generated in step 6

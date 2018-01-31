@@ -23,6 +23,8 @@ from container.views import ContainerViewSet
 from datasource.views import DataSourceViewSet
 from workflow.views import WorkflowViewSet
 
+import accounts.urls
+
 # this is DRF router for REST API viewsets
 router = routers.DefaultRouter()
 
@@ -35,4 +37,5 @@ urlpatterns = [
     url(r'^', include(router.urls, namespace='api')),
     url(r'^admin/', admin.site.urls),
     url(r'^token/', views.obtain_auth_token),
+    url(r'^', include(accounts.urls, namespace='accounts')),
 ]

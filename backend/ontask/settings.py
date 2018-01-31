@@ -14,6 +14,8 @@ import os
 
 import mongoengine
 
+from config.dev import AAF_CONFIG, CIPHER_SUITE_KEY, LTI_CONFIG
+
 if os.environ.get('DJANGO_DEVELOPMENT') is not None:
     from config.dev import *
     DEBUG = True
@@ -34,7 +36,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
-    'rest_framework_mongoengine'
+    'rest_framework_mongoengine',
+    'authtools',
+    'accounts'
 ]
 
 MIDDLEWARE = [
@@ -124,3 +128,5 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     )
 }
+
+AUTH_USER_MODEL = 'authtools.User'
