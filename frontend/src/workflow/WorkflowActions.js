@@ -1,5 +1,6 @@
 import { EditorState, ContentState } from 'draft-js';
 import htmlToDraft from 'html-to-draftjs';
+import authenticatedRequest from '../shared/authenticatedRequest';
 
 export const REQUEST_WORKFLOW = 'REQUEST_WORKFLOW';
 export const RECEIVE_WORKFLOW = 'RECEIVE_WORKFLOW';
@@ -47,34 +48,30 @@ const receiveWorkflow = (name, details, conditionGroups, datasources, editorStat
 });
 
 export const fetchWorkflow = (workflowId) => dispatch => {
-  dispatch(requestWorkflow());
-  fetch(`/workflow/${workflowId}/retrieve_workflow`, {
-    method: 'GET',
-    headers: {
-      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5'
+  authenticatedRequest(
+    () => { dispatch(requestWorkflow()); },
+    `/workflow/${workflowId}/retrieve_workflow`,
+    'GET',
+    null,
+    (error) => { console.log(error); },
+    (workflow) => { 
+      let editorState = null;
+      if (workflow['content']) {
+        const blocksFromHtml = htmlToDraft(workflow['content']);
+        const { contentBlocks, entityMap } = blocksFromHtml;
+        const contentState = ContentState.createFromBlockArray(contentBlocks, entityMap);
+        editorState = EditorState.createWithContent(contentState);
+      }
+  
+      dispatch(receiveWorkflow(
+        workflow['name'], 
+        workflow['details'], 
+        workflow['conditionGroups'], 
+        workflow['datasources'], 
+        editorState
+      ));
     }
-  })
-  .then(response => response.json())
-  .then(workflow => {
-    let editorState = null;
-    if (workflow['content']) {
-      const blocksFromHtml = htmlToDraft(workflow['content']);
-      const { contentBlocks, entityMap } = blocksFromHtml;
-      const contentState = ContentState.createFromBlockArray(contentBlocks, entityMap);
-      editorState = EditorState.createWithContent(contentState);
-    }
-
-    dispatch(receiveWorkflow(
-      workflow['name'], 
-      workflow['details'], 
-      workflow['conditionGroups'], 
-      workflow['datasources'], 
-      editorState
-    ));
-  })
-  .catch(error => {
-    console.error(error);
-  });
+  )
 };
 
 const refreshDetails = (details) => ({

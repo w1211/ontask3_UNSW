@@ -1,3 +1,5 @@
+import authenticatedRequest from '../shared/authenticatedRequest';
+
 export const REQUEST_CONTAINERS = 'REQUEST_CONTAINERS';
 export const RECEIVE_CONTAINERS = 'RECEIVE_CONTAINERS';
 export const CHANGE_CONTAINER_ACCORDION = 'CHANGE_CONTAINER_ACCORDION';
@@ -27,17 +29,10 @@ export const SUCCESS_CREATE_DATASOURCE = 'SUCCESS_CREATE_DATASOURCE';
 export const SUCCESS_UPDATE_DATASOURCE = 'SUCCESS_UPDATE_DATASOURCE';
 export const SUCCESS_DELETE_DATASOURCE = 'SUCCESS_DELETE_DATASOURCE';
 
-//actions for interacting with datasource form uploading file list
 export const UPLOAD_CSV_FILE = 'UPLOAD_CSV_FILE';
 export const ADD_UPLOADING_FILE = 'ADD_UPLOADING_FILE';
 export const REMOVE_UPLOADING_FILE = 'REMOVE_UPLOADING_FILE';
 
-
-//actions for interacting with datasource form uploading file list
-export const addUploadingFile = (file) => ({
-  type: ADD_UPLOADING_FILE,
-  file
-});
 
 const requestContainers = () => ({
   type: REQUEST_CONTAINERS
@@ -54,20 +49,14 @@ export const changeContainerAccordion = (key) => ({
 });
 
 export const fetchContainers = () => dispatch => {
-  dispatch(requestContainers());
-  fetch('/container/retrieve_containers', {
-    method: 'GET',
-    headers: {
-      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5'
-    }
-  })
-  .then(response => response.json())
-  .then(containers => {
-    dispatch(receiveContainers(containers));
-  })
-  .catch(error => {
-    console.error(error);
-  });
+  authenticatedRequest(
+    () => { dispatch(requestContainers()); },
+    '/container/retrieve_containers',
+    'GET',
+    null,
+    (error) => { console.error(error); },
+    (containers) => { dispatch(receiveContainers(containers)); }
+  )
 };
 
 export const openContainerModal = (container) => ({
@@ -93,28 +82,14 @@ const successCreateContainer = () => ({
 });
 
 export const createContainer = (payload) => dispatch => {
-  dispatch(beginRequestContainer());
-  fetch('/container/', {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(payload)
-  })
-  .then(response => {
-    if (response.status >= 400 && response.status < 600) {
-      response.json().then(error => {
-        dispatch(failureRequestContainer(error[0]));
-      });
-    } else {
-      dispatch(successCreateContainer());
-      dispatch(fetchContainers());
-    }
-  })
-  .catch(error => {
-    dispatch(failureRequestContainer('Failed to contact server. Please try again.'));
-  })
+  authenticatedRequest(
+    () => { dispatch(beginRequestContainer()); },
+    '/container/',
+    'POST',
+    payload,
+    (error) => { failureRequestContainer(error); },
+    () => { dispatch(successCreateContainer()); dispatch(fetchContainers()); }
+  )
 };
 
 const successUpdateContainer = () => ({
@@ -457,6 +432,12 @@ export const deleteDatasource = (datasourceId) => dispatch => {
     dispatch(failureRequestDatasource('Failed to contact server. Please try again.'));
   })
 };
+
+
+export const addUploadingFile = (file) => ({
+  type: ADD_UPLOADING_FILE,
+  file
+});
 
 export const handleDatasourceTypeSelction = (isCsvFile) => ({
   type: UPLOAD_CSV_FILE,

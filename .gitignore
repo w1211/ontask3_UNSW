@@ -32,3 +32,4 @@ ontask_venv/
 
 # Dev files
 dev/*.csv
+backend/db.sqlite3
