@@ -5,7 +5,10 @@ from mongoengine.queryset.visitor import Q
 
 from django.http import JsonResponse
 import json
-import re 
+import re
+from bson import ObjectId
+from datetime import date, datetime
+from json import dumps
 
 from .serializers import ContainerSerializer
 from .models import Container
@@ -22,6 +25,13 @@ class ContainerViewSet(viewsets.ModelViewSet):
         # Retrieve containers owned by or shared with the current user, including the associated workflows & data sources
         # Consumed by the containers list interface
         # Perform a lookup on each container object so that we can attach its associated workflows & data sources
+
+        def json_serial(obj):
+            if isinstance(obj, (datetime, date)):
+                return obj.isoformat()
+            if isinstance(obj, ObjectId):
+                return str(obj)
+
         pipeline = [
             {
                 '$lookup': {
@@ -46,14 +56,13 @@ class ContainerViewSet(viewsets.ModelViewSet):
                 }
             }
         ]
-        containers = list(Container.objects.aggregate(*pipeline))
+        containers_after_dump = dumps(list(Container.objects.aggregate(*pipeline)), default=json_serial)
         # Convert the queryset response into a string so that we can apply regex to it
         # When trying to convert the above queryset directly into JSON, ObjectId's are represented in the form { $oid: "x" }
         # This is inconsistent with the simple representation of ObjectId's { "id": "x" } when using the DRF serializer
         # Therefore, convert ObjectId's to this simple representation ourselves using regex sub
         # Also requires us to convert single quotes (returned from queryset) to double quotes (expected for valid JSON)
-        containers = re.sub(r'(ObjectId\(\'(.*?)\'\))', r"'\2'", str(containers)).replace("'", '"').replace('"_id":', '"id":')
-
+        containers = str(containers_after_dump).replace("'", '"').replace('"_id":', '"id":')
         return JsonResponse(json.loads(containers), safe=False)
 
     def get_queryset(self):

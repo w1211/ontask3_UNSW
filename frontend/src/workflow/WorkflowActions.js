@@ -34,13 +34,14 @@ const requestWorkflow = () => ({
   type: REQUEST_WORKFLOW
 });
 
-const receiveWorkflow = (name, details, conditionGroups, datasources, content) => ({
+const receiveWorkflow = (name, details, conditionGroups, datasources, content, schedule) => ({
   type: RECEIVE_WORKFLOW,
   name,
   details,
   conditionGroups,
   datasources,
-  content
+  content,
+  schedule
 });
 
 export const fetchWorkflow = (workflowId) => dispatch => {
@@ -58,7 +59,8 @@ export const fetchWorkflow = (workflowId) => dispatch => {
       workflow['details'],
       workflow['conditionGroups'],
       workflow['datasources'],
-      workflow['content'])
+      workflow['content'],
+      workflow['schedule'])
     );
   })
   .catch(error => {
@@ -104,6 +106,7 @@ const successUpdateDetails = () => ({
 
 export const updateDetails = (workflowId, payload) => dispatch => {
   dispatch(beginRequestDetails());
+  console.log(JSON.stringify(payload));
   fetch(`/workflow/${workflowId}/update_details/`, {
     method: 'PUT',
     headers: {
@@ -126,6 +129,53 @@ export const updateDetails = (workflowId, payload) => dispatch => {
   })
   .catch(error => {
     dispatch(failureRequestDetails('Failed to contact server. Please try again.'));
+  });
+};
+
+export const createSchedule = (workflowId, payload) => dispatch => {
+  let jsonString = JSON.stringify(payload);
+  fetch(`/workflow/${workflowId}/create_schedule/`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  })
+  .then(response => {
+    if (response.status >= 400 && response.status < 600) {
+      response.json().then(error => {
+        console.log(error);
+      });
+    } else {
+      dispatch(fetchWorkflow(workflowId));
+    }
+  })
+  .catch(error => {
+    console.log("failed to connect the server");
+  });
+};
+
+export const deleteSchedule = (workflowId) => dispatch => {
+  fetch(`/workflow/${workflowId}/delete_schedule/`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': 'Token 2f7e60d4adae38532ea65e0a2f1adc4e146079dd',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({})
+  })
+  .then(response => {
+    if (response.status >= 400 && response.status < 600) {
+      response.json().then(error => {
+        console.log(error);
+      });
+    } else {
+      dispatch(fetchWorkflow(workflowId));
+    }
+  })
+  .catch(error => {
+    console.log("failed to connect the server");
   });
 };
 

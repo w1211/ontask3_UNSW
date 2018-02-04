@@ -1,5 +1,5 @@
 import React from 'react';
-import { Divider, Button, Dropdown, Menu, Alert, Modal, Icon, Input, Tabs, Cascader } from 'antd';
+import { Divider, Button, Dropdown, Menu, Alert, Modal, Icon, Input, Tabs, Cascader, Checkbox, Popover } from 'antd';
 import { convertToRaw, EditorState, ContentState } from 'draft-js';
 import { Editor } from 'react-draft-wysiwyg';
 import draftToHtml from 'draftjs-to-html';
@@ -34,12 +34,18 @@ const Action = ({
   openConditionGroupModal, confirmConditionGroupDelete, updateEditorState, details
 }) => {
 
-  const options = details ? details.secondaryColumns.map(secondaryColumn => {
+  const emailColums = details ? details.secondaryColumns.map(secondaryColumn => {
     return {
       value: secondaryColumn.field,
       label: secondaryColumn.field,
     }
   }) : [];
+
+  const emailChoicesDetails = {
+    confirmationEmail: "confirmationEmail",
+    trackEmail: "trackEmail",
+    addColumnEmailReads: "addColumnEmailReads",
+  };
 
   if (content && !editorState) {
     const blocksFromHtml = htmlToDraft(content);
@@ -84,14 +90,26 @@ const Action = ({
       }
 
       <Divider dashed />
-
       <Tabs defaultActiveKey="1">
         <TabPane tab="Email" key="1">
           <h3>Email Column</h3>
-          <Cascader options={options} placeholder="Email columns"/>
+          <Cascader options={emailColums} placeholder="Email columns"/>
           <Divider dashed />
           <h3>Email Subject</h3>
           <Input placeholder="Enter subject" />
+          <Divider dashed />
+          <h3>Email choices</h3>
+          <Checkbox.Group style={{ width: '100%' }}>
+            <Popover content={emailChoicesDetails.confirmationEmail} trigger="hover">
+              <Checkbox value="confirmationEmail">Send you a confirmation Email</Checkbox>
+            </Popover>
+            <Popover content={emailChoicesDetails.trackEmail} trigger="hover">
+              <Checkbox value="trackEmail">Track if emails are read</Checkbox>
+            </Popover>
+            <Popover content={emailChoicesDetails.addColumnEmailReads} trigger="hover">
+              <Checkbox value="addColumnEmailReads">Add a column with the number of email reads tracked</Checkbox>
+            </Popover>
+          </Checkbox.Group>
           <Divider dashed />
         </TabPane>
         <TabPane tab="URL" key="2"></TabPane>

@@ -10,6 +10,7 @@ import Details from './Details';
 import DataView from './DataView';
 import Action from './Action';
 import ConditionGroupModal from './ConditionGroupModal';
+import Scheduler from './Scheduler';
 
 const confirm = Modal.confirm;
 const { Content, Sider } = Layout;
@@ -83,7 +84,7 @@ class Workflow extends React.Component {
       detailsLoading, detailsError,
       dataLoading, dataError, data, columns,
       conditionGroupModalVisible, conditionGroupLoading, conditionGroupError, conditionGroup, conditionGroupFormState,
-      actionEditorState, actionContentLoading, actionContentError, content,
+      actionEditorState, actionContentLoading, actionContentError, content, schedule,
       previewContentModalVisible, previewContentLoading, previewContent
     } = this.props;
 
@@ -126,6 +127,12 @@ class Workflow extends React.Component {
                     <Link to={`${match.url}/action`}>
                       <Icon type="form" />
                       <span>Action</span>
+                    </Link>
+                  </Menu.Item>
+                  <Menu.Item key="scheduler">
+                    <Link to={`${match.url}/scheduler`}>
+                      <Icon type="schedule" />
+                      <span>Scheduler</span>
                     </Link>
                   </Menu.Item>
                 </Menu>
@@ -208,6 +215,13 @@ class Workflow extends React.Component {
                         />
                       </div>
                     }/>
+                    <Route path={`${match.url}/scheduler`} render={()=>
+                      <Scheduler
+                        onCreate={(payload) => this.boundActionCreators.createSchedule(match.params.id, payload)}
+                        currentSchedule={schedule}
+                        onDelete={() => this.boundActionCreators.deleteSchedule(match.params.id)}
+                      />}
+                    />
                   </Switch>
                 }
               </Content>
@@ -227,7 +241,7 @@ const mapStateToProps = (state) => {
     detailsLoading, detailsError,
     dataLoading, dataError, data, columns,
     conditionGroupModalVisible, conditionGroupLoading, conditionGroupError, conditionGroup, conditionGroupFormState,
-    actionEditorState, actionContentLoading, actionContentError, content,
+    actionEditorState, actionContentLoading, actionContentError, content, schedule,
     previewContentModalVisible, previewContentLoading, previewContent
   } = state.workflow;
   return {
@@ -236,7 +250,7 @@ const mapStateToProps = (state) => {
     detailsLoading, detailsError,
     dataLoading, dataError, data, columns,
     conditionGroupModalVisible, conditionGroupLoading, conditionGroupError, conditionGroup, conditionGroupFormState,
-    actionEditorState, actionContentLoading, actionContentError, content,
+    actionEditorState, actionContentLoading, actionContentError, content, schedule,
     previewContentModalVisible, previewContentLoading, previewContent
   };
 }
