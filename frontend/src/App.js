@@ -8,43 +8,10 @@ import Login from './login/Login';
 import Container from './container/Container';
 import Workflow from './workflow/Workflow';
 
-const queryString = require('query-string');
-
 const { Header, Footer } = Layout;
 
 
 class App extends React.Component {
-
-  componentDidMount() {
-    const oneTimeToken = queryString.parse(window.location.search).tkn;
-    const authToken = localStorage.getItem('token');
-    const requestBody = { token: oneTimeToken };
-
-    if (!authToken && oneTimeToken) {
-      fetch('http://uat-ontask2.teaching.unsw.edu.au/user/token/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-      })
-      .then(response => {
-        if (response.status >= 400 && response.status < 600) {
-          response.json().then(error => {
-            console.log(error);
-          });
-        } else {
-          response.json().then(response => {
-            localStorage.setItem('token', response.token);
-          })
-        }
-      })
-      .catch(error => {
-        console.log(error);
-      })
-    }
-
-  }
 
   render() {
     return (
