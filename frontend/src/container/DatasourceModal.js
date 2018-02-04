@@ -167,7 +167,7 @@ const DatasourceModal = ({
                 return <Option value={datasource.id} key={datasource.name}>{datasource.name}</Option>
               }) : ''}
             </Select>
-            <Button disabled={datasource ? false : true} onClick={() => { onDelete(datasource) }} type="danger" icon="delete" style={{ marginLeft: '10px' }}/>
+            <Button disabled={datasource ? false : true} onClick={() => { onDelete(datasource.id) }} type="danger" icon="delete" style={{ marginLeft: '10px' }}/>
           </div>
         </FormItem>
         <FormItem
