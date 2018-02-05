@@ -14,8 +14,9 @@ from .tasks import update_data_in_data_container
 
 
 
-class CreateDataSourceUpdateTaskView(APIView):
-    ''' Creates an Ontask Periodic task to update the data source container'''
+
+class DataSourceUpdateTaskView(APIView):
+    ''' Container for the Ontask Task Scheduler methods'''
     # Assigns the authentication permissions
     authentication_classes = ()
     permission_classes = ()
