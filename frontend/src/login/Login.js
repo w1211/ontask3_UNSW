@@ -13,7 +13,7 @@ class Login extends React.Component {
   state = { error: null };
 
   handleSubmit() {
-    const { form, history, onSubmit } = this.props;
+    const { form, history } = this.props;
 
     form.validateFields((err, values) => {
       if (err) {
@@ -35,7 +35,7 @@ class Login extends React.Component {
         } else {
           response.json().then(response => {
             localStorage.setItem('token', response.token);
-            this.props.history.push("containers");
+            history.push("containers");
           })
         }
       })
@@ -82,7 +82,7 @@ class Login extends React.Component {
 
 
   render() {
-    const { form, onSubmit } = this.props;
+    const { form } = this.props;
 
     return (
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
