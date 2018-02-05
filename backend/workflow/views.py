@@ -1,10 +1,12 @@
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
 from rest_framework.decorators import detail_route
+from datetime import datetime
 
 from django.http import JsonResponse
 import json
-import re 
+import re
+import dateutil.parser
 
 from .serializers import WorkflowSerializer
 from .models import Workflow
@@ -29,7 +31,7 @@ def combine_data(details):
     secondary_column_datasource = defaultdict(list)
     if details is None:
         raise ValidationError('This is not available until the workflow details have been configured')
-    
+
     primary_is_integer = True if details['primaryColumn'].type == 'number' else False # Dict key for secondary column is string or integer dependant on the primary field type
 
     for column in details['secondaryColumns']:
@@ -73,7 +75,7 @@ def combine_data(details):
 
     # Define the fields (and retain their order) to be consumed by the data table
     columns = [primaryColumn.field] + [secondary_column.field for secondary_column in details['secondaryColumns']]
-    
+
     response = {}
     response['data'] = data
     response['columns'] = columns
@@ -105,7 +107,10 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         datasources = DataSource.objects(container=workflow.container.id).only('id', 'name', 'fields')
         serializer.instance.datasources = datasources
-
+        if serializer.data['schedule']:
+            serializer.data['schedule']['startDate'] = dateutil.parser.parse(serializer.data['schedule']['startDate']).strftime('%Y-%m-%d')
+            serializer.data['schedule']['endDate'] = dateutil.parser.parse(serializer.data['schedule']['endDate']).strftime('%Y-%m-%d')
+            serializer.data['schedule']['time'] = dateutil.parser.parse(serializer.data['schedule']['time']).strftime('%H:%M')
         return JsonResponse(serializer.data, safe=False)
 
     @detail_route(methods=['put'])
@@ -122,7 +127,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     def get_data(self, request, id=None):
         workflow = Workflow.objects.get(id=id)
         self.check_object_permissions(self.request, workflow)
-
         data = combine_data(workflow.details)
         return JsonResponse(data, safe=False)
 
@@ -152,9 +156,9 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         for item in data:
             # Ensure that each item passes the test for only one condition per condition group
             matchedCount = 0
-           
+
             for condition in condition_group['conditions']:
-                # Initialise the condition name as a key in the defaultdict 
+                # Initialise the condition name as a key in the defaultdict
                 conditions_passed[condition['name']] = []
 
                 didPass = False
@@ -172,13 +176,13 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                     pass_counts = [self.did_pass_formula(secondary_columns, item, formula) for formula in condition['formulas']]
                     if sum(pass_counts) > 0:
                         didPass = True
-                
+
                 if didPass:
                     conditions_passed[condition['name']].append(item[primary_column])
                     matchedCount += 1
 
             if matchedCount > 1:
-                raise ValidationError('An item has matched with more than one condition in the condition group \'{0}\''.format(condition_group['name']))        
+                raise ValidationError('An item has matched with more than one condition in the condition group \'{0}\''.format(condition_group['name']))
 
         return conditions_passed
 
@@ -191,7 +195,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         secondary_column_fields = [secondary_column.field for secondary_column in secondary_columns]
         for condition in condition_group['conditions']:
             for formula in condition['formulas']:
-                
+
                 # Parse the output of the field/operator cascader from the condition group form in the frontend
                 # Only necessary if this is being called after a post from the frontend
                 if 'fieldOperator' in formula:
@@ -214,13 +218,13 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         #             if eval(populated_formula):
         #                 filtered_data.append(item)
         #         except:
-        #             raise ValidationError('An issue occured while trying to evaluate the filter. Do each of the fields used in the filter formula have the correct \'type\' set?')    
+        #             raise ValidationError('An issue occured while trying to evaluate the filter. Do each of the fields used in the filter formula have the correct \'type\' set?')
         #     data = filtered_data
 
         # Determine the rows that pass each condition
         # Outputs a dict of { condition_name: [ item_1_primary_field, item_2_primary_field, ... ] }
         conditions_passed = self.evaluate_condition_group(primary_column, secondary_columns, data, condition_group)
-        
+
         return conditions_passed
 
     @detail_route(methods=['put'])
@@ -238,8 +242,8 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             for condition in condition_group['conditions']:
                 if condition['name'] in [condition['name'] for condition in new_condition_group['conditions']]:
                     raise ValidationError('\'{0}\' is already being used as a condition name in this workflow'.format(condition['name']))
-        
-        conditions_passed = self.validate_condition_group(workflow['details'], new_condition_group) 
+
+        conditions_passed = self.validate_condition_group(workflow['details'], new_condition_group)
 
         result = workflow.update(push__conditionGroups=new_condition_group)
 
@@ -269,7 +273,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                 if condition['name'] in [condition['name'] for condition in updated_condition_group['conditions']]:
                     raise ValidationError('\'{0}\' is already being used as a condition name in this workflow'.format(condition['name']))
 
-        conditions_passed = self.validate_condition_group(workflow['details'], updated_condition_group) 
+        conditions_passed = self.validate_condition_group(workflow['details'], updated_condition_group)
 
         condition_groups = workflow['conditionGroups']
         for i in range(len(condition_groups)):
@@ -293,7 +297,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         index = self.request.data['index']
         condition_groups = workflow['conditionGroups']
         del condition_groups[index]
-        
+
         for i in range(len(condition_groups)):
             condition_groups[i] = json.loads(condition_groups[i].to_json())
 
@@ -310,7 +314,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         if condition not in all_conditions_passed:
             raise ValidationError('The condition \'{0}\' does not exist in any condition group for this workflow'.format(condition))
-        
+
         return content_value if item_key in all_conditions_passed[condition] else None
 
 
@@ -327,7 +331,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         condition_groups = workflow['conditionGroups']
         details = workflow['details']
         all_conditions_passed = defaultdict(list)
-        
+
         content = content if content else workflow['content']
 
         # Combine all conditions from each condition group into a single dict
@@ -340,7 +344,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         primary_field = details['primaryColumn']['field']
 
         result = defaultdict(str)
-        
+
         for item in data:
             # Parse the conditional statements
             item_key = item[primary_field]
@@ -356,9 +360,9 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             # Populate the field tags
             item_content = re.sub(r'{{ (.*?) }}', lambda match: self.populate_field(match, item), item_content)
             result[item_key] = item_content
-            
+
         return result
-    
+
     @detail_route(methods=['put'])
     def preview_content(self, request, id=None):
         workflow = Workflow.objects.get(id=id)
@@ -367,7 +371,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         preview_content = self.request.data
 
         populated_content = list(value for key, value in self.populate_content(workflow, preview_content).items())
-        
+
         return JsonResponse(populated_content, safe=False)
 
     @detail_route(methods=['put'])
@@ -386,3 +390,27 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         serializer.save()
 
         return JsonResponse(serializer.data)
+
+    @detail_route(methods=['put'])
+    def create_schedule(self, request, id=None):
+        print("here in create_schedule")
+        workflow = Workflow.objects.get(id=id)
+        self.check_object_permissions(self.request, workflow)
+        updated_schedule = defaultdict(str)
+        print(request.data['RangePicker'][0])
+        updated_schedule['startDate'] = dateutil.parser.parse(request.data['RangePicker'][0])
+        updated_schedule['endDate'] = dateutil.parser.parse(request.data['RangePicker'][1])
+        updated_schedule['time'] = dateutil.parser.parse(request.data['TimePicker'])
+        updated_schedule['frequency'] = int(request.data['Frequency'])
+        serializer = WorkflowSerializer(instance=workflow, data={'schedule': updated_schedule}, partial=True)
+        serializer.is_valid()
+        serializer.save()
+        return JsonResponse(serializer.data)
+
+    @detail_route(methods=['put'])
+    def delete_schedule(self, request, id=None):
+        workflow = Workflow.objects.get(id=id)
+        self.check_object_permissions(self.request, workflow)
+        workflow.update(unset__schedule=1)
+        serializer = WorkflowSerializer(instance=workflow)
+        return JsonResponse(serializer.data, safe=False)

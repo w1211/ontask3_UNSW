@@ -25,11 +25,14 @@ import {
   BEGIN_REQUEST_CONTENT,
   FAILURE_REQUEST_CONTENT,
   SUCCESS_UPDATE_CONTENT,
-  
+
   BEGIN_REQUEST_PREVIEW_CONTENT,
   FAILURE_REQUEST_PREVIEW_CONTENT,
   SUCCESS_PREVIEW_CONTENT,
-  CLOSE_PREVIEW_CONTENT
+  CLOSE_PREVIEW_CONTENT,
+
+  FAILURE_CREATE_SCHEDULE,
+  SUCCESS_CREATE_SCHEDULE
 } from './WorkflowActions';
 
 import _ from 'lodash';
@@ -62,9 +65,11 @@ function workflow(state = initialState, action) {
         details: action.details,
         conditionGroups: action.conditionGroups,
         datasources: action.datasources,
-        actionEditorState: action.editorState
+        actionEditorState: action.editorState,
+        content: action.content,
+        schedule: action.schedule
       });
-    
+
     // Details actions
     case REFRESH_DETAILS:
       return Object.assign({}, state, {
@@ -87,6 +92,19 @@ function workflow(state = initialState, action) {
         didUpdate: true,
         model: 'details'
       });
+
+    // Scheduler Actions
+    case FAILURE_CREATE_SCHEDULE:
+      return Object.assign({}, state, {
+        scheduleLoading: false,
+        scheduleError: action.error
+      });
+    case SUCCESS_CREATE_SCHEDULE:
+      return Object.assign({}, state, {
+        scheduleLoading: false,
+        scheduleError: null
+      });
+
 
     // Data actions
     case BEGIN_REQUEST_DATA:
@@ -146,7 +164,7 @@ function workflow(state = initialState, action) {
         conditionGroupLoading: false,
         conditionGroupError: action.error
       });
-      
+
     // Specific condition group actions
     case SUCCESS_CREATE_CONDITION_GROUP:
       return Object.assign({}, state, {
@@ -177,12 +195,12 @@ function workflow(state = initialState, action) {
         conditionGroupForm: null,
         conditionGroup: null
       });
-    
+
     // Action actions
     case UPDATE_EDITOR_STATE:
       return Object.assign({}, state, {
         actionEditorState: action.payload
-      });  
+      });
     case BEGIN_REQUEST_CONTENT:
       return Object.assign({}, state, {
         actionContentLoading: true

@@ -36,7 +36,13 @@ class ConditionGroup(EmbeddedDocument):
     name = fields.StringField(required=True)
     conditions = fields.EmbeddedDocumentListField(Condition)
 
-# Workflow 
+class Schedule(EmbeddedDocument):
+    startDate = fields.DateTimeField(required=True)
+    endDate = fields.DateTimeField(required=True)
+    time = fields.DateTimeField(required=True) #hour and minutes
+    frequency = fields.IntField(min_value=1, required=True) #day
+
+# Workflow
 class Workflow(Document):
     container = fields.ReferenceField(Container, required=True, reverse_delete_rule=2) # Cascade delete if container is deleted
     name = fields.StringField(required=True, unique_with='container')
@@ -45,3 +51,4 @@ class Workflow(Document):
     filter = fields.StringField(null=True)
     conditionGroups = fields.EmbeddedDocumentListField(ConditionGroup)
     content = fields.StringField()
+    schedule = fields.EmbeddedDocumentField(Schedule, null=True, required=False)

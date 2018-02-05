@@ -1,5 +1,5 @@
 import React from 'react';
-import { Divider, Button, Dropdown, Menu, Alert, Modal, Icon } from 'antd';
+import { Divider, Button, Dropdown, Menu, Alert, Modal, Icon, Input, Tabs, Cascader, Checkbox, Popover } from 'antd';
 import { convertToRaw, EditorState, Modifier } from 'draft-js';
 import { Editor } from 'react-draft-wysiwyg';
 import draftToHtml from 'draftjs-to-html';
@@ -8,6 +8,7 @@ import Draggable from 'react-draggable';
 import 'react-draft-wysiwyg/dist/react-draft-wysiwyg.css';
 import './Action.css';
 
+const TabPane = Tabs.TabPane;
 
 const handleConditionGroupMenuClick = (e, openConditionGroupModal, confirmConditionGroupDelete, conditionGroup, i) => {
   switch (e.key) {
@@ -35,7 +36,7 @@ class Action extends React.Component {
     const contentEditor = editor.editorContainer.parentElement.parentElement.getBoundingClientRect();
     const isInsideX = mouseEvent.clientX >= contentEditor.x && mouseEvent.clientX <= (contentEditor.x + contentEditor.width);
     const isInsideY = mouseEvent.clientY >= contentEditor.y && mouseEvent.clientY <= (contentEditor.y + contentEditor.height);
-  
+
     // isInside flag is consumed by:
     //   The conditional css class on the content editor (darkens the border)
     //   Determining whether to add the dragged condition group to the content editor after drag stops
@@ -77,19 +78,32 @@ class Action extends React.Component {
     });
 
     // Apply the new selection to the new editor state
-    newEditorState = EditorState.forceSelection(newEditorState, updatedSelection)   
-    
+    newEditorState = EditorState.forceSelection(newEditorState, updatedSelection)
+
     // Update the editor state in redux, so that the component is re-rendered
     updateEditorState(newEditorState);
   }
 
   render() {
-    const { 
+    const {
       contentLoading, error, conditionGroups, editorState, onUpdateContent,
       previewLoading, previewVisible, previewContent, onPreviewContent, onClosePreview,
-      openConditionGroupModal, confirmConditionGroupDelete, updateEditorState
+      openConditionGroupModal, confirmConditionGroupDelete, updateEditorState, details
     } = this.props;
-  
+
+    const emailChoicesDetails = {
+        confirmationEmail: "confirmationEmail",
+        trackEmail: "trackEmail",
+        addColumnEmailReads: "addColumnEmailReads",
+    };
+
+    const emailColums = details ? details.secondaryColumns.map(secondaryColumn => {
+      return {
+        value: secondaryColumn.field,
+        label: secondaryColumn.field,
+      }
+    }) : [];
+
     return (
       <div className="action">
         <h3>
@@ -97,7 +111,7 @@ class Action extends React.Component {
           <Button style={{ marginLeft: '10px' }} shape="circle" icon="plus" />
         </h3>
         No filters have been added yet.
-  
+
         <Divider dashed />
         <h3>
           Condition groups
@@ -132,9 +146,29 @@ class Action extends React.Component {
         :
           'No condition groups have been added yet.'
         }
-        
+
         <Divider dashed />
-  
+        <Tabs defaultActiveKey="1">
+                <TabPane tab="Email" key="1">
+                  <h3>Email column</h3>
+                  <Cascader style={{ marginBottom: '25px' }} options={emailColums} placeholder="Email columns"/>
+                  <h3>Email subject</h3>
+                  <Input style={{ marginBottom: '25px' }} placeholder="Enter subject" />
+                  <h3>Email choices</h3>
+                  <Checkbox.Group style={{ width: '100%', marginBottom: '25px'}}>
+                    <Popover content={emailChoicesDetails.confirmationEmail} trigger="hover">
+                      <Checkbox value="confirmationEmail">Send you a confirmation Email</Checkbox>
+                    </Popover>
+                    <Popover content={emailChoicesDetails.trackEmail} trigger="hover">
+                      <Checkbox value="trackEmail">Track if emails are read</Checkbox>
+                    </Popover>
+                    <Popover content={emailChoicesDetails.addColumnEmailReads} trigger="hover">
+                      <Checkbox value="addColumnEmailReads">Add a column with the number of email reads tracked</Checkbox>
+                    </Popover>
+                  </Checkbox.Group>
+                </TabPane>
+                <TabPane tab="URL" key="2"></TabPane>
+        </Tabs>
         <h3>Content</h3>
         <Editor
           toolbar={{
@@ -147,13 +181,13 @@ class Action extends React.Component {
           onEditorStateChange={updateEditorState}
           editorRef={(el) => { this.editor = el; }}
         />
-  
-        <PreviewModal 
-          content={previewContent} 
-          visible={previewVisible} 
+
+        <PreviewModal
+          content={previewContent}
+          visible={previewVisible}
           onCancel={onClosePreview}
         />
-  
+
         { error && <Alert message={error} type="error" style={{ marginTop: '10px' }}/>}
         <div style={{ marginTop: '10px' }}>
           <Button loading={previewLoading} style={{ marginRight: '10px' }} size="large" onClick={() => { handleContent(editorState, onPreviewContent) }}>Preview</Button>
@@ -168,12 +202,12 @@ class Action extends React.Component {
 
 class PreviewModal extends React.Component {
   state = { index: 0 };
-  
+
   render() {
-    const { 
+    const {
       content, visible, onCancel
     } = this.props;
-    
+
     return (
       <Modal
         visible={visible}
@@ -185,19 +219,19 @@ class PreviewModal extends React.Component {
           <div style={{ display: 'flex', flexDirection: 'column'}}>
             <Button.Group size="large" style={{ marginBottom: '10px', textAlign: 'center' }}>
               <Button type="primary" disabled={this.state.index === 0}
-                onClick={() => { 
+                onClick={() => {
                   this.setState(prevState => {
                     return { index: prevState.index - 1 }
-                  }) 
+                  })
                 }}
               >
                 <Icon type="left" />Previous
               </Button>
-              <Button type="primary" disabled={this.state.index === content.length - 1} 
-                onClick={() => { 
+              <Button type="primary" disabled={this.state.index === content.length - 1}
+                onClick={() => {
                   this.setState(prevState => {
                     return { index: prevState.index + 1 }
-                  }) 
+                  })
                 }}
               >
                 Next<Icon type="right" />
@@ -205,7 +239,7 @@ class PreviewModal extends React.Component {
             </Button.Group>
 
             <div style={{ padding: '10px', border: '1px solid #F1F1F1' }}
-              dangerouslySetInnerHTML={{__html: content[this.state.index]}} 
+              dangerouslySetInnerHTML={{__html: content[this.state.index]}}
             />
 
           </div>

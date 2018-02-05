@@ -10,13 +10,14 @@ import Details from './Details';
 import DataView from './DataView';
 import Action from './Action';
 import ConditionGroupModal from './ConditionGroupModal';
+import Scheduler from './Scheduler';
 
 const confirm = Modal.confirm;
 const { Content, Sider } = Layout;
 
 
 class Workflow extends React.Component {
-  constructor(props) { 
+  constructor(props) {
     super(props);
     const { dispatch } = props;
 
@@ -49,7 +50,7 @@ class Workflow extends React.Component {
         description: `The ${nextProps.model} was successfuly updated.`,
       });
     }
-  
+
     if (nextProps.didDelete) {
       notification['success']({
         message: `${nextProps.model.charAt(0).toUpperCase() + nextProps.model.slice(1)} deleted`,
@@ -78,15 +79,15 @@ class Workflow extends React.Component {
   };
 
   render() {
-    const { 
+    const {
       dispatch, isFetching, match, location, name, details, conditionGroups, datasources,
       detailsLoading, detailsError,
       dataLoading, dataError, data, columns,
       conditionGroupModalVisible, conditionGroupLoading, conditionGroupError, conditionGroup, conditionGroupFormState,
-      actionEditorState, actionContentLoading, actionContentError,
+      actionEditorState, actionContentLoading, actionContentError, schedule,
       previewContentModalVisible, previewContentLoading, previewContent
     } = this.props;
-    
+
     return (
       <Content style={{ padding: '0 50px' }}>
         <Breadcrumb style={{ margin: '16px 0' }}>
@@ -128,22 +129,28 @@ class Workflow extends React.Component {
                       <span>Action</span>
                     </Link>
                   </Menu.Item>
+                  <Menu.Item key="scheduler">
+                    <Link to={`${match.url}/scheduler`}>
+                      <Icon type="schedule" />
+                      <span>Scheduler</span>
+                    </Link>
+                  </Menu.Item>
                 </Menu>
               </Sider>
               <Content style={{ padding: '0 24px', minHeight: 280 }}>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1em' }}>
                   <h1 style={{ display: 'inline-block', margin: 0 }}>{name}</h1>
                 </div>
-                { isFetching ? 
+                { isFetching ?
                   <Spin size="large" />
                 :
                   <Switch>
                     <Redirect exact from={match.url} to={`${match.url}/details`}/>
                     <Route path={`${match.url}/details`} render={()=>
-                      <Details 
+                      <Details
                         loading={detailsLoading}
                         error={detailsError}
-                        datasources={datasources} 
+                        datasources={datasources}
                         details={details}
 
                         addSecondaryColumn={this.boundActionCreators.addSecondaryColumn}
@@ -152,12 +159,13 @@ class Workflow extends React.Component {
                       />}
                     />
                     <Route path={`${match.url}/data`} render={()=>
-                      <DataView 
+                      <DataView
                         loading={dataLoading}
                         error={dataError}
                         data={data}
+                        details={details}
                         columns={columns}
-                        
+
                         fetchData={() => { this.boundActionCreators.fetchData(match.params.id) }}
                       />}
                     />
@@ -201,9 +209,18 @@ class Workflow extends React.Component {
                           previewContent={previewContent}
                           onPreviewContent={(payload) => { this.boundActionCreators.previewContent(match.params.id, payload) }}
                           onClosePreview={() => { dispatch(this.boundActionCreators.closePreviewContent()) }}
+
+                          details={details}
                         />
                       </div>
                     }/>
+                    <Route path={`${match.url}/scheduler`} render={()=>
+                      <Scheduler
+                        onCreate={(payload) => this.boundActionCreators.createSchedule(match.params.id, payload)}
+                        currentSchedule={schedule}
+                        onDelete={() => this.boundActionCreators.deleteSchedule(match.params.id)}
+                      />}
+                    />
                   </Switch>
                 }
               </Content>
@@ -213,7 +230,6 @@ class Workflow extends React.Component {
     </Content>
     );
   };
-
 };
 
 const mapStateToProps = (state) => {
@@ -223,7 +239,7 @@ const mapStateToProps = (state) => {
     detailsLoading, detailsError,
     dataLoading, dataError, data, columns,
     conditionGroupModalVisible, conditionGroupLoading, conditionGroupError, conditionGroup, conditionGroupFormState,
-    actionEditorState, actionContentLoading, actionContentError,
+    actionEditorState, actionContentLoading, actionContentError, content, schedule,
     previewContentModalVisible, previewContentLoading, previewContent
   } = state.workflow;
   return {
@@ -232,7 +248,7 @@ const mapStateToProps = (state) => {
     detailsLoading, detailsError,
     dataLoading, dataError, data, columns,
     conditionGroupModalVisible, conditionGroupLoading, conditionGroupError, conditionGroup, conditionGroupFormState,
-    actionEditorState, actionContentLoading, actionContentError,
+    actionEditorState, actionContentLoading, actionContentError, content, schedule,
     previewContentModalVisible, previewContentLoading, previewContent
   };
 }
