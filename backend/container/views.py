@@ -5,6 +5,7 @@ from rest_framework.decorators import list_route
 from django.http import JsonResponse
 import json
 import re 
+from mongoengine.queryset.visitor import Q
 
 from .serializers import ContainerSerializer
 from .models import Container
@@ -16,9 +17,10 @@ class ContainerViewSet(viewsets.ModelViewSet):
     serializer_class = ContainerSerializer
     permission_classes = [ContainerPermissions]
 
-    # Override the default list view, as we have defined a custom list view in retrieve_containers
     def get_queryset(self):
-        return []
+        return Container.objects.filter(
+            Q(owner = self.request.user.id) | Q(sharing__readOnly__contains = self.request.user.id) | Q(sharing__readWrite__contains = self.request.user.id)
+        )
 
     @list_route(methods=['get'])
     def retrieve_containers(self, request):
@@ -109,4 +111,6 @@ class ContainerViewSet(viewsets.ModelViewSet):
 
         # The delete function cascades down datasources & matrices
         # This is done via the container field of the datasource & workflow models
-        obj.delete()
+        obj.delete()        
+
+        # TODO fix bug https://stackoverflow.com/questions/32513388/how-would-i-override-the-perform-destroy-method-in-django-rest-framework
