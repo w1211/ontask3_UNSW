@@ -6,10 +6,19 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 class UserAuthHandler(object):
-    '''Authenticates and creates a record for a user logging in form an external 
-    Identity Provider'''
+    '''Authenticates the user logging in locally, 
+    but does not create a new user if they do not exist'''
+    def authenticate(self, email, password):
+        '''Authenticates a local user into the system'''
+        # retrieve the existing user information
+        user = authenticate(username=email, password=password)
+        if user == None:
+            raise ValueError('User does not exist')   
+        return user
 
-    def authenticate(self, email, fullname, password, role):
+    '''Authenticates and creates a record for a user logging in from an external 
+    Identity Provider'''
+    def authenticateOrCreate(self, email, fullname, password, role):
         '''Authenticates an external user into the system'''
         try:
             # retrieve the existing user information
@@ -18,7 +27,7 @@ class UserAuthHandler(object):
                 raise ValueError('User Does not exist')
         except (ValueError, User.DoesNotExist):
             # Create a new user based on the AAF login infromation
-            user = User.objects.create_user(email=email, password=password,name=fullname)
+            user = User.objects.create_user(email=email, password=password, name=fullname)
             # Set the parameters for the new user and save the new user
             user.is_superuser = False
             

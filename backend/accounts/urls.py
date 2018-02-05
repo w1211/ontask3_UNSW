@@ -6,6 +6,7 @@ from django.conf.urls import url
 from . import views
 
 urlpatterns = [
+    url(r'^user/local', views.LocalAuthRouter.as_view()),
     url(r'^user/auth', views.AAFAuthRouter.as_view()),
     url(r'^user/lti', views.LTIAuthRouter.as_view()),
     url(r'^user/token', views.ValidateOneTimeToken.as_view())

@@ -1,7 +1,7 @@
 ''' VIEWS FOR USER AUTHENTICATION '''
 from __future__ import unicode_literals
 from rest_framework.views import APIView
-from .auth_wrapper import AAFAuthHandler, LTIAuthHandler
+from .auth_wrapper import LocalAuthHandler, AAFAuthHandler, LTIAuthHandler
 from .auth_router import AuthRouter
 from rest_framework.response import Response
 from rest_framework.status import HTTP_401_UNAUTHORIZED
@@ -12,6 +12,19 @@ from .models import OneTimeToken
 from django.contrib.auth import get_user_model
 from rest_framework.authtoken.models import Token
 
+
+class LocalAuthRouter(APIView):
+    '''Hosts the logic to handle the post request from frontend and authenticate the
+    user to the application locally'''
+
+    authentication_classes = ()
+    permission_classes = ()
+    def post(self, request, format=None):
+        '''Handles the post request from the frontend and routes the user
+        to the landing page of the application'''
+        local_authhandler = LocalAuthHandler()
+        auth_router = AuthRouter()
+        return auth_router.authenticate(request, local_authhandler, True) # True boolean specifies that the authentication was local
 
 class AAFAuthRouter(APIView):
     '''Hosts the logic to handle the post request from AAF and authenticate the
@@ -24,7 +37,7 @@ class AAFAuthRouter(APIView):
         to the landing page of the application'''
         aaf_authhandler = AAFAuthHandler()
         auth_router = AuthRouter()
-        return auth_router.authenticate(request, aaf_authhandler)
+        return auth_router.authenticate(request, aaf_authhandler, False)
       
 class LTIAuthRouter(APIView):
     '''Hosts the logic to handle the post request from LTI and authenticate the
@@ -37,7 +50,7 @@ class LTIAuthRouter(APIView):
         to the landing page of the application'''
         lti_authhandler = LTIAuthHandler()
         auth_router = AuthRouter()
-        return auth_router.authenticate(request, lti_authhandler)
+        return auth_router.authenticate(request, lti_authhandler, False)
 
 class ValidateOneTimeToken(APIView):
     '''Validates the one time token received and returns a long term token'''

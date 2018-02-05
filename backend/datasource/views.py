@@ -1,7 +1,6 @@
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
 from datetime import datetime
-from mongoengine.queryset.visitor import Q
 
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
@@ -31,9 +30,9 @@ class DataSourceViewSet(viewsets.ModelViewSet):
     parser_classes = (MultiPartParser, FormParser, JSONParser)
     permission_classes = [DataSourcePermissions]
 
-    # TO DO: make this filter based on permissions
+    # Override the default list view, as this function is never consumed by the frontend
     def get_queryset(self):
-        return DataSource.objects.all()
+        return []
 
     def get_datasource_data(self, connection):
         cipher = Fernet(DATASOURCE_KEY)

@@ -6,6 +6,18 @@ import base64
 import traceback
 from .auth_handler import UserAuthHandler
 
+class LocalAuthHandler(UserAuthHandler):
+    '''Login methods for local authentication'''
+    def authenticate_user(self, payload):
+        '''Verifies if LTI has authenticated the user and returns a User object'''
+        try:
+            email = payload['email']
+            password = payload['password']
+            user = self.authenticate(email, password)
+            return user
+        except Exception as ex:
+            return None
+
 class LTIAuthHandler(UserAuthHandler):
     '''Login methods for LTI authentication'''
     def __init__(self):
@@ -21,7 +33,7 @@ class LTIAuthHandler(UserAuthHandler):
             fullname = payload["lis_person_name_full"]
             password = base64.b64encode(self.cipher.encrypt(email))
             role = self.extract_user_role(payload["roles"])
-            user = self.authenticate(email, fullname, password, role)
+            user = self.authenticateOrCreate(email, fullname, password, role)
             return user
         except Exception as ex:
             return None
@@ -37,7 +49,6 @@ class LTIAuthHandler(UserAuthHandler):
             if role in self.config['role_mappings']['staff']:
                 return 'STAFF'
         return 'STUDENT'
-
 
 class AAFAuthHandler(UserAuthHandler):
     '''Login methods for AAF Rapid connect'''
@@ -64,7 +75,7 @@ class AAFAuthHandler(UserAuthHandler):
                 fullname =  user_attributes["displayname"]
                 password = base64.b64encode(self.cipher.encrypt(email))
                 role = self.extract_user_role(user_attributes["edupersonscopedaffiliation"])
-                user = self.authenticate(email, fullname, password, role)
+                user = self.authenticateOrCreate(email, fullname, password, role)
                 return user
             else:
                 #self.status = 403
