@@ -66,6 +66,9 @@ def update_data_in_data_container(data_source_container_id):
         # Might need to rethink the model design to attach the table 
         # data as a separate collection instead of an embedded list
         data_source = data_source_collection.find_one({'_id': ObjectId(data_source_container_id)})
+        print("################### DATA SOURCE ################################")
+        print(data_source)
+        print("################### DATA SOURCE ################################")
 
         connection = data_source['connection']
 
@@ -100,9 +103,11 @@ def update_data_in_data_container(data_source_container_id):
         # Ref - http://dev.mobify.com/blog/sqlalchemy-memory-magic/
         results = db_connection.execution_options(stream_results=True).execute(connection['query'])
 
-        data = [dict(zip(row.keys(),row)) for row in results]
-        print(data)
-        data_source_collection.update({"_id":ObjectId("5a56e9e4f5ec4e515e781b6f")}, {'$set': {'data':data}})
+        # data = [dict(zip(row.keys(),row)) for row in results]
+        # print("################### DATA FROM EXTERNAL TABLE ################################")
+        # print(data)
+        # print("################### DATA FROM EXTERNAL TABLE ################################")
+        # data_source_collection.update({"_id":ObjectId("5a56e9e4f5ec4e515e781b6f")}, {'$set': {'data':data}})
 
         # Iterative update from each row
         dynamic_fields = data_source['dynamic_fields']
@@ -119,9 +124,6 @@ def update_data_in_data_container(data_source_container_id):
                     new_data = {'value':row[dynamic_field],'timestamp':timestamp_value}
                     data_source_collection.update({"_id":ObjectId(data_source_container_id)},\
                     {'$push': {".".join(['data',str(row_count),dynamic_field]): new_data}})
-                # Update the last_updated field timestamp
-                data_source_collection.update({"_id":ObjectId(data_source_container_id)},\
-                {'$set':{'last_updated':timestamp_value}})
             else:
                 # Initial data update after the data import when
                 # creating the data source container in the application.
@@ -131,15 +133,27 @@ def update_data_in_data_container(data_source_container_id):
                 # value of 'INITIAL_DATA'
                 current_document = data_source_collection.find_one({"_id":ObjectId(data_source_container_id)},\
                 {"data":{"$slice":[row_count,1]}})['data']
+                print("################### CURRENT DOCUMENT ################################")
+                print(current_document)
+                print("################### CURRENT DOCUMENT ################################")
                 # Check for a valid document
-                for dynamic_field in dynamic_fields:
-                    # Create new data with the timestamp and existing data value
-                    new_data = [{'value':current_document[dynamic_field],'timestamp':'INITIAL_DATA'},\
-                    {'value':row[dynamic_field],'timestamp':timestamp_value}]
-                    if current_document:
+                if current_document:
+                    for dynamic_field in dynamic_fields:
+                        # Create new data with the timestamp and existing data value
+                        timestamp_value = datetime.datetime.utcnow()
+                        new_data = [{'value':current_document[0][dynamic_field],'timestamp':'INITIAL_DATA'},\
+                        {'value':row[dynamic_field],'timestamp':timestamp_value}]
+                        print("################### NEW DATA ################################")
+                        print(new_data)
+                        print("################### NEW DATA ################################")
                         data_source_collection.update({"_id":ObjectId(data_source_container_id)},\
-                        {'$set': {".".join(['data',str(row_count),dynamic_field]): new_data}})
+                            {'$set': {".".join(['data',str(row_count),dynamic_field]): new_data}})
+                        
             row_count += 1
+        # Update the last_updated field timestamp
+        updated_timestamp = datetime.datetime.utcnow()
+        data_source_collection.update({"_id":ObjectId(data_source_container_id)},\
+        {'$set':{'last_updated':updated_timestamp}})
         response_message = "Successfully updated %i records" %row_count
     except Exception as exception:
         response_message = exception   
