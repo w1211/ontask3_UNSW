@@ -4,11 +4,15 @@ const authenticatedRequest = (parameters) => {
   let fetchInit = { 
     headers: {
       'Authorization': `Token ${localStorage.getItem('token')}`,
-      'Content-Type': parameters.contentType ? parameters.contentType : 'application/json'
     }
   };
-  if (parameters.payload) fetchInit.body = JSON.stringify(parameters.payload);
-  
+  if (parameters.payload) {
+    if (!parameters.isNotJSON) {
+      parameters.payload = JSON.stringify(parameters.payload);
+      fetchInit.headers['Content-Type'] = 'application/json';
+    }
+    fetchInit.body = parameters.payload;
+  }
   fetch(parameters.url, {
     method: parameters.method,
     ...fetchInit

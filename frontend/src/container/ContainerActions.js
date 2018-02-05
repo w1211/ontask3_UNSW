@@ -310,9 +310,9 @@ export const createDatasource = (containerId, payload, file) => dispatch => {
       dispatch(fetchContainers());
       if (isCsv) dispatch(removeUploadingFile());
     },
-    payload: data
+    payload: data,
+    isNotJSON: isCsv
   }
-  if (isCsv) parameters.contentType = 'multipart/form-data';
 
   authenticatedRequest(parameters);
 };
@@ -350,9 +350,9 @@ export const updateDatasource = (datasourceId, payload, file) => dispatch => {
       dispatch(fetchContainers());
       if (isCsv) dispatch(removeUploadingFile());
     },
-    payload: data
+    payload: data,
+    isNotJSON: isCsv  
   }
-  if (isCsv) parameters.contentType = 'multipart/form-data';
 
   authenticatedRequest(parameters);
 };
