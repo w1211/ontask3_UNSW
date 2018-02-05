@@ -55,10 +55,10 @@ class Container extends React.Component {
       message = `${nextProps.model.charAt(0).toUpperCase() + nextProps.model.slice(1)} deleted`;
       switch (nextProps.model) {
         case 'container':
-          description = 'The container and its asssociated data sources and workflows have been successfully deleted.';
+          description = 'The container and its associated data sources and workflows have been successfully deleted.';
           break;
         case 'workflow':
-          description = 'The workflow and its asssociated data matrices and rules have been successfully deleted.';
+          description = 'The workflow and its associated data matrices and rules have been successfully deleted.';
           break;
         case 'datasource':
           description = 'The datasource was successfully deleted.';

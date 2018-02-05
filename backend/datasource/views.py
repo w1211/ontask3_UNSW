@@ -30,9 +30,25 @@ class DataSourceViewSet(viewsets.ModelViewSet):
     parser_classes = (MultiPartParser, FormParser, JSONParser)
     permission_classes = [DataSourcePermissions]
 
-    # Override the default list view, as this function is never consumed by the frontend
     def get_queryset(self):
-        return []
+        pipeline = [
+            {
+                '$lookup': {
+                    'from': 'container',
+                    'localField': 'container',
+                    'foreignField': '_id',
+                    'as': 'container'
+                }
+            }, {
+                '$unwind': '$container'
+            }, {
+                '$match': {
+                    'container.owner': self.request.user.id
+                }
+            }
+        ]
+        datasources = list(DataSource.objects.aggregate(*pipeline))
+        return DataSource.objects.filter(id__in = [datasource['_id'] for datasource in datasources])
 
     def get_datasource_data(self, connection):
         cipher = Fernet(DATASOURCE_KEY)

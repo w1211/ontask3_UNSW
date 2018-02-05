@@ -86,9 +86,25 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     serializer_class = WorkflowSerializer
     permission_classes = [WorkflowPermissions]
 
-    # Override the default list view, as this function is never consumed by the frontend
     def get_queryset(self):
-        return []
+        pipeline = [
+            {
+                '$lookup': {
+                    'from': 'container',
+                    'localField': 'container',
+                    'foreignField': '_id',
+                    'as': 'container'
+                }
+            }, {
+                '$unwind': '$container'
+            }, {
+                '$match': {
+                    'container.owner': self.request.user.id
+                }
+            }
+        ]
+        workflows = list(Workflow.objects.aggregate(*pipeline))
+        return Workflow.objects.filter(id__in = [workflow['_id'] for workflow in workflows])
 
     def perform_create(self, serializer):
         self.check_object_permissions(self.request, None)

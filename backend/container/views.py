@@ -8,6 +8,7 @@ import re
 from bson import ObjectId
 from datetime import date, datetime
 from json import dumps
+from mongoengine.queryset.visitor import Q
 
 from .serializers import ContainerSerializer
 from .models import Container
@@ -19,9 +20,10 @@ class ContainerViewSet(viewsets.ModelViewSet):
     serializer_class = ContainerSerializer
     permission_classes = [ContainerPermissions]
 
-    # Override the default list view, as we have defined a custom list view in retrieve_containers
     def get_queryset(self):
-        return []
+        return Container.objects.filter(
+            Q(owner = self.request.user.id) | Q(sharing__readOnly__contains = self.request.user.id) | Q(sharing__readWrite__contains = self.request.user.id)
+        )
 
     @list_route(methods=['get'])
     def retrieve_containers(self, request):
@@ -76,12 +78,10 @@ class ContainerViewSet(viewsets.ModelViewSet):
             }
         ]
         containers_after_dump = dumps(list(Container.objects.aggregate(*pipeline)), default=json_serial)
-        # Convert the queryset response into a string so that we can apply regex to it
-        # When trying to convert the above queryset directly into JSON, ObjectId's are represented in the form { $oid: "x" }
-        # This is inconsistent with the simple representation of ObjectId's { "id": "x" } when using the DRF serializer
-        # Therefore, convert ObjectId's to this simple representation ourselves using regex sub
-        # Also requires us to convert single quotes (returned from queryset) to double quotes (expected for valid JSON)
-        containers = str(containers_after_dump).replace("'", '"').replace('"_id":', '"id":')
+        # Convert the queryset response into a string so that we can transform
+        # To remove the underscore from "id" key values
+        # For better consistency in field names
+        containers = str(containers_after_dump).replace('"_id":', '"id":')
         return JsonResponse(json.loads(containers), safe=False)
 
     def perform_create(self, serializer):
@@ -118,4 +118,6 @@ class ContainerViewSet(viewsets.ModelViewSet):
 
         # The delete function cascades down datasources & matrices
         # This is done via the container field of the datasource & workflow models
-        obj.delete()
+        obj.delete()        
+
+        # TODO fix bug https://stackoverflow.com/questions/32513388/how-would-i-override-the-perform-destroy-method-in-django-rest-framework
