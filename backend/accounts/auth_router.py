@@ -13,22 +13,27 @@ from ontask.settings import SECRET_KEY, DOMAIN
 
 class AuthRouter(object):
     ''' Generic method wrapper for handling user login'''
-    def authenticate(self, request, auth_wrapper_object):
+    def authenticate(self, request, auth_wrapper_object, is_local):
         try:
             user = auth_wrapper_object.authenticate_user(request.data)
 
             # Check for invalid user login
             if user == "NOT_AUTHORIZED":
-                return Response({"error": "Not Authorized"}, status=HTTP_403_FORBIDDEN)
+                return Response({"error": "Not authorized"}, status=HTTP_403_FORBIDDEN)
             elif user == "EXPIRED_SIGNATURE":
-                return Response({"error": "Expired Signature"}, status=HTTP_403_FORBIDDEN)
+                return Response({"error": "Expired signature"}, status=HTTP_403_FORBIDDEN)
             elif not user:
-                return Response({"error": "Login failed"}, status=HTTP_401_UNAUTHORIZED)
+                return Response({"error": "Invalid login credentials"}, status=HTTP_401_UNAUTHORIZED)
 
             # Check for a valid user login
-            if user:
-                # # Create a long-term access token for the user
-                # token, _ = Token.objects.get_or_create(user=user)
+            if user and is_local:
+                long_term_token, _ = Token.objects.get_or_create(user=user)
+                # Convert the token into string format, to be sent as a JSON object in the response body
+                long_term_token = str(long_term_token)
+
+                return Response({ "token": long_term_token })
+                
+            elif user:
                 # Create a one-time, short expiry token to be sent as a querystring to the frontend
                 # This token is used by the frontend to securely receive a long-term token by initiating a POST request
                 iat = datetime.utcnow()
