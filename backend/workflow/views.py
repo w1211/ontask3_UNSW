@@ -26,7 +26,6 @@ def combine_data(details):
     column_data = defaultdict(dict)
 
     # Group secondary columns by datasource
-
     secondary_column_datasource = defaultdict(list)
     if details is None:
         raise ValidationError('This is not available until the workflow details have been configured')
@@ -155,6 +154,9 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             matchedCount = 0
            
             for condition in condition_group['conditions']:
+                # Initialise the condition name as a key in the defaultdict 
+                conditions_passed[condition['name']] = []
+
                 didPass = False
 
                 if len(condition['formulas']) == 1:

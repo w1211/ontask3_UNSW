@@ -48,19 +48,20 @@ const receiveWorkflow = (name, details, conditionGroups, datasources, editorStat
 });
 
 export const fetchWorkflow = (workflowId) => dispatch => {
-  authenticatedRequest(
-    () => { dispatch(requestWorkflow()); },
-    `/workflow/${workflowId}/retrieve_workflow`,
-    'GET',
-    null,
-    (error) => { console.log(error); },
-    (workflow) => { 
+  const parameters = {
+    initialFn: () => { dispatch(requestWorkflow()); },
+    url: `/workflow/${workflowId}/retrieve_workflow`,
+    method: 'GET',
+    errorFn: (error) => { console.log(error); },
+    successFn: (workflow) => {
       let editorState = null;
       if (workflow['content']) {
         const blocksFromHtml = htmlToDraft(workflow['content']);
         const { contentBlocks, entityMap } = blocksFromHtml;
         const contentState = ContentState.createFromBlockArray(contentBlocks, entityMap);
         editorState = EditorState.createWithContent(contentState);
+      } else {
+        editorState = EditorState.createEmpty();
       }
   
       dispatch(receiveWorkflow(
@@ -71,7 +72,9 @@ export const fetchWorkflow = (workflowId) => dispatch => {
         editorState
       ));
     }
-  )
+  }
+
+  authenticatedRequest(parameters);
 };
 
 const refreshDetails = (details) => ({
@@ -111,30 +114,19 @@ const successUpdateDetails = () => ({
 });
 
 export const updateDetails = (workflowId, payload) => dispatch => {
-  dispatch(beginRequestDetails());
-  fetch(`/workflow/${workflowId}/update_details/`, {
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestDetails()); },
+    url: `/workflow/${workflowId}/update_details/`,
     method: 'PUT',
-    headers: {
-      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5',
-      'Content-Type': 'application/json'
+    errorFn: (error) => { dispatch(failureRequestDetails(error)); },
+    successFn: (workflow) => {
+      dispatch(successUpdateDetails());
+      dispatch(refreshDetails(workflow['details']));
     },
-    body: JSON.stringify(payload)
-  })
-  .then(response => {
-    if (response.status >= 400 && response.status < 600) {
-      response.json().then(error => {
-        dispatch(failureRequestDetails(error));
-      });
-    } else {
-      response.json().then(workflow => {
-        dispatch(successUpdateDetails());
-        dispatch(refreshDetails(workflow['details']));
-      });
-    }
-  })
-  .catch(error => {
-    dispatch(failureRequestDetails('Failed to contact server. Please try again.'));
-  });
+    payload: payload
+  }
+
+  authenticatedRequest(parameters);
 };
 
 const beginRequestData = () => ({
@@ -153,28 +145,17 @@ const failureRequestData = (error) => ({
 });
 
 export const fetchData = (workflowId) => dispatch => {
-  dispatch(beginRequestData());
-  fetch(`/workflow/${workflowId}/get_data/`, {
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestData()); },
+    url: `/workflow/${workflowId}/get_data/`,
     method: 'GET',
-    headers: {
-      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5',
-      'Content-Type': 'application/json'
+    errorFn: (error) => { dispatch(failureRequestData(error)); },
+    successFn: (response) => {
+      dispatch(successRequestData(response['data'], response['columns']));
     }
-  })
-  .then(response => {
-    if (response.status >= 400 && response.status < 600) {
-      response.json().then(error => {
-        dispatch(failureRequestData(error));
-      });
-    } else {
-      response.json().then(response => {
-        dispatch(successRequestData(response['data'], response['columns']));
-      });
-    }
-  })
-  .catch(error => {
-    dispatch(failureRequestData('Failed to contact server. Please try again.'));
-  });
+  }
+
+  authenticatedRequest(parameters);
 };
 
 export const openConditionGroupModal = (conditionGroup) => {
@@ -230,31 +211,19 @@ const successCreateConditionGroup = () => ({
 });
 
 export const createConditionGroup = (workflowId, payload) => dispatch => {
-  dispatch(beginRequestConditionGroup());
-  fetch(`/workflow/${workflowId}/create_condition_group/`, {
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestConditionGroup()); },
+    url: `/workflow/${workflowId}/create_condition_group/`,
     method: 'PUT',
-    headers: {
-      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(payload)
-  })
-  .then(response => {
-    if (response.status >= 400 && response.status < 600) {
-      response.json().then(error => {
-        console.log(error);
-        // TO DO: parse this error better in the case of unique errors
-        // e.g. "The fields name, workflow must make a unique set."
-        dispatch(failureRequestConditionGroup(error[0]));
-      });
-    } else {
+    errorFn: (error) => { dispatch(failureRequestConditionGroup(error)); },
+    successFn: (response) => {
       dispatch(successCreateConditionGroup());
       dispatch(fetchWorkflow(workflowId));
-    }
-  })
-  .catch(error => {
-    dispatch(failureRequestConditionGroup('Failed to contact server. Please try again.'));
-  })
+    },
+    payload: payload
+  }
+
+  authenticatedRequest(parameters);
 };
 
 const refreshConditionGroupFormState = (payload) => ({
@@ -305,31 +274,19 @@ const successUpdateConditionGroup = () => ({
 
 export const updateConditionGroup = (workflowId, conditionGroup, payload) => dispatch => {
   payload.originalName = conditionGroup.name;
-  dispatch(beginRequestConditionGroup());
-  fetch(`/workflow/${workflowId}/update_condition_group/`, {
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestConditionGroup()); },
+    url: `/workflow/${workflowId}/update_condition_group/`,
     method: 'PUT',
-    headers: {
-      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(payload)
-  })
-  .then(response => {
-    if (response.status >= 400 && response.status < 600) {
-      response.json().then(error => {
-        console.log(error);
-        // TO DO: parse this error better in the case of unique errors
-        // e.g. "The fields name, workflow must make a unique set."
-        dispatch(failureRequestConditionGroup(error[0]));
-      });
-    } else {
+    errorFn: (error) => { dispatch(failureRequestConditionGroup(error)); },
+    successFn: (response) => {
       dispatch(successUpdateConditionGroup());
       dispatch(fetchWorkflow(workflowId));
-    }
-  })
-  .catch(error => {
-    dispatch(failureRequestConditionGroup('Failed to contact server. Please try again.'));
-  })
+    },
+    payload: payload
+  }
+
+  authenticatedRequest(parameters);
 };
 
 const successDeleteConditionGroup = () => ({
@@ -337,28 +294,19 @@ const successDeleteConditionGroup = () => ({
 });
 
 export const deleteConditionGroup = (workflowId, index) => dispatch => {
-  dispatch(beginRequestConditionGroup());
-  fetch(`/workflow/${workflowId}/delete_condition_group/`, {
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestConditionGroup()); },
+    url: `/workflow/${workflowId}/delete_condition_group/`,
     method: 'PUT',
-    headers: {
-      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ index: index })
-  })
-  .then(response => {
-    if (response.status >= 400 && response.status < 600) {
-      response.json().then(error => {
-        dispatch(failureRequestConditionGroup(error[0]));
-      });
-    } else {
+    errorFn: (error) => { dispatch(failureRequestConditionGroup(error)); },
+    successFn: (response) => {
       dispatch(successDeleteConditionGroup());
       dispatch(fetchWorkflow(workflowId));
-    }
-  })
-  .catch(error => {
-    dispatch(failureRequestConditionGroup('Failed to contact server. Please try again.'));
-  })
+    },
+    payload: { index: index }
+  }
+
+  authenticatedRequest(parameters);
 };
 
 export const updateEditorState = (payload) => ({
@@ -380,31 +328,19 @@ const successUpdateContent = () => ({
 });
 
 export const updateContent = (workflowId, payload) => dispatch => {
-  dispatch(beginRequestContent());
-  fetch(`/workflow/${workflowId}/update_content/`, {
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestContent()); },
+    url: `/workflow/${workflowId}/update_content/`,
     method: 'PUT',
-    headers: {
-      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(payload)
-  })
-  .then(response => {
-    if (response.status >= 400 && response.status < 600) {
-      response.json().then(error => {
-        console.log(error);
-        // TO DO: parse this error better in the case of unique errors
-        // e.g. "The fields name, workflow must make a unique set."
-        dispatch(failureRequestContent(error[0]));
-      });
-    } else {
+    errorFn: (error) => { dispatch(failureRequestContent(error)); },
+    successFn: (response) => {
       dispatch(successUpdateContent());
       dispatch(fetchWorkflow(workflowId));
-    }
-  })
-  .catch(error => {
-    dispatch(failureRequestContent('Failed to contact server. Please try again.'));
-  })
+    },
+    payload: payload
+  }
+
+  authenticatedRequest(parameters);
 };
 
 const beginRequestPreviewContent = () => ({
@@ -426,30 +362,16 @@ export const closePreviewContent = () => ({
 });
 
 export const previewContent = (workflowId, payload) => dispatch => {
-  dispatch(beginRequestPreviewContent());
-  fetch(`/workflow/${workflowId}/preview_content/`, {
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestPreviewContent()); },
+    url: `/workflow/${workflowId}/preview_content/`,
     method: 'PUT',
-    headers: {
-      'Authorization': 'Token 26683cf5b9c37f1da84748aaad0235d0378eb2f5',
-      'Content-Type': 'application/json'
+    errorFn: (error) => { dispatch(failureRequestPreviewContent(error)); },
+    successFn: (preview) => {
+      dispatch(successPreviewContent(preview));
     },
-    body: JSON.stringify(payload)
-  })
-  .then(response => {
-    if (response.status >= 400 && response.status < 600) {
-      response.json().then(error => {
-        console.log(error);
-        // TO DO: parse this error better in the case of unique errors
-        // e.g. "The fields name, workflow must make a unique set."
-        dispatch(failureRequestPreviewContent(error[0]));
-      });
-    } else {
-      response.json().then(preview => {
-        dispatch(successPreviewContent(preview));
-      })
-    }
-  })
-  .catch(error => {
-    dispatch(failureRequestPreviewContent('Failed to contact server. Please try again.'));
-  })
+    payload: payload
+  }
+
+  authenticatedRequest(parameters);
 };

@@ -49,14 +49,21 @@ export const changeContainerAccordion = (key) => ({
 });
 
 export const fetchContainers = () => dispatch => {
-  authenticatedRequest(
-    () => { dispatch(requestContainers()); },
-    '/container/retrieve_containers',
-    'GET',
-    null,
-    (error) => { console.error(error); },
-    (containers) => { dispatch(receiveContainers(containers)); }
-  )
+  const parameters = {
+    initialFn: () => { 
+      dispatch(requestContainers()); 
+    },
+    url: `/container/retrieve_containers`,
+    method: 'GET',
+    errorFn: (error) => { 
+      console.error(error); 
+    },
+    successFn: (containers) => {
+      dispatch(receiveContainers(containers)); 
+    }
+  }
+
+  authenticatedRequest(parameters);
 };
 
 export const openContainerModal = (container) => ({
@@ -82,14 +89,23 @@ const successCreateContainer = () => ({
 });
 
 export const createContainer = (payload) => dispatch => {
-  authenticatedRequest(
-    () => { dispatch(beginRequestContainer()); },
-    '/container/',
-    'POST',
-    payload,
-    (error) => { failureRequestContainer(error); },
-    () => { dispatch(successCreateContainer()); dispatch(fetchContainers()); }
-  )
+  const parameters = {
+    initialFn: () => { 
+      dispatch(beginRequestContainer()); 
+    },
+    url: `/container/`,
+    method: 'POST',
+    errorFn: (error) => { 
+      dispatch(failureRequestContainer(error)); 
+    },
+    successFn: () => {
+      dispatch(successCreateContainer());
+      dispatch(fetchContainers()); 
+    },
+    payload: payload
+  }
+
+  authenticatedRequest(parameters);
 };
 
 const successUpdateContainer = () => ({
@@ -97,14 +113,23 @@ const successUpdateContainer = () => ({
 });
 
 export const updateContainer = (containerId, payload) => dispatch => {
-  authenticatedRequest(
-    () => { dispatch(beginRequestContainer()); },
-    `/container/${containerId}/`,
-    'PUT',
-    payload,
-    (error) => { failureRequestContainer(error); },
-    () => { dispatch(successUpdateContainer()); dispatch(fetchContainers()); }
-  )
+  const parameters = {
+    initialFn: () => { 
+      dispatch(beginRequestContainer()); 
+    },
+    url: `/container/${containerId}/`,
+    method: 'PUT',
+    errorFn: (error) => { 
+      dispatch(failureRequestContainer(error)); 
+    },
+    successFn: () => {
+      dispatch(successUpdateContainer());
+      dispatch(fetchContainers()); 
+    },
+    payload: payload
+  }
+
+  authenticatedRequest(parameters);
 };
 
 const successDeleteContainer = () => ({
@@ -112,14 +137,22 @@ const successDeleteContainer = () => ({
 });
 
 export const deleteContainer = (containerId) => dispatch => {
-  authenticatedRequest(
-    () => { dispatch(beginRequestContainer()); },
-    `/container/${containerId}/`,
-    'DELETE',
-    null,
-    (error) => { failureRequestContainer(error); },
-    () => { dispatch(successDeleteContainer()); dispatch(fetchContainers()); }
-  )
+  const parameters = {
+    initialFn: () => { 
+      dispatch(beginRequestContainer()); 
+    },
+    url: `/container/${containerId}/`,
+    method: 'DELETE',
+    errorFn: (error) => { 
+      dispatch(failureRequestContainer(error)); 
+    },
+    successFn: () => {
+      dispatch(successDeleteContainer());
+      dispatch(fetchContainers()); 
+    }
+  }
+
+  authenticatedRequest(parameters);
 };
 
 export const openWorkflowModal = (containerId, workflow) => ({
@@ -147,14 +180,24 @@ const successCreateWorkflow = () => ({
 
 export const createWorkflow = (containerId, payload) => dispatch => {
   payload.container = containerId;
-  authenticatedRequest(
-    () => { dispatch(beginRequestWorkflow()); },
-    `/workflow/`,
-    'POST',
-    payload,
-    (error) => { failureRequestWorkflow(error); },
-    () => { dispatch(successCreateWorkflow()); dispatch(fetchContainers()); }
-  )
+
+  const parameters = {
+    initialFn: () => { 
+      dispatch(beginRequestWorkflow()); 
+    },
+    url: `/workflow/`,
+    method: 'POST',
+    errorFn: (error) => { 
+      dispatch(failureRequestWorkflow(error)); 
+    },
+    successFn: () => {
+      dispatch(successCreateWorkflow());
+      dispatch(fetchContainers()); 
+    },
+    payload: payload
+  }
+
+  authenticatedRequest(parameters);
 };
 
 const successUpdateWorkflow = () => ({
@@ -162,14 +205,23 @@ const successUpdateWorkflow = () => ({
 });
 
 export const updateWorkflow = (workflowId, payload) => dispatch => {
-  authenticatedRequest(
-    () => { dispatch(beginRequestWorkflow()); },
-    `/workflow/${workflowId}/`,
-    'PATCH',
-    payload,
-    (error) => { failureRequestWorkflow(error); },
-    () => { dispatch(successUpdateWorkflow()); dispatch(fetchContainers()); }
-  )
+  const parameters = {
+    initialFn: () => { 
+      dispatch(beginRequestWorkflow()); 
+    },
+    url: `/workflow/${workflowId}/`,
+    method: 'PATCH',
+    errorFn: (error) => { 
+      dispatch(failureRequestWorkflow(error)); 
+    },
+    successFn: () => {
+      dispatch(successUpdateWorkflow());
+      dispatch(fetchContainers()); 
+    },
+    payload: payload
+  }
+
+  authenticatedRequest(parameters);
 };
 
 const successDeleteWorkflow = () => ({
@@ -177,14 +229,22 @@ const successDeleteWorkflow = () => ({
 });
 
 export const deleteWorkflow = (workflowId) => dispatch => {
-  authenticatedRequest(
-    () => { dispatch(beginRequestWorkflow()); },
-    `/workflow/${workflowId}/`,
-    'DELETE',
-    null,
-    (error) => { failureRequestWorkflow(error); },
-    () => { dispatch(successDeleteWorkflow()); dispatch(fetchContainers()); }
-  )
+  const parameters = {
+    initialFn: () => { 
+      dispatch(beginRequestWorkflow()); 
+    },
+    url: `/workflow/${workflowId}/`,
+    method: 'DELETE',
+    errorFn: (error) => { 
+      dispatch(failureRequestWorkflow(error)); 
+    },
+    successFn: () => {
+      dispatch(successDeleteWorkflow());
+      dispatch(fetchContainers()); 
+    }
+  }
+
+  authenticatedRequest(parameters);
 };
 
 export const openDatasourceModal = (containerId, datasources) => ({
@@ -236,19 +296,25 @@ export const createDatasource = (containerId, payload, file) => dispatch => {
     data = payload;
   }
 
-  authenticatedRequest(
-    () => { dispatch(beginRequestDatasource()); },
-    `/datasource/`,
-    'POST',
-    data,
-    (error) => { failureRequestDatasource(error); },
-    () => { 
-      dispatch(successCreateDatasource()); 
+  const parameters = {
+    initialFn: () => { 
+      dispatch(beginRequestDatasource()); 
+    },
+    url: `/datasource/`,
+    method: 'POST',
+    errorFn: (error) => { 
+      dispatch(failureRequestDatasource(error)); 
+    },
+    successFn: () => {
+      dispatch(successCreateDatasource());
       dispatch(fetchContainers());
       if (isCsv) dispatch(removeUploadingFile());
     },
-    isCsv ? 'multipart/form-data' : null
-  )
+    payload: data
+  }
+  if (isCsv) parameters.contentType = 'multipart/form-data';
+
+  authenticatedRequest(parameters);
 };
 
 const successUpdateDatasource = () => ({
@@ -270,19 +336,25 @@ export const updateDatasource = (datasourceId, payload, file) => dispatch => {
     data = payload;
   }
 
-  authenticatedRequest(
-    () => { dispatch(beginRequestDatasource()); },
-    `/datasource/${datasourceId}/`,
-    'PATCH',
-    data,
-    (error) => { failureRequestDatasource(error); },
-    () => { 
-      dispatch(successUpdateDatasource()); 
+  const parameters = {
+    initialFn: () => { 
+      dispatch(beginRequestDatasource()); 
+    },
+    url: `/datasource/${datasourceId}/`,
+    method: 'PATCH',
+    errorFn: (error) => { 
+      dispatch(failureRequestDatasource(error)); 
+    },
+    successFn: () => {
+      dispatch(successUpdateDatasource());
       dispatch(fetchContainers());
       if (isCsv) dispatch(removeUploadingFile());
     },
-    isCsv ? 'multipart/form-data' : null
-  )
+    payload: data
+  }
+  if (isCsv) parameters.contentType = 'multipart/form-data';
+
+  authenticatedRequest(parameters);
 };
 
 const successDeleteDatasource = () => ({
@@ -290,17 +362,20 @@ const successDeleteDatasource = () => ({
 });
 
 export const deleteDatasource = (datasourceId) => dispatch => {
-  authenticatedRequest(
-    () => { dispatch(beginRequestDatasource()); },
-    `/datasource/${datasourceId}/`,
-    'DELETE',
-    null,
-    (error) => { failureRequestDatasource(error); },
-    () => { 
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestDatasource()); },
+    url: `/datasource/${datasourceId}/`,
+    method: 'DELETE',
+    errorFn: (error) => { 
+      dispatch(failureRequestDatasource(error)); 
+    },
+    successFn: () => {
       dispatch(successDeleteDatasource()); 
       dispatch(fetchContainers());
-    },
-  )
+    }
+  }
+
+  authenticatedRequest(parameters);
 };
 
 

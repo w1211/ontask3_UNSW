@@ -1,16 +1,16 @@
-const authenticatedRequest = (initialFn, fetchUrl, method, payload, errorFn, successFn, customContentType) => {
-  initialFn();
+const authenticatedRequest = (parameters) => {
+  if (parameters.initialFn) parameters.initialFn();
 
   let fetchInit = { 
     headers: {
       'Authorization': `Token ${localStorage.getItem('token')}`,
-      'Content-Type': customContentType ? customContentType : 'application/json'
+      'Content-Type': parameters.contentType ? parameters.contentType : 'application/json'
     }
   };
-  if (payload) fetchInit.body = JSON.stringify(payload);
+  if (parameters.payload) fetchInit.body = JSON.stringify(parameters.payload);
   
-  fetch(fetchUrl, {
-    method: method,
+  fetch(parameters.url, {
+    method: parameters.method,
     ...fetchInit
   })
   .then(response => {
@@ -19,20 +19,20 @@ const authenticatedRequest = (initialFn, fetchUrl, method, payload, errorFn, suc
     }
     if (response.status >= 400 && response.status < 600) {
       response.json().then(error => {
-        errorFn(error[0]);
+        parameters.errorFn(error[0]);
       });
     } else {
-      if (response.status == 204) { // Api call was a DELETE, therefore response is empty
-        successFn();
+      if (response.status === 204) { // Api call was a DELETE, therefore response is empty
+        parameters.successFn();
       } else {
         response.json().then(response => {
-          successFn(response);
+          parameters.successFn(response);
         });  
       }
     }
   })
   .catch(error => {
-    errorFn('Failed to contact server. Please try again.');
+    parameters.errorFn('Failed to contact server. Please try again.');
   });
 
 };
