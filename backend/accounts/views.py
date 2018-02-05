@@ -37,7 +37,7 @@ class AAFAuthRouter(APIView):
         to the landing page of the application'''
         aaf_authhandler = AAFAuthHandler()
         auth_router = AuthRouter()
-        return auth_router.authenticate(request, aaf_authhandler)
+        return auth_router.authenticate(request, aaf_authhandler, False)
       
 class LTIAuthRouter(APIView):
     '''Hosts the logic to handle the post request from LTI and authenticate the
@@ -50,7 +50,7 @@ class LTIAuthRouter(APIView):
         to the landing page of the application'''
         lti_authhandler = LTIAuthHandler()
         auth_router = AuthRouter()
-        return auth_router.authenticate(request, lti_authhandler)
+        return auth_router.authenticate(request, lti_authhandler, False)
 
 class ValidateOneTimeToken(APIView):
     '''Validates the one time token received and returns a long term token'''
