@@ -30,3 +30,7 @@ backend/config/prod.*
 # Virtual Environment files
 ontask_venv/
 scheduler_env
+
+scheduler/docket/celerybeat\.pid
+
+scheduler/docket/db\.sqlite3
