@@ -1,7 +1,6 @@
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
 from rest_framework.decorators import list_route
-from mongoengine.queryset.visitor import Q
 
 from django.http import JsonResponse
 import json
@@ -17,12 +16,25 @@ class ContainerViewSet(viewsets.ModelViewSet):
     serializer_class = ContainerSerializer
     permission_classes = [ContainerPermissions]
 
+    # Override the default list view, as we have defined a custom list view in retrieve_containers
+    def get_queryset(self):
+        return []
+
     @list_route(methods=['get'])
     def retrieve_containers(self, request):
         # Retrieve containers owned by or shared with the current user, including the associated workflows & data sources
         # Consumed by the containers list interface
         # Perform a lookup on each container object so that we can attach its associated workflows & data sources
         pipeline = [
+            {
+                '$match': {
+                    '$or': [
+                        { 'owner': self.request.user.id },
+                        { 'sharing.readOnly': { '$in': [self.request.user.id] } },
+                        { 'sharing.readWrite': { '$in': [self.request.user.id] } }
+                    ]
+                }
+            },
             {
                 '$lookup': {
                     'from': 'data_source',
@@ -62,11 +74,6 @@ class ContainerViewSet(viewsets.ModelViewSet):
         containers = re.sub(r'(ObjectId\(\'(.*?)\'\))', r"'\2'", str(containers)).replace("'", '"').replace('"_id":', '"id":')
 
         return JsonResponse(json.loads(containers), safe=False)
-
-    def get_queryset(self):
-        return Container.objects.filter(
-            Q(owner = self.request.user.id) | Q(sharing__readOnly__contains = self.request.user.id) | Q(sharing__readWrite__contains = self.request.user.id)
-        )
 
     def perform_create(self, serializer):
         # We are manually checking that the combination of (owner, code) is unique

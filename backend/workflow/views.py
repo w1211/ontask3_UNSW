@@ -84,9 +84,9 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     serializer_class = WorkflowSerializer
     permission_classes = [WorkflowPermissions]
 
-    # TO DO: make this filter based on permissions
+    # Override the default list view, as this function is never consumed by the frontend
     def get_queryset(self):
-        return Workflow.objects.all()
+        return []
 
     def perform_create(self, serializer):
         self.check_object_permissions(self.request, None)
