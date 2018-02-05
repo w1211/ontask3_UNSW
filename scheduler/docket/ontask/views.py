@@ -45,3 +45,13 @@ class CreateDataSourceUpdateTaskView(APIView):
         print(periodic_task)
 
         return Response({'task_name': task_name})
+    
+    def delete(self, request, format=None):
+        '''DELETE handle to remove a scheduler from the beat schedule'''
+        print(self.request.data)
+        task = PeriodicTask.objects.get(name=request.data['name'])
+        print(task)
+        task.delete()
+
+        return Response({'task_name':task.name,'message':'Periodic task deleted'})
+
