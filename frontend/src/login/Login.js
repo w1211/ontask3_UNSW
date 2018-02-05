@@ -13,7 +13,7 @@ class Login extends React.Component {
   state = { error: null };
 
   handleSubmit() {
-    const { form, history } = this.props;
+    const { form, history, onLogin } = this.props;
 
     form.validateFields((err, values) => {
       if (err) {
@@ -36,6 +36,7 @@ class Login extends React.Component {
           response.json().then(response => {
             localStorage.setItem('token', response.token);
             history.push("containers");
+            onLogin();
           })
         }
       })
