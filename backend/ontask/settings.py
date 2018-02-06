@@ -14,8 +14,6 @@ import os
 
 import mongoengine
 
-from config.dev import AAF_CONFIG, CIPHER_SUITE_KEY, LTI_CONFIG
-
 if os.environ.get('DJANGO_DEVELOPMENT') is not None:
     from config.dev import *
     DEBUG = True
