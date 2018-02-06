@@ -53,7 +53,7 @@ class Login extends React.Component {
     const payload = { token: oneTimeToken };
 
     if (!authToken && oneTimeToken) {
-      fetch('http://uat-ontask2.teaching.unsw.edu.au/user/token/', {
+      fetch('https://uat-ontask2.teaching.unsw.edu.au/user/token/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
