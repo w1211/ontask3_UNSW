@@ -1,4 +1,4 @@
-import authenticatedRequest from '../shared/authenticatedRequest';
+import requestWrapper from '../shared/requestWrapper';
 
 export const REQUEST_CONTAINERS = 'REQUEST_CONTAINERS';
 export const RECEIVE_CONTAINERS = 'RECEIVE_CONTAINERS';
@@ -63,7 +63,7 @@ export const fetchContainers = () => dispatch => {
     }
   }
 
-  authenticatedRequest(parameters);
+  requestWrapper(parameters);
 };
 
 export const openContainerModal = (container) => ({
@@ -105,7 +105,7 @@ export const createContainer = (payload) => dispatch => {
     payload: payload
   }
 
-  authenticatedRequest(parameters);
+  requestWrapper(parameters);
 };
 
 const successUpdateContainer = () => ({
@@ -129,7 +129,7 @@ export const updateContainer = (containerId, payload) => dispatch => {
     payload: payload
   }
 
-  authenticatedRequest(parameters);
+  requestWrapper(parameters);
 };
 
 const successDeleteContainer = () => ({
@@ -152,7 +152,7 @@ export const deleteContainer = (containerId) => dispatch => {
     }
   }
 
-  authenticatedRequest(parameters);
+  requestWrapper(parameters);
 };
 
 export const openWorkflowModal = (containerId, workflow) => ({
@@ -197,7 +197,7 @@ export const createWorkflow = (containerId, payload) => dispatch => {
     payload: payload
   }
 
-  authenticatedRequest(parameters);
+  requestWrapper(parameters);
 };
 
 const successUpdateWorkflow = () => ({
@@ -221,7 +221,7 @@ export const updateWorkflow = (workflowId, payload) => dispatch => {
     payload: payload
   }
 
-  authenticatedRequest(parameters);
+  requestWrapper(parameters);
 };
 
 const successDeleteWorkflow = () => ({
@@ -244,7 +244,7 @@ export const deleteWorkflow = (workflowId) => dispatch => {
     }
   }
 
-  authenticatedRequest(parameters);
+  requestWrapper(parameters);
 };
 
 export const openDatasourceModal = (containerId, datasources) => ({
@@ -314,7 +314,7 @@ export const createDatasource = (containerId, payload, file) => dispatch => {
     isNotJSON: isCsv
   }
 
-  authenticatedRequest(parameters);
+  requestWrapper(parameters);
 };
 
 const successUpdateDatasource = () => ({
@@ -354,7 +354,7 @@ export const updateDatasource = (datasourceId, payload, file) => dispatch => {
     isNotJSON: isCsv  
   }
 
-  authenticatedRequest(parameters);
+  requestWrapper(parameters);
 };
 
 const successDeleteDatasource = () => ({
@@ -375,7 +375,7 @@ export const deleteDatasource = (datasourceId) => dispatch => {
     }
   }
 
-  authenticatedRequest(parameters);
+  requestWrapper(parameters);
 };
 
 

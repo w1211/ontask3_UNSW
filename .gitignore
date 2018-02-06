@@ -19,12 +19,14 @@ Thumbs.db
 __pycache__/
 *.py[cod]
 
-# Backend config files
+# Backend files
 backend/config/dev.*
 backend/config/prod.*
 
-# Frontend dependencies
+# Frontend files
 frontend/node_modules
+frontend/build
+frontend/.env.*
 
 # Virtual environment
 ontask_env/

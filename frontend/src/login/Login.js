@@ -1,6 +1,7 @@
 import React from 'react';
 import { Redirect } from 'react-router-dom';
 import { Form, Icon, Input, Button, Alert } from 'antd';
+import requestWrapper from '../shared/requestWrapper';
 
 import aaf from '../img/aaf.png';
 
@@ -20,68 +21,53 @@ class Login extends React.Component {
         return;
       }
 
-      fetch(`/user/local`, {
+      const parameters = {
+        url: `/user/local/`,
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+        errorFn: (error) => { 
+          this.setState({ error: error });
         },
-        body: JSON.stringify(values)
-      })
-      .then(response => {
-        if (response.status >= 400 && response.status < 600) {
-          response.json().then(response => {
-            this.setState({ error: response.error });
-          });
-        } else {
-          response.json().then(response => {
-            localStorage.setItem('token', response.token);
-            history.push("containers");
-            onLogin();
-          })
-        }
-      })
-      .catch(error => {
-        this.setState({ error: error });
-      })
+        successFn: (response) => {
+          localStorage.setItem('token', response.token);
+          history.push("containers");
+          onLogin();
+        },
+        payload: values,
+        isUnauthenticated: true
+      }
+      requestWrapper(parameters);
 
     });
   }
 
   componentDidMount() {
+    const { history, onLogin } = this.props;
     const oneTimeToken = queryString.parse(window.location.search).tkn;
     const authToken = localStorage.getItem('token');
     const payload = { token: oneTimeToken };
 
     if (!authToken && oneTimeToken) {
-      fetch('https://uat-ontask2.teaching.unsw.edu.au/user/token/', {
+      const parameters = {
+        url: `/user/token/`,
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+        errorFn: (error) => { 
+          this.setState({ error: error });
         },
-        body: JSON.stringify(payload)
-      })
-      .then(response => {
-        if (response.status >= 400 && response.status < 600) {
-          response.json().then(error => {
-            console.log(error);
-          });
-        } else {
-          response.json().then(response => {
-            localStorage.setItem('token', response.token);
-            this.props.history.push("containers");
-            this.props.onLogin();
-          })
-        }
-      })
-      .catch(error => {
-        console.log(error);
-      })
+        successFn: (response) => {
+          localStorage.setItem('token', response.token);
+          history.push("containers");
+          onLogin();
+        },
+        payload: payload,
+        isUnauthenticated: true
+      }
+      requestWrapper(parameters);
+      
     } else if (authToken) {
-      this.props.history.push("containers");
+      history.push("containers");
     }
 
   }
-
 
   render() {
     const { form } = this.props;

@@ -1,6 +1,6 @@
 import { EditorState, ContentState } from 'draft-js';
 import htmlToDraft from 'html-to-draftjs';
-import authenticatedRequest from '../shared/authenticatedRequest';
+import requestWrapper from '../shared/requestWrapper';
 
 export const REQUEST_WORKFLOW = 'REQUEST_WORKFLOW';
 export const RECEIVE_WORKFLOW = 'RECEIVE_WORKFLOW';
@@ -77,7 +77,7 @@ export const fetchWorkflow = (workflowId) => dispatch => {
       );
     }
   }
-  authenticatedRequest(parameters);
+  requestWrapper(parameters);
 };
 
 const refreshDetails = (details) => ({
@@ -135,7 +135,7 @@ export const updateDetails = (workflowId, payload) => dispatch => {
     },
     payload: payload
   }
-  authenticatedRequest(parameters);
+  requestWrapper(parameters);
 };
 
 export const createSchedule = (workflowId, payload) => dispatch => {
@@ -149,7 +149,7 @@ export const createSchedule = (workflowId, payload) => dispatch => {
     },
     payload: payload
   }
-  authenticatedRequest(parameters);
+  requestWrapper(parameters);
 };
 
 export const deleteSchedule = (workflowId) => dispatch => {
@@ -162,7 +162,7 @@ export const deleteSchedule = (workflowId) => dispatch => {
     },
     payload: {}
   }
-  authenticatedRequest(parameters);
+  requestWrapper(parameters);
 };
 
 const beginRequestData = () => ({
@@ -191,7 +191,7 @@ export const fetchData = (workflowId) => dispatch => {
     }
   }
 
-  authenticatedRequest(parameters);
+  requestWrapper(parameters);
 };
 
 export const openConditionGroupModal = (conditionGroup) => {
@@ -259,7 +259,7 @@ export const createConditionGroup = (workflowId, payload) => dispatch => {
     payload: payload
   }
 
-  authenticatedRequest(parameters);
+  requestWrapper(parameters);
 };
 
 const refreshConditionGroupFormState = (payload) => ({
@@ -322,7 +322,7 @@ export const updateConditionGroup = (workflowId, conditionGroup, payload) => dis
     payload: payload
   }
 
-  authenticatedRequest(parameters);
+  requestWrapper(parameters);
 };
 
 const successDeleteConditionGroup = () => ({
@@ -342,7 +342,7 @@ export const deleteConditionGroup = (workflowId, index) => dispatch => {
     payload: { index: index }
   }
 
-  authenticatedRequest(parameters);
+  requestWrapper(parameters);
 };
 
 export const updateEditorState = (payload) => ({
@@ -376,7 +376,7 @@ export const updateContent = (workflowId, payload) => dispatch => {
     payload: payload
   }
 
-  authenticatedRequest(parameters);
+  requestWrapper(parameters);
 };
 
 const beginRequestPreviewContent = () => ({
@@ -409,5 +409,5 @@ export const previewContent = (workflowId, payload) => dispatch => {
     payload: payload
   }
 
-  authenticatedRequest(parameters);
+  requestWrapper(parameters);
 };

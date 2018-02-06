@@ -1,11 +1,14 @@
-const authenticatedRequest = (parameters) => {
+const requestWrapper = (parameters) => {
   if (parameters.initialFn) parameters.initialFn();
 
   let fetchInit = { 
-    headers: {
-      'Authorization': `Token ${localStorage.getItem('token')}`,
-    }
+    headers: { }
   };
+
+  if (!parameters.isUnauthenticated) {
+    fetchInit.headers.Authorization = `Token ${localStorage.getItem('token')}`;
+  }
+
   if (parameters.payload) {
     if (!parameters.isNotJSON) {
       parameters.payload = JSON.stringify(parameters.payload);
@@ -13,7 +16,7 @@ const authenticatedRequest = (parameters) => {
     }
     fetchInit.body = parameters.payload;
   }
-  fetch(parameters.url, {
+  fetch(`${process.env.REACT_APP_API_DOMAIN}${parameters.url}`, {
     method: parameters.method,
     ...fetchInit
   })
@@ -41,4 +44,4 @@ const authenticatedRequest = (parameters) => {
 
 };
 
-export default authenticatedRequest;
+export default requestWrapper;
