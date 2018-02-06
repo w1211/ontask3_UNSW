@@ -34,8 +34,8 @@ router.register(r'datasource', DataSourceViewSet, r"datasource")
 router.register(r'workflow', WorkflowViewSet, r"workflow")
 
 urlpatterns = [
-    url(r'^', include(router.urls, namespace='api')),
+    url(r'^api/', include(router.urls, namespace='api')),
     url(r'^admin/', admin.site.urls),
     url(r'^token/', views.obtain_auth_token),
-    url(r'^', include(accounts.urls, namespace='accounts')),
+    url(r'^api/', include(accounts.urls, namespace='accounts')),
 ]
