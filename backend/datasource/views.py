@@ -3,6 +3,7 @@ from rest_framework_mongoengine.validators import ValidationError
 from datetime import datetime
 
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from mongoengine.queryset.visitor import Q
 
 # Imports to connect to data sources
 import mysql.connector
