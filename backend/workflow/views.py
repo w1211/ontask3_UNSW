@@ -175,7 +175,8 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
             for condition in condition_group['conditions']:
                 # Initialise the condition name as a key in the defaultdict
-                conditions_passed[condition['name']] = []
+                if not conditions_passed[condition['name']]: 
+                    conditions_passed[condition['name']] = []
 
                 didPass = False
 
