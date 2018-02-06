@@ -65,9 +65,9 @@ function workflow(state = initialState, action) {
         details: action.details,
         conditionGroups: action.conditionGroups,
         datasources: action.datasources,
-        actionEditorState: action.editorState,
         content: action.content,
-        schedule: action.schedule
+        schedule: action.schedule,
+        actionEditorState: action.editorState
       });
 
     // Details actions

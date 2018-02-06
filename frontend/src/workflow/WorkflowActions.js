@@ -72,9 +72,8 @@ export const fetchWorkflow = (workflowId) => dispatch => {
         workflow['details'],
         workflow['conditionGroups'],
         workflow['datasources'],
-        workflow['content'],
-        workflow['schedule']),
-        editorState
+        editorState,
+        workflow['schedule'])
       );
     }
   }
