@@ -52,7 +52,7 @@ MIDDLEWARE = [
 ]
 
 CORS_ORIGIN_WHITELIST = (
-    DOMAIN # Domain specified in the config file
+    FRONTEND_DOMAIN # Domain specified in the config file
 )
 
 ROOT_URLCONF = 'ontask.urls'

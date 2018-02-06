@@ -14,7 +14,7 @@ import io
 
 # Imports for encrypting the datasource db password
 from cryptography.fernet import Fernet
-from ontask.settings import DATASOURCE_KEY
+from ontask.settings import SECRET_KEY
 
 from .serializers import DataSourceSerializer
 from .models import DataSource
@@ -51,7 +51,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         return DataSource.objects.filter(id__in = [datasource['_id'] for datasource in datasources])
 
     def get_datasource_data(self, connection):
-        cipher = Fernet(DATASOURCE_KEY)
+        cipher = Fernet(SECRET_KEY)
         decrypted_password = cipher.decrypt(connection['password'])
         
         if connection['dbType'] == 'mysql':
@@ -128,7 +128,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         else:
             connection = self.request.data['connection']
             # Encrypt the db password of the data source
-            cipher = Fernet(DATASOURCE_KEY)
+            cipher = Fernet(SECRET_KEY)
             connection['password'] = cipher.encrypt(bytes(connection['password'], encoding="UTF-8"))
             (data, fields) = self.get_datasource_data(connection)
 
@@ -153,7 +153,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         else:
             if hasattr(connection, 'password'):
                 # Encrypt the db password of the data source
-                cipher = Fernet(DATASOURCE_KEY)
+                cipher = Fernet(SECRET_KEY)
                 # If a new password is provided then encrypt it and overwrite the old one
                 connection['password'] = cipher.encrypt(bytes(connection['password'], encoding="UTF-8"))
             else:

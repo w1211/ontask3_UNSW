@@ -8,7 +8,7 @@ from .models import OneTimeToken
 
 import jwt
 from datetime import datetime, timedelta
-from ontask.settings import SECRET_KEY, DOMAIN
+from ontask.settings import SECRET_KEY, FRONTEND_DOMAIN
 
 
 class AuthRouter(object):
@@ -43,7 +43,7 @@ class AuthRouter(object):
                 # Add the token to the database in order to validate any incoming tokens
                 OneTimeToken.objects(user=user.id).update_one(token=token, upsert=True)
 
-                return redirect(DOMAIN + '?tkn=' + token)
+                return redirect(FRONTEND_DOMAIN + '?tkn=' + token)
 
         except Exception as e:
             # TODO logging
