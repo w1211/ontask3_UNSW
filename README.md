@@ -11,7 +11,7 @@
         - `sudo yum install python36-devel`
 2. Install MongoDB in which to store application data
 3. Install an RDS such as PostgreSQL or MySQL in which to store user data
-4. Install the Python3 [virtual environment] module(https://packaging.python.org/guides/installing-using-pip-and-virtualenv/) module by `python3 -m pip install virtualenv`
+4. Install the Python3 [virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtualenv/) module by `python3 -m pip install virtualenv`
 5. Set up & run a Python3 virtual environment
     - Ensure the virtual environment is active during the next step and whilst attempting to serve the backend server
 6. Run `pip3 install -r backend/requirements.txt`
