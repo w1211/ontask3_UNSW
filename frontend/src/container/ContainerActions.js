@@ -53,7 +53,7 @@ export const fetchContainers = () => dispatch => {
     initialFn: () => { 
       dispatch(requestContainers()); 
     },
-    url: `/container/retrieve_containers`,
+    url: `/container/retrieve_containers/`,
     method: 'GET',
     errorFn: (error) => { 
       console.error(error); 

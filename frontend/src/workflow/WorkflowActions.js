@@ -54,7 +54,7 @@ const receiveWorkflow = (name, details, conditionGroups, datasources, editorStat
 export const fetchWorkflow = (workflowId) => dispatch => {
   const parameters = {
     initialFn: () => { dispatch(requestWorkflow()); },
-    url: `/workflow/${workflowId}/retrieve_workflow`,
+    url: `/workflow/${workflowId}/retrieve_workflow/`,
     method: 'GET',
     errorFn: (error) => { console.log(error); },
     successFn: (workflow) => {
