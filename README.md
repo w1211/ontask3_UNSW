@@ -122,7 +122,7 @@ pidfile=/var/tmp/uwsgi/ontask.pid
         - Receiving an error `open("/tmp/uwsgi/ontask.pid"): No such file or directory` when attempting to stop the backend server probably indicates that the server is already stopped
 12. Install nginx on your server (e.g. `sudo yum install nginx`)
 13. Ensure that nginx is running as a service
-14. Provide the following configuration file to your `nginx` by running `sudo vim /etc/nginx/nginx.conf`
+14. Provide the following configuration file to your nginx by running `sudo vim /etc/nginx/nginx.conf`
 ```
 http {
     sendfile on;
