@@ -118,7 +118,7 @@ pidfile=/var/tmp/uwsgi/ontask.pid
 11. Start the backend server by running `uwsgi --ini uwsgi.ini` while in the `backend` working directory
     - **WARNING!** Ensure that the Python3 virtual environment is active
     - Receiving an error `realpath() of config/prod.ini failed: No such file or directory` while attempting to start the server probably indicates that your current working directory is not the `backend` folder
-    - The backend server can be stopped by running `uwsgi --stop var/tmp/uwsgi/ontask.pid`
+    - The backend server can be stopped by running `uwsgi --stop /var/tmp/uwsgi/ontask.pid`
         - Receiving an error `open("/tmp/uwsgi/ontask.pid"): No such file or directory` when attempting to stop the backend server probably indicates that the server is already stopped
 12. Install nginx on your server (e.g. `sudo yum install nginx`)
 13. Ensure that nginx is running as a service
