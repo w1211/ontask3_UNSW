@@ -1,0 +1,3 @@
+{
+    "python.pythonPath": "${workspaceFolder}/ontask_venv/bin/python"
+}

@@ -22,6 +22,7 @@ __pycache__/
 # Backend files
 backend/config/dev.*
 backend/config/prod.*
+backend/db.sqlite3
 
 # Frontend files
 frontend/node_modules
@@ -31,7 +32,8 @@ frontend/.env.*
 # Virtual environment
 ontask_env/
 ontask_venv/
+scheduler_env/
 
-# Dev files
-dev/*.csv
-backend/db.sqlite3
+# Scheduler
+scheduler/docket/celerybeat\.pid
+scheduler/docket/db\.sqlite3
