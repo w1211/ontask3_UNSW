@@ -30,13 +30,14 @@ Fernet.generate_key()
 4. Configure the environment file(s) created in step 2 as follows:
 ```python
 # Example configurations are provided for each attribute
-FRONTEND_DOMAIN = 'YOUR_FRONTEND_DOMAIN_NAME' # For whitelisting CORS and authentication
+FRONTEND_DOMAIN = 'https://YOUR_FRONTEND_DOMAIN_NAME' # For whitelisting CORS and authentication
 ALLOWED_HOSTS = ['localhost', 'https://YOUR_DOMAIN_NAME']
 
 SECRET_KEY = 'YOUR_SECRET_KEY' # Generated in step 3
 CIPHER_SUITE_KEY = 'YOUR_CIPHER_KEY' # 30 byte secret key for authenticating users from third party IDPs
 
 SQL_DATABASE = { # For storing user data
+    # PostgreSQL is only provided as an example
     'ENGINE': 'django.db.backends.postgresql',
     'NAME': 'ontask',
     'USER': 'ontask',
@@ -72,8 +73,11 @@ LTI_CONFIG = {
 5. Create environment files `.env.development` (for development) and/or `.env.production` (for production) in `frontend`
 6. Configure the environment file(s) created in step 5 as follows:
 ```javascript
-REACT_APP_API_DOMAIN = 'YOUR_BACKEND_DOMAIN_NAME'
+REACT_APP_API_DOMAIN = 'https://YOUR_BACKEND_DOMAIN_NAME'
 ```
+
+### Third-party identity providers
+1. To be added
 
 ### Development
 1. Download and install [postgresql](https://www.postgresql.org/)
@@ -95,34 +99,50 @@ REACT_APP_API_DOMAIN = 'YOUR_BACKEND_DOMAIN_NAME'
 
 ### For production
 1. Clone the repository to your server and perform the setup steps outlined above
-2. Ensure that MongoDB is running as a service
-3. Ensure that the RDS chosen for storing user data is running as a service
-4. Build the frontend into production files by running `npm build` in the `frontend` working directory
-5. (?) Copy the files from the newly created `frontend/build` directory to `/var/www/html/ontask`
-6. Run the backend as a service
-7. nginx config
-
+2. Take note of the absolute path to your backend directory, e.g. `/home/USER/ontask/backend`
+3. Ensure that MongoDB is running as a service
+4. Ensure that the RDS chosen for storing user data is running as a service
+5. Build the frontend into production files by running `npm build` in the `frontend` working directory
+6. Copy the files from the newly created `frontend/build` directory to `/var/www/html/ontask`
+7. Create file `ontask.log` in `/var/log/uwsgi` (directories may need to be created)
+8. Create file `ontask.pid` in `/var/tmp/uwsgi` (directories may need to be created)
+9. Create an environment file `prod.ini` in `backend/config`
+10. Configure the environment file created in step 9 as follows:
+```
+[uwsgi]
+http=127.0.0.1:8000
+chdir=ABSOLUTE_PATH_TO_YOUR_BACKEND_DIRECTORY
+daemonize=/var/log/uwsgi/ontask.log
+pidfile=/var/tmp/uwsgi/ontask.pid
+```
+11. Start the backend server by running `uwsgi --ini uwsgi.ini` while in the `backend` working directory
+    - **WARNING!** Ensure that the Python3 virtual environment is active
+    - The backend server can be stopped by running `uwsgi --stop var/tmp/uwsgi/ontask.pid`
+    - Receiving an error `No such file or directory` when attempting to stop the backend server probably indicates that the server is already stopped
+12. Install nginx on your server (e.g. `sudo yum install nginx`)
+13. Ensure that nginx is running as a service
+14. Provide the following configuration file to your `nginx` by running `sudo vim /etc/nginx/nginx.conf`
 ```
 http {
     sendfile on;
 
-    gzip              on;
-    gzip_http_version 1.0;
-    gzip_proxied      any;
-    gzip_min_length   500;
-    gzip_disable      "MSIE [1-6]\.";
-    gzip_types        text/plain text/xml text/css
-                      text/comma-separated-values
-                      text/javascript
-                      application/x-javascript
-                      application/atom+xml;
+    gzip                    on;
+    gzip_http_version       1.0;
+    gzip_proxied            any;
+    gzip_min_length         500;
+    gzip_disable            "MSIE [1-6]\.";
+    gzip_types              text/plain text/xml text/css
+                            text/comma-separated-values
+                            text/javascript
+                            application/x-javascript
+                            application/atom+xml;
 
     server {
-        server_name uat-ontask2.teaching.unsw.edu.au;
+        server_name         YOUR_DOMAIN_NAME;
         listen 443;
 
         ssl on;
-        ssl_certificate /home/ec2-user/Ontask/SSL/uat-ontask2_teaching_unsw_edu_au.crt;
+        ssl_certificate     YOUR_SSL_CERT_PATH;
                     
         proxy_redirect      off;
         proxy_set_header    Host $host;
@@ -130,16 +150,23 @@ http {
         proxy_set_header    X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header    X-Forwarded-Host $server_name;
 
-        root /var/www/html/ontask/;
-        include /etc/nginx/mime.types;
+        root                /var/www/html/ontask/;
+        include             /etc/nginx/mime.types;
 
         location ~ ^/api/(.*)$ {
-            proxy_pass http://127.0.0.1:8000/api/$1;
+            proxy_pass      http://127.0.0.1:8000/api/$1;
         }
 
+        # TODO: Remove this after the AAF callback is corrected
         location ~ ^/user/(.*)$ {
-            proxy_pass http://127.0.0.1:8000/api/user/$1;
+            proxy_pass      http://127.0.0.1:8000/api/user/$1;
         }
     }
+
 }
 ```
+15. Reload nginx after configurating it by running `sudo service nginx restart`
+16. The application should now be accessible from your domain
+
+#### Adjusting workers/threads for backend
+1. To be added 
