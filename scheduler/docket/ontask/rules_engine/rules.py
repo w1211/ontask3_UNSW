@@ -20,11 +20,8 @@ class Rules:
     app_db_identifier           =  'ontask_api'
     data_db_identifier          =  'ontask_data'
 
-    # Internal variables
-    workflow_id = ""
-    query = {}
 
-    def is_float(s):
+    def is_float(self, s):
         ''' Check for floating point numbers - better than a regex check: 
             https://stackoverflow.com/questions/354038/how-do-i-check-if-a-string-is-a-number-float'''
         try:
@@ -42,7 +39,7 @@ class Rules:
         # Tries a float conversion first and then a integer value mapping
         value = formula['comparator']
         value = float(value) if self.is_float(value) else value
-        value = int(value) if value.isdigit() else value
+        value = int(value) if str(value).isdigit() else value
 
         return { field: { operator:value } }
 
