@@ -1,5 +1,5 @@
 import React from 'react';
-import { Divider, Button, Dropdown, Menu, Alert, Modal, Icon, Input, Tabs, Cascader, Checkbox, Popover } from 'antd';
+import { Divider, Button, Dropdown, Menu, Alert, Modal, Icon, Input, Tabs, Cascader, Checkbox, Popover, Form } from 'antd';
 import { convertToRaw, EditorState, Modifier } from 'draft-js';
 import { Editor } from 'react-draft-wysiwyg';
 import draftToHtml from 'draftjs-to-html';
@@ -9,6 +9,7 @@ import 'react-draft-wysiwyg/dist/react-draft-wysiwyg.css';
 import './Action.css';
 
 const TabPane = Tabs.TabPane;
+const FormItem = Form.Item;
 
 const handleConditionGroupMenuClick = (e, openConditionGroupModal, confirmConditionGroupDelete, conditionGroup, i) => {
   switch (e.key) {
@@ -22,12 +23,6 @@ const handleConditionGroupMenuClick = (e, openConditionGroupModal, confirmCondit
       break;
   }
 }
-
-const handleContent = (editorState, contentFunction) => {
-  const payload = draftToHtml(convertToRaw(editorState.getCurrentContent()));
-  contentFunction(payload);
-}
-
 
 class Action extends React.Component {
   state = { isInside: false };
@@ -84,12 +79,30 @@ class Action extends React.Component {
     updateEditorState(newEditorState);
   }
 
+  handleContent = (editorState, contentFunction) => {
+    this.props.form.validateFieldsAndScroll((err, values) => {
+      //TODO: add alert for not specifying content
+      if (!err && editorState.getCurrentContent().hasText()) {
+        console.log(values);
+        const emailContent = draftToHtml(convertToRaw(editorState.getCurrentContent()));
+        const payload ={
+          emailContent,
+          "emailSubject": values.emailSubject,
+          "emailColum": values.emailColum[0]
+        }
+        contentFunction(payload);
+      }
+    });
+  }
+
   render() {
     const {
       contentLoading, error, conditionGroups, editorState, onUpdateContent,
       previewLoading, previewVisible, previewContent, onPreviewContent, onClosePreview,
       openConditionGroupModal, confirmConditionGroupDelete, updateEditorState, details
     } = this.props;
+
+    const { getFieldDecorator } = this.props.form;
 
     const emailChoicesDetails = {
         confirmationEmail: "confirmationEmail",
@@ -148,27 +161,43 @@ class Action extends React.Component {
         }
 
         <Divider dashed />
-        <Tabs defaultActiveKey="1">
-                <TabPane tab="Email" key="1">
-                  <h3>Email column</h3>
-                  <Cascader style={{ marginBottom: '25px' }} options={emailColums} placeholder="Email columns"/>
-                  <h3>Email subject</h3>
-                  <Input style={{ marginBottom: '25px' }} placeholder="Enter subject" />
-                  <h3>Email choices</h3>
-                  <Checkbox.Group style={{ width: '100%', marginBottom: '25px'}}>
-                    <Popover content={emailChoicesDetails.confirmationEmail} trigger="hover">
-                      <Checkbox value="confirmationEmail">Send you a confirmation Email</Checkbox>
-                    </Popover>
-                    <Popover content={emailChoicesDetails.trackEmail} trigger="hover">
-                      <Checkbox value="trackEmail">Track if emails are read</Checkbox>
-                    </Popover>
-                    <Popover content={emailChoicesDetails.addColumnEmailReads} trigger="hover">
-                      <Checkbox value="addColumnEmailReads">Add a column with the number of email reads tracked</Checkbox>
-                    </Popover>
-                  </Checkbox.Group>
-                </TabPane>
-                <TabPane tab="URL" key="2"></TabPane>
-        </Tabs>
+          <Tabs defaultActiveKey="1">
+            <TabPane tab="Email" key="1">
+              <Form>
+              <h3>Email column</h3>
+              <FormItem>
+                {getFieldDecorator('emailColum', {
+                  rules: [{ required: true, message: 'Email column is required' }]
+                })(
+                  <Cascader options={emailColums} placeholder="Email column"/>
+                )}
+              </FormItem>
+              <h3>Email subject</h3>
+              <FormItem>
+                {getFieldDecorator('emailSubject', {
+                  rules: [{ required: true, message: 'Email subjuct is required' }]
+                })(
+                  <Input placeholder="Enter subject" />
+                )}
+              </FormItem>
+              <h3>Email choices</h3>
+              <FormItem>
+                <Checkbox.Group style={{ width: '100%'}}>
+                  <Popover content={emailChoicesDetails.confirmationEmail} trigger="hover">
+                    <Checkbox value="confirmationEmail">Send you a confirmation Email</Checkbox>
+                  </Popover>
+                  <Popover content={emailChoicesDetails.trackEmail} trigger="hover">
+                    <Checkbox value="trackEmail">Track if emails are read</Checkbox>
+                  </Popover>
+                  <Popover content={emailChoicesDetails.addColumnEmailReads} trigger="hover">
+                    <Checkbox value="addColumnEmailReads">Add a column with the number of email reads tracked</Checkbox>
+                  </Popover>
+                </Checkbox.Group>
+              </FormItem>
+            </Form>
+            </TabPane>
+            <TabPane tab="URL" key="2"></TabPane>
+          </Tabs>
         <h3>Content</h3>
         <Editor
           toolbar={{
@@ -190,8 +219,8 @@ class Action extends React.Component {
 
         { error && <Alert message={error} type="error" style={{ marginTop: '10px' }}/>}
         <div style={{ marginTop: '10px' }}>
-          <Button loading={previewLoading} style={{ marginRight: '10px' }} size="large" onClick={() => { handleContent(editorState, onPreviewContent) }}>Preview</Button>
-          <Button loading={contentLoading} type="primary" size="large" onClick={() => { handleContent(editorState, onUpdateContent) }}>Save</Button>
+          <Button loading={previewLoading} style={{ marginRight: '10px' }} size="large" onClick={() => { this.handleContent(editorState, onPreviewContent) }}>Preview</Button>
+          <Button loading={contentLoading} type="primary" size="large" onClick={() => { this.handleContent(editorState, onUpdateContent) }}>Save</Button>
         </div>
       </div>
     )
@@ -249,4 +278,4 @@ class PreviewModal extends React.Component {
   };
 };
 
-export default Action;
+export default Form.create()(Action);

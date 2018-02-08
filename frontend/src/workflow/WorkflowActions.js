@@ -54,13 +54,15 @@ const receiveWorkflow = (name, details, conditionGroups, datasources, editorStat
 export const fetchWorkflow = (workflowId) => dispatch => {
   const parameters = {
     initialFn: () => { dispatch(requestWorkflow()); },
-    url: `/workflow/${workflowId}/retrieve_workflow`,
+    url: `/workflow/${workflowId}/retrieve_workflow/`,
     method: 'GET',
     errorFn: (error) => { console.log(error); },
     successFn: (workflow) => {
       let editorState = null;
       if (workflow['content']) {
-        const blocksFromHtml = htmlToDraft(workflow['content']);
+        console.log(workflow['content']);
+        const blocksFromHtml = htmlToDraft(workflow['content']['emailContent']);
+        //TODO:add email subjuct and column here
         const { contentBlocks, entityMap } = blocksFromHtml;
         const contentState = ContentState.createFromBlockArray(contentBlocks, entityMap);
         editorState = EditorState.createWithContent(contentState);

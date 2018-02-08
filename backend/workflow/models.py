@@ -42,6 +42,11 @@ class Schedule(EmbeddedDocument):
     time = fields.DateTimeField(required=True) #hour and minutes
     frequency = fields.IntField(min_value=1, required=True) #day
 
+class Content(EmbeddedDocument):
+    emailSubject = fields.StringField()
+    emailColum = fields.StringField()
+    emailContent = fields.StringField()
+
 # Workflow
 class Workflow(Document):
     container = fields.ReferenceField(Container, required=True, reverse_delete_rule=2) # Cascade delete if container is deleted
@@ -50,5 +55,5 @@ class Workflow(Document):
     details = fields.EmbeddedDocumentField(Details)
     filter = fields.StringField(null=True)
     conditionGroups = fields.EmbeddedDocumentListField(ConditionGroup)
-    content = fields.StringField()
+    content = fields.EmbeddedDocumentField(Content)
     schedule = fields.EmbeddedDocumentField(Schedule, null=True, required=False)

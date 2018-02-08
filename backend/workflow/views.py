@@ -175,7 +175,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
             for condition in condition_group['conditions']:
                 # Initialise the condition name as a key in the defaultdict
-                if not conditions_passed[condition['name']]: 
+                if not conditions_passed[condition['name']]:
                     conditions_passed[condition['name']] = []
 
                 didPass = False
@@ -395,17 +395,21 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     def update_content(self, request, id=None):
         workflow = Workflow.objects.get(id=id)
         self.check_object_permissions(self.request, workflow)
-
-        updated_content = self.request.data
-        updated_content = updated_content.replace('"', "'")
+        print("request")
+        print(request.data)
+        updated_content = defaultdict(str)
+        updated_content["emailSubject"] = request.data['emailSubject']
+        updated_content["emailColum"] = request.data['emailColum']
+        updated_email_content = request.data['emailContent']
 
         # Run the populate content function to validate the provided content before saving it
-        self.populate_content(workflow, updated_content)
+        updated_email_content = updated_email_content.replace('"', "'")
+        self.populate_content(workflow, updated_email_content)
+        updated_content["emailContent"] = updated_email_content
 
         serializer = WorkflowSerializer(instance=workflow, data={'content': updated_content}, partial=True)
         serializer.is_valid()
         serializer.save()
-
         return JsonResponse(serializer.data)
 
     @detail_route(methods=['put'])

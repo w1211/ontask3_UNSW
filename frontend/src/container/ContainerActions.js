@@ -50,16 +50,16 @@ export const changeContainerAccordion = (key) => ({
 
 export const fetchContainers = () => dispatch => {
   const parameters = {
-    initialFn: () => { 
-      dispatch(requestContainers()); 
+    initialFn: () => {
+      dispatch(requestContainers());
     },
-    url: `/container/retrieve_containers`,
+    url: `/container/retrieve_containers/`,
     method: 'GET',
-    errorFn: (error) => { 
-      console.error(error); 
+    errorFn: (error) => {
+      console.error(error);
     },
     successFn: (containers) => {
-      dispatch(receiveContainers(containers)); 
+      dispatch(receiveContainers(containers));
     }
   }
 
@@ -90,17 +90,17 @@ const successCreateContainer = () => ({
 
 export const createContainer = (payload) => dispatch => {
   const parameters = {
-    initialFn: () => { 
-      dispatch(beginRequestContainer()); 
+    initialFn: () => {
+      dispatch(beginRequestContainer());
     },
     url: `/container/`,
     method: 'POST',
-    errorFn: (error) => { 
-      dispatch(failureRequestContainer(error)); 
+    errorFn: (error) => {
+      dispatch(failureRequestContainer(error));
     },
     successFn: () => {
       dispatch(successCreateContainer());
-      dispatch(fetchContainers()); 
+      dispatch(fetchContainers());
     },
     payload: payload
   }
@@ -114,17 +114,17 @@ const successUpdateContainer = () => ({
 
 export const updateContainer = (containerId, payload) => dispatch => {
   const parameters = {
-    initialFn: () => { 
-      dispatch(beginRequestContainer()); 
+    initialFn: () => {
+      dispatch(beginRequestContainer());
     },
     url: `/container/${containerId}/`,
     method: 'PUT',
-    errorFn: (error) => { 
-      dispatch(failureRequestContainer(error)); 
+    errorFn: (error) => {
+      dispatch(failureRequestContainer(error));
     },
     successFn: () => {
       dispatch(successUpdateContainer());
-      dispatch(fetchContainers()); 
+      dispatch(fetchContainers());
     },
     payload: payload
   }
@@ -138,17 +138,17 @@ const successDeleteContainer = () => ({
 
 export const deleteContainer = (containerId) => dispatch => {
   const parameters = {
-    initialFn: () => { 
-      dispatch(beginRequestContainer()); 
+    initialFn: () => {
+      dispatch(beginRequestContainer());
     },
     url: `/container/${containerId}/`,
     method: 'DELETE',
-    errorFn: (error) => { 
-      dispatch(failureRequestContainer(error)); 
+    errorFn: (error) => {
+      dispatch(failureRequestContainer(error));
     },
     successFn: () => {
       dispatch(successDeleteContainer());
-      dispatch(fetchContainers()); 
+      dispatch(fetchContainers());
     }
   }
 
@@ -182,17 +182,17 @@ export const createWorkflow = (containerId, payload) => dispatch => {
   payload.container = containerId;
 
   const parameters = {
-    initialFn: () => { 
-      dispatch(beginRequestWorkflow()); 
+    initialFn: () => {
+      dispatch(beginRequestWorkflow());
     },
     url: `/workflow/`,
     method: 'POST',
-    errorFn: (error) => { 
-      dispatch(failureRequestWorkflow(error)); 
+    errorFn: (error) => {
+      dispatch(failureRequestWorkflow(error));
     },
     successFn: () => {
       dispatch(successCreateWorkflow());
-      dispatch(fetchContainers()); 
+      dispatch(fetchContainers());
     },
     payload: payload
   }
@@ -206,17 +206,17 @@ const successUpdateWorkflow = () => ({
 
 export const updateWorkflow = (workflowId, payload) => dispatch => {
   const parameters = {
-    initialFn: () => { 
-      dispatch(beginRequestWorkflow()); 
+    initialFn: () => {
+      dispatch(beginRequestWorkflow());
     },
     url: `/workflow/${workflowId}/`,
     method: 'PATCH',
-    errorFn: (error) => { 
-      dispatch(failureRequestWorkflow(error)); 
+    errorFn: (error) => {
+      dispatch(failureRequestWorkflow(error));
     },
     successFn: () => {
       dispatch(successUpdateWorkflow());
-      dispatch(fetchContainers()); 
+      dispatch(fetchContainers());
     },
     payload: payload
   }
@@ -230,17 +230,17 @@ const successDeleteWorkflow = () => ({
 
 export const deleteWorkflow = (workflowId) => dispatch => {
   const parameters = {
-    initialFn: () => { 
-      dispatch(beginRequestWorkflow()); 
+    initialFn: () => {
+      dispatch(beginRequestWorkflow());
     },
     url: `/workflow/${workflowId}/`,
     method: 'DELETE',
-    errorFn: (error) => { 
-      dispatch(failureRequestWorkflow(error)); 
+    errorFn: (error) => {
+      dispatch(failureRequestWorkflow(error));
     },
     successFn: () => {
       dispatch(successDeleteWorkflow());
-      dispatch(fetchContainers()); 
+      dispatch(fetchContainers());
     }
   }
 
@@ -297,13 +297,13 @@ export const createDatasource = (containerId, payload, file) => dispatch => {
   }
 
   const parameters = {
-    initialFn: () => { 
-      dispatch(beginRequestDatasource()); 
+    initialFn: () => {
+      dispatch(beginRequestDatasource());
     },
     url: `/datasource/`,
     method: 'POST',
-    errorFn: (error) => { 
-      dispatch(failureRequestDatasource(error)); 
+    errorFn: (error) => {
+      dispatch(failureRequestDatasource(error));
     },
     successFn: () => {
       dispatch(successCreateDatasource());
@@ -323,7 +323,7 @@ const successUpdateDatasource = () => ({
 
 export const updateDatasource = (datasourceId, payload, file) => dispatch => {
   dispatch(beginRequestDatasource());
-  
+
   const isCsv = (payload.dbType === 'csv');
   let data;
   if (isCsv) {
@@ -337,13 +337,13 @@ export const updateDatasource = (datasourceId, payload, file) => dispatch => {
   }
 
   const parameters = {
-    initialFn: () => { 
-      dispatch(beginRequestDatasource()); 
+    initialFn: () => {
+      dispatch(beginRequestDatasource());
     },
     url: `/datasource/${datasourceId}/`,
     method: 'PATCH',
-    errorFn: (error) => { 
-      dispatch(failureRequestDatasource(error)); 
+    errorFn: (error) => {
+      dispatch(failureRequestDatasource(error));
     },
     successFn: () => {
       dispatch(successUpdateDatasource());
@@ -351,7 +351,7 @@ export const updateDatasource = (datasourceId, payload, file) => dispatch => {
       if (isCsv) dispatch(removeUploadingFile());
     },
     payload: data,
-    isNotJSON: isCsv  
+    isNotJSON: isCsv
   }
 
   requestWrapper(parameters);
@@ -366,11 +366,11 @@ export const deleteDatasource = (datasourceId) => dispatch => {
     initialFn: () => { dispatch(beginRequestDatasource()); },
     url: `/datasource/${datasourceId}/`,
     method: 'DELETE',
-    errorFn: (error) => { 
-      dispatch(failureRequestDatasource(error)); 
+    errorFn: (error) => {
+      dispatch(failureRequestDatasource(error));
     },
     successFn: () => {
-      dispatch(successDeleteDatasource()); 
+      dispatch(successDeleteDatasource());
       dispatch(fetchContainers());
     }
   }

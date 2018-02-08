@@ -15,7 +15,6 @@ class Scheduler extends React.Component {
   }
 
  handleSubmit = () => {
-     console.log("schedule");
     this.props.form.validateFieldsAndScroll((err, values) => {
       if (!err) {
         this.props.onCreate(values);
@@ -118,7 +117,6 @@ class Scheduler extends React.Component {
       <div>
         <h3>New Schedule</h3>
         <Form style={{...panelLayout}}>
-
           <FormItem
             label="DateRange"
             {...formItemLayout}

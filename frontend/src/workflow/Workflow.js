@@ -20,7 +20,6 @@ class Workflow extends React.Component {
   constructor(props) {
     super(props);
     const { dispatch } = props;
-
     this.boundActionCreators = bindActionCreators(WorkflowActionCreators, dispatch)
   }
 
