@@ -52,14 +52,13 @@ class Rules:
         return { group : formulas }
 
     def check_condition_match(self, match, mapped_condition):
+        ''' Matches the sub condition and identifies the content group to render '''
         condition = match.group(1)
-        # print("##### CODN #####")
-        # print(condition)
-        # print("##### CODN #####")
         content_value = match.group(2)
         return content_value if mapped_condition == condition else None
     
     def populate_field(self, match, item):
+        ''' Populates the variable value to the content'''
         field = match.group(1)
 
         try:
@@ -78,18 +77,18 @@ class Rules:
         data = collection.find(query)
 
         for item in data:
-            # print("############ ITEM ###################")
-            # print(item)
-            # print("############ ITEM ###################")
+            # Use a positive lookahead to match the expected template syntax without replacing the closing block
+            # E.g. we have a template given by: {% if low_grade %} Low! {% elif high_grade %} High! {% endif %}
+            # We have found a match if the snippet is enclosed between two {% %} blocks
+            # However, when we are replacing/subbing the match, we don't want to replace the closing block
+            # This is because the closing block of the current match could also be the opening block of the next match
+            # I.e. in the example above, {% elif high_grade %} is both the closing block of the first match, and the opening block of the second match
+            # However, if the closing block is {% endif %}, then we can actually replace it instead of using a lookahead
+            # Because we know that in that case, there would be no further matches
             item_content = re.sub(r'{% .*? (.*?) %}(.*?)({% endif %}|(?={% .*? %}))',\
              lambda match: self.check_condition_match(match, condition), content)
-            # print("############ ITEM CONTENT1 ###################")
-            # print(item_content)
-            # print("############ ITEM CONTENT1 ###################")
             item_content = re.sub(r'{{ (.*?) }}', lambda match: self.populate_field(match, item['value']), item_content)
-            # print("############ ITEM CONTENT2 ###################")
             print(item_content)
-            # print("############ ITEM CONTENT2 ###################")
         client.close()
 
     def execute_rules(self, workflow_id):
