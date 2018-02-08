@@ -2,6 +2,8 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 from bson.son import SON
 
+import re
+
 
 comparison_operator_mapping = {
     '<'  : '$lt',
@@ -49,10 +51,13 @@ class Rules:
 
         return { group : formulas }
 
-    def check_condition_match(self, match):
+    def check_condition_match(self, match, mapped_condition):
         condition = match.group(1)
+        # print("##### CODN #####")
+        # print(condition)
+        # print("##### CODN #####")
         content_value = match.group(2)
-        return content_value
+        return content_value if mapped_condition == condition else None
     
     def populate_field(self, match, item):
         field = match.group(1)
@@ -64,7 +69,7 @@ class Rules:
 
         return str(value)
     
-    def retrieve_matching_docs(self, query, workflow_id):
+    def retrieve_matching_docs(self, query, workflow_id, content, condition):
         ''' Retrieve the matching documents from the matrix collection '''
         client = MongoClient(self.mongo_url)
         db = client[self.data_db_identifier]
@@ -72,12 +77,23 @@ class Rules:
 
         data = collection.find(query)
 
-        for result in data:
-            print(result)
+        for item in data:
+            # print("############ ITEM ###################")
+            # print(item)
+            # print("############ ITEM ###################")
+            item_content = re.sub(r'{% .*? (.*?) %}(.*?)({% endif %}|(?={% .*? %}))',\
+             lambda match: self.check_condition_match(match, condition), content)
+            # print("############ ITEM CONTENT1 ###################")
+            # print(item_content)
+            # print("############ ITEM CONTENT1 ###################")
+            item_content = re.sub(r'{{ (.*?) }}', lambda match: self.populate_field(match, item['value']), item_content)
+            # print("############ ITEM CONTENT2 ###################")
+            print(item_content)
+            # print("############ ITEM CONTENT2 ###################")
         client.close()
 
-    def build_workflow_query(self, workflow_id):
-        ''' Builds the query for each condition in the workflow'''
+    def execute_rules(self, workflow_id):
+        ''' Builds the query for each condition in the workflow and runs them'''
 
         # App DB connection
         client = MongoClient(self.mongo_url)
@@ -85,21 +101,24 @@ class Rules:
         collection = db['workflow']
 
         # Map the condition values
-        conditions = collection.find_one({'_id':ObjectId(workflow_id)})['conditionGroups']
+        workflow = collection.find_one({'_id':ObjectId(workflow_id)})
+        conditions = workflow['conditionGroups']
+        content = workflow['content']
 
         for condition in conditions:
             print('Executing condition ---- %s'%condition['name'])
             for sub_condition in condition['conditions']:
+                sub_condition_name = sub_condition['name']
                 formulas = [self.generate_formula(formula) for formula in sub_condition['formulas']]
                 query = SON(self.generate_grouped_formula(formulas, sub_condition['type']))
                 print(query)
-                self.retrieve_matching_docs(query, workflow_id)
+                self.retrieve_matching_docs(query, workflow_id, content, sub_condition_name)
         
         client.close()
         
 def main():
     rule_engine = Rules()
-    rule_engine.build_workflow_query('5a56e9ecf5ec4e515e781b70')
+    rule_engine.execute_rules('5a56e9ecf5ec4e515e781b70')
 
 if __name__ == '__main__':
     main()
