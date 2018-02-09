@@ -64,9 +64,10 @@ const fileValidation = (file) => {
   if (!isCSV) {
     message.error('You can only upload CSV file!');
   }
-  const isLt2G = file.size / 1024 < 2;
+  console.log(file.size / (1024*1024))
+  const isLt2G = file.size / (1024*1024) < 2;
   if (!isLt2G) {
-    message.error('Image must smaller than 2GB!');
+    message.error('File must smaller than 2GB!');
   }
   return isCSV && isLt2G;
 };
@@ -79,7 +80,7 @@ const handleDraggerChange = (info, addUploadingFile) => {
 
 const DatasourceModal = ({
   form, visible, loading, error, containerId, datasources,
-  datasource, onChange, onCreate, onUpdate, onCancel, onDelete, 
+  datasource, onChange, onCreate, onUpdate, onCancel, onDelete,
   uploadingFile, uploadCsvFile, addUploadingFile, onSelect
 }) => (
   <Modal
