@@ -17,7 +17,7 @@ class Matrix:
     mongo_url                   =  'mongodb://localhost:27017/'
     app_db_identifier           =  'ontask_api'
     data_db_identifier          =  'ontask_data'
-    matrix_identifier           =  'matrix'
+    matrix_identifier           =  'details'
     primary_column_identifier   =  'primaryColumn'
     secondary_column_identifier =  'secondaryColumns'
 
@@ -148,7 +148,7 @@ class Matrix:
 
 if __name__ == '__main__':
     import_collection = Matrix()
-    field_mapping,key_mapping = import_collection.get_collection_mapping('5a56e9ecf5ec4e515e781b70')
+    field_mapping,key_mapping = import_collection.get_collection_mapping('5a7ec6bf87c543a6cbe053ca')
     print(field_mapping)
     print(key_mapping)
     import_collection.import_data_source()
