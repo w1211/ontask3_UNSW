@@ -29,7 +29,7 @@ export const SUCCESS_CREATE_DATASOURCE = 'SUCCESS_CREATE_DATASOURCE';
 export const SUCCESS_UPDATE_DATASOURCE = 'SUCCESS_UPDATE_DATASOURCE';
 export const SUCCESS_DELETE_DATASOURCE = 'SUCCESS_DELETE_DATASOURCE';
 
-export const UPLOAD_CSV_FILE = 'UPLOAD_CSV_FILE';
+export const UPLOAD_EXTERNAL_FILE = 'UPLOAD_EXTERNAL_FILE';
 export const ADD_UPLOADING_FILE = 'ADD_UPLOADING_FILE';
 export const REMOVE_UPLOADING_FILE = 'REMOVE_UPLOADING_FILE';
 
@@ -257,10 +257,10 @@ export const closeDatasourceModal = () => ({
   type: CLOSE_DATASOURCE_MODAL
 });
 
-export const changeDatasource = (datasource, isCsvFile) => ({
+export const changeDatasource = (datasource, isExternalFile) => ({
   type: CHANGE_DATASOURCE,
   datasource,
-  isCsvFile
+  isExternalFile
 });
 
 const beginRequestDatasource = () => ({
@@ -283,11 +283,12 @@ const removeUploadingFile = () => ({
 export const createDatasource = (containerId, payload, file) => dispatch => {
   payload.container = containerId;
 
-  const isCsv = (payload.dbType === 'csv');
+  const isFile = (payload.dbType === 'file');
   let data;
-  if (isCsv) {
+  if (isFile) {
     data = new FormData();
     data.append('file', file);
+    data.append('delimiter', payload.delimiter)
     data.append('container', containerId);
     data.append('name', payload.name);
     data.append('connection', JSON.stringify(payload.connection));
@@ -308,10 +309,10 @@ export const createDatasource = (containerId, payload, file) => dispatch => {
     successFn: () => {
       dispatch(successCreateDatasource());
       dispatch(fetchContainers());
-      if (isCsv) dispatch(removeUploadingFile());
+      if (isFile) dispatch(removeUploadingFile());
     },
     payload: data,
-    isNotJSON: isCsv
+    isNotJSON: isFile
   }
 
   requestWrapper(parameters);
@@ -324,9 +325,9 @@ const successUpdateDatasource = () => ({
 export const updateDatasource = (datasourceId, payload, file) => dispatch => {
   dispatch(beginRequestDatasource());
 
-  const isCsv = (payload.dbType === 'csv');
+  const isFile = (payload.dbType === 'file');
   let data;
-  if (isCsv) {
+  if (isFile) {
     data = new FormData();
     if (file) data.append('file', file);
     data.append('name', payload.name);
@@ -335,7 +336,6 @@ export const updateDatasource = (datasourceId, payload, file) => dispatch => {
   } else {
     data = payload;
   }
-
   const parameters = {
     initialFn: () => {
       dispatch(beginRequestDatasource());
@@ -348,10 +348,10 @@ export const updateDatasource = (datasourceId, payload, file) => dispatch => {
     successFn: () => {
       dispatch(successUpdateDatasource());
       dispatch(fetchContainers());
-      if (isCsv) dispatch(removeUploadingFile());
+      if (isFile) dispatch(removeUploadingFile());
     },
     payload: data,
-    isNotJSON: isCsv
+    isNotJSON: isFile
   }
 
   requestWrapper(parameters);
@@ -384,7 +384,7 @@ export const addUploadingFile = (file) => ({
   file
 });
 
-export const handleDatasourceTypeSelction = (isCsvFile) => ({
-  type: UPLOAD_CSV_FILE,
-  isCsvFile
+export const handleDatasourceTypeSelction = (isExternalFile) => ({
+  type: UPLOAD_EXTERNAL_FILE,
+  isExternalFile
 });

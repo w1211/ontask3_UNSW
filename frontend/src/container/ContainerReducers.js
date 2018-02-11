@@ -29,7 +29,7 @@ import {
   SUCCESS_DELETE_DATASOURCE,
 
 //actions for interacting with datasource form uploading file list
-  UPLOAD_CSV_FILE,
+  UPLOAD_EXTERNAL_FILE,
   ADD_UPLOADING_FILE,
   REMOVE_UPLOADING_FILE
 
@@ -179,12 +179,12 @@ function containers(state = initialState, action) {
         datasource: null,
         datasources: null,
         uploadingFile: null,
-        uploadCsvFile: false
+        isExternalFile: false
       });
     case CHANGE_DATASOURCE:
       return Object.assign({}, state, {
         datasource: action.datasource,
-        uploadCsvFile: action.isCsvFile
+        isExternalFile: action.isExternalFile
       });
     case BEGIN_REQUEST_DATASOURCE:
       return Object.assign({}, state, {
@@ -206,6 +206,7 @@ function containers(state = initialState, action) {
         containerId: null,
         datasources: null,
         didCreate: true,
+        isExternalFile: false,
         model: 'datasource'
       });
       case SUCCESS_UPDATE_DATASOURCE:
@@ -217,6 +218,7 @@ function containers(state = initialState, action) {
         containerId: null,
         datasources: null,
         didUpdate: true,
+        isExternalFile: false,
         model: 'datasource'
       });
     case SUCCESS_DELETE_DATASOURCE:
@@ -227,12 +229,13 @@ function containers(state = initialState, action) {
         containerId: null,
         datasources: null,
         didDelete: true,
+        isExternalFile: false,
         model: 'datasource'
       });
 
-    case UPLOAD_CSV_FILE:
+    case UPLOAD_EXTERNAL_FILE:
       return Object.assign({}, state, {
-        uploadCsvFile: action.isCsvFile
+        isExternalFile: action.isExternalFile
       });
 
     //for interacting with datasource form uploaidng file list
@@ -244,7 +247,7 @@ function containers(state = initialState, action) {
     case REMOVE_UPLOADING_FILE:
       return Object.assign({}, state, {
         uploadingFile: null,
-        uploadCsvFile: false
+        isExternalFile: false
       });
     default:
       return state;

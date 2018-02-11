@@ -12,6 +12,7 @@ import psycopg2
 import json
 import csv
 import io
+from xlrd import open_workbook
 
 # Imports for encrypting the datasource db password
 from cryptography.fernet import Fernet
@@ -54,7 +55,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
     def get_datasource_data(self, connection):
         cipher = Fernet(SECRET_KEY)
         decrypted_password = cipher.decrypt(connection['password'])
-        
+
         if connection['dbType'] == 'mysql':
             try:
                 dbConnection = mysql.connector.connect(
@@ -104,16 +105,32 @@ class DataSourceViewSet(viewsets.ModelViewSet):
 
         return (data, fields)
 
-    def get_csv_data(self, csv_file):
+    def get_csv_data(self, csv_file, separator_char=','):
         #checking file format
-        if not csv_file.name.endswith('.csv'):
-            raise ValidationError('File is not CSV type')
-            return
-        reader = csv.DictReader(io.StringIO(csv_file.read().decode('utf-8')))
+        reader = csv.DictReader(io.StringIO(csv_file.read().decode('utf-8')), delimiter=separator_char)
         data = list(reader)
         fields = data[0].keys()
         return (data, fields)
 
+    def get_xsl_data(self, xls_file):
+        book = open_workbook(file_contents=xls_file.read())
+        sheet = book.sheet_by_index(0)
+        # read header values into the list
+        keys = [sheet.cell(0, col_index).value for col_index in range(sheet.ncols)]
+        dict_list = []
+        for row_index in range(1, sheet.nrows):
+            d = {keys[col_index]: sheet.cell(row_index, col_index).value
+                 for col_index in range(sheet.ncols)}
+            dict_list.append(d)
+        return (dict_list, keys)
+
+    def get_file_data(self, upload_file, delimiter):
+        if upload_file.name.lower().endswith(('.csv')):
+            return self.get_csv_data(upload_file, delimiter)
+        elif upload_file.name.lower().endswith(('.xls', 'xlsx')):
+            return self.get_xsl_data(upload_file)
+        else:
+            raise ValidationError('File is not validate type')
 
     def perform_create(self, serializer):
         self.check_object_permissions(self.request, None)
@@ -121,11 +138,12 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         # Connect to specified database and get the data from the query
         # Data passed in to the DataSource model must be a list of dicts of the form {column_name: value}
         # TO DO: if isDynamic, then store values into lists as objects with timestamps
-        if self.request.data['dbType']=='csv':
+        if self.request.data['dbType']=='file':
             connection = {}
-            connection['dbType'] = 'csv'
-            csv_file = self.request.data['file']
-            (data, fields) = self.get_csv_data(csv_file)
+            connection['dbType'] = 'file'
+            external_file = self.request.data['file']
+            delimiter = self.request.data['delimiter']
+            (data, fields) = self.get_file_data(external_file, delimiter)
         else:
             connection = self.request.data['connection']
             # Encrypt the db password of the data source
@@ -144,10 +162,11 @@ class DataSourceViewSet(viewsets.ModelViewSet):
 
         connection = self.request.data['connection']
 
-        if self.request.data['connection']['dbType']=='csv':
+        if self.request.data['connection']['dbType']=='file':
             if hasattr(self.request.data, 'file'):
-                csv_file = self.request.data['file']
-                (data, fields) = self.get_csv_data(csv_file)
+                external_file = self.request.data['file']
+                delimiter = self.request.data['delimiter']
+                (data, fields) = self.get_file_data(external_file, delimiter)
             else:
                 data = self.get_object()['data']
                 fields = self.get_object()['fields']
@@ -174,7 +193,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         self.check_object_permissions(self.request, obj)
 
         # Ensure that no workflow is currently using this datasource
-        # Because the details secondaryColumns field is a list of SecondaryColumn embedded documents, we use 
+        # Because the details secondaryColumns field is a list of SecondaryColumn embedded documents, we use
         # $elemMatch which is aliased to "match" in mongoengine
         queryset = Workflow.objects.filter(
             Q(details__secondaryColumns__match = { "datasource": obj }) | Q(details__primaryColumn__datasource = obj)

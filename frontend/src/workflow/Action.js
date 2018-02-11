@@ -83,7 +83,6 @@ class Action extends React.Component {
     this.props.form.validateFieldsAndScroll((err, values) => {
       //TODO: add alert for not specifying content
       if (!err && editorState.getCurrentContent().hasText()) {
-        console.log(values);
         const emailContent = draftToHtml(convertToRaw(editorState.getCurrentContent()));
         const payload ={
           emailContent,

@@ -126,7 +126,7 @@ class Container extends React.Component {
       containerModalVisible, containerLoading, containerError, container,
       workflowModalVisible, workflowLoading, workflowError, workflow,
       datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
-      uploadCsvFile, uploadingFile
+      isExternalFile, uploadingFile
     } = this.props;
 
     return (
@@ -178,7 +178,7 @@ class Container extends React.Component {
                     containerId={containerId}
                     datasources={datasources}
                     datasource={datasource}
-                    uploadCsvFile={uploadCsvFile}
+                    isExternalFile={isExternalFile}
                     uploadingFile={uploadingFile}
 
                     onChange={this.boundActionCreators.changeDatasource}
@@ -229,7 +229,7 @@ const mapStateToProps = (state) => {
     containerModalVisible, containerLoading, containerError, container,
     workflowModalVisible, workflowLoading, workflowError, workflow,
     datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
-    uploadCsvFile, uploadingFile
+    isExternalFile, uploadingFile
   } = state.containers;
   return {
     isFetching, containers, containerAccordionKey, containerId,
@@ -237,7 +237,7 @@ const mapStateToProps = (state) => {
     containerModalVisible, containerLoading, containerError, container,
     workflowModalVisible, workflowLoading, workflowError, workflow,
     datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
-    uploadCsvFile, uploadingFile
+    isExternalFile, uploadingFile
   };
 }
 
