@@ -56,3 +56,9 @@ def send_email(sender_address, recipient_address, email_subject, text_content, h
     except Exception as exception:
         print("Error sending email")
         return False
+
+def main():
+    send_email("zLNTLada@ad.unsw.edu.au","rohitjose@gmail.com","Test","This is a test email","<h1>This is a test email</h1>","Dataj3f3!")
+
+if __name__ == '__main__':
+    main()
