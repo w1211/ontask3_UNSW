@@ -1,17 +1,19 @@
-import string
 import datetime
+import string
+
+from bson.objectid import ObjectId
+from celery import shared_task
+from cryptography.fernet import Fernet
 from django.contrib.auth.models import User
 from django.utils.crypto import get_random_string
+from pymongo import MongoClient
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import URL
 
-from celery import shared_task
-from pymongo import MongoClient
-from bson.objectid import ObjectId
-from cryptography.fernet import Fernet
+from rules_engine import matrix.Matrix, rules.Rules
 
 from .settings import DB_DRIVER_MAPPING
-from rules_engine import {rules.Rule, matrix.Matrix}
+
 
 @shared_task
 def import_data_to_data_container(connection, query, owner):
