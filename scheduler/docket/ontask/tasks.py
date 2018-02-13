@@ -10,7 +10,8 @@ from pymongo import MongoClient
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import URL
 
-from rules_engine import matrix.Matrix, rules.Rules
+from .rules_engine.matrix import Matrix
+from .rules_engine.rules import Rules
 
 from .settings import DB_DRIVER_MAPPING
 

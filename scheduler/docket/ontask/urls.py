@@ -5,5 +5,6 @@ from . import views
 app_name = 'ontask'
 
 urlpatterns = [
-    url(r'^datasource', views.DataSourceUpdateTaskView.as_view())
+    url(r'^datasource', views.DataSourceUpdateTaskView.as_view()),
+    url(r'^workflow', views.WorkflowTaskView.as_view())
 ]
