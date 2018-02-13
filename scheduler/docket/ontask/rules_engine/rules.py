@@ -2,6 +2,7 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 from bson.son import SON
 
+
 import re
 
 
@@ -64,7 +65,7 @@ class Rules:
         try:
             value = item[field]
         except KeyError:
-            raise ValidationError('The field \'{0}\' does not exist in the details of this workflow'.format(field))
+            raise KeyError('The field \'{0}\' does not exist in the details of this workflow'.format(field))
 
         return str(value)
     
