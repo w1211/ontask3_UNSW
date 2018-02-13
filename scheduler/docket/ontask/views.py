@@ -1,18 +1,17 @@
-from django.contrib.auth.models import User
-from django.contrib import messages
-from django.views.generic import TemplateView
-from django.views.generic.list import ListView
-from django.views.generic.edit import FormView
-from django.shortcuts import redirect
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from django_celery_beat.models import CrontabSchedule, PeriodicTask
 from uuid import uuid4
 
+from django.contrib import messages
+from django.contrib.auth.models import User
+from django.shortcuts import redirect
+from django.views.generic import TemplateView
+from django.views.generic.edit import FormView
+from django.views.generic.list import ListView
+from django_celery_beat.models import CrontabSchedule, PeriodicTask
+
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from .forms import GenerateRandomUserForm
-from .tasks import update_data_in_data_container
-
-
 
 
 class DataSourceUpdateTaskView(APIView):
@@ -96,6 +95,3 @@ class WorkflowTaskView(APIView):
         task.delete()
 
         return Response({'task_name':task.name,'message':'Periodic task deleted'})
-
-
-
