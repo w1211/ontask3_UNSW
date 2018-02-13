@@ -1,8 +1,10 @@
-from pymongo import MongoClient
-from bson.objectid import ObjectId
-from bson.code import Code
-from bson.son import SON
 from collections import defaultdict
+
+from bson.code import Code
+from bson.objectid import ObjectId
+from bson.son import SON
+from pymongo import MongoClient
+
 
 class Matrix:
     ''' Helper class that assists the Rules processing job to create the rules matrix '''
@@ -153,7 +155,3 @@ if __name__ == '__main__':
     print(key_mapping)
     import_collection.import_data_source()
     import_collection.execute_map_reduce()
-
-
-
-
