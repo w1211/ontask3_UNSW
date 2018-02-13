@@ -1,0 +1,5 @@
+# RUN WORKER
+celery worker -A docket --loglevel=DEBUG 
+
+# RUN THE BEAT SCHEDULE
+celery -A docket beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
