@@ -32,9 +32,12 @@ frontend/.env.*
 # Scheduler files
 scheduler/docket/celerybeat\.pid
 scheduler/docket/db\.sqlite3
-scheduler/config/prod.*
+scheduler/docket/config/dev.*
+scheduler/docket/config/prod.*
 
 # Virtual environments
-ontask_env/
-ontask_venv/
-scheduler_env/
+virtualenvs/*
+
+# Logs and temporary files
+logs/*
+tmp/*

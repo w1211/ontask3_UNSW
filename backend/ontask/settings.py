@@ -14,7 +14,7 @@ import os
 
 import mongoengine
 
-if os.environ.get('DJANGO_DEVELOPMENT') is not None:
+if os.environ.get('ONTASK_DEVELOPMENT') is not None:
     from config.dev import *
     DEBUG = True
 else:

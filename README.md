@@ -31,6 +31,8 @@ Fernet.generate_key()
 ```python
 # Example configurations are provided for each attribute
 FRONTEND_DOMAIN = 'https://YOUR_FRONTEND_DOMAIN_NAME' # For whitelisting CORS and authentication
+SCHEDULER_DOMAIN = 'http://localhost:8001' # For interacting with the scheduler service worker
+
 ALLOWED_HOSTS = ['localhost', 'https://YOUR_DOMAIN_NAME']
 
 SECRET_KEY = 'YOUR_SECRET_KEY' # Generated in step 3
@@ -88,7 +90,7 @@ REACT_APP_API_DOMAIN = 'https://YOUR_BACKEND_DOMAIN_NAME'
 6. Seed data using by running `python3 dev/seed.py`
     - The postgresql database created in step 2 has been given seed data
     - An example csv file has been created at `/dev/students.csv`
-7. Add `export DJANGO_DEVELOPMENT=true` to your `~/.bash_profile` (Mac OS) or `~/.bashrc` (Linux)
+7. Add `export ONTASK_DEVELOPMENT=true` to your `~/.bash_profile` (Mac OS) or `~/.bashrc` (Linux)
 
 ## Running the application
 ### For development
