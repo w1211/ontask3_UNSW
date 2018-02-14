@@ -19,6 +19,5 @@ from ontask import urls
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^ontask/', include(urls, namespace='ontask')),
-    
+    url(r'^ontask/', include(urls, namespace='ontask'))
 ]

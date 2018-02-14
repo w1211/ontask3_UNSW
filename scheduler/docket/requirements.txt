@@ -6,6 +6,7 @@ cffi==1.11.4
 cryptography==2.1.4
 Django==2.0.2
 django-celery-beat==1.1.0
+djangorestframework==3.7.3
 ephem==3.7.6.0
 idna==2.6
 kombu==4.1.0

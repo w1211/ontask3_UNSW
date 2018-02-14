@@ -138,8 +138,16 @@ http {
                             application/x-javascript
                             application/atom+xml;
 
+    set $domain YOUR_DOMAIN_NAME;
+
     server {
-        server_name         YOUR_DOMAIN_NAME;
+        server_name         $domain;
+        listen 80;
+        return 301 https://$server_name$request_uri;
+    }
+
+    server {
+        server_name         $domain;
         listen 443;
 
         ssl on;
@@ -153,6 +161,11 @@ http {
 
         root                /var/www/html/ontask/;
         include             /etc/nginx/mime.types;
+
+        location / {
+            add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type';
+            try_files $uri /index.html;
+        }
 
         location ~ ^/api/(.*)$ {
             proxy_pass      http://127.0.0.1:8000/api/$1;

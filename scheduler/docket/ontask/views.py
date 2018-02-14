@@ -11,8 +11,7 @@ from uuid import uuid4
 
 from .forms import GenerateRandomUserForm
 from .tasks import update_data_in_data_container
-
-
+from .utils import send_email
 
 
 class DataSourceUpdateTaskView(APIView):
@@ -56,3 +55,21 @@ class DataSourceUpdateTaskView(APIView):
 
         return Response({'task_name':task.name,'message':'Periodic task deleted'})
 
+
+class SendEmailTaskView(APIView):
+    # Assigns the authentication permissions
+    authentication_classes = ()
+    permission_classes = ()
+    
+    def post(self, request, format=None):
+        '''Post handle to send an email once-off'''
+        result = send_email(
+            'zLNTLada@ad.unsw.edu.au', # TODO: Provide a config variable for specifying this, and the SMTP credentials
+            request.data['recipient_address'],
+            request.data['email_subject'],
+            request.data['text_content'],
+            request.data['html_content']
+        )
+
+        # Return 1 or 0 to the backend indicating whether the email was sent successfully or not
+        return Response({ 'success': result })

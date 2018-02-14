@@ -8,9 +8,10 @@ import * as WorkflowActionCreators from './WorkflowActions';
 
 import Details from './Details';
 import DataView from './DataView';
-import Action from './Action';
+import Compose from './Compose';
+import FilterModal from './FilterModal';
 import ConditionGroupModal from './ConditionGroupModal';
-import Scheduler from './Scheduler';
+import Action from './Action';
 
 const confirm = Modal.confirm;
 const { Content, Sider } = Layout;
@@ -82,8 +83,10 @@ class Workflow extends React.Component {
       dispatch, isFetching, match, location, name, details, conditionGroups, datasources,
       detailsLoading, detailsError,
       dataLoading, dataError, data, columns,
+      filterModalVisible, filterLoading, filterError, filter, filterFormState,
       conditionGroupModalVisible, conditionGroupLoading, conditionGroupError, conditionGroup, conditionGroupFormState,
       actionEditorState, actionContentLoading, actionContentError, schedule,
+      emailLoading, emailError, emailSettings, emailSuccess,
       previewContentModalVisible, previewContentLoading, previewContent
     } = this.props;
 
@@ -122,16 +125,16 @@ class Workflow extends React.Component {
                       <span>Data view</span>
                     </Link>
                   </Menu.Item>
-                  <Menu.Item key="action">
-                    <Link to={`${match.url}/action`}>
+                  <Menu.Item key="compose">
+                    <Link to={`${match.url}/compose`}>
                       <Icon type="form" />
-                      <span>Action</span>
+                      <span>Compose</span>
                     </Link>
                   </Menu.Item>
-                  <Menu.Item key="scheduler">
-                    <Link to={`${match.url}/scheduler`}>
+                  <Menu.Item key="action">
+                    <Link to={`${match.url}/action`}>
                       <Icon type="schedule" />
-                      <span>Scheduler</span>
+                      <span>Action</span>
                     </Link>
                   </Menu.Item>
                 </Menu>
@@ -168,8 +171,22 @@ class Workflow extends React.Component {
                         fetchData={() => { this.boundActionCreators.fetchData(match.params.id) }}
                       />}
                     />
-                    <Route path={`${match.url}/action`} render={()=>
+                    <Route path={`${match.url}/compose`} render={()=>
                       <div>
+                        <FilterModal
+                          visible={filterModalVisible}
+                          loading={filterLoading}
+                          error={filterError}
+                          details={details}
+                          formState={filterFormState}
+
+                          onUpdate={(payload) => { this.boundActionCreators.updateFilter(match.params.id, payload) }}
+                          onCancel={() => { dispatch(this.boundActionCreators.closeFilterModal()) }}
+
+                          addFormula={this.boundActionCreators.addFormulaToFilter}
+                          deleteFormula={this.boundActionCreators.deleteFormulaFromFilter}
+                          updateFormState={this.boundActionCreators.updateFilterFormState}
+                        />
                         <ConditionGroupModal
                           visible={conditionGroupModalVisible}
                           loading={conditionGroupLoading}
@@ -182,19 +199,21 @@ class Workflow extends React.Component {
                           onUpdate={(conditionGroup, payload) => { this.boundActionCreators.updateConditionGroup(match.params.id, conditionGroup, payload) }}
                           onCancel={() => { dispatch(this.boundActionCreators.closeConditionGroupModal()) }}
 
-                          addCondition={this.boundActionCreators.addCondition}
-                          deleteCondition={this.boundActionCreators.deleteCondition}
-                          addFormula={this.boundActionCreators.addFormula}
-                          deleteFormula={this.boundActionCreators.deleteFormula}
+                          addCondition={this.boundActionCreators.addConditionToConditionGroup}
+                          deleteCondition={this.boundActionCreators.deleteConditionFromConditionGroup}
+                          addFormula={this.boundActionCreators.addFormulaToConditionGroup}
+                          deleteFormula={this.boundActionCreators.deleteFormulaFromConditionGroup}
                           updateFormState={this.boundActionCreators.updateConditionGroupFormState}
                         />
-                        <Action
+                        <Compose
                           contentLoading={actionContentLoading}
                           error={actionContentError}
                           conditionGroups={conditionGroups}
                           editorState={actionEditorState}
+                          details={details}
+                          filter={filter}
 
-                          openFilterModal={(filter) => { dispatch(this.boundActionCreators.openFilterModal(filter)) }}
+                          openFilterModal={() => { dispatch(this.boundActionCreators.openFilterModal(filter)) }}
                           confirmFilterDelete={this.confirmFilterDelete}
 
                           openConditionGroupModal={(conditionGroup) => { dispatch(this.boundActionCreators.openConditionGroupModal(conditionGroup)) }}
@@ -208,15 +227,20 @@ class Workflow extends React.Component {
                           previewContent={previewContent}
                           onPreviewContent={(payload) => { this.boundActionCreators.previewContent(match.params.id, payload) }}
                           onClosePreview={() => { dispatch(this.boundActionCreators.closePreviewContent()) }}
-
-                          details={details}
                         />
                       </div>
                     }/>
-                    <Route path={`${match.url}/scheduler`} render={()=>
-                      <Scheduler
+                    <Route path={`${match.url}/action`} render={()=>
+                      <Action
+                        emailLoading={emailLoading}
+                        emailError={emailError}
+                        emailSuccess={emailSuccess}
+                        // schedule={schedule}
+                        emailSettings={emailSettings}
+                        details={details}
+
+                        onSendEmail={(payload) => { this.boundActionCreators.sendEmail(match.params.id, payload) }}
                         onCreate={(payload) => this.boundActionCreators.createSchedule(match.params.id, payload)}
-                        currentSchedule={schedule}
                         onDelete={() => this.boundActionCreators.deleteSchedule(match.params.id)}
                       />}
                     />
@@ -237,8 +261,10 @@ const mapStateToProps = (state) => {
     didCreate, didUpdate, didDelete, model,
     detailsLoading, detailsError,
     dataLoading, dataError, data, columns,
+    filterModalVisible, filterLoading, filterError, filter, filterFormState,
     conditionGroupModalVisible, conditionGroupLoading, conditionGroupError, conditionGroup, conditionGroupFormState,
     actionEditorState, actionContentLoading, actionContentError, content, schedule,
+    emailLoading, emailError, emailSettings, emailSuccess,
     previewContentModalVisible, previewContentLoading, previewContent
   } = state.workflow;
   return {
@@ -246,8 +272,10 @@ const mapStateToProps = (state) => {
     didCreate, didUpdate, didDelete, model,
     detailsLoading, detailsError,
     dataLoading, dataError, data, columns,
+    filterModalVisible, filterLoading, filterError, filter, filterFormState,
     conditionGroupModalVisible, conditionGroupLoading, conditionGroupError, conditionGroup, conditionGroupFormState,
     actionEditorState, actionContentLoading, actionContentError, content, schedule,
+    emailLoading, emailError, emailSettings, emailSuccess,
     previewContentModalVisible, previewContentLoading, previewContent
   };
 }

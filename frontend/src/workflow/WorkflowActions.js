@@ -14,6 +14,14 @@ export const BEGIN_REQUEST_DATA = 'BEGIN_REQUEST_DATA';
 export const SUCCESS_REQUEST_DATA = 'SUCCESS_REQUEST_DATA';
 export const FAILURE_REQUEST_DATA = 'FAILURE_REQUEST_DATA';
 
+export const OPEN_FILTER_MODAL = 'OPEN_FILTER_MODAL';
+export const CLOSE_FILTER_MODAL = 'CLOSE_FILTER_MODAL';
+export const REFRESH_FILTER_FORM_STATE = 'REFRESH_FILTER_FORM_STATE';
+export const UPDATE_FILTER_FORM_STATE = 'UPDATE_FILTER_FORM_STATE';
+export const BEGIN_REQUEST_FILTER = 'BEGIN_REQUEST_FILTER';
+export const FAILURE_REQUEST_FILTER = 'FAILURE_REQUEST_FILTER';
+export const SUCCESS_UPDATE_FILTER = 'SUCCESS_UPDATE_FILTER';
+
 export const OPEN_CONDITION_GROUP_MODAL = 'OPEN_CONDITION_GROUP_MODAL';
 export const CLOSE_CONDITION_GROUP_MODAL = 'CLOSE_CONDITION_GROUP_MODAL';
 export const REFRESH_CONDITION_GROUP_FORM_STATE = 'REFRESH_CONDITION_GROUP_FORM_STATE';
@@ -37,14 +45,21 @@ export const CLOSE_PREVIEW_CONTENT = 'CLOSE_PREVIEW_CONTENT';
 export const FAILURE_CREATE_SCHEDULE = 'FAILURE_CREATE_SCHEDULE';
 export const SUCCESS_CREATE_SCHEDULE = 'SUCCESS_CREATE_SCHEDULE';
 
+export const BEGIN_SEND_EMAIL = 'BEGIN_SEND_EMAIL';
+export const FAILURE_SEND_EMAIL = 'FAILURE_SEND_EMAIL';
+export const SUCCESS_SEND_EMAIL = 'SUCCESS_SEND_EMAIL';
+export const CLEAR_SEND_EMAIL = 'CLEAR_SEND_EMAIL';
+
+
 const requestWorkflow = () => ({
   type: REQUEST_WORKFLOW
 });
 
-const receiveWorkflow = (name, details, conditionGroups, datasources, editorState, schedule) => ({
+const receiveWorkflow = (name, details, filter, conditionGroups, datasources, editorState, schedule) => ({
   type: RECEIVE_WORKFLOW,
   name,
   details,
+  filter,
   conditionGroups,
   datasources,
   editorState,
@@ -60,9 +75,7 @@ export const fetchWorkflow = (workflowId) => dispatch => {
     successFn: (workflow) => {
       let editorState = null;
       if (workflow['content']) {
-        console.log(workflow['content']);
-        const blocksFromHtml = htmlToDraft(workflow['content']['emailContent']);
-        //TODO:add email subjuct and column here
+        const blocksFromHtml = htmlToDraft(workflow['content']['html']);
         const { contentBlocks, entityMap } = blocksFromHtml;
         const contentState = ContentState.createFromBlockArray(contentBlocks, entityMap);
         editorState = EditorState.createWithContent(contentState);
@@ -72,6 +85,7 @@ export const fetchWorkflow = (workflowId) => dispatch => {
       dispatch(receiveWorkflow(
         workflow['name'],
         workflow['details'],
+        workflow['filter'],
         workflow['conditionGroups'],
         workflow['datasources'],
         editorState,
@@ -196,6 +210,92 @@ export const fetchData = (workflowId) => dispatch => {
   requestWrapper(parameters);
 };
 
+export const openFilterModal = (filter) => {
+  // Map the object representing the Filter model from the database into
+  // the form object that will be used in the condition group modal
+  let formState = { formulas: [] }
+
+  if (filter) {
+    formState.type = { name: `type`, value: filter.type }
+    filter.formulas.forEach((formula, i) => {
+      formState.formulas.push({})
+      formState.formulas[i].fieldOperator = {
+        name: `formulas[${i}].fieldOperator`, value: [formula.field, formula.operator]
+      }
+      formState.formulas[i].comparator = {
+        name: `formulas[${i}].comparator`, value: formula.comparator
+      }
+
+    })
+  } else {
+    formState.formulas.push({});
+  }
+
+  return {
+    type: OPEN_FILTER_MODAL,
+    formState
+  }
+}
+
+export const closeFilterModal = () => ({
+  type: CLOSE_FILTER_MODAL
+});
+
+const beginRequestFilter = () => ({
+  type: BEGIN_REQUEST_FILTER
+});
+
+const failureRequestFilter = (error) => ({
+  type: FAILURE_REQUEST_FILTER,
+  error
+});
+
+const refreshFilterFormState = (payload) => ({
+  type: REFRESH_FILTER_FORM_STATE,
+  payload
+});
+
+export const addFormulaToFilter = () => (dispatch, getState) => {
+  const { workflow } = getState();
+  let formState = Object.assign({}, workflow.filterFormState)
+  formState.formulas.push({});
+
+  dispatch(refreshFilterFormState(formState));
+};
+
+export const deleteFormulaFromFilter = (formulaIndex) => (dispatch, getState) => {
+  const { workflow } = getState();
+  let formState = Object.assign({}, workflow.filterFormState)
+  formState.formulas.splice(formulaIndex, 1);
+
+  dispatch(refreshFilterFormState(formState));
+};
+
+export const updateFilterFormState = (payload) => ({
+  type: UPDATE_FILTER_FORM_STATE,
+  payload
+});
+
+const successUpdateFilter = () => ({
+  type: SUCCESS_UPDATE_FILTER
+});
+
+export const updateFilter = (workflowId, payload) => dispatch => {
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestFilter()); },
+    url: `/workflow/${workflowId}/update_filter/`,
+    method: 'PUT',
+    errorFn: (error) => { dispatch(failureRequestFilter(error)); },
+    successFn: (response) => {
+      dispatch(successUpdateFilter());
+      dispatch(fetchWorkflow(workflowId));
+    },
+    payload: payload
+  }
+
+  requestWrapper(parameters);
+};
+
 export const openConditionGroupModal = (conditionGroup) => {
   // Map the object representing the ConditionGroup model from the database into
   // the form object that will be used in the condition group modal
@@ -269,7 +369,7 @@ const refreshConditionGroupFormState = (payload) => ({
   payload
 });
 
-export const addCondition = () => (dispatch, getState) => {
+export const addConditionToConditionGroup = () => (dispatch, getState) => {
   const { workflow } = getState();
   let formState = Object.assign({}, workflow.conditionGroupFormState)
   formState.conditions.push({ formulas: [{}] });
@@ -277,7 +377,7 @@ export const addCondition = () => (dispatch, getState) => {
   dispatch(refreshConditionGroupFormState(formState));
 };
 
-export const deleteCondition = (index) => (dispatch, getState) => {
+export const deleteConditionFromConditionGroup = (index) => (dispatch, getState) => {
   const { workflow } = getState();
   let formState = Object.assign({}, workflow.conditionGroupFormState)
   formState.conditions.splice(index, 1);
@@ -285,7 +385,7 @@ export const deleteCondition = (index) => (dispatch, getState) => {
   dispatch(refreshConditionGroupFormState(formState));
 };
 
-export const addFormula = (conditionIndex) => (dispatch, getState) => {
+export const addFormulaToConditionGroup = (conditionIndex) => (dispatch, getState) => {
   const { workflow } = getState();
   let formState = Object.assign({}, workflow.conditionGroupFormState)
   formState.conditions[conditionIndex].formulas.push({});
@@ -293,7 +393,7 @@ export const addFormula = (conditionIndex) => (dispatch, getState) => {
   dispatch(refreshConditionGroupFormState(formState));
 };
 
-export const deleteFormula = (conditionIndex, formulaIndex) => (dispatch, getState) => {
+export const deleteFormulaFromConditionGroup = (conditionIndex, formulaIndex) => (dispatch, getState) => {
   const { workflow } = getState();
   let formState = Object.assign({}, workflow.conditionGroupFormState)
   formState.conditions[conditionIndex].formulas.splice(formulaIndex, 1);
@@ -407,6 +507,40 @@ export const previewContent = (workflowId, payload) => dispatch => {
     errorFn: (error) => { dispatch(failureRequestPreviewContent(error)); },
     successFn: (preview) => {
       dispatch(successPreviewContent(preview));
+    },
+    payload: payload
+  }
+
+  requestWrapper(parameters);
+};
+
+const beginSendEmail = () => ({
+  type: BEGIN_SEND_EMAIL
+});
+
+const failureSendEmail = (error) => ({
+  type: FAILURE_SEND_EMAIL,
+  error
+});
+
+const successSendEmail = () => ({
+  type: SUCCESS_SEND_EMAIL
+});
+
+const clearSendEmail = () => ({
+  type: CLEAR_SEND_EMAIL
+});
+
+
+export const sendEmail = (workflowId, payload) => dispatch => {
+  const parameters = {
+    initialFn: () => { dispatch(beginSendEmail()); },
+    url: `/workflow/${workflowId}/send_email/`,
+    method: 'POST',
+    errorFn: (error) => { dispatch(failureSendEmail(error)); },
+    successFn: (response) => {
+      dispatch(successSendEmail());
+      dispatch(clearSendEmail());
     },
     payload: payload
   }

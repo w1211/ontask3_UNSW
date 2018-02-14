@@ -1,280 +1,247 @@
 import React from 'react';
-import { Divider, Button, Dropdown, Menu, Alert, Modal, Icon, Input, Tabs, Cascader, Checkbox, Popover, Form } from 'antd';
-import { convertToRaw, EditorState, Modifier } from 'draft-js';
-import { Editor } from 'react-draft-wysiwyg';
-import draftToHtml from 'draftjs-to-html';
-import Draggable from 'react-draggable';
+import { Form, Divider, Button, Select, DatePicker, InputNumber, Row, Col, TimePicker, Popover, Modal, Input, Alert, notification } from 'antd';
 
-import 'react-draft-wysiwyg/dist/react-draft-wysiwyg.css';
-import './Action.css';
-
-const TabPane = Tabs.TabPane;
+const confirm = Modal.confirm;
+const { RangePicker } = DatePicker;
+const Option = Select.Option;
 const FormItem = Form.Item;
 
-const handleConditionGroupMenuClick = (e, openConditionGroupModal, confirmConditionGroupDelete, conditionGroup, i) => {
-  switch (e.key) {
-    case 'edit':
-      openConditionGroupModal(conditionGroup)
-      break;
-    case 'delete':
-      confirmConditionGroupDelete(i)
-      break;
-    default:
-      break;
-  }
-}
-
 class Action extends React.Component {
-  state = { isInside: false };
+  // constructor(props) {
+  //   super(props);
+  //   this.state = {
+  //     update: false
+  //   };
+  // }
 
-  isInsideContent(mouseEvent, editor) {
-    const contentEditor = editor.editorContainer.parentElement.parentElement.getBoundingClientRect();
-    const isInsideX = mouseEvent.clientX >= contentEditor.x && mouseEvent.clientX <= (contentEditor.x + contentEditor.width);
-    const isInsideY = mouseEvent.clientY >= contentEditor.y && mouseEvent.clientY <= (contentEditor.y + contentEditor.height);
-
-    // isInside flag is consumed by:
-    //   The conditional css class on the content editor (darkens the border)
-    //   Determining whether to add the dragged condition group to the content editor after drag stops
-    this.setState({ isInside: (isInsideX && isInsideY) ? true : false })
-  }
-
-  stopDrag(conditionGroup) {
-    if (!this.state.isInside) return;
-    this.setState({ isInside: false });
-
-    const { editorState, updateEditorState } = this.props;
-
-    // Concatenate a string that will comprise the template tags to be added to the content editor
-    let newText = '';
-    conditionGroup.conditions.forEach((condition, i) => {
-      if (i === 0) newText += `{% if ${condition.name} %}`
-      if (i > 0) newText += `{% elif ${condition.name} %}`
-    })
-    newText += '{% endif %}'
-
-    // Create a new content state in which the template tags string has been added
-    const newContentState = Modifier.replaceText(
-      editorState.getCurrentContent(),
-      editorState.getSelection(), // Determine the cursor position inside the content editor
-      newText, // The characters to add to the content editor at the cursor position
-      editorState.getCurrentInlineStyle() // Determine the style around the cursor position, to apply to the new characters
-    );
-
-    // Create a new editor state to include the new content state created above
-    let newEditorState = EditorState.push(editorState, newContentState, 'insert-characters');
-
-    // Get the user's selection in the content editor at the time of dragging
-    const previousSelection = editorState.getSelection();
-    // Select the newly added template tags
-    // Give the selection focus so that the text becomes highlighted
-    const updatedSelection = previousSelection.merge({
-      focusOffset: newText.length + previousSelection.focusOffset,
-      hasFocus: true
-    });
-
-    // Apply the new selection to the new editor state
-    newEditorState = EditorState.forceSelection(newEditorState, updatedSelection)
-
-    // Update the editor state in redux, so that the component is re-rendered
-    updateEditorState(newEditorState);
-  }
-
-  handleContent = (editorState, contentFunction) => {
-    this.props.form.validateFieldsAndScroll((err, values) => {
-      //TODO: add alert for not specifying content
-      if (!err && editorState.getCurrentContent().hasText()) {
-        const emailContent = draftToHtml(convertToRaw(editorState.getCurrentContent()));
-        const payload ={
-          emailContent,
-          "emailSubject": values.emailSubject,
-          "emailColum": values.emailColum[0]
-        }
-        contentFunction(payload);
-      }
+  handleSubmit = () => {
+    const { form, onSendEmail } = this.props;
+    form.validateFieldsAndScroll((err, values) => {
+      if (err) return;
+      onSendEmail(values);
     });
   }
 
+  // updateSchedule = () => {
+  //   this.setState({update: !this.state.update});
+  // }
+
+  // confirmScheduleDelete = () => {
+  //   let deleteSchedule = this.props.onDelete;
+  //   confirm({
+  //     title: 'Confirm schedule deletion',
+  //     okText: 'Continue with deletion',
+  //     okType: 'danger',
+  //     cancelText: 'Cancel',
+  //     onOk() {
+  //       deleteSchedule();
+  //     }
+  //   });
+  // }
+
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.emailSuccess) {
+      notification['success']({
+        message: 'Emails sent',
+        description: 'All emails have been successfully sent.'
+      });
+    }
+  }
+  
   render() {
-    const {
-      contentLoading, error, conditionGroups, editorState, onUpdateContent,
-      previewLoading, previewVisible, previewContent, onPreviewContent, onClosePreview,
-      openConditionGroupModal, confirmConditionGroupDelete, updateEditorState, details
+    const { 
+      form, emailLoading, emailError, emailSuccess, onSendEmail,
+      emailSettings, details
     } = this.props;
 
-    const { getFieldDecorator } = this.props.form;
-
-    const emailChoicesDetails = {
-        confirmationEmail: "confirmationEmail",
-        trackEmail: "trackEmail",
-        addColumnEmailReads: "addColumnEmailReads",
+    const options = [];
+    if (details) {
+      options.push(details.primaryColumn.field);
+      details.secondaryColumns.map(secondaryColumn => {
+        options.push(secondaryColumn.field);
+      });
+    }
+    
+    const formItemLayout = {
+      labelCol: {
+        xs: { span: 24 },
+        sm: { span: 4 },
+      },
+      wrapperCol: {
+        xs: { span: 24 },
+        sm: { span: 20 },
+      },
     };
 
-    const emailColums = details ? details.secondaryColumns.map(secondaryColumn => {
-      return {
-        value: secondaryColumn.field,
-        label: secondaryColumn.field,
-      }
-    }) : [];
+    // const { getFieldDecorator } = this.props.form;
+    // const { currentSchedule } = this.props;
+    // const actions = {
+    //   edit: "Edit",
+    //   delete: "Delete",
+    // };
+    // const formItemLayout = {
+    //   labelCol: {
+    //     xs: { span: 24 },
+    //     sm: { span: 8 },
+    //   },
+    //   wrapperCol: {
+    //     xs: { span: 24 },
+    //     sm: { span: 16 },
+    //   },
+    // };
+    // const panelLayout = {
+    //   padding: '20px 50px 20px 20px',
+    //   background: '#fbfbfb',
+    //   border: '1px solid #d9d9d9',
+    //   borderRadius: '6px',
+    //   maxWidth: '800px',
+    //   marginBottom: '20px'
+    // };
 
     return (
-      <div className="action">
-        <h3>
-          Filter
-          <Button style={{ marginLeft: '10px' }} shape="circle" icon="plus" />
-        </h3>
-        No filters have been added yet.
+      <div>
+        <h3>Email</h3>
 
-        <Divider dashed />
-        <h3>
-          Condition groups
-          <Button onClick={() => { openConditionGroupModal() }} style={{ marginLeft: '10px' }} shape="circle" icon="plus" />
-        </h3>
-        { conditionGroups && conditionGroups.length > 0 ?
-          conditionGroups.map((conditionGroup, i) => {
-            return (
-              <Draggable
-                key={i}
-                position={{ x: 0, y: 0 }}
-                onDrag={ (e) => { this.isInsideContent(e, this.editor); }}
-                onStop={ () => { this.stopDrag(conditionGroup); }}
-                onMouseDown={ (e) => { e.preventDefault(); }} // Keeps the content editor in focus when user starts to drag a condition group
-              >
-                <Dropdown.Button
-                  overlay={
-                    <Menu onClick={(e) => { handleConditionGroupMenuClick(e, openConditionGroupModal, confirmConditionGroupDelete, conditionGroup, i) }}>
-                      <Menu.Item key="edit">Edit</Menu.Item>
-                      <Menu.Item key="delete">Delete</Menu.Item>
-                    </Menu>
-                  }
-                  className="conditionGroupBtn"
-                  key={i} type="primary" trigger={['click']}
-                  style={{ marginRight: '5px', zIndex: 10 }}
-                >
-                  {conditionGroup.name}
-                </Dropdown.Button>
-              </Draggable>
-            )
-          })
-        :
-          'No condition groups have been added yet.'
-        }
-
-        <Divider dashed />
-          <Tabs defaultActiveKey="1">
-            <TabPane tab="Email" key="1">
-              <Form>
-              <h3>Email column</h3>
-              <FormItem>
-                {getFieldDecorator('emailColum', {
-                  rules: [{ required: true, message: 'Email column is required' }]
-                })(
-                  <Cascader options={emailColums} placeholder="Email column"/>
-                )}
-              </FormItem>
-              <h3>Email subject</h3>
-              <FormItem>
-                {getFieldDecorator('emailSubject', {
-                  rules: [{ required: true, message: 'Email subjuct is required' }]
-                })(
-                  <Input placeholder="Enter subject" />
-                )}
-              </FormItem>
-              <h3>Email choices</h3>
-              <FormItem>
-                <Checkbox.Group style={{ width: '100%'}}>
-                  <Popover content={emailChoicesDetails.confirmationEmail} trigger="hover">
-                    <Checkbox value="confirmationEmail">Send you a confirmation Email</Checkbox>
-                  </Popover>
-                  <Popover content={emailChoicesDetails.trackEmail} trigger="hover">
-                    <Checkbox value="trackEmail">Track if emails are read</Checkbox>
-                  </Popover>
-                  <Popover content={emailChoicesDetails.addColumnEmailReads} trigger="hover">
-                    <Checkbox value="addColumnEmailReads">Add a column with the number of email reads tracked</Checkbox>
-                  </Popover>
-                </Checkbox.Group>
-              </FormItem>
-            </Form>
-            </TabPane>
-            <TabPane tab="URL" key="2"></TabPane>
-          </Tabs>
-        <h3>Content</h3>
-        <Editor
-          toolbar={{
-            options: ['inline', 'blockType', 'fontSize', 'fontFamily', 'textAlign', 'colorPicker', 'link', 'history', 'list'],
-            inline: { options: ['bold', 'italic', 'underline', 'strikethrough', 'monospace'] }
-          }}
-          wrapperClassName="editor-wrapper"
-          editorClassName={{ 'editor': true, 'isInside': this.state.isInside }}
-          editorState={editorState}
-          onEditorStateChange={updateEditorState}
-          editorRef={(el) => { this.editor = el; }}
-        />
-
-        <PreviewModal
-          content={previewContent}
-          visible={previewVisible}
-          onCancel={onClosePreview}
-        />
-
-        { error && <Alert message={error} type="error" style={{ marginTop: '10px' }}/>}
+        <Form layout="horizontal">
+          <FormItem
+            {...formItemLayout}
+            label="Subject"
+            style={{ maxWidth: 750 }}
+          >
+            {form.getFieldDecorator('subject', {
+              initialValue: emailSettings ? emailSettings.subject : null
+            })(
+              <Input/>
+            )}
+          </FormItem>
+          <FormItem
+            {...formItemLayout}
+            label="Email field"
+            style={{ maxWidth: 750 }}
+          >
+            {form.getFieldDecorator('field', {
+              initialValue: emailSettings ? emailSettings.field : null,
+              rules: [{ required: true, message: 'Email field is required' }]
+            })(
+              <Select>
+                { options.map((option) => {
+                  return <Option value={option} key={option}>{option}</Option>
+                })}
+              </Select>
+            )}
+          </FormItem>
+          { emailError && <Alert style={{ display: 'inline-block' }} message={emailError} type="error"/>}
+        </Form>
         <div style={{ marginTop: '10px' }}>
-          <Button loading={previewLoading} style={{ marginRight: '10px' }} size="large" onClick={() => { this.handleContent(editorState, onPreviewContent) }}>Preview</Button>
-          <Button loading={contentLoading} type="primary" size="large" onClick={() => { this.handleContent(editorState, onUpdateContent) }}>Save</Button>
+          <Button loading={emailLoading} type="primary" size="large" onClick={() => { this.handleSubmit() }}>Send once-off email</Button>
         </div>
+        {/* <Divider dashed />
+
+        <h3>URL</h3> */}
+
+
+        {/* { currentSchedule ?
+          <div>
+          <h3>Current Schedule</h3>
+          <Row style={{ background: '#fafafa', padding: '10px 10px 0px 10px', "border-bottom": '1px solid #e8e8e8'}}>
+            <Col className="gutter-row" span={6}>
+              <h4>Date range:</h4>
+            </Col>
+            <Col span={5}>
+              <h4>Time:</h4>
+            </Col>
+            <Col className="gutter-row" span={5}>
+              <h4>Frequency:</h4>
+            </Col>
+            <Col className="gutter-row" span={6}>
+              <h4>Actions:</h4>
+            </Col>
+          </Row>
+          <Row type="flex" align="middle" style={{ padding: '5px 10px', "border-bottom": '1px solid #e8e8e8', hight:'100px'}}>
+            <Col className="gutter-row" span={6}>
+              {currentSchedule["startDate"]} ~ {currentSchedule["endDate"]}
+            </Col>
+            <Col className="gutter-row" span={5}>
+              At {currentSchedule["time"]}
+            </Col>
+            <Col className="gutter-row" span={5}>
+              Every
+              {currentSchedule["frequency"]===1?
+                " day"
+              :
+                " "+currentSchedule["frequency"]+" days"
+              }
+            </Col>
+            <Col className="gutter-row" span={6}>
+              <Popover content={actions.edit} trigger="hover">
+                <Button onClick={this.updateSchedule} style={{ marginRight: '10px' }} icon="edit" shape="circle"/>
+              </Popover>
+              <Popover content={actions.delete} trigger="hover">
+                <Button onClick={this.confirmScheduleDelete} icon="delete" type="danger" shape="circle"/>
+              </Popover>
+            </Col>
+          </Row>
+        </div>
+      :
+      <div></div>
+    }
+    { this.state.update && currentSchedule && <Divider dashed /> }
+    { this.state.update || !currentSchedule ?
+      <div>
+        <h3>New Schedule</h3>
+        <Form style={{...panelLayout}}>
+          <FormItem
+            label="DateRange"
+            {...formItemLayout}
+          >
+            {getFieldDecorator('RangePicker', {
+              rules: [{ required: true, message: 'Date range is required' }]
+            })(
+              <RangePicker onChange={this.onDateChange}/>
+            )}
+          </FormItem>
+          <FormItem
+            label="Time"
+            {...formItemLayout}>
+            {getFieldDecorator('TimePicker', {
+              rules: [{ required: true, message: 'Time is required' }]
+            })(
+              <TimePicker format='HH:mm' onChange={this.onTimeChange}/>
+            )}
+          </FormItem>
+          <FormItem
+            label="Frequency"
+            {...formItemLayout}
+          >
+            {getFieldDecorator('Frequency', {
+              rules: [{ required: true, message: 'Frequency is required' }]
+            })(
+              <span>
+                <InputNumber min={1} max={1000} style = {{ width: '15%', marginRight: '2%' }}/>
+                <Select
+                  defaultValue="day"
+                  style = {{ width: '20%'}}
+                >
+                  <Option value="day">day</Option>
+                </Select>
+              </span>
+            )}
+          </FormItem>
+          <FormItem
+            wrapperCol={{
+              xs: { span: 24, offset: 0 },
+              sm: { span: 16, offset: 8 },
+            }}
+          >
+            <Button style = {{ marginRight: '2%' }}>Preview</Button>
+            <Button type="primary" onClick={this.handleSubmit}>Schedule</Button>
+          </FormItem>
+        </Form>
       </div>
-    )
+        :
+      <div></div>
+} */}
+      </div>
+)}}
 
-  };
-};
-
-
-class PreviewModal extends React.Component {
-  state = { index: 0 };
-
-  render() {
-    const {
-      content, visible, onCancel
-    } = this.props;
-
-    return (
-      <Modal
-        visible={visible}
-        title={`Preview content: ${this.state.index + 1}`}
-        onCancel={onCancel}
-        footer={null}
-      >
-        {content &&
-          <div style={{ display: 'flex', flexDirection: 'column'}}>
-            <Button.Group size="large" style={{ marginBottom: '10px', textAlign: 'center' }}>
-              <Button type="primary" disabled={this.state.index === 0}
-                onClick={() => {
-                  this.setState(prevState => {
-                    return { index: prevState.index - 1 }
-                  })
-                }}
-              >
-                <Icon type="left" />Previous
-              </Button>
-              <Button type="primary" disabled={this.state.index === content.length - 1}
-                onClick={() => {
-                  this.setState(prevState => {
-                    return { index: prevState.index + 1 }
-                  })
-                }}
-              >
-                Next<Icon type="right" />
-              </Button>
-            </Button.Group>
-
-            <div style={{ padding: '10px', border: '1px solid #F1F1F1' }}
-              dangerouslySetInnerHTML={{__html: content[this.state.index]}}
-            />
-
-          </div>
-        }
-      </Modal>
-    );
-  };
-};
-
-export default Form.create()(Action);
+export default Form.create()(Action)
