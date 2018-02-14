@@ -8,9 +8,9 @@ import * as WorkflowActionCreators from './WorkflowActions';
 
 import Details from './Details';
 import DataView from './DataView';
-import Action from './Action';
+import Compose from './Compose';
 import ConditionGroupModal from './ConditionGroupModal';
-import Scheduler from './Scheduler';
+import Action from './Action';
 
 const confirm = Modal.confirm;
 const { Content, Sider } = Layout;
@@ -84,6 +84,7 @@ class Workflow extends React.Component {
       dataLoading, dataError, data, columns,
       conditionGroupModalVisible, conditionGroupLoading, conditionGroupError, conditionGroup, conditionGroupFormState,
       actionEditorState, actionContentLoading, actionContentError, schedule,
+      emailLoading, emailError, emailSettings, emailSuccess,
       previewContentModalVisible, previewContentLoading, previewContent
     } = this.props;
 
@@ -122,16 +123,16 @@ class Workflow extends React.Component {
                       <span>Data view</span>
                     </Link>
                   </Menu.Item>
-                  <Menu.Item key="action">
-                    <Link to={`${match.url}/action`}>
+                  <Menu.Item key="compose">
+                    <Link to={`${match.url}/compose`}>
                       <Icon type="form" />
-                      <span>Action</span>
+                      <span>Compose</span>
                     </Link>
                   </Menu.Item>
-                  <Menu.Item key="scheduler">
-                    <Link to={`${match.url}/scheduler`}>
+                  <Menu.Item key="action">
+                    <Link to={`${match.url}/action`}>
                       <Icon type="schedule" />
-                      <span>Scheduler</span>
+                      <span>Action</span>
                     </Link>
                   </Menu.Item>
                 </Menu>
@@ -168,7 +169,7 @@ class Workflow extends React.Component {
                         fetchData={() => { this.boundActionCreators.fetchData(match.params.id) }}
                       />}
                     />
-                    <Route path={`${match.url}/action`} render={()=>
+                    <Route path={`${match.url}/compose`} render={()=>
                       <div>
                         <ConditionGroupModal
                           visible={conditionGroupModalVisible}
@@ -188,11 +189,12 @@ class Workflow extends React.Component {
                           deleteFormula={this.boundActionCreators.deleteFormula}
                           updateFormState={this.boundActionCreators.updateConditionGroupFormState}
                         />
-                        <Action
+                        <Compose
                           contentLoading={actionContentLoading}
                           error={actionContentError}
                           conditionGroups={conditionGroups}
                           editorState={actionEditorState}
+                          details={details}
 
                           openFilterModal={(filter) => { dispatch(this.boundActionCreators.openFilterModal(filter)) }}
                           confirmFilterDelete={this.confirmFilterDelete}
@@ -208,15 +210,20 @@ class Workflow extends React.Component {
                           previewContent={previewContent}
                           onPreviewContent={(payload) => { this.boundActionCreators.previewContent(match.params.id, payload) }}
                           onClosePreview={() => { dispatch(this.boundActionCreators.closePreviewContent()) }}
-
-                          details={details}
                         />
                       </div>
                     }/>
-                    <Route path={`${match.url}/scheduler`} render={()=>
-                      <Scheduler
+                    <Route path={`${match.url}/action`} render={()=>
+                      <Action
+                        emailLoading={emailLoading}
+                        emailError={emailError}
+                        emailSuccess={emailSuccess}
+                        // schedule={schedule}
+                        emailSettings={emailSettings}
+                        details={details}
+
+                        onSendEmail={(payload) => { this.boundActionCreators.sendEmail(match.params.id, payload) }}
                         onCreate={(payload) => this.boundActionCreators.createSchedule(match.params.id, payload)}
-                        currentSchedule={schedule}
                         onDelete={() => this.boundActionCreators.deleteSchedule(match.params.id)}
                       />}
                     />
@@ -239,6 +246,7 @@ const mapStateToProps = (state) => {
     dataLoading, dataError, data, columns,
     conditionGroupModalVisible, conditionGroupLoading, conditionGroupError, conditionGroup, conditionGroupFormState,
     actionEditorState, actionContentLoading, actionContentError, content, schedule,
+    emailLoading, emailError, emailSettings, emailSuccess,
     previewContentModalVisible, previewContentLoading, previewContent
   } = state.workflow;
   return {
@@ -248,6 +256,7 @@ const mapStateToProps = (state) => {
     dataLoading, dataError, data, columns,
     conditionGroupModalVisible, conditionGroupLoading, conditionGroupError, conditionGroup, conditionGroupFormState,
     actionEditorState, actionContentLoading, actionContentError, content, schedule,
+    emailLoading, emailError, emailSettings, emailSuccess,
     previewContentModalVisible, previewContentLoading, previewContent
   };
 }

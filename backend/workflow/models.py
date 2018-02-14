@@ -36,16 +36,20 @@ class ConditionGroup(EmbeddedDocument):
     name = fields.StringField(required=True)
     conditions = fields.EmbeddedDocumentListField(Condition)
 
+# Action
+class Content(EmbeddedDocument):
+    html = fields.StringField(null=True)
+    plain = fields.StringField(null=True)
+
 class Schedule(EmbeddedDocument):
     startDate = fields.DateTimeField(required=True)
     endDate = fields.DateTimeField(required=True)
     time = fields.DateTimeField(required=True) #hour and minutes
     frequency = fields.IntField(min_value=1, required=True) #day
 
-class Content(EmbeddedDocument):
-    emailSubject = fields.StringField()
-    emailColum = fields.StringField()
-    emailContent = fields.StringField()
+class EmailSettings(EmbeddedDocument):
+    subject = fields.StringField(null=True)
+    field = fields.StringField(required=True)
 
 # Workflow
 class Workflow(Document):
@@ -56,4 +60,5 @@ class Workflow(Document):
     filter = fields.StringField(null=True)
     conditionGroups = fields.EmbeddedDocumentListField(ConditionGroup)
     content = fields.EmbeddedDocumentField(Content)
+    emailSettings = fields.EmbeddedDocumentField(EmailSettings)
     schedule = fields.EmbeddedDocumentField(Schedule, null=True, required=False)

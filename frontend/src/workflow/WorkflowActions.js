@@ -37,6 +37,12 @@ export const CLOSE_PREVIEW_CONTENT = 'CLOSE_PREVIEW_CONTENT';
 export const FAILURE_CREATE_SCHEDULE = 'FAILURE_CREATE_SCHEDULE';
 export const SUCCESS_CREATE_SCHEDULE = 'SUCCESS_CREATE_SCHEDULE';
 
+export const BEGIN_SEND_EMAIL = 'BEGIN_SEND_EMAIL';
+export const FAILURE_SEND_EMAIL = 'FAILURE_SEND_EMAIL';
+export const SUCCESS_SEND_EMAIL = 'SUCCESS_SEND_EMAIL';
+export const CLEAR_SEND_EMAIL = 'CLEAR_SEND_EMAIL';
+
+
 const requestWorkflow = () => ({
   type: REQUEST_WORKFLOW
 });
@@ -60,9 +66,7 @@ export const fetchWorkflow = (workflowId) => dispatch => {
     successFn: (workflow) => {
       let editorState = null;
       if (workflow['content']) {
-        console.log(workflow['content']);
-        const blocksFromHtml = htmlToDraft(workflow['content']['emailContent']);
-        //TODO:add email subjuct and column here
+        const blocksFromHtml = htmlToDraft(workflow['content']['html']);
         const { contentBlocks, entityMap } = blocksFromHtml;
         const contentState = ContentState.createFromBlockArray(contentBlocks, entityMap);
         editorState = EditorState.createWithContent(contentState);
@@ -407,6 +411,40 @@ export const previewContent = (workflowId, payload) => dispatch => {
     errorFn: (error) => { dispatch(failureRequestPreviewContent(error)); },
     successFn: (preview) => {
       dispatch(successPreviewContent(preview));
+    },
+    payload: payload
+  }
+
+  requestWrapper(parameters);
+};
+
+const beginSendEmail = () => ({
+  type: BEGIN_SEND_EMAIL
+});
+
+const failureSendEmail = (error) => ({
+  type: FAILURE_SEND_EMAIL,
+  error
+});
+
+const successSendEmail = () => ({
+  type: SUCCESS_SEND_EMAIL
+});
+
+const clearSendEmail = () => ({
+  type: CLEAR_SEND_EMAIL
+});
+
+
+export const sendEmail = (workflowId, payload) => dispatch => {
+  const parameters = {
+    initialFn: () => { dispatch(beginSendEmail()); },
+    url: `/workflow/${workflowId}/send_email/`,
+    method: 'POST',
+    errorFn: (error) => { dispatch(failureSendEmail(error)); },
+    successFn: (response) => {
+      dispatch(successSendEmail());
+      dispatch(clearSendEmail());
     },
     payload: payload
   }

@@ -7,6 +7,7 @@ from django.http import JsonResponse
 import json
 import re
 import dateutil.parser
+import requests
 
 from .serializers import WorkflowSerializer
 from .models import Workflow
@@ -15,6 +16,8 @@ from .permissions import WorkflowPermissions
 from datasource.models import DataSource
 
 from collections import defaultdict
+
+from django.conf import settings
 
 
 def combine_data(details):
@@ -385,7 +388,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         workflow = Workflow.objects.get(id=id)
         self.check_object_permissions(self.request, workflow)
 
-        preview_content = self.request.data
+        preview_content = self.request.data['html']
 
         populated_content = list(value for key, value in self.populate_content(workflow, preview_content).items())
 
@@ -395,21 +398,29 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     def update_content(self, request, id=None):
         workflow = Workflow.objects.get(id=id)
         self.check_object_permissions(self.request, workflow)
-        print("request")
-        print(request.data)
-        updated_content = defaultdict(str)
-        updated_content["emailSubject"] = request.data['emailSubject']
-        updated_content["emailColum"] = request.data['emailColum']
-        updated_email_content = request.data['emailContent']
+        # print("request")
+        # print(request.data)
+        # updated_content = defaultdict(str)
+        # updated_content["emailSubject"] = request.data['emailSubject']
+        # updated_content["emailColum"] = request.data['emailColum']
+        # updated_email_content = request.data['emailContent']
 
         # Run the populate content function to validate the provided content before saving it
-        updated_email_content = updated_email_content.replace('"', "'")
-        self.populate_content(workflow, updated_email_content)
-        updated_content["emailContent"] = updated_email_content
+        # updated_email_content = updated_email_content.replace('"', "'")
+        # self.populate_content(workflow, updated_email_content)
+        # updated_content["emailContent"] = updated_email_content
+
+        updated_content = self.request.data
+        # Replace double quotation marks in the html content as they will cause issues when JSONifying the workflow
+        updated_content['html'] = updated_content['html'].replace('"', "'")
+
+        # Run the populate content function to validate the provided content before saving it
+        self.populate_content(workflow, updated_content['plain'])
 
         serializer = WorkflowSerializer(instance=workflow, data={'content': updated_content}, partial=True)
         serializer.is_valid()
         serializer.save()
+
         return JsonResponse(serializer.data)
 
     @detail_route(methods=['put'])
@@ -435,3 +446,36 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         workflow.update(unset__schedule=1)
         serializer = WorkflowSerializer(instance=workflow)
         return JsonResponse(serializer.data, safe=False)
+
+    @detail_route(methods=['post'])
+    def send_email(self, request, id=None):
+        workflow = Workflow.objects.get(id=id)
+        request.data['container'] = workflow.container.id
+        self.check_object_permissions(self.request, workflow)
+
+        headers = { 'Content-type': 'application/json' }
+        field = request.data['field']
+        subject = request.data['subject']
+        
+        html = list(value for key, value in self.populate_content(workflow, workflow['content']['html']).items())
+        plain = list(value for key, value in self.populate_content(workflow, workflow['content']['plain']).items())
+
+        data = combine_data(workflow.details)
+        failed_emails = list()
+
+        for index, item in enumerate(data['data']):
+            payload = {}
+            payload['sender_address'] = self.request.user.email
+            payload['recipient_address'] = item[field]
+            payload['email_subject'] = subject
+            payload['text_content'] = plain[index]
+            payload['html_content'] = html[index]
+            r = requests.post(settings.SCHEDULER_DOMAIN+'/ontask/send_email/', json=payload)
+            r = json.loads(r.text)
+            if not (r['success']):
+                failed_emails.append(item[workflow['details']['primaryColumn']['field']])
+        
+        if len(failed_emails) > 0:
+            raise ValidationError('Emails to the following records failed to send: ' + str(failed_emails).strip('[]').strip("'"))
+
+        return JsonResponse({ 'success': 'true' }, safe=False)

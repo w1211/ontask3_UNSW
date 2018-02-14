@@ -6,7 +6,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 
-def send_email(sender_address, recipient_address, email_subject, text_content, html_content, password):
+def send_email(sender_address, recipient_address, email_subject, text_content, html_content):
     '''Generic service to send email from the application'''
 
     try:
@@ -55,4 +55,5 @@ def send_email(sender_address, recipient_address, email_subject, text_content, h
         return True
     except Exception as exception:
         print("Error sending email")
+        print(exception)
         return False
