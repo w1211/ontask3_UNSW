@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal, Form, Input, Alert, Select, Button, Row, Tree, Cascader, Icon } from 'antd';
 
-import './ConditionGroupModal.css';
+import './QueryBuilder.css';
 
 const TreeNode = Tree.TreeNode;
 const FormItem = Form.Item;

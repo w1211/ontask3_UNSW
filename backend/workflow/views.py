@@ -20,75 +20,79 @@ from collections import defaultdict
 from django.conf import settings
 
 
-def combine_data(details):
-    # Create a dict of dicts which will hold the values for each secondary column
-    # Our goal is to end up with something like:
-    # column_data = {
-    #   'firstName': { 1: 'John', 2: 'Frank', 3: 'Billy' },
-    #   'lastName': { 1: 'Smith', 2: 'Johnson', 3: 'Sanders' },
-    # }
-    # I.e. User with id 1 is John Smith
-    column_data = defaultdict(dict)
-
-    # Group secondary columns by datasource
-    secondary_column_datasource = defaultdict(list)
-    if details is None:
-        raise ValidationError('This is not available until the workflow details have been configured')
-
-    primary_is_integer = True if details['primaryColumn'].type == 'number' else False # Dict key for secondary column is string or integer dependant on the primary field type
-
-    for column in details['secondaryColumns']:
-        secondary_column_datasource[column.datasource].append(column)
-
-    for datasource, secondary_columns in secondary_column_datasource.items():
-        data = datasource.data # Imported data source which was saved as a dictField in the Datasource model
-        for row in data:
-            for column in secondary_columns:
-                # Each secondary column is represented by a dict in the column_data defaultdict
-                # Add key-value pair of the form { matching_column_value: field_value } to the secondary column dict
-                # E.g. { 1: 'John' } in the case of { id: firstName }
-                try:
-                    matching_column_value = int(row[column.matchesWith]) if primary_is_integer else str(row[column.matchesWith]) # E.g. "id" of 1
-                    field_name = column.field # E.g. "firstName"
-                    field_value = row[field_name] # E.g. John
-                    column_data[field_name][matching_column_value] = field_value
-                except (KeyError, ValueError):
-                    raise ValidationError('The matching column for \'{0}\' is incorrectly configured'.format(column.field))
-
-    primaryColumn = details['primaryColumn']
-    primaryField = primaryColumn.field
-    primaryData = primaryColumn.datasource.data
-    data = []
-
-    for row in primaryData:
-        # Construct a dict which will represent a single joined record
-        item = {}
-        item[primaryField] = row[primaryField] # E.g. item['id'] = 1
-        # Loop through the defined secondary columns and get the data for this particular record's id for each column
-        for secondary_column in details['secondaryColumns']:
-            try:
-                # E.g. item['firstName'] = column_data['firstName'][1] gets the firstName of user with id 1
-                item[secondary_column.field] = column_data[secondary_column.field][int(row[primaryField]) if primary_is_integer else str(row[primaryField])]
-            except KeyError:
-                raise ValidationError('The \'type\' of the primary column is incorrectly configured')
-        # We end up with a joined single record
-        # E.g. { id: 1, firstName: 'John', lastName: 'Smith' }
-        # And then we append this to the list of joined items which will be returned to the front-end
-        data.append(item)
-
-    # Define the fields (and retain their order) to be consumed by the data table
-    columns = [primaryColumn.field] + [secondary_column.field for secondary_column in details['secondaryColumns']]
-
-    response = {}
-    response['data'] = data
-    response['columns'] = columns
-    return response
-
 class WorkflowViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
     serializer_class = WorkflowSerializer
     permission_classes = [WorkflowPermissions]
 
+    def combine_data(self, details, filter=None):
+        # Create a dict of dicts which will hold the values for each secondary column
+        # Our goal is to end up with something like:
+        # column_data = {
+        #   'firstName': { 1: 'John', 2: 'Frank', 3: 'Billy' },
+        #   'lastName': { 1: 'Smith', 2: 'Johnson', 3: 'Sanders' },
+        # }
+        # I.e. User with id 1 is John Smith
+        column_data = defaultdict(dict)
+
+        # Group secondary columns by datasource
+        secondary_column_datasource = defaultdict(list)
+        if details is None:
+            raise ValidationError('This is not available until the workflow details have been configured')
+
+        primary_is_integer = True if details['primaryColumn'].type == 'number' else False # Dict key for secondary column is string or integer dependant on the primary field type
+
+        for column in details['secondaryColumns']:
+            secondary_column_datasource[column.datasource].append(column)
+
+        for datasource, secondary_columns in secondary_column_datasource.items():
+            data = datasource.data # Imported data source which was saved as a dictField in the Datasource model
+            for row in data:
+                for column in secondary_columns:
+                    # Each secondary column is represented by a dict in the column_data defaultdict
+                    # Add key-value pair of the form { matching_column_value: field_value } to the secondary column dict
+                    # E.g. { 1: 'John' } in the case of { id: firstName }
+                    try:
+                        matching_column_value = int(row[column.matchesWith]) if primary_is_integer else str(row[column.matchesWith]) # E.g. "id" of 1
+                        field_name = column.field # E.g. "firstName"
+                        field_value = row[field_name] # E.g. John
+                        column_data[field_name][matching_column_value] = field_value
+                    except (KeyError, ValueError):
+                        raise ValidationError('The matching column for \'{0}\' is incorrectly configured'.format(column.field))
+
+        primaryColumn = details['primaryColumn']
+        primaryField = primaryColumn.field
+        primaryData = primaryColumn.datasource.data
+        data = []
+
+        for row in primaryData:
+            # Construct a dict which will represent a single joined record
+            item = {}
+            item[primaryField] = row[primaryField] # E.g. item['id'] = 1
+            # Loop through the defined secondary columns and get the data for this particular record's id for each column
+            for secondary_column in details['secondaryColumns']:
+                try:
+                    # E.g. item['firstName'] = column_data['firstName'][1] gets the firstName of user with id 1
+                    item[secondary_column.field] = column_data[secondary_column.field][int(row[primaryField]) if primary_is_integer else str(row[primaryField])]
+                except KeyError:
+                    raise ValidationError('The \'type\' of the primary column is incorrectly configured')
+            # We end up with a joined single record
+            # E.g. { id: 1, firstName: 'John', lastName: 'Smith' }
+            # And then we append this to the list of joined items which will be returned to the front-end
+            data.append(item)
+
+        # Define the fields (and retain their order) to be consumed by the data table
+        columns = [primaryColumn.field] + [secondary_column.field for secondary_column in details['secondaryColumns']]
+
+        # If there is a filter, then filter the data
+        if filter and len(filter['formulas']) > 0:
+            data = self.evaluate_filter(primaryColumn, details['secondaryColumns'], data, filter)
+
+        response = {}
+        response['data'] = data
+        response['columns'] = columns
+        return response
+        
     def get_queryset(self):
         pipeline = [
             {
@@ -146,8 +150,73 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     def get_data(self, request, id=None):
         workflow = Workflow.objects.get(id=id)
         self.check_object_permissions(self.request, workflow)
-        data = combine_data(workflow.details)
+        data = self.combine_data(workflow.details)
         return JsonResponse(data, safe=False)
+
+    def evaluate_filter(self, primary_column, secondary_columns, data, filter):
+        filtered_data = list()
+
+        # Iterate over the rows in the data and return any rows which pass true
+        for item in data:
+            didPass = False
+
+            if len(filter['formulas']) == 1:
+                if self.did_pass_formula(secondary_columns, item, filter['formulas'][0]):
+                    didPass = True
+
+            elif filter['type'] == 'and':
+                pass_counts = [self.did_pass_formula(secondary_columns, item, formula) for formula in filter['formulas']]
+                if sum(pass_counts) == len(filter['formulas']):
+                    didPass = True
+
+            elif filter['type'] == 'or':
+                pass_counts = [self.did_pass_formula(secondary_columns, item, formula) for formula in filter['formulas']]
+                if sum(pass_counts) > 0:
+                    didPass = True
+
+            if didPass:
+                filtered_data.append(item)
+
+        return filtered_data
+
+    def validate_filter(self, details, filter):
+        primary_column = details['primaryColumn']['field']
+        secondary_columns = details['secondaryColumns']
+
+        # Confirm that all provided fields are defined in the workflow details
+        secondary_column_fields = [secondary_column.field for secondary_column in secondary_columns]
+
+        for formula in filter['formulas']:
+            # Parse the output of the field/operator cascader from the condition group form in the frontend
+            # Only necessary if this is being called after a post from the frontend
+            if 'fieldOperator' in formula:
+                formula['field'] = formula['fieldOperator'][0]
+                formula['operator'] = formula['fieldOperator'][1]
+                del formula['fieldOperator']
+
+            if formula['field'] not in secondary_column_fields:
+                raise ValidationError('Invalid formula: field \'{0}\' does not exist in the workflow details'.format(formula['field']))
+
+        return True
+
+    @detail_route(methods=['put'])
+    def update_filter(self, request, id=None):
+        workflow = Workflow.objects.get(id=id)
+        self.check_object_permissions(self.request, workflow)
+
+        updated_filter = self.request.data
+        updated_filter['name'] = 'filter'
+
+        # Only validate the filter if there are formulas provided, otherwise the filter must be empty
+        if 'formulas' in updated_filter:
+            self.validate_filter(workflow['details'], updated_filter)
+
+        # Update the filter
+        serializer = WorkflowSerializer(instance=workflow, data={'filter': updated_filter}, partial=True)
+        serializer.is_valid()
+        serializer.save()
+
+        return JsonResponse(serializer.data, safe=False)
 
     def parse_field(self, field_name, secondary_columns, value):
         secondary_column = next((x for x in secondary_columns if x['field'] == field_name), None)
@@ -206,10 +275,10 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         return conditions_passed
 
-    def validate_condition_group(self, details, condition_group):
+    def validate_condition_group(self, details, filter, condition_group):
         primary_column = details['primaryColumn']['field']
         secondary_columns = details['secondaryColumns']
-        data = combine_data(details)['data']
+        data = self.combine_data(details, filter)['data']
 
         # Confirm that all provided fields are defined in the workflow details
         secondary_column_fields = [secondary_column.field for secondary_column in secondary_columns]
@@ -226,23 +295,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                 if formula['field'] not in secondary_column_fields:
                     raise ValidationError('Invalid formula: field \'{0}\' does not exist in the workflow details'.format(formula['field']))
 
-        # Filter the data
-        # filter = action.filter
-        # if filter:
-        #     filtered_data = []
-        #     # Filter the data
-        #     for item in data:
-        #         populated_formula = self.populate_fields(secondary_columns, item, filter)
-        #         try:
-        #             # TO DO: consider security implications of using eval()
-        #             if eval(populated_formula):
-        #                 filtered_data.append(item)
-        #         except:
-        #             raise ValidationError('An issue occured while trying to evaluate the filter. Do each of the fields used in the filter formula have the correct \'type\' set?')
-        #     data = filtered_data
-
-        # Determine the rows that pass each condition
-        # Outputs a dict of { condition_name: [ item_1_primary_field, item_2_primary_field, ... ] }
         conditions_passed = self.evaluate_condition_group(primary_column, secondary_columns, data, condition_group)
 
         return conditions_passed
@@ -263,7 +315,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                 if condition['name'] in [condition['name'] for condition in new_condition_group['conditions']]:
                     raise ValidationError('\'{0}\' is already being used as a condition name in this workflow'.format(condition['name']))
 
-        conditions_passed = self.validate_condition_group(workflow['details'], new_condition_group)
+        conditions_passed = self.validate_condition_group(workflow['details'], workflow['filter'], new_condition_group)
 
         result = workflow.update(push__conditionGroups=new_condition_group)
 
@@ -293,7 +345,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                 if condition['name'] in [condition['name'] for condition in updated_condition_group['conditions']]:
                     raise ValidationError('\'{0}\' is already being used as a condition name in this workflow'.format(condition['name']))
 
-        conditions_passed = self.validate_condition_group(workflow['details'], updated_condition_group)
+        conditions_passed = self.validate_condition_group(workflow['details'], workflow['filter'], updated_condition_group)
 
         condition_groups = workflow['conditionGroups']
         for i in range(len(condition_groups)):
@@ -350,17 +402,18 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     def populate_content(self, workflow, content=None):
         condition_groups = workflow['conditionGroups']
         details = workflow['details']
+        filter = workflow['filter']
         all_conditions_passed = defaultdict(list)
 
         content = content if content else workflow['content']
 
         # Combine all conditions from each condition group into a single dict
         for condition_group in condition_groups:
-            conditions_passed = self.validate_condition_group(details, condition_group)
+            conditions_passed = self.validate_condition_group(details, filter, condition_group)
             for condition in conditions_passed:
                 all_conditions_passed[condition] = conditions_passed[condition]
 
-        data = combine_data(details)['data']
+        data = self.combine_data(details, filter)['data']
         primary_field = details['primaryColumn']['field']
 
         result = defaultdict(str)
@@ -460,10 +513,10 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         html = list(value for key, value in self.populate_content(workflow, workflow['content']['html']).items())
         plain = list(value for key, value in self.populate_content(workflow, workflow['content']['plain']).items())
 
-        data = combine_data(workflow.details)
+        data = self.combine_data(workflow.details, workflow.filter)['data']
         failed_emails = list()
 
-        for index, item in enumerate(data['data']):
+        for index, item in enumerate(data):
             payload = {}
             payload['sender_address'] = self.request.user.email
             payload['recipient_address'] = item[field]

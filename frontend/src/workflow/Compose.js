@@ -1,5 +1,5 @@
 import React from 'react';
-import { Divider, Button, Dropdown, Menu, Alert, Modal, Icon, Input, Tabs, Cascader, Checkbox, Popover, Form } from 'antd';
+import { Divider, Button, Dropdown, Menu, Alert, Modal, Icon } from 'antd';
 import { convertToRaw, EditorState, Modifier } from 'draft-js';
 import { Editor } from 'react-draft-wysiwyg';
 import draftToHtml from 'draftjs-to-html';
@@ -7,9 +7,6 @@ import Draggable from 'react-draggable';
 
 import 'react-draft-wysiwyg/dist/react-draft-wysiwyg.css';
 import './Compose.css';
-
-const TabPane = Tabs.TabPane;
-const FormItem = Form.Item;
 
 const handleConditionGroupMenuClick = (e, openConditionGroupModal, confirmConditionGroupDelete, conditionGroup, i) => {
   switch (e.key) {
@@ -80,31 +77,27 @@ class Compose extends React.Component {
   }
 
   handleContent = (editorState, contentFunction) => {
-    const { form } = this.props;
+    const currentContent = editorState.getCurrentContent();
+    if (!currentContent.hasText()) return;
 
-    form.validateFieldsAndScroll((err, values) => {
-      const currentContent = editorState.getCurrentContent();
-      if (err || !currentContent.hasText()) return;
+    // const payload ={
+    //   emailContent,
+    //   "emailSubject": values.emailSubject,
+    //   "emailColum": values.emailColum[0]
+    // }
 
-      // const payload ={
-      //   emailContent,
-      //   "emailSubject": values.emailSubject,
-      //   "emailColum": values.emailColum[0]
-      // }
-
-      const payload = {
-        html: draftToHtml(convertToRaw(currentContent)),
-        plain: currentContent.getPlainText()
-      };
-      contentFunction(payload);
-    })
+    const payload = {
+      html: draftToHtml(convertToRaw(currentContent)),
+      plain: currentContent.getPlainText()
+    };
+    contentFunction(payload);
   }
   
   render() {
     const {
-      contentLoading, error, conditionGroups, editorState, onUpdateContent,
+      contentLoading, error, filter, conditionGroups, editorState, onUpdateContent,
       previewLoading, previewVisible, previewContent, onPreviewContent, onClosePreview,
-      openConditionGroupModal, confirmConditionGroupDelete, updateEditorState, details
+      openFilterModal, openConditionGroupModal, confirmConditionGroupDelete, updateEditorState
     } = this.props;
 
     // const { getFieldDecorator } = this.props.form;
@@ -126,9 +119,9 @@ class Compose extends React.Component {
       <div className="action">
         <h3>
           Filter
-          <Button style={{ marginLeft: '10px' }} shape="circle" icon="plus" />
+          <Button onClick={() => { openFilterModal() }} style={{ marginLeft: '10px' }} shape="circle" icon="edit" />
         </h3>
-        No filters have been added yet.
+        { filter && filter.formulas.length > 0 ? 'A filter is being applied' : 'No filter is being applied' }
 
         <Divider dashed />
         <h3>
@@ -254,7 +247,7 @@ class PreviewModal extends React.Component {
         {content &&
           <div style={{ display: 'flex', flexDirection: 'column'}}>
             <Button.Group size="large" style={{ marginBottom: '10px', textAlign: 'center' }}>
-              <Button type="primary" disabled={this.state.index === 0}
+              <Button type="primary" disabled={this.state.index === 0 || content.length === 0}
                 onClick={() => {
                   this.setState(prevState => {
                     return { index: prevState.index - 1 }
@@ -263,7 +256,7 @@ class PreviewModal extends React.Component {
               >
                 <Icon type="left" />Previous
               </Button>
-              <Button type="primary" disabled={this.state.index === content.length - 1}
+              <Button type="primary" disabled={this.state.index === content.length - 1 || content.length === 0}
                 onClick={() => {
                   this.setState(prevState => {
                     return { index: prevState.index + 1 }
@@ -273,11 +266,16 @@ class PreviewModal extends React.Component {
                 Next<Icon type="right" />
               </Button>
             </Button.Group>
-
-            <div style={{ padding: '10px', border: '1px solid #F1F1F1' }}
-              dangerouslySetInnerHTML={{__html: content[this.state.index]}}
-            />
-
+            
+            { content.length > 0 ?
+              <div style={{ padding: '10px', border: '1px solid #F1F1F1' }}
+                dangerouslySetInnerHTML={{__html: content[this.state.index]}}
+              />
+            :
+              <div style={{ padding: '10px', border: '1px solid #F1F1F1', textAlign: 'center' }}>
+                After filtering, no results were returned from your data view.
+              </div>
+            }
           </div>
         }
       </Modal>
@@ -285,4 +283,4 @@ class PreviewModal extends React.Component {
   };
 };
 
-export default Form.create()(Compose);
+export default Compose;

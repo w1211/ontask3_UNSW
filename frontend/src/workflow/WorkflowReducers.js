@@ -11,6 +11,14 @@ import {
   SUCCESS_REQUEST_DATA,
   FAILURE_REQUEST_DATA,
 
+  OPEN_FILTER_MODAL,
+  CLOSE_FILTER_MODAL,
+  REFRESH_FILTER_FORM_STATE,
+  UPDATE_FILTER_FORM_STATE,
+  BEGIN_REQUEST_FILTER,
+  FAILURE_REQUEST_FILTER,
+  SUCCESS_UPDATE_FILTER,
+
   OPEN_CONDITION_GROUP_MODAL,
   CLOSE_CONDITION_GROUP_MODAL,
   REFRESH_CONDITION_GROUP_FORM_STATE,
@@ -69,6 +77,7 @@ function workflow(state = initialState, action) {
         isFetching: false,
         name: action.name,
         details: action.details,
+        filter: action.filter,
         conditionGroups: action.conditionGroups,
         datasources: action.datasources,
         content: action.content,
@@ -132,6 +141,52 @@ function workflow(state = initialState, action) {
         dataError: action.error
       });
 
+    // Filter actions
+    case OPEN_FILTER_MODAL:
+      return Object.assign({}, state, {
+        filterModalVisible: true,
+        filterFormState: action.formState
+      });
+    case CLOSE_FILTER_MODAL:
+      return Object.assign({}, state, {
+        filterModalVisible: false,
+        filterError: null,
+        filterLoading: false,
+        filterFormState: null
+      });
+    // Used when a formula is added to the filter
+    case REFRESH_FILTER_FORM_STATE:
+      return Object.assign({}, state, {
+        filterFormState: action.payload
+      });
+    // Used when a field is changed in the filter form
+    case UPDATE_FILTER_FORM_STATE:
+      return Object.assign({}, state, {
+        // By design in ant design forms, if a field belonging to a list is updated, then the payload is given by:
+        // [null, null, updated_field, null] where null are the unchanged fields in the list
+        // Therefore, when updating the form state we must ensure that the null fields do not overwrite the values of those fields in the state
+        // This is handled by the merge function from lodash, a third party plugin
+        filterFormState: _.merge(state.filterFormState, action.payload)
+      });
+    case BEGIN_REQUEST_FILTER:
+      return Object.assign({}, state, {
+        filterLoading: true
+      });
+    case FAILURE_REQUEST_FILTER:
+      return Object.assign({}, state, {
+        filterLoading: false,
+        filterError: action.error
+      });
+    case SUCCESS_UPDATE_FILTER:
+      return Object.assign({}, state, {
+        filterModalVisible: false,
+        filterLoading: false,
+        filterError: null,
+        didUpdate: true,
+        model: 'filter',
+        filterFormState: null
+      });
+    
     // Shared condition group actions
     case OPEN_CONDITION_GROUP_MODAL:
       return Object.assign({}, state, {

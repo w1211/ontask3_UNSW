@@ -9,6 +9,7 @@ import * as WorkflowActionCreators from './WorkflowActions';
 import Details from './Details';
 import DataView from './DataView';
 import Compose from './Compose';
+import FilterModal from './FilterModal';
 import ConditionGroupModal from './ConditionGroupModal';
 import Action from './Action';
 
@@ -82,6 +83,7 @@ class Workflow extends React.Component {
       dispatch, isFetching, match, location, name, details, conditionGroups, datasources,
       detailsLoading, detailsError,
       dataLoading, dataError, data, columns,
+      filterModalVisible, filterLoading, filterError, filter, filterFormState,
       conditionGroupModalVisible, conditionGroupLoading, conditionGroupError, conditionGroup, conditionGroupFormState,
       actionEditorState, actionContentLoading, actionContentError, schedule,
       emailLoading, emailError, emailSettings, emailSuccess,
@@ -171,6 +173,20 @@ class Workflow extends React.Component {
                     />
                     <Route path={`${match.url}/compose`} render={()=>
                       <div>
+                        <FilterModal
+                          visible={filterModalVisible}
+                          loading={filterLoading}
+                          error={filterError}
+                          details={details}
+                          formState={filterFormState}
+
+                          onUpdate={(payload) => { this.boundActionCreators.updateFilter(match.params.id, payload) }}
+                          onCancel={() => { dispatch(this.boundActionCreators.closeFilterModal()) }}
+
+                          addFormula={this.boundActionCreators.addFormulaToFilter}
+                          deleteFormula={this.boundActionCreators.deleteFormulaFromFilter}
+                          updateFormState={this.boundActionCreators.updateFilterFormState}
+                        />
                         <ConditionGroupModal
                           visible={conditionGroupModalVisible}
                           loading={conditionGroupLoading}
@@ -183,10 +199,10 @@ class Workflow extends React.Component {
                           onUpdate={(conditionGroup, payload) => { this.boundActionCreators.updateConditionGroup(match.params.id, conditionGroup, payload) }}
                           onCancel={() => { dispatch(this.boundActionCreators.closeConditionGroupModal()) }}
 
-                          addCondition={this.boundActionCreators.addCondition}
-                          deleteCondition={this.boundActionCreators.deleteCondition}
-                          addFormula={this.boundActionCreators.addFormula}
-                          deleteFormula={this.boundActionCreators.deleteFormula}
+                          addCondition={this.boundActionCreators.addConditionToConditionGroup}
+                          deleteCondition={this.boundActionCreators.deleteConditionFromConditionGroup}
+                          addFormula={this.boundActionCreators.addFormulaToConditionGroup}
+                          deleteFormula={this.boundActionCreators.deleteFormulaFromConditionGroup}
                           updateFormState={this.boundActionCreators.updateConditionGroupFormState}
                         />
                         <Compose
@@ -195,8 +211,9 @@ class Workflow extends React.Component {
                           conditionGroups={conditionGroups}
                           editorState={actionEditorState}
                           details={details}
+                          filter={filter}
 
-                          openFilterModal={(filter) => { dispatch(this.boundActionCreators.openFilterModal(filter)) }}
+                          openFilterModal={() => { dispatch(this.boundActionCreators.openFilterModal(filter)) }}
                           confirmFilterDelete={this.confirmFilterDelete}
 
                           openConditionGroupModal={(conditionGroup) => { dispatch(this.boundActionCreators.openConditionGroupModal(conditionGroup)) }}
@@ -244,6 +261,7 @@ const mapStateToProps = (state) => {
     didCreate, didUpdate, didDelete, model,
     detailsLoading, detailsError,
     dataLoading, dataError, data, columns,
+    filterModalVisible, filterLoading, filterError, filter, filterFormState,
     conditionGroupModalVisible, conditionGroupLoading, conditionGroupError, conditionGroup, conditionGroupFormState,
     actionEditorState, actionContentLoading, actionContentError, content, schedule,
     emailLoading, emailError, emailSettings, emailSuccess,
@@ -254,6 +272,7 @@ const mapStateToProps = (state) => {
     didCreate, didUpdate, didDelete, model,
     detailsLoading, detailsError,
     dataLoading, dataError, data, columns,
+    filterModalVisible, filterLoading, filterError, filter, filterFormState,
     conditionGroupModalVisible, conditionGroupLoading, conditionGroupError, conditionGroup, conditionGroupFormState,
     actionEditorState, actionContentLoading, actionContentError, content, schedule,
     emailLoading, emailError, emailSettings, emailSuccess,
