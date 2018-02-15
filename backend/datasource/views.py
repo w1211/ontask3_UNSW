@@ -109,7 +109,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         #checking file format
         reader = csv.DictReader(io.StringIO(csv_file.read().decode('utf-8')), delimiter=separator_char)
         data = list(reader)
-        fields = data[0].keys()
+        fields = list(data[0].keys())
         return (data, fields)
 
     def get_xsl_data(self, xls_file):
@@ -138,7 +138,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         # Connect to specified database and get the data from the query
         # Data passed in to the DataSource model must be a list of dicts of the form {column_name: value}
         # TO DO: if isDynamic, then store values into lists as objects with timestamps
-        if self.request.data['dbType']=='file':
+        if self.request.data['dbType'] == 'file':
             connection = {}
             connection['dbType'] = 'file'
             external_file = self.request.data['file']
@@ -160,10 +160,10 @@ class DataSourceViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         self.check_object_permissions(self.request, self.get_object())
 
-        connection = self.request.data['connection']
-
-        if self.request.data['connection']['dbType']=='file':
-            if hasattr(self.request.data, 'file'):
+        if self.request.data['dbType'] == 'file':
+            connection = {}
+            connection['dbType'] = 'file'
+            if 'file' in self.request.data:
                 external_file = self.request.data['file']
                 delimiter = self.request.data['delimiter']
                 (data, fields) = self.get_file_data(external_file, delimiter)
@@ -171,7 +171,8 @@ class DataSourceViewSet(viewsets.ModelViewSet):
                 data = self.get_object()['data']
                 fields = self.get_object()['fields']
         else:
-            if hasattr(connection, 'password'):
+            connection = self.request.data['connection']
+            if 'password' in connection:
                 # Encrypt the db password of the data source
                 cipher = Fernet(SECRET_KEY)
                 # If a new password is provided then encrypt it and overwrite the old one

@@ -123,11 +123,11 @@ const DatasourceModal = ({
         </FormItem>
         <FormItem
           {...formItemLayout}
-          label="Database type"
+          label="Datasource type"
         >
           {form.getFieldDecorator('connection.dbType', {
             initialValue: datasource ? datasource.connection.dbType : null,
-            rules: [{ required: true, message: 'Database type is required' }]
+            rules: [{ required: true, message: 'Datasource type is required' }]
           })(
             <Select onChange={(selected) => handleDatasourceTypeSelction(selected, onSelect)}>
               <Option value="mysql">MySQL</Option>

@@ -283,7 +283,7 @@ const removeUploadingFile = () => ({
 export const createDatasource = (containerId, payload, file) => dispatch => {
   payload.container = containerId;
 
-  const isFile = (payload.dbType === 'file');
+  const isFile = (payload.connection.dbType === 'file');
   let data;
   if (isFile) {
     data = new FormData();
@@ -291,8 +291,7 @@ export const createDatasource = (containerId, payload, file) => dispatch => {
     data.append('delimiter', payload.delimiter)
     data.append('container', containerId);
     data.append('name', payload.name);
-    data.append('connection', JSON.stringify(payload.connection));
-    data.append('dbType', payload.dbType);
+    data.append('dbType', 'file');
   } else {
     data = payload;
   }
@@ -325,14 +324,14 @@ const successUpdateDatasource = () => ({
 export const updateDatasource = (datasourceId, payload, file) => dispatch => {
   dispatch(beginRequestDatasource());
 
-  const isFile = (payload.dbType === 'file');
+  const isFile = (payload.connection.dbType === 'file');
   let data;
   if (isFile) {
     data = new FormData();
     if (file) data.append('file', file);
+    data.append('delimiter', payload.delimiter)
     data.append('name', payload.name);
-    data.append('connection', JSON.stringify(payload.connection));
-    data.append('dbType', payload.dbType);
+    data.append('dbType', 'file');
   } else {
     data = payload;
   }
