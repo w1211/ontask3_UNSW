@@ -23,26 +23,30 @@ const FilterModal = ({
 }) => {
   
   // Initialize the options for the field/operator cascader
-  const options = details ? details.secondaryColumns.map(secondaryColumn => {
-    return {
-      value: secondaryColumn.field,
-      label: secondaryColumn.field,
-      children: secondaryColumn.type === 'text' ?
+  let options = [];
+  if (details) {
+    const fields = [details.primaryColumn, ...details.secondaryColumns];
+    options = fields.map(column => {
+      return {
+        value: column.field,
+        label: column.field,
+        children: column.type === 'text' ?
+          [
+            { value: '==', label: 'equal' },
+            { value: '!=', label: 'not equal' }
+          ]
+        :
         [
           { value: '==', label: 'equal' },
-          { value: '!=', label: 'not equal' }
+          { value: '!=', label: 'not equal' },
+          { value: '<', label: 'less' },
+          { value: '<=', label: 'less or equal' },
+          { value: '>', label: 'greater' },
+          { value: '>=', label: 'greater or equal' }
         ]
-      :
-      [
-        { value: '==', label: 'equal' },
-        { value: '!=', label: 'not equal' },
-        { value: '<', label: 'less' },
-        { value: '<=', label: 'less or equal' },
-        { value: '>', label: 'greater' },
-        { value: '>=', label: 'greater or equal' }
-      ]
-    }
-  }) : [];
+      }
+    });
+  }
 
   return (
     <Modal
