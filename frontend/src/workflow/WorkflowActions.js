@@ -5,7 +5,8 @@ import requestWrapper from '../shared/requestWrapper';
 export const REQUEST_WORKFLOW = 'REQUEST_WORKFLOW';
 export const RECEIVE_WORKFLOW = 'RECEIVE_WORKFLOW';
 
-export const REFRESH_DETAILS = 'REFRESH_DETAILS';
+export const REFRESH_DETAILS_FORM_STATE = 'REFRESH_DETAILS_FORM_STATE';
+export const UPDATE_DETAILS_FORM_STATE = 'UPDATE_DETAILS_FORM_STATE';
 export const BEGIN_REQUEST_DETAILS = 'BEGIN_REQUEST_DETAILS';
 export const FAILURE_REQUEST_DETAILS = 'FAILURE_REQUEST_DETAILS';
 export const SUCCESS_UPDATE_DETAILS = 'SUCCESS_UPDATE_DETAILS';
@@ -55,10 +56,11 @@ const requestWorkflow = () => ({
   type: REQUEST_WORKFLOW
 });
 
-const receiveWorkflow = (name, details, filter, conditionGroups, datasources, editorState, schedule) => ({
+const receiveWorkflow = (name, details, formState, filter, conditionGroups, datasources, editorState, schedule) => ({
   type: RECEIVE_WORKFLOW,
   name,
   details,
+  formState,
   filter,
   conditionGroups,
   datasources,
@@ -82,9 +84,24 @@ export const fetchWorkflow = (workflowId) => dispatch => {
       } else {
         editorState = EditorState.createEmpty();
       }
+
+      // Map the object representing the workflow details from the database into
+      // the form object that will be used in the details view
+      let formState = { columns: [] }
+
+      if (workflow['details']) {
+        const fields = [workflow['details']['primaryColumn'], ...workflow['details']['secondaryColumns']];
+        fields.forEach((column, i) => {
+          formState.columns.push({ })
+          formState.columns[i].field = { name: `columns[${i}].field`, value: [column.datasource, column.field, column.matchesWith]  }
+          formState.columns[i].type = { name: `columns[${i}].type`, value: column.type }
+        })
+      }
+      
       dispatch(receiveWorkflow(
         workflow['name'],
         workflow['details'],
+        formState,
         workflow['filter'],
         workflow['conditionGroups'],
         workflow['datasources'],
@@ -96,25 +113,30 @@ export const fetchWorkflow = (workflowId) => dispatch => {
   requestWrapper(parameters);
 };
 
-const refreshDetails = (details) => ({
-  type: REFRESH_DETAILS,
-  details
+const refreshDetailsFormState = (payload) => ({
+  type: REFRESH_DETAILS_FORM_STATE,
+  payload
 });
 
-export const addSecondaryColumn = () => (dispatch, getState) => {
+export const updateDetailsFormState = (payload) => ({
+  type: UPDATE_DETAILS_FORM_STATE,
+  payload
+});
+
+export const addColumn = () => (dispatch, getState) => {
   const { workflow } = getState();
-  // Clone the current details from state, as we should never directly modify the state object
-  let details = Object.assign({primaryColumn: {}, secondaryColumns: []}, workflow.details)
-  details.secondaryColumns.push({});
-  dispatch(refreshDetails(details));
+  let formState = Object.assign({}, workflow.detailsFormState);
+  formState.columns.push({});
+
+  dispatch(refreshDetailsFormState(formState));
 };
 
-export const deleteSecondaryColumn = (index) => (dispatch, getState) => {
+export const deleteColumn = (index) => (dispatch, getState) => {
   const { workflow } = getState();
-  // Clone the current details from state, as we should never directly modify the state object
-  let details = Object.assign({}, workflow.details)
-  details.secondaryColumns.splice(index, 1);
-  dispatch(refreshDetails(details));
+  let formState = Object.assign({}, workflow.detailsFormState);
+  formState.columns.splice(index, 1);
+
+  dispatch(refreshDetailsFormState(formState));
 };
 
 const beginRequestDetails = () => ({
@@ -139,20 +161,20 @@ const successCreateSchedule = () => ({
   type: SUCCESS_CREATE_SCHEDULE
 });
 
-export const updateDetails = (workflowId, payload) => dispatch => {
-  const parameters = {
-    initialFn: () => { dispatch(beginRequestDetails()); },
-    url: `/workflow/${workflowId}/update_details/`,
-    method: 'PUT',
-    errorFn: (error) => { dispatch(failureRequestDetails(error)); },
-    successFn: (workflow) => {
-      dispatch(successUpdateDetails());
-      dispatch(refreshDetails(workflow['details']));
-    },
-    payload: payload
-  }
-  requestWrapper(parameters);
-};
+// export const updateDetails = (workflowId, payload) => dispatch => {
+//   const parameters = {
+//     initialFn: () => { dispatch(beginRequestDetails()); },
+//     url: `/workflow/${workflowId}/update_details/`,
+//     method: 'PUT',
+//     errorFn: (error) => { dispatch(failureRequestDetails(error)); },
+//     successFn: (workflow) => {
+//       dispatch(successUpdateDetails());
+//       dispatch(refreshDetails(workflow['details']));
+//     },
+//     payload: payload
+//   }
+//   requestWrapper(parameters);
+// };
 
 export const createSchedule = (workflowId, payload) => dispatch => {
   const parameters = {

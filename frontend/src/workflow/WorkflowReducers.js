@@ -2,7 +2,8 @@ import {
   REQUEST_WORKFLOW,
   RECEIVE_WORKFLOW,
 
-  REFRESH_DETAILS,
+  REFRESH_DETAILS_FORM_STATE,
+  UPDATE_DETAILS_FORM_STATE,
   BEGIN_REQUEST_DETAILS,
   FAILURE_REQUEST_DETAILS,
   SUCCESS_UPDATE_DETAILS,
@@ -77,6 +78,7 @@ function workflow(state = initialState, action) {
         isFetching: false,
         name: action.name,
         details: action.details,
+        detailsFormState: action.formState,
         filter: action.filter,
         conditionGroups: action.conditionGroups,
         datasources: action.datasources,
@@ -86,10 +88,14 @@ function workflow(state = initialState, action) {
       });
 
     // Details actions
-    case REFRESH_DETAILS:
+    case REFRESH_DETAILS_FORM_STATE:
       return Object.assign({}, state, {
-        details: action.details,
-        didUpdate: false
+        detailsFormState: action.payload
+      });
+    case UPDATE_DETAILS_FORM_STATE:
+      return Object.assign({}, state, {
+        detailsFormState: _.merge(state.detailsFormState, action.payload),
+        detailsLoading: true
       });
     case BEGIN_REQUEST_DETAILS:
       return Object.assign({}, state, {

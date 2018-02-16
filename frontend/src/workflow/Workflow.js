@@ -81,7 +81,7 @@ class Workflow extends React.Component {
   render() {
     const {
       dispatch, isFetching, match, location, name, details, conditionGroups, datasources,
-      detailsLoading, detailsError,
+      detailsLoading, detailsError, detailsFormState,
       dataLoading, dataError, data, columns,
       filterModalVisible, filterLoading, filterError, filter, filterFormState,
       conditionGroupModalVisible, conditionGroupLoading, conditionGroupError, conditionGroup, conditionGroupFormState,
@@ -154,10 +154,12 @@ class Workflow extends React.Component {
                         error={detailsError}
                         datasources={datasources}
                         details={details}
+                        formState={detailsFormState}
 
-                        addSecondaryColumn={this.boundActionCreators.addSecondaryColumn}
-                        deleteSecondaryColumn={this.boundActionCreators.deleteSecondaryColumn}
-                        onUpdate={(details) => { this.boundActionCreators.updateDetails(match.params.id, details) }}
+                        updateFormState={this.boundActionCreators.updateDetailsFormState}
+                        // addSecondaryColumn={this.boundActionCreators.addSecondaryColumn}
+                        // deleteSecondaryColumn={this.boundActionCreators.deleteSecondaryColumn}
+                        // onUpdate={(details) => { this.boundActionCreators.updateDetails(match.params.id, details) }}
                       />}
                     />
                     <Route path={`${match.url}/data`} render={()=>
@@ -259,7 +261,7 @@ const mapStateToProps = (state) => {
   const {
     isFetching, name, details, conditionGroups, datasources,
     didCreate, didUpdate, didDelete, model,
-    detailsLoading, detailsError,
+    detailsLoading, detailsError, detailsFormState,
     dataLoading, dataError, data, columns,
     filterModalVisible, filterLoading, filterError, filter, filterFormState,
     conditionGroupModalVisible, conditionGroupLoading, conditionGroupError, conditionGroup, conditionGroupFormState,
@@ -270,7 +272,7 @@ const mapStateToProps = (state) => {
   return {
     isFetching, name, details, conditionGroups, datasources,
     didCreate, didUpdate, didDelete, model,
-    detailsLoading, detailsError,
+    detailsLoading, detailsError, detailsFormState,
     dataLoading, dataError, data, columns,
     filterModalVisible, filterLoading, filterError, filter, filterFormState,
     conditionGroupModalVisible, conditionGroupLoading, conditionGroupError, conditionGroup, conditionGroupFormState,
