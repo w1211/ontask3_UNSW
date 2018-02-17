@@ -180,11 +180,11 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         return filtered_data
 
     def validate_filter(self, details, filter):
-        primary_column = details['primaryColumn']['field']
+        primary_column = details['primaryColumn']
         secondary_columns = details['secondaryColumns']
 
         # Confirm that all provided fields are defined in the workflow details
-        secondary_column_fields = [secondary_column.field for secondary_column in secondary_columns]
+        fields = [primary_column.field] + [secondary_column.field for secondary_column in secondary_columns]
 
         for formula in filter['formulas']:
             # Parse the output of the field/operator cascader from the condition group form in the frontend
@@ -194,7 +194,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                 formula['operator'] = formula['fieldOperator'][1]
                 del formula['fieldOperator']
 
-            if formula['field'] not in secondary_column_fields:
+            if formula['field'] not in fields:
                 raise ValidationError('Invalid formula: field \'{0}\' does not exist in the workflow details'.format(formula['field']))
 
         return True
@@ -218,17 +218,17 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         return JsonResponse(serializer.data, safe=False)
 
-    def parse_field(self, field_name, secondary_columns, value):
-        secondary_column = next((x for x in secondary_columns if x['field'] == field_name), None)
+    def parse_field(self, field_name, fields, value):
+        field = next((x for x in fields if x['field'] == field_name), None)
         # Enclose string values with quotation marks, otherwise simply return the number value as is
         # Still must be returned as a string, since eval() takes a string input
-        if secondary_column['type'] == 'text':
+        if field['type'] == 'text':
             return '\'{0}\''.format(value)
         else:
             return str(value)
 
-    def did_pass_formula(self, secondary_columns, item, formula):
-        populated_formula = str(self.parse_field(formula['field'], secondary_columns, item[formula['field']]) + formula['operator'] + self.parse_field(formula['field'], secondary_columns, formula['comparator']))
+    def did_pass_formula(self, fields, item, formula):
+        populated_formula = str(self.parse_field(formula['field'], fields, item[formula['field']]) + formula['operator'] + self.parse_field(formula['field'], fields, formula['comparator']))
         # Eval the populated formula to see if it passes for this item
         try:
             if eval(populated_formula):
@@ -239,7 +239,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
     def evaluate_condition_group(self, primary_column, secondary_columns, data, condition_group):
         conditions_passed = defaultdict(list)
-
+        fields = [primary_column] + secondary_columns
         # Iterate over the rows in the data and return any rows which pass true
         for item in data:
             # Ensure that each item passes the test for only one condition per condition group
@@ -253,21 +253,21 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                 didPass = False
 
                 if len(condition['formulas']) == 1:
-                    if self.did_pass_formula(secondary_columns, item, condition['formulas'][0]):
+                    if self.did_pass_formula(fields, item, condition['formulas'][0]):
                         didPass = True
 
                 elif condition['type'] == 'and':
-                    pass_counts = [self.did_pass_formula(secondary_columns, item, formula) for formula in condition['formulas']]
+                    pass_counts = [self.did_pass_formula(fields, item, formula) for formula in condition['formulas']]
                     if sum(pass_counts) == len(condition['formulas']):
                         didPass = True
 
                 elif condition['type'] == 'or':
-                    pass_counts = [self.did_pass_formula(secondary_columns, item, formula) for formula in condition['formulas']]
+                    pass_counts = [self.did_pass_formula(fields, item, formula) for formula in condition['formulas']]
                     if sum(pass_counts) > 0:
                         didPass = True
 
                 if didPass:
-                    conditions_passed[condition['name']].append(item[primary_column])
+                    conditions_passed[condition['name']].append(item[primary_column['field']])
                     matchedCount += 1
 
             if matchedCount > 1:
@@ -276,12 +276,13 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         return conditions_passed
 
     def validate_condition_group(self, details, filter, condition_group):
-        primary_column = details['primaryColumn']['field']
+        primary_column = details['primaryColumn']
         secondary_columns = details['secondaryColumns']
         data = self.combine_data(details, filter)['data']
 
         # Confirm that all provided fields are defined in the workflow details
-        secondary_column_fields = [secondary_column.field for secondary_column in secondary_columns]
+        fields = [primary_column.field] + [secondary_column.field for secondary_column in secondary_columns]
+
         for condition in condition_group['conditions']:
             for formula in condition['formulas']:
 
@@ -292,7 +293,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                     formula['operator'] = formula['fieldOperator'][1]
                     del formula['fieldOperator']
 
-                if formula['field'] not in secondary_column_fields:
+                if formula['field'] not in fields:
                     raise ValidationError('Invalid formula: field \'{0}\' does not exist in the workflow details'.format(formula['field']))
 
         conditions_passed = self.evaluate_condition_group(primary_column, secondary_columns, data, condition_group)

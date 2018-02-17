@@ -324,7 +324,6 @@ export const createDatasource = (containerId, payload, file) => dispatch => {
     }
     data.append('container', containerId);
     data.append('name', payload.name);
-    data.append('connection', JSON.stringify(payload.connection));
     data.append('dbType', payload.dbType);
   } else {
     data = payload;
@@ -373,7 +372,6 @@ export const updateDatasource = (datasourceId, payload, file) => dispatch => {
       data.append('sheetname', payload.sheetname)
     }
     data.append('name', payload.name);
-    data.append('connection', JSON.stringify(payload.connection));
     data.append('dbType', payload.dbType);
   } else {
     data = payload;

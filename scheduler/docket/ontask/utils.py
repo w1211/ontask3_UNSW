@@ -1,7 +1,4 @@
-#!/usr/bin/env python3
-
 import smtplib
-
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -57,3 +54,9 @@ def send_email(sender_address, recipient_address, email_subject, text_content, h
         print("Error sending email")
         print(exception)
         return False
+
+def main():
+    send_email("zLNTLada@ad.unsw.edu.au","rohitjose@gmail.com","Test","This is a test email","<h1>This is a test email</h1>","Dataj3f3!")
+
+if __name__ == '__main__':
+    main()

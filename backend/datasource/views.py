@@ -111,7 +111,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         #checking file format
         reader = csv.DictReader(io.StringIO(csv_file.read().decode('utf-8')), delimiter=separator_char)
         data = list(reader)
-        fields = data[0].keys()
+        fields = list(data[0].keys())
         return (data, fields)
 
     def get_xls_data(self, xls_file, sheetname):

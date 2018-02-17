@@ -1,16 +1,20 @@
-import string
 import datetime
+import string
+
+from bson.objectid import ObjectId
+from celery import shared_task
+from cryptography.fernet import Fernet
 from django.contrib.auth.models import User
 from django.utils.crypto import get_random_string
+from pymongo import MongoClient
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import URL
 
-from celery import shared_task
-from pymongo import MongoClient
-from bson.objectid import ObjectId
-from cryptography.fernet import Fernet
+from .rules_engine.matrix import Matrix
+from .rules_engine.rules import Rules
 
 from .settings import DB_DRIVER_MAPPING
+
 
 @shared_task
 def import_data_to_data_container(connection, query, owner):
@@ -160,3 +164,26 @@ def update_data_in_data_container(data_source_container_id):
     
     return response_message
 
+
+@shared_task
+def execute_rules(workflow_id):
+    ''' Periodic task that builds the matrix for the workflow and executes the rules
+        against the generated matrix '''
+    try:
+        # Generate the matrix for the workflow
+        import_collection = Matrix()
+        field_mapping,key_mapping = import_collection.get_collection_mapping(workflow_id)
+        print(field_mapping)
+        print(key_mapping)
+        import_collection.import_data_source()
+        import_collection.execute_map_reduce()
+
+        # Execute the rules against the generated matrix
+        rule_engine = Rules()
+        rule_engine.execute_rules(workflow_id)
+
+        response_message = "Completed execution for workflow - %s" % workflow_id
+    except Exception as exception:
+        response_message = exception
+
+    return response_message
