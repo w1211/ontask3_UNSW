@@ -31,7 +31,9 @@ import {
 //actions for interacting with datasource form uploading file list
   UPLOAD_EXTERNAL_FILE,
   ADD_UPLOADING_FILE,
-  REMOVE_UPLOADING_FILE
+  REMOVE_UPLOADING_FILE,
+
+  RECEIVE_SHEETNAMES
 
 } from './ContainerActions';
 
@@ -54,6 +56,12 @@ function containers(state = initialState, action) {
         isFetching: false,
         containers: action.containers
       });
+
+    case RECEIVE_SHEETNAMES:
+      return Object.assign({}, state, {
+        sheetnames: action.sheetnames
+      });
+    
     case CHANGE_CONTAINER_ACCORDION:
       return Object.assign({}, state, {
         containerAccordionKey: action.key
@@ -179,12 +187,14 @@ function containers(state = initialState, action) {
         datasource: null,
         datasources: null,
         uploadingFile: null,
-        isExternalFile: false
+        isExternalFile: false,
+        isCsvTextFile: false
       });
     case CHANGE_DATASOURCE:
       return Object.assign({}, state, {
         datasource: action.datasource,
-        isExternalFile: action.isExternalFile
+        isExternalFile: action.isExternalFile,
+        isCsvTextFile: action.isCsvTextFile
       });
     case BEGIN_REQUEST_DATASOURCE:
       return Object.assign({}, state, {
@@ -219,6 +229,7 @@ function containers(state = initialState, action) {
         datasources: null,
         didUpdate: true,
         isExternalFile: false,
+        isCsvTextFile: false,
         model: 'datasource'
       });
     case SUCCESS_DELETE_DATASOURCE:
@@ -230,12 +241,16 @@ function containers(state = initialState, action) {
         datasources: null,
         didDelete: true,
         isExternalFile: false,
+        isCsvTextFile: false,
         model: 'datasource'
       });
 
     case UPLOAD_EXTERNAL_FILE:
       return Object.assign({}, state, {
-        isExternalFile: action.isExternalFile
+        isExternalFile: action.isExternalFile,
+        isCsvTextFile: action.isCsvTextFile,
+        uploadingFile: null,
+        sheetnames: null
       });
 
     //for interacting with datasource form uploaidng file list
@@ -247,7 +262,9 @@ function containers(state = initialState, action) {
     case REMOVE_UPLOADING_FILE:
       return Object.assign({}, state, {
         uploadingFile: null,
-        isExternalFile: false
+        isExternalFile: false,
+        isCsvTextFile: false,
+        sheetnames: null
       });
     default:
       return state;

@@ -126,7 +126,7 @@ class Container extends React.Component {
       containerModalVisible, containerLoading, containerError, container,
       workflowModalVisible, workflowLoading, workflowError, workflow,
       datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
-      isExternalFile, uploadingFile
+      isExternalFile, isCsvTextFile, uploadingFile, sheetnames
     } = this.props;
 
     return (
@@ -179,7 +179,9 @@ class Container extends React.Component {
                     datasources={datasources}
                     datasource={datasource}
                     isExternalFile={isExternalFile}
+                    isCsvTextFile={isCsvTextFile}
                     uploadingFile={uploadingFile}
+                    sheetnames={sheetnames}
 
                     onChange={this.boundActionCreators.changeDatasource}
                     onCreate={this.boundActionCreators.createDatasource}
@@ -190,6 +192,7 @@ class Container extends React.Component {
                     //actions for interacting with datasource form uploading file list
                     onSelect={this.boundActionCreators.handleDatasourceTypeSelction}
                     addUploadingFile={this.boundActionCreators.addUploadingFile}
+                    getSheetnames={this.boundActionCreators.fetchSheetnames}
                     removeFromFileList={this.boundActionCreators.removeFromFileList}
                   />
                   <ContainerList
@@ -229,7 +232,7 @@ const mapStateToProps = (state) => {
     containerModalVisible, containerLoading, containerError, container,
     workflowModalVisible, workflowLoading, workflowError, workflow,
     datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
-    isExternalFile, uploadingFile
+    isExternalFile, isCsvTextFile, uploadingFile, sheetnames
   } = state.containers;
   return {
     isFetching, containers, containerAccordionKey, containerId,
@@ -237,7 +240,7 @@ const mapStateToProps = (state) => {
     containerModalVisible, containerLoading, containerError, container,
     workflowModalVisible, workflowLoading, workflowError, workflow,
     datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
-    isExternalFile, uploadingFile
+    isExternalFile, isCsvTextFile, uploadingFile, sheetnames
   };
 }
 

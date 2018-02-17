@@ -33,6 +33,8 @@ export const UPLOAD_EXTERNAL_FILE = 'UPLOAD_EXTERNAL_FILE';
 export const ADD_UPLOADING_FILE = 'ADD_UPLOADING_FILE';
 export const REMOVE_UPLOADING_FILE = 'REMOVE_UPLOADING_FILE';
 
+export const RECEIVE_SHEETNAMES = 'RECEIVE_SHEETNAMES';
+
 
 const requestContainers = () => ({
   type: REQUEST_CONTAINERS
@@ -41,6 +43,11 @@ const requestContainers = () => ({
 const receiveContainers = (containers) => ({
   type: RECEIVE_CONTAINERS,
   containers
+});
+
+const receiveSheetnames = (sheetnames) => ({
+  type: RECEIVE_SHEETNAMES,
+  sheetnames
 });
 
 export const changeContainerAccordion = (key) => ({
@@ -65,6 +72,24 @@ export const fetchContainers = () => dispatch => {
 
   requestWrapper(parameters);
 };
+
+export const fetchSheetnames = (file) => dispatch => {
+  let data = new FormData();
+  data.append('file', file);
+  const parameters = {
+    url: `/datasource/get_sheetnames/`,
+    method: 'POST',
+    errorFn: (error) => {
+      console.error(error);
+    },
+    successFn: (response) => {
+      dispatch(receiveSheetnames(response["sheetnames"]));
+    },
+    payload: data,
+    isNotJSON: true
+  }
+  requestWrapper(parameters);
+}
 
 export const openContainerModal = (container) => ({
   type: OPEN_CONTAINER_MODAL,
@@ -257,10 +282,11 @@ export const closeDatasourceModal = () => ({
   type: CLOSE_DATASOURCE_MODAL
 });
 
-export const changeDatasource = (datasource, isExternalFile) => ({
+export const changeDatasource = (datasource, isExternalFile, isCsvTextFile) => ({
   type: CHANGE_DATASOURCE,
   datasource,
-  isExternalFile
+  isExternalFile,
+  isCsvTextFile
 });
 
 const beginRequestDatasource = () => ({
@@ -283,12 +309,19 @@ const removeUploadingFile = () => ({
 export const createDatasource = (containerId, payload, file) => dispatch => {
   payload.container = containerId;
 
-  const isFile = (payload.dbType === 'file');
+  const isCsvTextFile = (payload.dbType === 'csvTextFile');
+  const isXlsXlsxFile = (payload.dbType === 'xlsXlsxFile');
+
   let data;
-  if (isFile) {
+  if (isCsvTextFile||isXlsXlsxFile) {
     data = new FormData();
     data.append('file', file);
-    data.append('delimiter', payload.delimiter)
+    if(isCsvTextFile){
+      data.append('delimiter', payload.delimiter)
+    }
+    if(isXlsXlsxFile){
+      data.append('sheetname', payload.sheetname)
+    }
     data.append('container', containerId);
     data.append('name', payload.name);
     data.append('connection', JSON.stringify(payload.connection));
@@ -305,14 +338,15 @@ export const createDatasource = (containerId, payload, file) => dispatch => {
     method: 'POST',
     errorFn: (error) => {
       dispatch(failureRequestDatasource(error));
+      if (isCsvTextFile||isXlsXlsxFile) dispatch(removeUploadingFile());
     },
     successFn: () => {
       dispatch(successCreateDatasource());
       dispatch(fetchContainers());
-      if (isFile) dispatch(removeUploadingFile());
+      if (isCsvTextFile||isXlsXlsxFile) dispatch(removeUploadingFile());
     },
     payload: data,
-    isNotJSON: isFile
+    isNotJSON: isCsvTextFile||isXlsXlsxFile
   }
 
   requestWrapper(parameters);
@@ -325,11 +359,19 @@ const successUpdateDatasource = () => ({
 export const updateDatasource = (datasourceId, payload, file) => dispatch => {
   dispatch(beginRequestDatasource());
 
-  const isFile = (payload.dbType === 'file');
+  const isCsvTextFile = (payload.dbType === 'csvTextFile');
+  const isXlsXlsxFile = (payload.dbType === 'xlsXlsxFile');
+
   let data;
-  if (isFile) {
+  if (isCsvTextFile||isXlsXlsxFile) {
     data = new FormData();
-    if (file) data.append('file', file);
+    data.append('file', file);
+    if(isCsvTextFile){
+      data.append('delimiter', payload.delimiter)
+    }    
+    if(isXlsXlsxFile){
+      data.append('sheetname', payload.sheetname)
+    }
     data.append('name', payload.name);
     data.append('connection', JSON.stringify(payload.connection));
     data.append('dbType', payload.dbType);
@@ -344,14 +386,15 @@ export const updateDatasource = (datasourceId, payload, file) => dispatch => {
     method: 'PATCH',
     errorFn: (error) => {
       dispatch(failureRequestDatasource(error));
+      if (isCsvTextFile||isXlsXlsxFile) dispatch(removeUploadingFile());
     },
     successFn: () => {
       dispatch(successUpdateDatasource());
       dispatch(fetchContainers());
-      if (isFile) dispatch(removeUploadingFile());
+      if (isCsvTextFile||isXlsXlsxFile) dispatch(removeUploadingFile());
     },
     payload: data,
-    isNotJSON: isFile
+    isNotJSON: isCsvTextFile||isXlsXlsxFile
   }
 
   requestWrapper(parameters);
@@ -384,7 +427,8 @@ export const addUploadingFile = (file) => ({
   file
 });
 
-export const handleDatasourceTypeSelction = (isExternalFile) => ({
+export const handleDatasourceTypeSelction = (isExternalFile, isCsvTextFile) => ({
   type: UPLOAD_EXTERNAL_FILE,
-  isExternalFile
+  isExternalFile,
+  isCsvTextFile
 });

@@ -1,6 +1,8 @@
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
 from datetime import datetime
+from rest_framework.decorators import list_route
+from django.http import JsonResponse
 
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from mongoengine.queryset.visitor import Q
@@ -112,9 +114,9 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         fields = data[0].keys()
         return (data, fields)
 
-    def get_xsl_data(self, xls_file):
+    def get_xls_data(self, xls_file, sheetname):
         book = open_workbook(file_contents=xls_file.read())
-        sheet = book.sheet_by_index(0)
+        sheet = book.sheet_by_name(sheetname)
         # read header values into the list
         keys = [sheet.cell(0, col_index).value for col_index in range(sheet.ncols)]
         dict_list = []
@@ -124,13 +126,15 @@ class DataSourceViewSet(viewsets.ModelViewSet):
             dict_list.append(d)
         return (dict_list, keys)
 
-    def get_file_data(self, upload_file, delimiter):
-        if upload_file.name.lower().endswith(('.csv')):
-            return self.get_csv_data(upload_file, delimiter)
-        elif upload_file.name.lower().endswith(('.xls', 'xlsx')):
-            return self.get_xsl_data(upload_file)
-        else:
-            raise ValidationError('File is not validate type')
+    @list_route(methods=['post'])
+    def get_sheetnames(self, request):
+        xls_file = request.data["file"]
+        workbook = open_workbook(file_contents=xls_file.read())
+        sheetnames = workbook.sheet_names()
+        data = {}
+        data["sheetnames"] = sheetnames
+        return JsonResponse(data, safe=False)
+
 
     def perform_create(self, serializer):
         self.check_object_permissions(self.request, None)
@@ -138,19 +142,26 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         # Connect to specified database and get the data from the query
         # Data passed in to the DataSource model must be a list of dicts of the form {column_name: value}
         # TO DO: if isDynamic, then store values into lists as objects with timestamps
-        if self.request.data['dbType']=='file':
+        if self.request.data['dbType']=='csvTextFile':
             connection = {}
-            connection['dbType'] = 'file'
+            connection['dbType'] = 'csvTextFile'
             external_file = self.request.data['file']
             delimiter = self.request.data['delimiter']
-            (data, fields) = self.get_file_data(external_file, delimiter)
+            (data, fields) = self.get_csv_data(external_file, delimiter)
+
+        elif self.request.data['dbType']=='xlsXlsxFile':
+            connection = {}
+            connection['dbType'] = 'xlsXlsxFile'
+            external_file = self.request.data['file']
+            sheetname = self.request.data['sheetname']
+            (data, fields) = self.get_xls_data(external_file, sheetname)
+
         else:
             connection = self.request.data['connection']
             # Encrypt the db password of the data source
             cipher = Fernet(SECRET_KEY)
             connection['password'] = cipher.encrypt(bytes(connection['password'], encoding="UTF-8"))
             (data, fields) = self.get_datasource_data(connection)
-
         serializer.save(
             connection = connection,
             data = data,
@@ -159,18 +170,21 @@ class DataSourceViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         self.check_object_permissions(self.request, self.get_object())
+        if self.request.data['dbType']=='csvTextFile':
+            connection = {}
+            connection['dbType'] = 'csvTextFile'
+            external_file = self.request.data['file']
+            delimiter = self.request.data['delimiter']
+            (data, fields) = self.get_csv_data(external_file, delimiter)
 
-        connection = self.request.data['connection']
-
-        if self.request.data['connection']['dbType']=='file':
-            if hasattr(self.request.data, 'file'):
-                external_file = self.request.data['file']
-                delimiter = self.request.data['delimiter']
-                (data, fields) = self.get_file_data(external_file, delimiter)
-            else:
-                data = self.get_object()['data']
-                fields = self.get_object()['fields']
+        elif self.request.data['dbType']=='xlsXlsxFile':
+            connection = {}
+            connection['dbType'] = 'xlsXlsxFile'
+            external_file = self.request.data['file']
+            sheetname = self.request.data['sheetname']
+            (data, fields) = self.get_xls_data(external_file, sheetname)
         else:
+            connection = self.request.data['connection']
             if hasattr(connection, 'password'):
                 # Encrypt the db password of the data source
                 cipher = Fernet(SECRET_KEY)

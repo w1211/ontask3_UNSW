@@ -37,6 +37,7 @@ scheduler/docket/config/prod.*
 
 # Virtual environments
 virtualenvs/*
+ontask_env/*
 
 # Logs and temporary files
 logs/*

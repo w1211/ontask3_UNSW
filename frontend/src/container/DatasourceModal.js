@@ -24,10 +24,11 @@ const handleOk = (form, containerId, datasource, onCreate, onUpdate, uploadingFi
       return;
     }
     if (datasource) {
+      values['dbType'] = values.connection.dbType;
       onUpdate(datasource.id, values, uploadingFile);
     } else {
       values['dbType'] = values.connection.dbType;
-      if (values.connection.dbType==='file' && uploadingFile===undefined) {
+      if (uploadingFile===undefined && (values.connection.dbType==='csvTextFile' || values.connection.dbType==='xlsXlsxFile')) {
         message.error('Please add file');
       }else{
         onCreate(containerId, values, uploadingFile)
@@ -38,21 +39,35 @@ const handleOk = (form, containerId, datasource, onCreate, onUpdate, uploadingFi
 
 const handleChange = (selectedId, onChange, form, datasources) => {
   form.resetFields();
-  const datasource = datasources.find(datasource => { return datasource.id === selectedId });
-  if(datasource && datasource.connection.dbType==='file'){
-    onChange(datasource, true);
+  if(selectedId){
+    const datasource = datasources.find(datasource => { return datasource.id === selectedId });
+    if(datasource){
+      if(datasource && datasource.connection.dbType==='csvTextFile'){
+        onChange(datasource, true, true);
+      }
+      else if(datasource && datasource.connection.dbType==='xlsXlsxFile'){
+        onChange(datasource, true, false);
+      }
+      else{
+        onChange(datasource, false, false);
+      }
+    }
   }
   else{
-    onChange(datasource, false);
+    onChange(null, false, false);
   }
+
 }
 
 const handleDatasourceTypeSelction = (selected, onSelect) => {
-  if(selected==='file'){
-    onSelect(true);
+  if(selected==='csvTextFile'){
+    onSelect(true, true);
+  }
+  else if(selected==='xlsXlsxFile'){
+    onSelect(true, false);
   }
   else{
-    onSelect(false);
+    onSelect(false, false);
   }
 }
 
@@ -69,7 +84,7 @@ const isValidFile = (filename) => {
     switch (ext.toLowerCase()) {
       case 'csv':
       case 'xlsx':
-      case 'xslx':
+      case 'xls':
         return true;
       default:
         return false;
@@ -78,7 +93,7 @@ const isValidFile = (filename) => {
 
 const fileValidation = (file) => {
   if (!isValidFile(file.name)) {
-    message.error('You can only upload csv/xslx/xls file!');
+    message.error('You can only upload csv/xlsx/xls file!');
   }
   const isLt2G = file.size / (1024*1024) < 2;
   if (!isLt2G) {
@@ -87,8 +102,11 @@ const fileValidation = (file) => {
   return isValidFile && isLt2G;
 };
 
-const handleDraggerChange = (info, addUploadingFile) => {
+const handleDraggerChange = (info, addUploadingFile, getSheetnames) => {
   if (fileValidation(info.file)){
+    if(getExtension(info.file.name)==='xlsx'||getExtension(info.file.name)==='xls'){
+      getSheetnames(info.file)
+    }
     addUploadingFile(info.file);
   }
 };
@@ -96,7 +114,8 @@ const handleDraggerChange = (info, addUploadingFile) => {
 const DatasourceModal = ({
   form, visible, loading, error, containerId, datasources,
   datasource, onChange, onCreate, onUpdate, onCancel, onDelete,
-  uploadingFile, isExternalFile, addUploadingFile, onSelect
+  uploadingFile, isExternalFile, isCsvTextFile, addUploadingFile, onSelect,
+  getSheetnames, sheetnames
 }) => (
   <Modal
     visible={visible}
@@ -132,7 +151,8 @@ const DatasourceModal = ({
             <Select onChange={(selected) => handleDatasourceTypeSelction(selected, onSelect)}>
               <Option value="mysql">MySQL</Option>
               <Option value="postgresql">PostgreSQL</Option>
-              <Option value="file">External file</Option>
+              <Option value="csvTextFile">csv/text file</Option>
+              <Option value="xlsXlsxFile">xls/xlsx file</Option>
               <Option value="sqlite" disabled>SQLite</Option>
               <Option value="mssql" disabled>MSSQL</Option>
             </Select>
@@ -149,7 +169,7 @@ const DatasourceModal = ({
             <Input/>
           )}
         </FormItem>
-      {isExternalFile ?
+      {isCsvTextFile ? 
         <div>
         <FormItem
           {...formItemLayout}
@@ -158,15 +178,27 @@ const DatasourceModal = ({
           {form.getFieldDecorator('delimiter', {
             initialValue: ',',
           })(
-            <Input placeholder="Default delimiter ','"/>
+            <Select>
+              <Option value=",">Comma ,</Option>
+              <Option value=" ">Tabs "  "</Option>
+              <Option value=";">Semi-colons ;</Option>
+              <Option value="|">Pipes |</Option>
+              <Option value="^">Carets ^</Option>
+              <Option value="~">Tildes ~</Option>
+          </Select>
           )}
-
         </FormItem>
+        </div>
+        :
+        <div></div>
+        }
+      {isExternalFile?
+      <div>
         <Dragger
           name = 'file'
           multiple = {false}
           action = ''
-          onChange = {(info) => handleDraggerChange(info, addUploadingFile)}
+          onChange = {(info) => handleDraggerChange(info, addUploadingFile, getSheetnames)}
           beforeUpload = {() => {return false}}
         >
           <p className="ant-upload-drag-icon">
@@ -176,10 +208,28 @@ const DatasourceModal = ({
           <p className="ant-upload-hint">Support file format: csv/xls/xlsx.</p>
         </Dragger>
         {uploadingFile?
-        <span><Icon type='paper-clip'/>{uploadingFile.name}</span>
-        :
-        <div></div>
-      }
+        <div>
+          <span><Icon type='paper-clip'/>{uploadingFile.name}</span>
+          {sheetnames &&
+            <FormItem
+              {...formItemLayout}
+              label="Sheet name"
+            >
+              {form.getFieldDecorator('sheetname',{
+                rules: [{ required: true, message: 'Sheet name is required' }]
+              })(
+                <Select>
+                  {sheetnames.map(option => {
+                    return(<Option value={option}>{option}</Option>)
+                  })}
+                </Select>
+              )}
+            </FormItem>
+          }
+          </div>
+          :
+          <div></div>
+        }
       </div>
       :
       <div>
