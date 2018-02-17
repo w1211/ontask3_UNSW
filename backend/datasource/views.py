@@ -185,7 +185,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
             (data, fields) = self.get_xls_data(external_file, sheetname)
         else:
             connection = self.request.data['connection']
-            if hasattr(connection, 'password'):
+            if 'password' in connection:
                 # Encrypt the db password of the data source
                 cipher = Fernet(SECRET_KEY)
                 # If a new password is provided then encrypt it and overwrite the old one
