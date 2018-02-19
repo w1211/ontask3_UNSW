@@ -157,9 +157,10 @@ class Workflow extends React.Component {
                         formState={detailsFormState}
 
                         updateFormState={this.boundActionCreators.updateDetailsFormState}
-                        // addSecondaryColumn={this.boundActionCreators.addSecondaryColumn}
-                        // deleteSecondaryColumn={this.boundActionCreators.deleteSecondaryColumn}
-                        // onUpdate={(details) => { this.boundActionCreators.updateDetails(match.params.id, details) }}
+                        changeColumnOrder={this.boundActionCreators.changeColumnOrder}
+                        addColumn={this.boundActionCreators.addColumn}
+                        deleteColumn={this.boundActionCreators.deleteColumn}
+                        onUpdate={(payload) => { this.boundActionCreators.updateDetails(match.params.id, payload) }}
                       />}
                     />
                     <Route path={`${match.url}/data`} render={()=>

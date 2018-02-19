@@ -2,3 +2,14 @@
   cursor: default !important;
   text-decoration: underline;
 }
+.types ul {
+  height: auto;
+}
+
+.details tr.drop-over-downward td {
+  border-bottom: 2px dashed #1890ff;
+}
+
+.details tr.drop-over-upward td {
+  border-top: 2px dashed #1890ff;
+}

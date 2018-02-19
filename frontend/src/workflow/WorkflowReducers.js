@@ -94,8 +94,7 @@ function workflow(state = initialState, action) {
       });
     case UPDATE_DETAILS_FORM_STATE:
       return Object.assign({}, state, {
-        detailsFormState: _.merge(state.detailsFormState, action.payload),
-        detailsLoading: true
+        detailsFormState: _.merge(state.detailsFormState, action.payload)
       });
     case BEGIN_REQUEST_DETAILS:
       return Object.assign({}, state, {

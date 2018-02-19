@@ -94,7 +94,8 @@ export const fetchWorkflow = (workflowId) => dispatch => {
         fields.forEach((column, i) => {
           formState.columns.push({ })
           formState.columns[i].field = { name: `columns[${i}].field`, value: [column.datasource, column.field, column.matchesWith]  }
-          formState.columns[i].type = { name: `columns[${i}].type`, value: column.type }
+           // Value is an array for "type" as well, because the Cascader component stores values in array
+          formState.columns[i].type = { name: `columns[${i}].type`, value: [column.type] }
         })
       }
       
@@ -123,10 +124,27 @@ export const updateDetailsFormState = (payload) => ({
   payload
 });
 
+export const changeColumnOrder = (dragIndex, hoverIndex) => (dispatch, getState) => {
+  const { workflow } = getState();
+  let formState = Object.assign({}, workflow.detailsFormState);
+  // Store the variables of one of the objects temporarily, so that we can use it for the value replacement
+  const tmpDragFieldValue = formState.columns[dragIndex].field.value;
+  const tmpDragTypeValue = formState.columns[dragIndex].type.value;
+  // Swap the values of the columns
+  // Do not swap the whole object, as the form field names would still show the old position number
+  // I.e. { field: { name: "columns[3].field", value: "value" }}
+  formState.columns[dragIndex].field.value = formState.columns[hoverIndex].field.value
+  formState.columns[dragIndex].type.value = formState.columns[hoverIndex].type.value
+  formState.columns[hoverIndex].field.value = tmpDragFieldValue;
+  formState.columns[hoverIndex].type.value = tmpDragTypeValue;
+
+  dispatch(refreshDetailsFormState(formState));
+};
+
 export const addColumn = () => (dispatch, getState) => {
   const { workflow } = getState();
   let formState = Object.assign({}, workflow.detailsFormState);
-  formState.columns.push({});
+  formState.columns.push({ field: { value: [] }, type: { value: undefined } });
 
   dispatch(refreshDetailsFormState(formState));
 };
@@ -152,6 +170,39 @@ const successUpdateDetails = () => ({
   type: SUCCESS_UPDATE_DETAILS
 });
 
+export const updateDetails = (workflowId, payload) => dispatch => {
+  const columns = payload.columns;
+  // Map the form state to the API's expected input
+  let details = {
+    primaryColumn: {
+      datasource: columns[0].field[0],
+      field: columns[0].field[1],
+      type: columns[0].type[0]
+    },
+    secondaryColumns: columns.slice(1).map((column, index) => {
+      return {
+        datasource: column.field[0],
+        field: column.field[1],
+        matchesWith: column.field[2],
+        type: column.type[0]
+      }
+    })
+  }
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestDetails()); },
+    url: `/workflow/${workflowId}/update_details/`,
+    method: 'PUT',
+    errorFn: (error) => { dispatch(failureRequestDetails(error)); },
+    successFn: (workflow) => {
+      dispatch(successUpdateDetails());
+      dispatch(fetchWorkflow(workflowId));
+    },
+    payload: details
+  }
+
+  requestWrapper(parameters);
+} ;
+
 const failureCreateSchedule = (error) => ({
   type: FAILURE_CREATE_SCHEDULE,
   error
@@ -160,21 +211,6 @@ const failureCreateSchedule = (error) => ({
 const successCreateSchedule = () => ({
   type: SUCCESS_CREATE_SCHEDULE
 });
-
-// export const updateDetails = (workflowId, payload) => dispatch => {
-//   const parameters = {
-//     initialFn: () => { dispatch(beginRequestDetails()); },
-//     url: `/workflow/${workflowId}/update_details/`,
-//     method: 'PUT',
-//     errorFn: (error) => { dispatch(failureRequestDetails(error)); },
-//     successFn: (workflow) => {
-//       dispatch(successUpdateDetails());
-//       dispatch(refreshDetails(workflow['details']));
-//     },
-//     payload: payload
-//   }
-//   requestWrapper(parameters);
-// };
 
 export const createSchedule = (workflowId, payload) => dispatch => {
   const parameters = {
