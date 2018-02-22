@@ -1,5 +1,6 @@
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
+from rest_framework.permissions import IsAuthenticated
 from datetime import datetime
 
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -30,7 +31,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
     serializer_class = DataSourceSerializer
     parser_classes = (MultiPartParser, FormParser, JSONParser)
-    permission_classes = [DataSourcePermissions]
+    permission_classes = [IsAuthenticated, DataSourcePermissions]
 
     def get_queryset(self):
         pipeline = [

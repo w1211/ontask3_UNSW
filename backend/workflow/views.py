@@ -1,6 +1,8 @@
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
 from rest_framework.decorators import detail_route
+from rest_framework.permissions import IsAuthenticated
+
 from datetime import datetime
 
 from django.http import JsonResponse
@@ -23,7 +25,7 @@ from django.conf import settings
 class WorkflowViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
     serializer_class = WorkflowSerializer
-    permission_classes = [WorkflowPermissions]
+    permission_classes = [IsAuthenticated, WorkflowPermissions]
 
     def combine_data(self, details, filter=None):
         # Create a dict of dicts which will hold the values for each secondary column

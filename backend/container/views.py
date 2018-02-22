@@ -1,6 +1,7 @@
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
 from rest_framework.decorators import list_route
+from rest_framework.permissions import IsAuthenticated
 
 from django.http import JsonResponse
 import json
@@ -18,7 +19,7 @@ from .permissions import ContainerPermissions
 class ContainerViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
     serializer_class = ContainerSerializer
-    permission_classes = [ContainerPermissions]
+    permission_classes = [IsAuthenticated, ContainerPermissions]
 
     def get_queryset(self):
         return Container.objects.filter(
@@ -49,7 +50,10 @@ class ContainerViewSet(viewsets.ModelViewSet):
             },
             {
                 '$lookup': {
-                    'from': 'data_source',
+                    # The collection name in MongoDB for datasources is data_source
+                    # When using a DRF serializer, as we do in the backend, DRF handles this mapping for us
+                    # Given that we are interfacing directly with MongoDB in this aggregate lookup, we must use the correct collection name
+                    'from': 'data_source', 
                     'localField': '_id',
                     'foreignField': 'container',
                     'as': 'datasources'
@@ -69,7 +73,6 @@ class ContainerViewSet(viewsets.ModelViewSet):
                     'datasources.container': 0,
                     'datasources.data': 0,
                     'datasources.connection.password': 0,
-                    'datasources.fields': 0,
                     'workflows.container': 0,
                     'workflows.conditionGroups': 0,
                     'workflows.details': 0,
