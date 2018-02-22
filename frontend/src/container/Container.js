@@ -10,6 +10,7 @@ import ContainerModal from './ContainerModal';
 import ContainerList from './ContainerList';
 import WorkflowModal from './WorkflowModal';
 import DatasourceModal from './DatasourceModal';
+import ViewModal from './ViewModal';
 
 const confirm = Modal.confirm;
 const { Content } = Layout;
@@ -126,6 +127,7 @@ class Container extends React.Component {
       containerModalVisible, containerLoading, containerError, container,
       workflowModalVisible, workflowLoading, workflowError, workflow,
       datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
+      viewModalVisible, viewLoading, viewError, view, views, viewFormState,
       isExternalFile, uploadingFile
     } = this.props;
 
@@ -192,6 +194,19 @@ class Container extends React.Component {
                     addUploadingFile={this.boundActionCreators.addUploadingFile}
                     removeFromFileList={this.boundActionCreators.removeFromFileList}
                   />
+                  <ViewModal
+                    visible={viewModalVisible}
+                    loading={viewLoading}
+                    error={viewError}
+                    containerId={containerId}
+                    datasources={datasources}
+                    views={views}
+                    view={view}
+                    formState={viewFormState}
+
+                    updateFormState={this.boundActionCreators.updateViewFormState}
+                    onCancel={() => { dispatch(this.boundActionCreators.closeViewModal()) }}
+                  />
                   <ContainerList
                     containers={containers}
                     activeKey={containerAccordionKey}
@@ -204,6 +219,7 @@ class Container extends React.Component {
                     confirmWorkflowDelete={this.confirmWorkflowDelete}
 
                     openDatasourceModal={(containerId, datasources) => { dispatch(this.boundActionCreators.openDatasourceModal(containerId, datasources)) }}
+                    openViewModal={(containerId, datasources, views) => { dispatch(this.boundActionCreators.openViewModal(containerId, datasources, views)) }}
                   />
                 </div>
               :
@@ -229,6 +245,7 @@ const mapStateToProps = (state) => {
     containerModalVisible, containerLoading, containerError, container,
     workflowModalVisible, workflowLoading, workflowError, workflow,
     datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
+    viewModalVisible, viewLoading, viewError, view, views, viewFormState,
     isExternalFile, uploadingFile
   } = state.containers;
   return {
@@ -237,6 +254,7 @@ const mapStateToProps = (state) => {
     containerModalVisible, containerLoading, containerError, container,
     workflowModalVisible, workflowLoading, workflowError, workflow,
     datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
+    viewModalVisible, viewLoading, viewError, view, views, viewFormState,
     isExternalFile, uploadingFile
   };
 }

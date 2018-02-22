@@ -33,6 +33,10 @@ export const UPLOAD_EXTERNAL_FILE = 'UPLOAD_EXTERNAL_FILE';
 export const ADD_UPLOADING_FILE = 'ADD_UPLOADING_FILE';
 export const REMOVE_UPLOADING_FILE = 'REMOVE_UPLOADING_FILE';
 
+export const OPEN_VIEW_MODAL = 'OPEN_VIEW_MODAL';
+export const CLOSE_VIEW_MODAL = 'CLOSE_VIEW_MODAL';
+export const UPDATE_VIEW_FORM_STATE = 'UPDATE_VIEW_FORM_STATE';
+
 
 const requestContainers = () => ({
   type: REQUEST_CONTAINERS
@@ -377,7 +381,6 @@ export const deleteDatasource = (datasourceId) => dispatch => {
   requestWrapper(parameters);
 };
 
-
 export const addUploadingFile = (file) => ({
   type: ADD_UPLOADING_FILE,
   file
@@ -386,4 +389,20 @@ export const addUploadingFile = (file) => ({
 export const handleDatasourceTypeSelction = (isExternalFile) => ({
   type: UPLOAD_EXTERNAL_FILE,
   isExternalFile
+});
+
+export const openViewModal = (containerId, datasources, views) => ({
+  type: OPEN_VIEW_MODAL,
+  containerId,
+  datasources,
+  views
+});
+
+export const closeViewModal = () => ({
+  type: CLOSE_VIEW_MODAL
+});
+
+export const updateViewFormState = (payload) => ({
+  type: UPDATE_VIEW_FORM_STATE,
+  payload
 });

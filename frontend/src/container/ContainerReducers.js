@@ -28,12 +28,17 @@ import {
   SUCCESS_UPDATE_DATASOURCE,
   SUCCESS_DELETE_DATASOURCE,
 
-//actions for interacting with datasource form uploading file list
   UPLOAD_EXTERNAL_FILE,
   ADD_UPLOADING_FILE,
-  REMOVE_UPLOADING_FILE
+  REMOVE_UPLOADING_FILE,
 
+  OPEN_VIEW_MODAL,
+  CLOSE_VIEW_MODAL,
+  UPDATE_VIEW_FORM_STATE
 } from './ContainerActions';
+
+import _ from 'lodash';
+
 
 const initialState = {
   uploadingFileList: []
@@ -176,6 +181,7 @@ function containers(state = initialState, action) {
         datasourceModalVisible: false,
         datasourceError: null,
         datasourceLoading: false,
+        containerId: null,
         datasource: null,
         datasources: null,
         uploadingFile: null,
@@ -209,7 +215,7 @@ function containers(state = initialState, action) {
         isExternalFile: false,
         model: 'datasource'
       });
-      case SUCCESS_UPDATE_DATASOURCE:
+    case SUCCESS_UPDATE_DATASOURCE:
       return Object.assign({}, state, {
         datasourceModalVisible: false,
         datasourceLoading: false,
@@ -249,6 +255,30 @@ function containers(state = initialState, action) {
         uploadingFile: null,
         isExternalFile: false
       });
+
+    // Shared view actions
+    case OPEN_VIEW_MODAL:
+      return Object.assign({}, state, {
+        viewModalVisible: true,
+        containerId: action.containerId,
+        datasources: action.datasources,
+        views: action.views
+      });
+    case CLOSE_VIEW_MODAL:
+      return Object.assign({}, state, {
+        viewModalVisible: false,
+        viewError: null,
+        viewLoading: false,
+        containerId: null,
+        datasources: null,
+        views: null,
+        view: null
+      });
+    case UPDATE_VIEW_FORM_STATE:
+      return Object.assign({}, state, {
+        viewFormState: _.merge(state.viewFormState, action.payload)
+      });
+
     default:
       return state;
   }

@@ -14,7 +14,7 @@ const ButtonStyle = {
 }
 
 
-const ContainerPanelHeader = ({ container, openContainerModal, confirmContainerDelete, openWorkflowModal, openDatasourceModal }) => (
+const ContainerPanelHeader = ({ container, openContainerModal, confirmContainerDelete, openWorkflowModal, openDatasourceModal, openViewModal }) => (
   <div>
   {container.code}
   <div style={{ float: "right", marginRight: "10px", marginTop: "-5px" }}>
@@ -28,6 +28,11 @@ const ContainerPanelHeader = ({ container, openContainerModal, confirmContainerD
     <Tooltip title="Modify datasources">
       <Button icon="hdd" style={ButtonStyle} onClick={(e) => { e.stopPropagation(); openDatasourceModal(container.id, container.datasources); }}>
         <Badge count={container.datasources.length} showZero style={{ backgroundColor: '#616161' }} />
+      </Button>
+    </Tooltip>
+    <Tooltip title="Modify views">
+      <Button icon="eye-o" style={ButtonStyle} onClick={(e) => { e.stopPropagation(); openViewModal(container.id, container.datasources, container.views); }}>
+        {/* <Badge count={container.views.length} showZero style={{ backgroundColor: '#616161' }} /> */}
       </Button>
     </Tooltip>
     <Button style={ButtonStyle} onClick={(e) => { e.stopPropagation(); openWorkflowModal(container.id); }}>
@@ -54,7 +59,7 @@ const ContainerList = ({
   containers, activeKey, changeAccordionKey, 
   openContainerModal, confirmContainerDelete, 
   openWorkflowModal, confirmWorkflowDelete, 
-  openDatasourceModal
+  openDatasourceModal, openViewModal
 }) => (
   <Collapse accordion onChange={changeAccordionKey} activeKey={activeKey}>
   { containers.map((container, key) => {
@@ -67,6 +72,7 @@ const ContainerList = ({
             confirmContainerDelete={confirmContainerDelete} 
             openWorkflowModal={openWorkflowModal}
             openDatasourceModal={openDatasourceModal}
+            openViewModal={openViewModal}
           />}
         key={container.code}
       >
