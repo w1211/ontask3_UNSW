@@ -7,6 +7,7 @@ import logo from './img/logo.png'; // Tell Webpack this JS file uses this image
 import Login from './login/Login';
 import Container from './container/Container';
 import Workflow from './workflow/Workflow';
+import StaticPage from './staticPage/StaticPage';
 
 const { Header, Footer } = Layout;
 
@@ -53,6 +54,7 @@ class App extends React.Component {
             )}/>
             <AuthenticatedRoute path="/containers" component={Container}/>
             <AuthenticatedRoute path="/workflow/:id" component={Workflow}/>
+            <AuthenticatedRoute path="/staticPage/:id" component={StaticPage}/>
           </Switch>
         </Router>
         <Footer style={{ textAlign: 'center' }}>

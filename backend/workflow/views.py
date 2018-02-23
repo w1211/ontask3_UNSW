@@ -1,19 +1,23 @@
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
 from rest_framework.decorators import detail_route
-from datetime import datetime
 
 from django.http import JsonResponse
 import json
 import re
 import dateutil.parser
 import requests
+from json import dumps
+from datetime import date, datetime
+from bson import ObjectId
 
 from .serializers import WorkflowSerializer
 from .models import Workflow
 from .permissions import WorkflowPermissions
 
 from datasource.models import DataSource
+from audit.models import Audit
+from audit.serializers import AuditSerializer
 
 from collections import defaultdict
 
@@ -479,11 +483,9 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
     @detail_route(methods=['put'])
     def create_schedule(self, request, id=None):
-        print("here in create_schedule")
         workflow = Workflow.objects.get(id=id)
         self.check_object_permissions(self.request, workflow)
         updated_schedule = defaultdict(str)
-        print(request.data['RangePicker'][0])
         updated_schedule['startDate'] = dateutil.parser.parse(request.data['RangePicker'][0])
         updated_schedule['endDate'] = dateutil.parser.parse(request.data['RangePicker'][1])
         updated_schedule['time'] = dateutil.parser.parse(request.data['TimePicker'])
@@ -528,8 +530,45 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             r = json.loads(r.text)
             if not (r['success']):
                 failed_emails.append(item[workflow['details']['primaryColumn']['field']])
-        
+            else:
+                #store email content as one field
+                email_content = "<h3>"+ payload['email_subject'] + "</h3>" + payload['html_content']
+                serializer = AuditSerializer(
+                    data = {'workflowId':id, 
+                            'creator':payload['sender_address'], 
+                            'receiver':payload['recipient_address'], 
+                            'emailBody':payload['text_content'],
+                            'emailSubject':payload['email_subject']
+                            })
+                serializer.is_valid()
+                serializer.save()
+                
         if len(failed_emails) > 0:
             raise ValidationError('Emails to the following records failed to send: ' + str(failed_emails).strip('[]').strip("'"))
-
+        
         return JsonResponse({ 'success': 'true' }, safe=False)
+
+
+    #retrive email sending history and generate static page.
+    #search in audit db by matching workflowId and user email.
+    @detail_route(methods=['get'])
+    def retrieve_history(self, request, id=None):
+        pipeline = [
+            {
+                '$match':{  
+                    '$and':[ 
+                        {'creator' : request.user.email},
+                        {'workflowId': id} 
+                    ]
+                }
+            }
+        ]
+        def json_serial(obj):
+            if isinstance(obj, (datetime, date)):
+                return obj.isoformat()
+            if isinstance(obj, ObjectId):
+                return str(obj)
+
+        audits_after_dump = dumps(list(Audit.objects.aggregate(*pipeline)), default=json_serial)
+        audits = str(audits_after_dump).replace('"_id":', '"id":')
+        return JsonResponse(json.loads(audits), safe=False)

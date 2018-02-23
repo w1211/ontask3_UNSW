@@ -238,6 +238,8 @@ class Workflow extends React.Component {
                         // schedule={schedule}
                         emailSettings={emailSettings}
                         details={details}
+                        workflowId={match.params.id}
+                        //TODO: Any other way to do this
 
                         onSendEmail={(payload) => { this.boundActionCreators.sendEmail(match.params.id, payload) }}
                         onCreate={(payload) => this.boundActionCreators.createSchedule(match.params.id, payload)}

@@ -1,6 +1,7 @@
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
-from rest_framework.decorators import list_route
+from rest_framework.decorators import list_route, permission_classes
+from rest_framework.permissions import IsAuthenticated
 
 from django.http import JsonResponse
 import json
@@ -18,7 +19,7 @@ from .permissions import ContainerPermissions
 class ContainerViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
     serializer_class = ContainerSerializer
-    permission_classes = [ContainerPermissions]
+    permission_classes = [ContainerPermissions, IsAuthenticated]
 
     def get_queryset(self):
         return Container.objects.filter(

@@ -86,7 +86,7 @@ const ContainerList = ({
                       </Link>
                     </Tooltip>,
                     <Tooltip title="Edit workflow">
-                      <Button icon="edit"  onClick={() => { openWorkflowModal(container.id, workflow) }}/>
+                      <Button icon="edit" onClick={() => { openWorkflowModal(container.id, workflow) }}/>
                     </Tooltip>,
                     <Tooltip title="Delete workflow">
                       <Button type="danger" icon="delete" onClick={() => { confirmWorkflowDelete(workflow.id) }}/>

@@ -56,6 +56,7 @@ CORS_ORIGIN_WHITELIST = (
 )
 
 ROOT_URLCONF = 'ontask.urls'
+SCHEDULER_DOMAIN = 'http://localhost:8001'
 
 TEMPLATES = [
     {

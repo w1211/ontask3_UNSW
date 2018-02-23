@@ -38,6 +38,7 @@ scheduler/docket/config/prod.*
 # Virtual environments
 virtualenvs/*
 ontask_env/*
+scheduler_env/*
 
 # Logs and temporary files
 logs/*

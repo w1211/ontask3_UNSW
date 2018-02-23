@@ -5,7 +5,7 @@ from email.mime.text import MIMEText
 
 def send_email(sender_address, recipient_address, email_subject, text_content, html_content):
     '''Generic service to send email from the application'''
-
+    print("sending email in scheduler")
     try:
 
         # Create message container - the correct MIME type is multipart/alternative.
