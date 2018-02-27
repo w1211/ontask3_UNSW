@@ -565,10 +565,15 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         ]
         def json_serial(obj):
             if isinstance(obj, (datetime, date)):
-                return obj.isoformat()
+                return obj.strftime('%T %Y/%m/%d')
             if isinstance(obj, ObjectId):
                 return str(obj)
-
-        audits_after_dump = dumps(list(Audit.objects.aggregate(*pipeline)), default=json_serial)
-        audits = str(audits_after_dump).replace('"_id":', '"id":')
-        return JsonResponse(json.loads(audits), safe=False)
+        audits = list(Audit.objects.aggregate(*pipeline))
+        #get creator receiver content and timeStamp
+        columns = list(audits[0].keys())[2:-1]
+        audits_str = str(dumps(audits, default=json_serial)).replace('"_id":', '"id":')
+        response = {}
+        response['data'] = json.loads(audits_str)
+        response['columns'] = columns    
+        print(response)    
+        return JsonResponse(response, safe=False)

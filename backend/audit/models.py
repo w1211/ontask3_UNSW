@@ -33,11 +33,11 @@ class Schedule(EmbeddedDocument):
 #currently only creator, receiver, emailSubject, emailBody, timeStamp are in use
 class Audit(Document):
     workflowId = fields.StringField(required=True)
+    timeStamp = fields.DateTimeField(default=datetime.datetime.now)
     creator = fields.StringField(required=True)
     receiver = fields.StringField(required=True)
     emailSubject = fields.StringField(null=True, required=True)
     emailBody = fields.StringField(null=True, required=True)
-    timeStamp = fields.DateTimeField(default=datetime.datetime.now)
     filter = fields.StringField()
     conditionGroups = fields.EmbeddedDocumentListField(ConditionGroup)
     emailSettings = fields.EmbeddedDocumentField(EmailSettings)
