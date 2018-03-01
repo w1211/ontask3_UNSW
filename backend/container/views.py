@@ -71,7 +71,6 @@ class ContainerViewSet(viewsets.ModelViewSet):
                 # Exclude fields that are not used in the containers component
                 '$project': {
                     'datasources.container': 0,
-                    'datasources.data': 0,
                     'datasources.connection.password': 0,
                     'workflows.container': 0,
                     'workflows.conditionGroups': 0,
@@ -80,7 +79,16 @@ class ContainerViewSet(viewsets.ModelViewSet):
                 },
             }
         ]
-        containers_after_dump = dumps(list(Container.objects.aggregate(*pipeline)), default=json_serial)
+        containers_after_query = list(Container.objects.aggregate(*pipeline))
+
+        # Limit the data of each datasource to only the first record
+        # The first record of each datasource's data is used to guess the type each field when creating a view
+        for container in containers_after_query:
+            for datasource in container['datasources']:
+                datasource['data'] = datasource['data'][0]
+
+        containers_after_dump = dumps(containers_after_query, default=json_serial)
+
         # Convert the queryset response into a string so that we can transform
         # To remove the underscore from "id" key values
         # For better consistency in field names

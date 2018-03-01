@@ -34,6 +34,7 @@ import {
 
   OPEN_VIEW_MODAL,
   CLOSE_VIEW_MODAL,
+  REFRESH_VIEW_FORM_STATE,
   UPDATE_VIEW_FORM_STATE
 } from './ContainerActions';
 
@@ -262,7 +263,8 @@ function containers(state = initialState, action) {
         viewModalVisible: true,
         containerId: action.containerId,
         datasources: action.datasources,
-        views: action.views
+        views: action.views,
+        viewFormState: action.formState
       });
     case CLOSE_VIEW_MODAL:
       return Object.assign({}, state, {
@@ -272,7 +274,12 @@ function containers(state = initialState, action) {
         containerId: null,
         datasources: null,
         views: null,
-        view: null
+        view: null,
+        viewFormState: null
+      });
+    case REFRESH_VIEW_FORM_STATE:
+      return Object.assign({}, state, {
+        viewFormState: action.payload
       });
     case UPDATE_VIEW_FORM_STATE:
       return Object.assign({}, state, {

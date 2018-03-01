@@ -35,6 +35,7 @@ export const REMOVE_UPLOADING_FILE = 'REMOVE_UPLOADING_FILE';
 
 export const OPEN_VIEW_MODAL = 'OPEN_VIEW_MODAL';
 export const CLOSE_VIEW_MODAL = 'CLOSE_VIEW_MODAL';
+export const REFRESH_VIEW_FORM_STATE = 'REFRESH_VIEW_FORM_STATE';
 export const UPDATE_VIEW_FORM_STATE = 'UPDATE_VIEW_FORM_STATE';
 
 
@@ -395,14 +396,127 @@ export const openViewModal = (containerId, datasources, views) => ({
   type: OPEN_VIEW_MODAL,
   containerId,
   datasources,
-  views
+  views,
+  formState: { primary: {}, fields: { value: [] }, columns: [{}] }
 });
 
 export const closeViewModal = () => ({
   type: CLOSE_VIEW_MODAL
 });
 
+const refreshViewFormState = (payload) => ({
+  type: REFRESH_VIEW_FORM_STATE,
+  payload
+});
+
 export const updateViewFormState = (payload) => ({
   type: UPDATE_VIEW_FORM_STATE,
   payload
 });
+
+const getType = (str) => {
+  // isNan() returns false if the input only contains numbers
+  if (!isNaN(str)) return 'number';
+  const dateCheck = new Date(str);
+  if (isNaN(dateCheck.getTime())) return 'text';
+  return 'date';
+}
+
+export const changePrimary = (primary) => (dispatch, getState) => {
+  const { containers } = getState();
+  let formState = Object.assign({}, containers.viewFormState);
+  const datasources = containers.datasources;
+
+  const [datasourceIndex, fieldIndex] = primary.split('_');
+  const datasource = datasources[datasourceIndex];
+  const datasourceId = datasource.id;
+  const fieldName = datasource.fields[fieldIndex];
+
+  // Modify the first row of the columns list to reflect the new primary key
+  formState.columns[0] = {
+    datasource: { value: datasourceId },
+    field: { value: fieldName },
+    matching: { value: [fieldName] },
+    type: { value: [getType(datasource.data[fieldName])] }
+  }
+
+  // Update the default matching field for the datasource of the primary key
+  formState.defaultMatchingFields = {...formState.defaultMatchingFields, [datasourceId]: { value: fieldName }};
+
+  // Change the matching field for all fields that have been added and belong to the same datasource as this primary key
+  formState.columns.forEach(column => {
+    if (column.datasource === datasourceId) column.matching = fieldName;
+  });
+
+  // Update the form state
+  dispatch(refreshViewFormState(formState));
+};
+
+
+export const changeFields = (fields) => (dispatch, getState) => {
+  const { containers } = getState();
+  let formState = Object.assign({}, containers.viewFormState);
+  const datasources = containers.datasources;
+
+  const isAdd = (fields.length > formState.fields.value.length);
+  if (isAdd) {
+    // Get the values of the newly added field (the last element in the list of fields, since its appended to end)
+    const [datasourceIndex, fieldIndex] = fields[fields.length - 1].split('_');
+    const datasource = datasources[datasourceIndex];
+    const datasourceId = datasource.id;
+    const fieldName = datasource.fields[fieldIndex];
+
+    // Add the new field to the columns (used by the details & preview mode)
+    formState.columns.push({
+      datasource: { value: datasourceId },
+      field: { value: fieldName },
+      matching: { value: [formState.defaultMatchingFields[datasourceId].value] },
+      type: { value: [getType(datasource.data[fieldName])] }
+    })
+  };
+
+  const isRemove = (!isAdd && formState.fields.value.filter(field => fields.indexOf(field) < 0));
+  if (isRemove) {
+    // isRemove returns an array of fields that matched the filter
+    // Since only one field is removed at a time, we can expect the array to always have a length of 1
+    // So to extract the removed field from the array, we can just take the first element
+    const removedField = isRemove[0];
+
+    // Get the values of the newly removed field
+    const [datasourceIndex, fieldIndex] = removedField.split('_');
+    const datasourceId = datasources[datasourceIndex].id;
+    const fieldName = datasources[datasourceIndex].fields[fieldIndex];
+
+    // Remove this field from the list of columns
+    formState.columns = formState.columns.filter(column => !(column.datasource.value === datasourceId && column.field.value === fieldName));
+  }
+
+  dispatch(refreshViewFormState(formState));
+};
+
+export const changeColumnOrder = (dragIndex, hoverIndex) => (dispatch, getState) => {
+  const { containers } = getState();
+  let formState = Object.assign({}, containers.viewFormState);
+
+  // Deduct 1 from the indices given that the primary key is excluded from the list of fields
+  const tmpDragField = formState.fields.value[dragIndex - 1]
+  formState.fields.value[dragIndex - 1] = formState.fields.value[hoverIndex - 1];
+  formState.fields.value[hoverIndex - 1] = tmpDragField;
+  
+  // Swap the the fields in the list of columns
+  // However, the form requires that each field name is written as a string like 'columns[0].field_name'
+  // Therefore, we must iterate over each field's keys and change the name to reflect the new index
+  const tmpDragColumn = formState.columns[dragIndex];
+
+  formState.columns[dragIndex] = formState.columns[hoverIndex];
+  Object.entries(formState.columns[dragIndex]).forEach(([key, value]) => {
+    formState.columns[dragIndex][key].name = `columns[${dragIndex}].${key}`;
+  })
+  
+  formState.columns[hoverIndex] = tmpDragColumn;
+  Object.entries(formState.columns[hoverIndex]).forEach(([key, value]) => {
+    formState.columns[hoverIndex][key].name = `columns[${hoverIndex}].${key}`;
+  })
+
+  dispatch(refreshViewFormState(formState));
+};

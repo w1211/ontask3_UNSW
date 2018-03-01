@@ -10,3 +10,11 @@
 .views .steps-action {
   margin-top: 24px;
 }
+
+.views .ant-tag {
+  cursor: default;
+}
+
+.views .details .ant-table-tbody tr:first-child {
+  cursor: default !important;
+}

@@ -205,6 +205,9 @@ class Container extends React.Component {
                     formState={viewFormState}
 
                     updateFormState={this.boundActionCreators.updateViewFormState}
+                    onChangePrimary={this.boundActionCreators.changePrimary}
+                    onChangeFields={this.boundActionCreators.changeFields}
+                    changeColumnOrder={this.boundActionCreators.changeColumnOrder}
                     onCancel={() => { dispatch(this.boundActionCreators.closeViewModal()) }}
                   />
                   <ContainerList
@@ -245,7 +248,7 @@ const mapStateToProps = (state) => {
     containerModalVisible, containerLoading, containerError, container,
     workflowModalVisible, workflowLoading, workflowError, workflow,
     datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
-    viewModalVisible, viewLoading, viewError, view, views, viewFormState,
+    viewModalVisible, viewLoading, viewError, view, views, viewFormState, chosenDatasources,
     isExternalFile, uploadingFile
   } = state.containers;
   return {
@@ -254,7 +257,7 @@ const mapStateToProps = (state) => {
     containerModalVisible, containerLoading, containerError, container,
     workflowModalVisible, workflowLoading, workflowError, workflow,
     datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
-    viewModalVisible, viewLoading, viewError, view, views, viewFormState,
+    viewModalVisible, viewLoading, viewError, view, views, viewFormState, chosenDatasources,
     isExternalFile, uploadingFile
   };
 }

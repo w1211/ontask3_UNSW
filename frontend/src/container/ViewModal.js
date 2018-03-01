@@ -1,12 +1,16 @@
 import React from 'react';
 
-import { Modal, Form, Alert, Input, Steps, Button, Select, Icon, Tooltip, Table, Cascader, Tag } from 'antd';
+import { Modal, Form, Alert, Steps, Button, Select, Icon, Tooltip, Table, Cascader, Tag, Radio } from 'antd';
+import { DragDropContext, DragSource, DropTarget } from 'react-dnd';
+import HTML5Backend from 'react-dnd-html5-backend';
 
 import './ViewModal.css';
 
 const FormItem = Form.Item;
 const Step = Steps.Step;
 const { Option, OptGroup } = Select;
+const RadioButton = Radio.Button;
+const RadioGroup = Radio.Group;
 
 const formItemLayout = {
   labelCol: {
@@ -29,7 +33,110 @@ const formItemLayout = {
 //   });
 // }
 
-const Primary = ({ form, formState, options, view }) => {
+function dragDirection(
+  dragIndex,
+  hoverIndex,
+  initialClientOffset,
+  clientOffset,
+  sourceClientOffset,
+) {
+  const hoverMiddleY = (initialClientOffset.y - sourceClientOffset.y) / 2;
+  const hoverClientY = clientOffset.y - sourceClientOffset.y;
+  if (dragIndex < hoverIndex && hoverClientY > hoverMiddleY) {
+    return 'downward';
+  }
+  if (dragIndex > hoverIndex && hoverClientY < hoverMiddleY) {
+    return 'upward';
+  }
+}
+
+let BodyRow = (props) => {
+  const {
+    isOver,
+    connectDragSource,
+    connectDropTarget,
+    moveRow,
+    dragRow,
+    clientOffset,
+    sourceClientOffset,
+    initialClientOffset,
+    ...restProps
+  } = props;
+  const style = { ...restProps.style, cursor: 'move' };
+
+  let className = restProps.className;
+  if (isOver && initialClientOffset) {
+    const direction = dragDirection(
+      dragRow.index,
+      restProps.index,
+      initialClientOffset,
+      clientOffset,
+      sourceClientOffset
+    );
+    if (dragRow.index !== 0 && direction === 'downward') {
+      className += ' drop-over-downward';
+    }
+    if (restProps.index !== 0 && direction === 'upward') {
+      className += ' drop-over-upward';
+    }
+  }
+
+  return connectDragSource(
+    connectDropTarget(
+      <tr
+        {...restProps}
+        className={className}
+        style={style}
+      />
+    )
+  );
+};
+
+const rowSource = {
+  beginDrag(props) {
+    return {
+      index: props.index,
+    };
+  },
+};
+
+const rowTarget = {
+  drop(props, monitor) {
+    const dragIndex = monitor.getItem().index;
+    const hoverIndex = props.index;
+
+    // Don't replace items with themselves
+    if (dragIndex === hoverIndex) return;
+
+    // Don't allow movements to or from the primary key
+    if (dragIndex === 0 || hoverIndex === 0) return;
+
+    // Time to actually perform the action
+    props.moveRow(dragIndex, hoverIndex);
+
+    // Note: we're mutating the monitor item here!
+    // Generally it's better to avoid mutations,
+    // but it's good here for the sake of performance
+    // to avoid expensive index searches.
+    monitor.getItem().index = hoverIndex;
+  },
+};
+
+BodyRow = DropTarget('row', rowTarget, (connect, monitor) => ({
+  connectDropTarget: connect.dropTarget(),
+  isOver: monitor.isOver(),
+  sourceClientOffset: monitor.getSourceClientOffset(),
+}))(
+  DragSource('row', rowSource, (connect, monitor) => ({
+    connectDragSource: connect.dragSource(),
+    dragRow: monitor.getItem(),
+    clientOffset: monitor.getClientOffset(),
+    initialClientOffset: monitor.getInitialClientOffset(),
+  }))(BodyRow)
+);
+
+
+const Primary = ({ form, formState, options, view, onChange }) => {
   return (
     <div>
       <FormItem
@@ -38,7 +145,10 @@ const Primary = ({ form, formState, options, view }) => {
       >
         {form.getFieldDecorator('primary', {
           rules: [{ required: true, message: 'Primary key is required' }],
-          initialValue: formState && formState.primary ? formState.primary.value : undefined
+          initialValue: formState && formState.primary ? formState.primary.value : undefined,
+          // onChange should be placed within the form decorator and NOT as an attribute of the select component itself
+          // Otherwise the form validation does not update correctly after changing values
+          onChange: onChange
         })(
           <Select>
             {options}
@@ -50,7 +160,27 @@ const Primary = ({ form, formState, options, view }) => {
   )
 }
 
-const Fields = ({ form, formState, options, view, chosenDatasources, onChange }) => {
+const Fields = ({ form, formState, datasources, options, view, onChange }) => {
+  if (!datasources || !formState) return null;
+
+  let chosenDatasources = new Set([]);
+  if (formState.fields.value.length > 0) {
+    // Create an array of the datasources used by this view (based on fields chosen)
+    // This will be used to ask for the default matching field of each datasource other than the primary key's datasource
+    formState.fields.value.forEach(checkedField => { 
+      const [datasourceIndex, fieldIndex] = checkedField.split('_');
+      chosenDatasources.add(datasources[datasourceIndex]);
+    });
+
+    // Remove the datasource of the primary key
+    // As it can be assumed that all fields in the datasource will use the primary key as their matching field
+    const [primaryDatasource, _] = formState.primary.value.split('_');
+    chosenDatasources.delete(datasources[primaryDatasource]);
+
+    // Convert the set to an array
+    chosenDatasources = [...chosenDatasources];
+  }
+
   return (
     <div>
       <FormItem
@@ -58,15 +188,18 @@ const Fields = ({ form, formState, options, view, chosenDatasources, onChange })
         label="Fields"
       >
         {form.getFieldDecorator('fields', {
-          initialValue: formState && formState.fields ? formState.fields.value : undefined
+          initialValue: formState && formState.fields ? formState.fields.value : undefined,
+          // onChange should be placed within the form decorator and NOT as an attribute of the select component itself
+          // Otherwise the form validation does not update correctly after changing values
+          onChange: onChange
         })(
-          <Select mode="multiple" onChange={onChange}>
+          <Select mode="multiple">
             {options}
           </Select>
         )}
       </FormItem>
       {
-        chosenDatasources && chosenDatasources.length > 0 &&
+        chosenDatasources.length > 0 &&
         <div>
           <h4 style={{ display: 'inline-block' }}>Matching fields</h4>
           <Tooltip title="prompt text">
@@ -79,9 +212,9 @@ const Fields = ({ form, formState, options, view, chosenDatasources, onChange })
               label={datasource.name}
               key={i}
             >
-              {form.getFieldDecorator(`matching[${i}]`, {
+              {form.getFieldDecorator(`defaultMatchingFields.${datasource.id}`, {
                 rules: [{ required: true, message: 'Matching field is required' }],
-                initialValue: formState && formState.matching && formState.matching[i] ? formState.matching[i].value : undefined
+                initialValue: formState && formState.defaultMatchingFields && formState.defaultMatchingFields[datasource.id] ? formState.defaultMatchingFields[datasource.id].value : undefined
               })(
                 <Select key={i}>
                   {datasource.fields.map(field => <Option value={field} key={`${i}_${field}`}>{field}</Option>)}
@@ -97,67 +230,8 @@ const Fields = ({ form, formState, options, view, chosenDatasources, onChange })
   )
 }
 
-const Preview = ({ form, formState, datasources }) => {
-  if (!datasources) return null;
-
-  const cascaderOptions = [
-    // First item is an uneditable header with the label 'Datasources'
-    { value: 'datasource', label: 'Datasource', disabled: true },
-    // Iterate over the datasources
-    ...datasources.map((datasource) => {
-      // For each datasource, create a list of objects that each represent a field from the datasource
-      let fields = datasource.fields.map(field => { return { 
-        value: field, 
-        label: field
-      }});
-
-      // Return an object representing this datasource of the form:
-      // { value: value, label: label, children: []}
-      // The 'children' array is the list of further options presented to the user after selecting a particular option
-      // First the user chooses the datasource, then a field in that datasource, 
-      // then another field in the same datasource that will be compared against the primary key to perform the join
-      return {
-        value: datasource.id, 
-        label: datasource.name,
-        children: [
-          // First item is an uneditable header with the label 'Field'
-          { value: 'field', label: 'Field', disabled: true },
-          // For each field, create a list of objects that represent the REMAINING fields in the same datasource
-          // I.e. fields from the same datasource other than the one currently being iterated
-          ...fields.map(field => {
-            return {
-              ...field, 
-              children: [
-                // First item is an uneditable header with the label 'Matches With'
-                { value: 'match', label: 'Matches With', disabled: true },
-                ...fields.filter(innerChild => innerChild.value !== field.value)
-              ]
-            }
-          })
-        ]
-      }
-    })
-  ];
-
-  // Do not show matching fields in the cascader of the primary field
-  let primaryCascaderOptions;
-  // Deep clone the list of options
-  primaryCascaderOptions = JSON.parse(JSON.stringify(cascaderOptions));
-  primaryCascaderOptions.forEach(datasource => {
-    // Skip the header row
-    if (!datasource.children) return;
-    // Delete the children of each field, so that choosing a field does not prompt the user to then choose a matching field
-    datasource.children.forEach(field => {
-      if (field.children) delete field.children;
-    })
-  });
-
-  const primaryTypes = [
-    { value: 'number', label: 'number' },
-    { value: 'text', label: 'text' }
-  ];
-
-  const types = [...primaryTypes, { value: 'date', label: 'date' }];
+const Details = ({ form, formState, datasources, moveRow, viewMode, onChangeViewMode }) => {
+  if (!datasources || !formState) return null;
 
   // Build the columns of the details table
   // The matching field is only included for secondary fields (the primary key does not need a matching field)
@@ -167,37 +241,74 @@ const Preview = ({ form, formState, datasources }) => {
       title: 'Field',
       dataIndex: 'field',
       key: 'field',
-      render: (text, record, index) => {        
-        // Get the cascader option representing the datasource of this record
-        const datasourceOption = record.field.length > 0 ? cascaderOptions.find(datasource => datasource.value === record.field[0]) : undefined;
+      render: (text, record, index) => {
         return (
           <span>
-            {form.getFieldDecorator(`columns[${index}].field`, {
-              rules: [{ required: true, message: 'Field is required' }]
-            })(
-              <Cascader options={(index > 0) ? cascaderOptions : primaryCascaderOptions}>
-                <a>{record.field[1]}</a>
-              </Cascader>
-            )}
-            { (record.field[0]) && <Tag style={{ marginLeft: 7.5 }}>From: {datasourceOption.label}</Tag> }
-            { (index > 0 && record.field[2]) && <Tag>Via: {record.field[2]}</Tag> }
+            { form.getFieldDecorator(`columns[${index}].field`, {
+                rules: [{ required: true, message: 'Field is required' }],
+                initialValue: record.field
+              })(
+                <span>{record.field}</span>
+              )
+            }
+            { form.getFieldDecorator(`columns[${index}].datasource`, {
+                rules: [{ required: true, message: 'Datasource is required' }],
+                initialValue: record.datasource.id
+              })(
+                <Tag style={{ marginLeft: 7.5 }}>{record.datasource.name}</Tag>
+              )
+            }
             { (index === 0) && <Tag color="#108ee9">Primary</Tag> }
           </span>
         )
       }
     }, {
-      width: '50%',
+      width: '25%',
+      title: 'Matching',
+      dataIndex: 'matching',
+      key: 'matching',
+      render: (text, record, index) => {
+        const fields = record.datasource.fields
+          .filter(field => field !== record.field)
+          .map(field => { return { value: field, label: field }});
+
+        return (
+          <span>
+            { index > 0 ? 
+              form.getFieldDecorator(`columns[${index}].matching`, {
+                rules: [{ required: true, message: 'Matching field is required' }],
+                initialValue: record.matching
+              })(
+                <Cascader options={fields} popupClassName="types">
+                  <a>{record.matching[0]}</a>
+                </Cascader>
+              )
+            :
+              'N/A'
+            }
+          </span>
+        )
+      }
+    }, {
+      width: '25%',
       title: 'Type',
       dataIndex: 'type',
       key: 'type',
       render: (text, record, index) => {
+        const primaryTypes = [
+          { value: 'number', label: 'number' },
+          { value: 'text', label: 'text' }
+        ];
+        const types = [...primaryTypes, { value: 'date', label: 'date' }];
+
         return (
           <span>
             {form.getFieldDecorator(`columns[${index}].type`, {
-              rules: [{ required: true, message: 'Type is required' }]
+              rules: [{ required: true, message: 'Type is required' }],
+              initialValue: record.type
             })(
               <Cascader options={(index > 0) ? types : primaryTypes} popupClassName="types">
-                <a>{record.type}</a>
+                <a>{record.type[0]}</a>
               </Cascader>
             )}
           </span>
@@ -207,37 +318,63 @@ const Preview = ({ form, formState, datasources }) => {
   ];
 
   // Build the data that will populate the details table
-  // The table has two columns - field (cascader component) and type (select component)
-  // Input for the cascader is of the form [datasource_id, field_name, matching_field_name]
-  // Except for the primary field, which is only [datasource_id, field_name] (excludes matching_field_name)
-  const [primaryDatasourceIndex, primaryFieldIndex] = formState.primary.value.split('_');
-  const primaryField = [datasources[primaryDatasourceIndex].id, datasources[primaryDatasourceIndex].fields[primaryFieldIndex]];
+  const details = formState.columns ? 
+    formState.columns.map((column, index) => {
+      const datasource = datasources.find(datasource => datasource.id === column.datasource.value);
+      return { 
+        key: index, 
+        datasource: datasource,
+        field: column.field.value, 
+        matching: column.matching.value,
+        type: column.type.value
+      }
+    })
+  :
+    []
+  ;
 
-  // TODO: if form value for primary key's type is not set, then guess the type of the primary key
-  // Iterate over secondary fields:
-  //    if form value for secondary field's matching_field is not set, then take the value from the matching[i] form value
-  //    if form value for secondary field's type is not set, then guess the type of the secondary field
-
-  // ON DRAG SORT: change order of the fields[] form value, which should have a knock-on effect to the table's order of rendering field rows
-  
-  console.log(primaryField);
-  // const options = [
-  //   { key: 0, field: [formState.primary.], type: column.type.value }
-  // ]
+  const components = {
+    body: {
+      row: BodyRow,
+    }
+  }
 
   return (
+    <Table
+      columns={columns}
+      className="details"
+      dataSource={details}
+      components={components}
+      onRow={(record, index) => ({
+        index,
+        moveRow: moveRow,
+      })}
+    />
+  );
+}
+
+const Preview = ({ form, formState, datasources, moveRow, viewMode, onChangeViewMode }) => {
+  return (
     <div>
-      test
-      {/* <Table
-        columns={columns}
-        className="details"
-        dataSource={this.data}
-        // components={this.components}
-        // onRow={(record, index) => ({
-        //   index,
-        //   moveRow: this.moveRow,
-        // })}
-      /> */}
+      <RadioGroup defaultValue="details" onChange={ (e) => { onChangeViewMode(e.target.value); }}>
+        <RadioButton value="details">Details</RadioButton>
+        <RadioButton value="data">Data</RadioButton>
+      </RadioGroup>
+
+      { viewMode === 'details' &&
+        <Details
+          form={form}
+          formState={formState}
+          datasources={datasources}
+          moveRow={moveRow}
+          viewMode={viewMode}
+          onChangeViewMode={onChangeViewMode}
+        />
+      }
+
+      { viewMode === 'data' &&
+        <span>data view</span>
+      }
     </div>
   );
 }
@@ -247,44 +384,24 @@ class ViewModal extends React.Component {
     super(props);
     this.state = {
       current: 0,
-      chosenDatasources: []
+      viewMode: 'details'
     };
   }
 
-  next() {
-    const current = this.state.current + 1;
-    this.setState({ current });
-  }
-
-  prev() {
-    const current = this.state.current - 1;
-    this.setState({ current });
-  }
-
-  onFieldsChange(e, formState, datasources) {
-    let chosenDatasources = new Set([]);
-    e.forEach(checkedField => { 
-      const [datasourceIndex, fieldIndex] = checkedField.split('_');
-      chosenDatasources.add(datasources[datasourceIndex]);
-    });
-    // Remove the datasource of the primary key
-    // As it can be assumed that all fields in the datasource will use the primary key as their matching field
-    const [primaryDatasource, _] = formState.primary.value.split('_');
-    chosenDatasources.delete(datasources[primaryDatasource]);
-
-    // The datasource objects themselves are stored in a list in the state
-    this.setState({ chosenDatasources: [...chosenDatasources] });
+  moveRow = (dragIndex, hoverIndex) => {
+    const { changeColumnOrder } = this.props;
+    changeColumnOrder(dragIndex, hoverIndex);
   }
 
   componentWillUpdate(nextProps, nextState) {
-    const { datasources, form, view, formState } = nextProps;
-    const { chosenDatasources } = nextState;
+    const { datasources, form, view, formState, onChangePrimary, onChangeFields } = nextProps;
+    const { viewMode } = nextState;
 
     const selectOptions = datasources && datasources.map((datasource, i) => {
       return (
         <OptGroup label={datasource.name} key={datasource.name}>
           {datasource.fields.map((field, j) => {
-            return <Option value={`${i}_${j}`} key={`${i}_${j}`}>{field}</Option>
+            return <Option value={`${i}_${j}`} key={`${i}_${j}`} disabled={formState && formState.primary && formState.primary.value === `${i}_${j}`}>{field}</Option>
           })}
         </OptGroup>
       )
@@ -297,17 +414,19 @@ class ViewModal extends React.Component {
         formState={formState}
         options={selectOptions}
         view={view}
-      />,
+
+        onChange={(e) => { onChangePrimary(e) }}
+      />
     }, {
       title: 'Fields',
         content: <Fields 
         form={form}
         formState={formState}
+        datasources={datasources}
         options={selectOptions}
         view={view}
-        chosenDatasources={chosenDatasources}
 
-        onChange={(e) => { this.onFieldsChange(e, formState, datasources) }}
+        onChange={(e) => { onChangeFields(e) }}
       />,
     }, {
       title: 'Preview',
@@ -315,41 +434,61 @@ class ViewModal extends React.Component {
         form={form}
         formState={formState}
         datasources={datasources}
+        components={this.components}
+        moveRow={this.moveRow}
+        viewMode={viewMode}
+
+        onChangeViewMode={(e) => this.setState({ viewMode: e }) }
       />,
     }]
   }
 
-  handleNext() {
-    const { form } = this.props;
-    const { current, chosenDatasources } = this.state;
+  next(values) {
+    const current = this.state.current + 1;
+    const form = { ...this.state.form, ...values };
+    this.setState({ current, form });
+  }
 
+  prev() {
+    const current = this.state.current - 1;
+    this.setState({ current });
+  }
+
+  handleNext() {
+    const { form, formState } = this.props;
+    const { current } = this.state;
+
+    const matchingFields = formState.defaultMatchingFields ? Object.entries(formState.defaultMatchingFields).map(([key, value]) => {
+      return `defaultMatchingFields.${key}`;
+    }) : [];
+    
     // Names of the form fields that should be validated at each step
     // Prevents the user from moving to the next step in the stepper unless all fields in the current step are valid
     const validationMap = [
       ['primary'],
       // If fields from a datasource other than the primary are chosen, then require that the matching fields be specified
-      chosenDatasources ? [...chosenDatasources.map((_, i) => (`matching[${i}]`))] : [],
+      ['fields', ...matchingFields],
       []
     ];
-    
-    form.validateFields(validationMap[current], (err, values) => {
+
+    form.validateFields(validationMap[current], { force: true }, (err, values) => {
       if (err) return;
-      this.next();
+      this.next(values);
     });
   }
 
   render() {
     const { current } = this.state;
     const { 
-      form, visible, loading, error, containerId, datasources, views, view,
-      onChange, onCreate, onUpdate, onCancel, onDelete
+      form, visible, loading, error, datasources, views, view,
+      onChange, onCreate, onUpdate, onCancel, onDelete, formState,
     } = this.props;
 
     return (
       <Modal
         visible={visible}
         title='Views'
-        onCancel={() => { form.resetFields(); onCancel(); }}
+        onCancel={() => { form.resetFields(); this.setState({ current: 0 }); onCancel(); }}
         footer={
           <div>
             <Button onClick={() => { form.resetFields(); onCancel(); }}>Cancel</Button> 
@@ -359,16 +498,14 @@ class ViewModal extends React.Component {
             { (this.steps && current < this.steps.length - 1) ?
               <Button type="primary" onClick={() => { this.handleNext() }}>Next</Button>
             :
-              <Button type="primary">{ view ? "Update" : "Create" }</Button>
+              <Button type="primary" onClick={() => { form.validateFields((err, values) => { console.log({...this.state.form, ...values}) }) }}>{ view ? "Update" : "Create" }</Button>
             }
           </div>
         }
-
         confirmLoading={loading}
         className="views" 
       >
         <Form layout="horizontal">
-
           <Steps current={current}>
             {this.steps && this.steps.map(step => {
               return <Step key={step.title} title={step.title} />
@@ -406,10 +543,15 @@ export default Form.create({
         value: formState.fields.value
       });
 
-      // Note that the index of an item in the 'matching' array is NOT the index of the datasource in the list of datasources
-      // The 'matching' array is only a subset of the datasources list, i.e. those datasources in which a field has been chosen
-      formState.matching && formState.matching.forEach((_, i) => {
-        fields[`matching[${i}]`] = Form.createFormField({
+      formState.defaultMatchingFields && Object.entries(formState.defaultMatchingFields).forEach(([key, value]) => {
+        fields[`defaultMatchingFields.${key}`] = Form.createFormField({
+          ...formState.defaultMatchingFields[key],
+          value: formState.defaultMatchingFields[key].value
+        });
+      })
+
+      formState.columns && formState.columns.forEach((_, i) => {
+        fields[`columns[${i}]`] = Form.createFormField({
           ...formState.columns[i],
           value: formState.columns[i].value
         });
@@ -418,4 +560,4 @@ export default Form.create({
     }
     return fields;
   }
-})(ViewModal)
+})(DragDropContext(HTML5Backend)(ViewModal))
