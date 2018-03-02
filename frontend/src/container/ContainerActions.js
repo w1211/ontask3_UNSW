@@ -425,28 +425,32 @@ const getType = (str) => {
 export const changePrimary = (primary) => (dispatch, getState) => {
   const { containers } = getState();
   let formState = Object.assign({}, containers.viewFormState);
-  const datasources = containers.datasources;
 
+  // If the primary key hasn't changed, then we don't need to do anything  
+  if (primary === formState.primary.value) return;
+
+  const datasources = containers.datasources;
   const [datasourceIndex, fieldIndex] = primary.split('_');
   const datasource = datasources[datasourceIndex];
   const datasourceId = datasource.id;
   const fieldName = datasource.fields[fieldIndex];
 
-  // Modify the first row of the columns list to reflect the new primary key
-  formState.columns[0] = {
+  // Reset any fields that have been set
+  formState.fields.value = [];
+
+  // Reset the columns if any have been set (since we are changing the primary key)
+  // Set the first row of the columns list to reflect the new primary key
+  formState.columns = [{
     datasource: { value: datasourceId },
     field: { value: fieldName },
     matching: { value: [fieldName] },
-    type: { value: [getType(datasource.data[fieldName])] }
-  }
+    type: { value: [getType(datasource.data[0][fieldName])] }
+  }];
 
-  // Update the default matching field for the datasource of the primary key
-  formState.defaultMatchingFields = {...formState.defaultMatchingFields, [datasourceId]: { value: fieldName }};
-
-  // Change the matching field for all fields that have been added and belong to the same datasource as this primary key
-  formState.columns.forEach(column => {
-    if (column.datasource === datasourceId) column.matching = fieldName;
-  });
+  // Reset the default mappings for every other datasource that might have been set against a different primary key
+  // E.g. if the user completed the form for a given primary key, then went back and changed the primary key
+  // Set the default matching field for the datasource of the primary key
+  formState.defaultMatchingFields = {[datasourceId]: { value: fieldName }};
 
   // Update the form state
   dispatch(refreshViewFormState(formState));
@@ -471,7 +475,7 @@ export const changeFields = (fields) => (dispatch, getState) => {
       datasource: { value: datasourceId },
       field: { value: fieldName },
       matching: { value: [formState.defaultMatchingFields[datasourceId].value] },
-      type: { value: [getType(datasource.data[fieldName])] }
+      type: { value: [getType(datasource.data[0][fieldName])] }
     })
   };
 

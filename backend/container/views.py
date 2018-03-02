@@ -81,11 +81,12 @@ class ContainerViewSet(viewsets.ModelViewSet):
         ]
         containers_after_query = list(Container.objects.aggregate(*pipeline))
 
-        # Limit the data of each datasource to only the first record
+        # Limit the data of each datasource to only the first 10 record
         # The first record of each datasource's data is used to guess the type each field when creating a view
+        # The 10 records of each datasource is to build the data preview in the views interface 
         for container in containers_after_query:
             for datasource in container['datasources']:
-                datasource['data'] = datasource['data'][0]
+                datasource['data'] = datasource['data'][:10]
 
         containers_after_dump = dumps(containers_after_query, default=json_serial)
 

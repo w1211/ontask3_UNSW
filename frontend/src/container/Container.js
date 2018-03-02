@@ -248,7 +248,7 @@ const mapStateToProps = (state) => {
     containerModalVisible, containerLoading, containerError, container,
     workflowModalVisible, workflowLoading, workflowError, workflow,
     datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
-    viewModalVisible, viewLoading, viewError, view, views, viewFormState, chosenDatasources,
+    viewModalVisible, viewLoading, viewError, view, views, viewFormState,
     isExternalFile, uploadingFile
   } = state.containers;
   return {
@@ -257,7 +257,7 @@ const mapStateToProps = (state) => {
     containerModalVisible, containerLoading, containerError, container,
     workflowModalVisible, workflowLoading, workflowError, workflow,
     datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
-    viewModalVisible, viewLoading, viewError, view, views, viewFormState, chosenDatasources,
+    viewModalVisible, viewLoading, viewError, view, views, viewFormState,
     isExternalFile, uploadingFile
   };
 }

@@ -11,6 +11,7 @@ const Step = Steps.Step;
 const { Option, OptGroup } = Select;
 const RadioButton = Radio.Button;
 const RadioGroup = Radio.Group;
+const confirm = Modal.confirm;
 
 const formItemLayout = {
   labelCol: {
@@ -137,6 +138,32 @@ BodyRow = DropTarget('row', rowTarget, (connect, monitor) => ({
 
 
 const Primary = ({ form, formState, options, view, onChange }) => {
+  const confirmChange = (e) => {
+    // If the primary key already has a value, then prompt the user if they want to change it
+    // If changing an existing value, then all other form values will be reset
+    let currentPrimary = form.getFieldValue('primary');
+
+    if (currentPrimary) {
+      // Present a confirmation dialog to the user
+      confirm({
+        title: 'Change primary key',
+        content: 'Any settings configured for this view will need to be re-entered if you change the primary key. Are you sure you want to proceed?',
+        onOk() {
+          onChange(e);
+          form.setFieldsValue({ 'primary': e });
+        }
+      });
+      // getValueFromEvent() doesn't support waiting for the result of the confirmation dialog, it expects a value immediately
+      // So by default, we return the previous value of the primary field
+      // If the user proceeds at the confirm dialog, then manually set the primary field to the new value
+      return currentPrimary;
+    // Primary key doesn't have a value yet, so no confirmation is needed
+    } else {
+      onChange(e);
+      return e;
+    }
+  };
+
   return (
     <div>
       <FormItem
@@ -146,9 +173,7 @@ const Primary = ({ form, formState, options, view, onChange }) => {
         {form.getFieldDecorator('primary', {
           rules: [{ required: true, message: 'Primary key is required' }],
           initialValue: formState && formState.primary ? formState.primary.value : undefined,
-          // onChange should be placed within the form decorator and NOT as an attribute of the select component itself
-          // Otherwise the form validation does not update correctly after changing values
-          onChange: onChange
+          getValueFromEvent: confirmChange
         })(
           <Select>
             {options}
@@ -230,7 +255,7 @@ const Fields = ({ form, formState, datasources, options, view, onChange }) => {
   )
 }
 
-const Details = ({ form, formState, datasources, moveRow, viewMode, onChangeViewMode }) => {
+const Details = ({ form, formState, datasources, moveRow }) => {
   if (!datasources || !formState) return null;
 
   // Build the columns of the details table
@@ -353,6 +378,28 @@ const Details = ({ form, formState, datasources, moveRow, viewMode, onChangeView
   );
 }
 
+const Data = ({ form, formState }) => {
+  if (!formState) return null;
+
+  // Build the columns of the data table
+  const columns = formState.columns.map(column => ({
+    dataIndex: column.field.value,
+    key: column.field.value
+  }));
+
+  return (
+    <div>
+      <Alert style={{ marginTop: 10 }} message="Note that only the first 10 records are shown in this data preview" type="info" showIcon/>
+    </div>
+    // <Table
+    //   columns={columns}
+    //   className="data"
+    //   // dataSource={details}
+    // />
+    
+  );
+}
+
 const Preview = ({ form, formState, datasources, moveRow, viewMode, onChangeViewMode }) => {
   return (
     <div>
@@ -373,7 +420,10 @@ const Preview = ({ form, formState, datasources, moveRow, viewMode, onChangeView
       }
 
       { viewMode === 'data' &&
-        <span>data view</span>
+        <Data
+          form={form}
+          formState={formState}
+        />
       }
     </div>
   );
@@ -415,7 +465,7 @@ class ViewModal extends React.Component {
         options={selectOptions}
         view={view}
 
-        onChange={(e) => { onChangePrimary(e) }}
+        onChange={ (e) => onChangePrimary(e) }
       />
     }, {
       title: 'Fields',
@@ -426,7 +476,7 @@ class ViewModal extends React.Component {
         options={selectOptions}
         view={view}
 
-        onChange={(e) => { onChangeFields(e) }}
+        onChange={ (e) => onChangeFields(e) }
       />,
     }, {
       title: 'Preview',
@@ -471,7 +521,7 @@ class ViewModal extends React.Component {
       []
     ];
 
-    form.validateFields(validationMap[current], { force: true }, (err, values) => {
+    form.validateFields(validationMap[current], (err, values) => {
       if (err) return;
       this.next(values);
     });
