@@ -150,7 +150,6 @@ const Primary = ({ form, formState, options, view, onChange }) => {
         content: 'Any settings configured for this view will need to be re-entered if you change the primary key. Are you sure you want to proceed?',
         onOk() {
           onChange(e);
-          form.setFieldsValue({ 'primary': e });
         }
       });
       // getValueFromEvent() doesn't support waiting for the result of the confirmation dialog, it expects a value immediately
@@ -185,11 +184,11 @@ const Primary = ({ form, formState, options, view, onChange }) => {
   )
 }
 
-const Fields = ({ form, formState, datasources, options, view, onChange }) => {
+const Fields = ({ form, formState, datasources, options, view, onChangeFields, onChangeDefaultMatchingField }) => {
   if (!datasources || !formState) return null;
 
   let chosenDatasources = new Set([]);
-  if (formState.fields.value.length > 0) {
+  if (formState.fields && formState.fields.value.length > 0) {
     // Create an array of the datasources used by this view (based on fields chosen)
     // This will be used to ask for the default matching field of each datasource other than the primary key's datasource
     formState.fields.value.forEach(checkedField => { 
@@ -206,6 +205,37 @@ const Fields = ({ form, formState, datasources, options, view, onChange }) => {
     chosenDatasources = [...chosenDatasources];
   }
 
+  const confirmChange = (datasourceId, e) => {
+    // If the matching field already has a value, then prompt the user if they want to change it
+    // If changing an existing value, then all columns that use this datasource should have their matching field updated
+    let currentMatchingField = form.getFieldValue(`defaultMatchingFields.${datasourceId}`);
+
+    if (currentMatchingField) {
+      // Present a confirmation dialog to the user
+      confirm({
+        title: 'Change matching field',
+        content: 'Any custom matching fields configured for fields from this datasource will need to be re-entered if you change the default matching field. Are you sure you want to proceed?',
+        onOk() {
+          onChangeDefaultMatchingField(
+            { datasource: datasourceId, field: e },
+            { datasource: formState.columns[0].datasource.value, field: formState.columns[0].field.value,  }
+          );
+        }
+      });
+      // getValueFromEvent() doesn't support waiting for the result of the confirmation dialog, it expects a value immediately
+      // So by default, we return the previous value of the primary field
+      // If the user proceeds at the confirm dialog, then manually set the default matching field to the new value
+      return currentMatchingField;
+    // Primary key doesn't have a value yet, so no confirmation is needed
+    } else {
+      onChangeDefaultMatchingField(
+        { datasource: datasourceId, field: e },
+        { datasource: formState.columns[0].datasource.value, field: formState.columns[0].field.value,  }
+      );
+      return e;
+    }
+  };
+
   return (
     <div>
       <FormItem
@@ -216,7 +246,7 @@ const Fields = ({ form, formState, datasources, options, view, onChange }) => {
           initialValue: formState && formState.fields ? formState.fields.value : undefined,
           // onChange should be placed within the form decorator and NOT as an attribute of the select component itself
           // Otherwise the form validation does not update correctly after changing values
-          onChange: onChange
+          onChange: onChangeFields
         })(
           <Select mode="multiple">
             {options}
@@ -239,7 +269,8 @@ const Fields = ({ form, formState, datasources, options, view, onChange }) => {
             >
               {form.getFieldDecorator(`defaultMatchingFields.${datasource.id}`, {
                 rules: [{ required: true, message: 'Matching field is required' }],
-                initialValue: formState && formState.defaultMatchingFields && formState.defaultMatchingFields[datasource.id] ? formState.defaultMatchingFields[datasource.id].value : undefined
+                initialValue: formState && formState.defaultMatchingFields && formState.defaultMatchingFields[datasource.id] ? formState.defaultMatchingFields[datasource.id].value : undefined,
+                getValueFromEvent: (e) => confirmChange(datasource.id, e)
               })(
                 <Select key={i}>
                   {datasource.fields.map(field => <Option value={field} key={`${i}_${field}`}>{field}</Option>)}
@@ -354,9 +385,7 @@ const Details = ({ form, formState, datasources, moveRow }) => {
         type: column.type.value
       }
     })
-  :
-    []
-  ;
+  : [];
 
   const components = {
     body: {
@@ -382,10 +411,12 @@ const Data = ({ form, formState }) => {
   if (!formState) return null;
 
   // Build the columns of the data table
-  const columns = formState.columns.map(column => ({
-    dataIndex: column.field.value,
-    key: column.field.value
-  }));
+  const columns = formState.columns ? 
+    formState.columns.map(column => ({
+      dataIndex: column.field.value,
+      key: column.field.value
+    }))
+  : [];
 
   return (
     <div>
@@ -429,22 +460,104 @@ const Preview = ({ form, formState, datasources, moveRow, viewMode, onChangeView
   );
 }
 
+const ResolveMatchModal = ({ form, formState, visible, fieldMatchResult, matchingField, onCancel, onOk }) => {
+  if (!fieldMatchResult || !formState) return null;
+
+  const primaryKey = { datasource: formState.columns[0].datasource.value, field: formState.columns[0].field.value };
+  
+  const mismatchedPrimaryRecords = fieldMatchResult.primary;
+  const mismatchedMatchingFieldRecords = fieldMatchResult.matching;
+
+  return (
+    <Modal
+      visible={visible}
+      title={
+        <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+          <Icon type="exclamation-circle" style={{ marginRight: 5, color: '#faad14', fontSize: '150%'}}/>
+          Resolve Match Conflict
+        </div>
+      }
+      onCancel={onCancel}
+      onOk={onOk}
+      width={400}
+    >
+      <p>Record mismatches have been detected between the primary key and the matching field. How should these discrepencies be handled?</p>
+      { mismatchedPrimaryRecords && 
+        <div style={{ position: 'relative' }}>
+          <p>The following records occur in the primary key but not in the matching field:</p>
+          <Table 
+            size="small"
+            pagination={{ size: 'small', pageSize: 5 }}
+            dataSource={mismatchedPrimaryRecords.map((record, index) => ({ key: index, record: record }))}
+            columns={[{ title: 'Record', dataIndex: 'record', key: 'record' }]}
+          />
+          {form.getFieldDecorator(`dropDiscrepencies.${primaryKey.datasource}.${primaryKey.field}`, {
+            rules: [{ required: true }]
+          })(
+            <RadioGroup style={{ position: 'absolute', bottom: '17px' }}>
+              <Radio value={true}>Drop</Radio>
+              <Radio value={false}>Keep</Radio>
+            </RadioGroup>
+          )}
+        </div>
+      }
+      { mismatchedMatchingFieldRecords &&
+        <div style={{ position: 'relative' }}>
+          <p>The following records occur in the matching field but not in the primary key:</p>
+          <Table 
+            size="small"
+            pagination={{ size: 'small', pageSize: 5 }}
+            dataSource={mismatchedMatchingFieldRecords.map((record, index) => ({ key: index, record: record }))}
+            columns={[{ title: 'Record', dataIndex: 'record', key: 'record' }]}
+          />
+          {form.getFieldDecorator(`dropDiscrepencies.${matchingField.datasource}.${matchingField.field}`, {
+            rules: [{ required: true }]
+          })(
+            <RadioGroup style={{ position: 'absolute', bottom: '17px' }}>
+              <Radio value={true}>Ignore</Radio>
+              <Radio value={false}>Add</Radio>
+            </RadioGroup>
+          )}
+        </div>
+      }
+      { (form.getFieldError(`dropDiscrepencies.${primaryKey.datasource}.${primaryKey.field}`) || form.getFieldError(`dropDiscrepencies.${matchingField.datasource}.${matchingField.field}`)) &&
+        <span style={{ color: '#f5222d' }}>Conflicts must be resolved before continuing</span>
+      }
+    </Modal>
+  )
+}
+
 class ViewModal extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
       current: 0,
-      viewMode: 'details'
+      viewMode: 'details',
+      resolveMatchVisible: false
     };
   }
 
   moveRow = (dragIndex, hoverIndex) => {
-    const { changeColumnOrder } = this.props;
-    changeColumnOrder(dragIndex, hoverIndex);
+    const { onChangeColumnOrder } = this.props;
+    onChangeColumnOrder(dragIndex, hoverIndex);
+  }
+
+  componentWillReceiveProps(nextProps) {
+    const { fieldMatchResult } = nextProps;
+    
+    if (fieldMatchResult && fieldMatchResult.error) {
+
+    } else if (fieldMatchResult && (fieldMatchResult.primary || fieldMatchResult.matching)) {
+      this.setState({ resolveMatchVisible: true });
+    };
+
   }
 
   componentWillUpdate(nextProps, nextState) {
-    const { datasources, form, view, formState, onChangePrimary, onChangeFields } = nextProps;
+    const { 
+      datasources, form, view, formState,
+      onChangePrimary, onChangeFields, onChangeDefaultMatchingField 
+    } = nextProps;
     const { viewMode } = nextState;
 
     const selectOptions = datasources && datasources.map((datasource, i) => {
@@ -476,7 +589,8 @@ class ViewModal extends React.Component {
         options={selectOptions}
         view={view}
 
-        onChange={ (e) => onChangeFields(e) }
+        onChangeFields={ (e) => onChangeFields(e) }
+        onChangeDefaultMatchingField={ (matchingField, primaryKey) => { onChangeDefaultMatchingField(matchingField, primaryKey) }}
       />,
     }, {
       title: 'Preview',
@@ -493,10 +607,14 @@ class ViewModal extends React.Component {
     }]
   }
 
+  storeFormValues(values) {
+    const formValues = { ...this.state.formValues, ...values };
+    this.setState({ formValues });
+  }
+
   next(values) {
     const current = this.state.current + 1;
-    const form = { ...this.state.form, ...values };
-    this.setState({ current, form });
+    this.setState({ current });
   }
 
   prev() {
@@ -508,32 +626,33 @@ class ViewModal extends React.Component {
     const { form, formState } = this.props;
     const { current } = this.state;
 
-    const matchingFields = formState.defaultMatchingFields ? Object.entries(formState.defaultMatchingFields).map(([key, value]) => {
-      return `defaultMatchingFields.${key}`;
-    }) : [];
-    
-    // Names of the form fields that should be validated at each step
-    // Prevents the user from moving to the next step in the stepper unless all fields in the current step are valid
-    const validationMap = [
-      ['primary'],
-      // If fields from a datasource other than the primary are chosen, then require that the matching fields be specified
-      ['fields', ...matchingFields],
-      []
-    ];
-
-    form.validateFields(validationMap[current], (err, values) => {
+    // Validates the form fields that are currently in the DOM
+    // I.e. validates only the form fields that are in the current step, NOT all form fields
+    form.validateFields((err, values) => {
       if (err) return;
+      this.storeFormValues(values)
       this.next(values);
     });
   }
 
-  render() {
-    const { current } = this.state;
-    const { 
-      form, visible, loading, error, datasources, views, view,
-      onChange, onCreate, onUpdate, onCancel, onDelete, formState,
-    } = this.props;
+  handleResolveConflict = () => {
+    const { form, formState, onConfirmResolveFieldMatch } = this.props;
 
+    form.validateFields((err, values) => {
+      if (err) return;
+      this.storeFormValues(values)
+      this.setState({ resolveMatchVisible: false }); 
+      onConfirmResolveFieldMatch();
+    });
+  }
+
+  render() {
+    const { current, resolveMatchVisible } = this.state;
+    const { 
+      form, visible, loading, error, datasources, views, view, fieldMatchResult, matchingField,
+      onChange, onCreate, onUpdate, onCancel, onDelete, formState, onCancelResolveFieldMatch
+    } = this.props;
+    
     return (
       <Modal
         visible={visible}
@@ -545,10 +664,11 @@ class ViewModal extends React.Component {
             {  (current > 0) && 
               <Button onClick={() => { this.prev() }}>Previous</Button> 
             }
+            <Button onClick={() => console.log(formState) }>FormState</Button>
             { (this.steps && current < this.steps.length - 1) ?
               <Button type="primary" onClick={() => { this.handleNext() }}>Next</Button>
             :
-              <Button type="primary" onClick={() => { form.validateFields((err, values) => { console.log({...this.state.form, ...values}) }) }}>{ view ? "Update" : "Create" }</Button>
+              <Button type="primary" onClick={() => { form.validateFields((err, values) => { console.log({...this.state.formValues, ...values}) }) }}>{ view ? "Update" : "Create" }</Button>
             }
           </div>
         }
@@ -565,6 +685,17 @@ class ViewModal extends React.Component {
           <div className="steps-content">
             {this.steps && this.steps[current].content}
           </div>
+
+          <ResolveMatchModal 
+            form={form}
+            formState={formState}
+            visible={resolveMatchVisible}
+            fieldMatchResult={fieldMatchResult}
+            matchingField={matchingField}
+
+            onCancel={() => { this.setState({ resolveMatchVisible: false }); onCancelResolveFieldMatch(); }}
+            onOk={this.handleResolveConflict}
+          />
 
           { error && <Alert message={error} type="error"/>}
         </Form>
@@ -583,28 +714,16 @@ export default Form.create({
 
     if (formState) {
       
-      fields['primary'] = formState.primary && Form.createFormField({
-        ...formState.primary,
-        value: formState.primary.value
-      });
+      fields['primary'] = formState.primary && Form.createFormField(formState.primary);
 
-      fields['fields'] = formState.fields && Form.createFormField({
-        ...formState.fields,
-        value: formState.fields.value
-      });
+      fields['fields'] = formState.fields && Form.createFormField(formState.fields);
 
       formState.defaultMatchingFields && Object.entries(formState.defaultMatchingFields).forEach(([key, value]) => {
-        fields[`defaultMatchingFields.${key}`] = Form.createFormField({
-          ...formState.defaultMatchingFields[key],
-          value: formState.defaultMatchingFields[key].value
-        });
+        fields[`defaultMatchingFields.${key}`] = Form.createFormField(formState.defaultMatchingFields[key]);
       })
 
       formState.columns && formState.columns.forEach((_, i) => {
-        fields[`columns[${i}]`] = Form.createFormField({
-          ...formState.columns[i],
-          value: formState.columns[i].value
-        });
+        fields[`columns[${i}]`] = Form.createFormField(formState.columns[i]);
       })
 
     }

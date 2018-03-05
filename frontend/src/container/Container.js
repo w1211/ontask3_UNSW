@@ -127,7 +127,7 @@ class Container extends React.Component {
       containerModalVisible, containerLoading, containerError, container,
       workflowModalVisible, workflowLoading, workflowError, workflow,
       datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
-      viewModalVisible, viewLoading, viewError, view, views, viewFormState,
+      viewModalVisible, viewLoading, viewError, view, views, viewFormState, fieldMatchResult, matchingField,
       isExternalFile, uploadingFile
     } = this.props;
 
@@ -203,11 +203,16 @@ class Container extends React.Component {
                     views={views}
                     view={view}
                     formState={viewFormState}
+                    fieldMatchResult={fieldMatchResult}
+                    matchingField={matchingField}
 
                     updateFormState={this.boundActionCreators.updateViewFormState}
                     onChangePrimary={this.boundActionCreators.changePrimary}
                     onChangeFields={this.boundActionCreators.changeFields}
-                    changeColumnOrder={this.boundActionCreators.changeColumnOrder}
+                    onCancelResolveFieldMatch={this.boundActionCreators.cancelResolveFieldMatch}
+                    onConfirmResolveFieldMatch={() => { dispatch(this.boundActionCreators.resolveMatchingField) }}
+                    onChangeDefaultMatchingField={this.boundActionCreators.changeDefaultMatchingField}
+                    onChangeColumnOrder={this.boundActionCreators.changeColumnOrder}
                     onCancel={() => { dispatch(this.boundActionCreators.closeViewModal()) }}
                   />
                   <ContainerList
@@ -248,7 +253,7 @@ const mapStateToProps = (state) => {
     containerModalVisible, containerLoading, containerError, container,
     workflowModalVisible, workflowLoading, workflowError, workflow,
     datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
-    viewModalVisible, viewLoading, viewError, view, views, viewFormState,
+    viewModalVisible, viewLoading, viewError, view, views, viewFormState, fieldMatchResult, matchingField,
     isExternalFile, uploadingFile
   } = state.containers;
   return {
@@ -257,7 +262,7 @@ const mapStateToProps = (state) => {
     containerModalVisible, containerLoading, containerError, container,
     workflowModalVisible, workflowLoading, workflowError, workflow,
     datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
-    viewModalVisible, viewLoading, viewError, view, views, viewFormState,
+    viewModalVisible, viewLoading, viewError, view, views, viewFormState, fieldMatchResult, matchingField,
     isExternalFile, uploadingFile
   };
 }

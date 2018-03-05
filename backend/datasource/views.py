@@ -1,7 +1,10 @@
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
+from rest_framework.decorators import list_route
 from rest_framework.permissions import IsAuthenticated
 from datetime import datetime
+
+from django.http import JsonResponse
 
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from mongoengine.queryset.visitor import Q
@@ -203,3 +206,37 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         if queryset.count():
             raise ValidationError('This datasource is being used by a workflow')
         obj.delete()
+
+    @list_route(methods=['post'])
+    def compare_matched_fields(self, request):
+
+        def json_serial(obj):
+            if isinstance(obj, (datetime, date)):
+                return obj.isoformat()
+            if isinstance(obj, ObjectId):
+                return str(obj)
+
+        matching_field = self.request.data['matchingField']
+        matching_datasource = DataSource.objects.get(id=matching_field['datasource'])
+        matching_fields = set([record[matching_field['field']] for record in matching_datasource['data']])
+
+        primary_key = self.request.data['primaryKey']
+        primary_datasource = DataSource.objects.get(id=primary_key['datasource'])
+        primary_keys = set([record[primary_key['field']] for record in primary_datasource['data']])
+        
+        response = {}
+
+        unique_in_matching = matching_fields - primary_keys # Values which are in the matching datasource but not the primary
+
+        if len(unique_in_matching) == len(matching_fields):
+            raise ValidationError('Matching field failed to match with this primary key. Are you sure the right matching field is set?')
+
+        if len(unique_in_matching) > 0:
+            response['matching'] = [value for value in unique_in_matching]
+
+        unique_in_primary = primary_keys - matching_fields # Values which are in the primary datasource but not the matching
+
+        if len(unique_in_primary) > 0:
+            response['primary'] = [value for value in unique_in_primary]
+
+        return JsonResponse(response, safe=False)

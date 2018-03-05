@@ -34,6 +34,9 @@ import {
 
   OPEN_VIEW_MODAL,
   CLOSE_VIEW_MODAL,
+  CLEAR_MATCHING_FIELD,
+  RESOLVE_MATCHING_FIELD,
+  RECIEVE_FIELD_MATCH_RESULT,
   REFRESH_VIEW_FORM_STATE,
   UPDATE_VIEW_FORM_STATE
 } from './ContainerActions';
@@ -263,8 +266,7 @@ function containers(state = initialState, action) {
         viewModalVisible: true,
         containerId: action.containerId,
         datasources: action.datasources,
-        views: action.views,
-        viewFormState: action.formState
+        views: action.views
       });
     case CLOSE_VIEW_MODAL:
       return Object.assign({}, state, {
@@ -276,6 +278,22 @@ function containers(state = initialState, action) {
         views: null,
         view: null,
         viewFormState: null
+      });
+    case CLEAR_MATCHING_FIELD:
+      return Object.assign({}, state, {
+        fieldMatchResult: null,
+        matchingField: null,
+        viewFormState: action.payload
+      });
+    case RESOLVE_MATCHING_FIELD:
+      return Object.assign({}, state, {
+        fieldMatchResult: null,
+        matchingField: null
+      });
+    case RECIEVE_FIELD_MATCH_RESULT:
+      return Object.assign({}, state, {
+        fieldMatchResult: action.fieldMatchResult,
+        matchingField: action.matchingField
       });
     case REFRESH_VIEW_FORM_STATE:
       return Object.assign({}, state, {
