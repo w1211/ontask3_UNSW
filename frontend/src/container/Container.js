@@ -5,12 +5,13 @@ import { Link } from 'react-router-dom';
 import { Layout, Breadcrumb, Icon, Button, Modal, notification, Spin } from 'antd';
 
 import * as ContainerActionCreators from './ContainerActions';
+import * as ViewActionCreators from '../view/ViewActions';
 
 import ContainerModal from './ContainerModal';
 import ContainerList from './ContainerList';
 import WorkflowModal from './WorkflowModal';
 import DatasourceModal from './DatasourceModal';
-import ViewModal from './ViewModal';
+import ViewModal from '../view/ViewModal';
 
 const confirm = Modal.confirm;
 const { Content } = Layout;
@@ -21,7 +22,7 @@ class Container extends React.Component {
     super(props);
     const { dispatch } = props;
 
-    this.boundActionCreators = bindActionCreators(ContainerActionCreators, dispatch)
+    this.boundActionCreators = bindActionCreators({...ContainerActionCreators, ...ViewActionCreators}, dispatch)
   }
 
   componentWillReceiveProps(nextProps) {
@@ -127,7 +128,6 @@ class Container extends React.Component {
       containerModalVisible, containerLoading, containerError, container,
       workflowModalVisible, workflowLoading, workflowError, workflow,
       datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
-      viewModalVisible, viewLoading, viewError, view, views, viewFormState, fieldMatchResult, matchingField,
       isExternalFile, uploadingFile
     } = this.props;
 
@@ -194,27 +194,9 @@ class Container extends React.Component {
                     addUploadingFile={this.boundActionCreators.addUploadingFile}
                     removeFromFileList={this.boundActionCreators.removeFromFileList}
                   />
-                  <ViewModal
-                    visible={viewModalVisible}
-                    loading={viewLoading}
-                    error={viewError}
-                    containerId={containerId}
-                    datasources={datasources}
-                    views={views}
-                    view={view}
-                    formState={viewFormState}
-                    fieldMatchResult={fieldMatchResult}
-                    matchingField={matchingField}
+                  
+                  <ViewModal/>
 
-                    updateFormState={this.boundActionCreators.updateViewFormState}
-                    onChangePrimary={this.boundActionCreators.changePrimary}
-                    onChangeFields={this.boundActionCreators.changeFields}
-                    onCancelResolveFieldMatch={this.boundActionCreators.cancelResolveFieldMatch}
-                    onConfirmResolveFieldMatch={() => { dispatch(this.boundActionCreators.resolveMatchingField) }}
-                    onChangeDefaultMatchingField={this.boundActionCreators.changeDefaultMatchingField}
-                    onChangeColumnOrder={this.boundActionCreators.changeColumnOrder}
-                    onCancel={() => { dispatch(this.boundActionCreators.closeViewModal()) }}
-                  />
                   <ContainerList
                     containers={containers}
                     activeKey={containerAccordionKey}
@@ -253,16 +235,15 @@ const mapStateToProps = (state) => {
     containerModalVisible, containerLoading, containerError, container,
     workflowModalVisible, workflowLoading, workflowError, workflow,
     datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
-    viewModalVisible, viewLoading, viewError, view, views, viewFormState, fieldMatchResult, matchingField,
     isExternalFile, uploadingFile
   } = state.containers;
+  
   return {
     isFetching, containers, containerAccordionKey, containerId,
     didCreate, didUpdate, didDelete, model,
     containerModalVisible, containerLoading, containerError, container,
     workflowModalVisible, workflowLoading, workflowError, workflow,
     datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
-    viewModalVisible, viewLoading, viewError, view, views, viewFormState, fieldMatchResult, matchingField,
     isExternalFile, uploadingFile
   };
 }

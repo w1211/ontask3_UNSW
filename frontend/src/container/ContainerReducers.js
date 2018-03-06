@@ -31,17 +31,7 @@ import {
   UPLOAD_EXTERNAL_FILE,
   ADD_UPLOADING_FILE,
   REMOVE_UPLOADING_FILE,
-
-  OPEN_VIEW_MODAL,
-  CLOSE_VIEW_MODAL,
-  CLEAR_MATCHING_FIELD,
-  RESOLVE_MATCHING_FIELD,
-  RECIEVE_FIELD_MATCH_RESULT,
-  REFRESH_VIEW_FORM_STATE,
-  UPDATE_VIEW_FORM_STATE
 } from './ContainerActions';
-
-import _ from 'lodash';
 
 
 const initialState = {
@@ -258,50 +248,6 @@ function containers(state = initialState, action) {
       return Object.assign({}, state, {
         uploadingFile: null,
         isExternalFile: false
-      });
-
-    // Shared view actions
-    case OPEN_VIEW_MODAL:
-      return Object.assign({}, state, {
-        viewModalVisible: true,
-        containerId: action.containerId,
-        datasources: action.datasources,
-        views: action.views
-      });
-    case CLOSE_VIEW_MODAL:
-      return Object.assign({}, state, {
-        viewModalVisible: false,
-        viewError: null,
-        viewLoading: false,
-        containerId: null,
-        datasources: null,
-        views: null,
-        view: null,
-        viewFormState: null
-      });
-    case CLEAR_MATCHING_FIELD:
-      return Object.assign({}, state, {
-        fieldMatchResult: null,
-        matchingField: null,
-        viewFormState: action.payload
-      });
-    case RESOLVE_MATCHING_FIELD:
-      return Object.assign({}, state, {
-        fieldMatchResult: null,
-        matchingField: null
-      });
-    case RECIEVE_FIELD_MATCH_RESULT:
-      return Object.assign({}, state, {
-        fieldMatchResult: action.fieldMatchResult,
-        matchingField: action.matchingField
-      });
-    case REFRESH_VIEW_FORM_STATE:
-      return Object.assign({}, state, {
-        viewFormState: action.payload
-      });
-    case UPDATE_VIEW_FORM_STATE:
-      return Object.assign({}, state, {
-        viewFormState: _.merge(state.viewFormState, action.payload)
       });
 
     default:

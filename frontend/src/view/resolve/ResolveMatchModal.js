@@ -1,0 +1,74 @@
+import React from 'react';
+import { Modal, Icon, Table, Radio } from 'antd';
+
+const RadioGroup = Radio.Group;
+
+
+const ResolveMatchModal = ({ form, formState, visible, fieldMatchResult, matchingField, onCancel, onOk }) => {
+  if (!fieldMatchResult || !formState) return null;
+
+  const primaryKey = { datasource: formState.columns[0].datasource.value, field: formState.columns[0].field.value };
+  
+  const mismatchedPrimaryRecords = fieldMatchResult.primary;
+  const mismatchedMatchingFieldRecords = fieldMatchResult.matching;
+
+  return (
+    <Modal
+      visible={visible}
+      title={
+        <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+          <Icon type="exclamation-circle" style={{ marginRight: 5, color: '#faad14', fontSize: '150%'}}/>
+          Resolve Match Conflict
+        </div>
+      }
+      onCancel={onCancel}
+      onOk={onOk}
+      width={400}
+    >
+      <p>Record mismatches have been detected between the primary key and the matching field. How should these discrepencies be handled?</p>
+      { mismatchedPrimaryRecords && 
+        <div style={{ position: 'relative' }}>
+          <p>The following records occur in the primary key but not in the matching field:</p>
+          <Table 
+            size="small"
+            pagination={{ size: 'small', pageSize: 5 }}
+            dataSource={mismatchedPrimaryRecords.map((record, index) => ({ key: index, record: record }))}
+            columns={[{ title: 'Record', dataIndex: 'record', key: 'record' }]}
+          />
+          {form.getFieldDecorator(`dropDiscrepencies.${primaryKey.datasource}.${primaryKey.field}`, {
+            rules: [{ required: true }]
+          })(
+            <RadioGroup style={{ position: 'absolute', bottom: '17px' }}>
+              <Radio value={true}>Drop</Radio>
+              <Radio value={false}>Keep</Radio>
+            </RadioGroup>
+          )}
+        </div>
+      }
+      { mismatchedMatchingFieldRecords &&
+        <div style={{ position: 'relative' }}>
+          <p>The following records occur in the matching field but not in the primary key:</p>
+          <Table 
+            size="small"
+            pagination={{ size: 'small', pageSize: 5 }}
+            dataSource={mismatchedMatchingFieldRecords.map((record, index) => ({ key: index, record: record }))}
+            columns={[{ title: 'Record', dataIndex: 'record', key: 'record' }]}
+          />
+          {form.getFieldDecorator(`dropDiscrepencies.${matchingField.datasource}.${matchingField.field}`, {
+            rules: [{ required: true }]
+          })(
+            <RadioGroup style={{ position: 'absolute', bottom: '17px' }}>
+              <Radio value={true}>Ignore</Radio>
+              <Radio value={false}>Add</Radio>
+            </RadioGroup>
+          )}
+        </div>
+      }
+      { (form.getFieldError(`dropDiscrepencies.${primaryKey.datasource}.${primaryKey.field}`) || form.getFieldError(`dropDiscrepencies.${matchingField.datasource}.${matchingField.field}`)) &&
+        <span style={{ color: '#f5222d' }}>Conflicts must be resolved before continuing</span>
+      }
+    </Modal>
+  )
+}
+
+export default ResolveMatchModal;
