@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Modal, Form, Alert, Steps, Button, Select, Icon, Tooltip, Table, Cascader, Tag, Radio } from 'antd';
+import { Modal, Form, Alert, Steps, Button, Select, Icon, Tooltip, Table, Cascader, Tag, Radio, Input } from 'antd';
 import { DragDropContext, DragSource, DropTarget } from 'react-dnd';
 import HTML5Backend from 'react-dnd-html5-backend';
 
@@ -184,11 +184,57 @@ const Primary = ({ form, formState, options, view, onChange }) => {
   )
 }
 
-const Fields = ({ form, formState, datasources, options, view, onChangeFields, onChangeDefaultMatchingField }) => {
+const ResolveFieldNameModal = ({ form, formState, visible, onCancel, onOk }) => {
+  if (!formState || !visible) return null;
+
+  const fields = formState && formState.columns ? formState.columns.map(column => column.field.value): [];
+
+  const checkFields = (rule, value, callback) => {
+    // If the provided value is already in the list of fields for this view, then show an error
+    if (fields.includes(value)) {
+      callback('Field name is already being used');
+    }
+    // Otherwise return no errors
+    callback();
+    return;
+  }
+  
+  return (
+    <Modal
+      visible={visible}
+      title={
+        <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+          <Icon type="exclamation-circle" style={{ marginRight: 5, color: '#faad14', fontSize: '150%'}}/>
+          Resolve Field Name Conflict
+        </div>
+      }
+      onCancel={onCancel}
+      onOk={onOk}
+      width={350}
+    >
+      <p>A field is already being used with this name. Provide a new name (label) for this field:</p>
+      <FormItem
+          {...formItemLayout}
+          label="Label"
+        >
+          {form.getFieldDecorator('label', {
+            rules: [
+              { required: true, message: 'Label is required' },
+              { validator: checkFields } // Custom validator to ensure that the new field name is not another duplicate
+            ]
+          })(
+            <Input/>
+          )}
+      </FormItem>
+    </Modal>
+  )
+}
+
+const Fields = ({ form, formState, datasources, options, view, onChangeFields, onDuplicateField, onChangeDefaultMatchingField }) => {
   if (!datasources || !formState) return null;
 
   let chosenDatasources = new Set([]);
-  if (formState.fields && formState.fields.value.length > 0) {
+  if (formState.fields.value.length > 0) {
     // Create an array of the datasources used by this view (based on fields chosen)
     // This will be used to ask for the default matching field of each datasource other than the primary key's datasource
     formState.fields.value.forEach(checkedField => { 
@@ -205,7 +251,7 @@ const Fields = ({ form, formState, datasources, options, view, onChangeFields, o
     chosenDatasources = [...chosenDatasources];
   }
 
-  const confirmChange = (datasourceId, e) => {
+  const confirmMatchingFieldChange = (datasourceId, e) => {
     // If the matching field already has a value, then prompt the user if they want to change it
     // If changing an existing value, then all columns that use this datasource should have their matching field updated
     let currentMatchingField = form.getFieldValue(`defaultMatchingFields.${datasourceId}`);
@@ -236,6 +282,28 @@ const Fields = ({ form, formState, datasources, options, view, onChangeFields, o
     }
   };
 
+  const handleFieldChange = (e) => {
+    const fields = formState.columns.map(column => column.field.value);
+
+    // If a field is being added
+    if (e.length >= fields.length) {
+      const [datasourceIndex, fieldIndex] = e[e.length - 1].split('_');
+      const newField = datasources[datasourceIndex].fields[fieldIndex];
+
+      if (fields.includes(newField)) {
+        onDuplicateField(e);
+        return e.slice(0, -1);
+      } else {
+        onChangeFields(e);
+        return e;
+      }
+    // Otherwise, don't check for field duplicates, just return the new value and continue
+    } else {
+      onChangeFields(e);
+      return e; 
+    }
+  }
+
   return (
     <div>
       <FormItem
@@ -246,7 +314,7 @@ const Fields = ({ form, formState, datasources, options, view, onChangeFields, o
           initialValue: formState && formState.fields ? formState.fields.value : undefined,
           // onChange should be placed within the form decorator and NOT as an attribute of the select component itself
           // Otherwise the form validation does not update correctly after changing values
-          onChange: onChangeFields
+          getValueFromEvent: handleFieldChange
         })(
           <Select mode="multiple">
             {options}
@@ -270,7 +338,7 @@ const Fields = ({ form, formState, datasources, options, view, onChangeFields, o
               {form.getFieldDecorator(`defaultMatchingFields.${datasource.id}`, {
                 rules: [{ required: true, message: 'Matching field is required' }],
                 initialValue: formState && formState.defaultMatchingFields && formState.defaultMatchingFields[datasource.id] ? formState.defaultMatchingFields[datasource.id].value : undefined,
-                getValueFromEvent: (e) => confirmChange(datasource.id, e)
+                getValueFromEvent: (e) => confirmMatchingFieldChange(datasource.id, e)
               })(
                 <Select key={i}>
                   {datasource.fields.map(field => <Option value={field} key={`${i}_${field}`}>{field}</Option>)}
@@ -300,11 +368,22 @@ const Details = ({ form, formState, datasources, moveRow }) => {
       render: (text, record, index) => {
         return (
           <span>
+            { record.label && form.getFieldDecorator(`columns[${index}].label`, {
+                initialValue: record.label
+              })(
+                <span>{record.label}</span>
+              )
+            }
             { form.getFieldDecorator(`columns[${index}].field`, {
                 rules: [{ required: true, message: 'Field is required' }],
                 initialValue: record.field
               })(
-                <span>{record.field}</span>
+                record.label ?
+                  <Tooltip title={record.field}>
+                    <Icon style={{ marginLeft: 5, cursor: 'default' }} type="info-circle-o" />
+                  </Tooltip>
+                :
+                  <span>{record.field}</span>
               )
             }
             { form.getFieldDecorator(`columns[${index}].datasource`, {
@@ -380,12 +459,15 @@ const Details = ({ form, formState, datasources, moveRow }) => {
       return { 
         key: index, 
         datasource: datasource,
-        field: column.field.value, 
+        label: column.label ? column.label.value : undefined,
+        field: column.field.value,
         matching: column.matching.value,
         type: column.type.value
       }
     })
-  : [];
+  :
+    []
+  ;
 
   const components = {
     body: {
@@ -411,12 +493,10 @@ const Data = ({ form, formState }) => {
   if (!formState) return null;
 
   // Build the columns of the data table
-  const columns = formState.columns ? 
-    formState.columns.map(column => ({
-      dataIndex: column.field.value,
-      key: column.field.value
-    }))
-  : [];
+  const columns = formState.columns.map(column => ({
+    dataIndex: column.field.value,
+    key: column.field.value
+  }));
 
   return (
     <div>
@@ -533,7 +613,9 @@ class ViewModal extends React.Component {
     this.state = {
       current: 0,
       viewMode: 'details',
-      resolveMatchVisible: false
+      resolveMatchVisible: false,
+      resolveFieldNameVisible: false,
+      newFields: null
     };
   }
 
@@ -550,7 +632,6 @@ class ViewModal extends React.Component {
     } else if (fieldMatchResult && (fieldMatchResult.primary || fieldMatchResult.matching)) {
       this.setState({ resolveMatchVisible: true });
     };
-
   }
 
   componentWillUpdate(nextProps, nextState) {
@@ -564,7 +645,19 @@ class ViewModal extends React.Component {
       return (
         <OptGroup label={datasource.name} key={datasource.name}>
           {datasource.fields.map((field, j) => {
-            return <Option value={`${i}_${j}`} key={`${i}_${j}`} disabled={formState && formState.primary && formState.primary.value === `${i}_${j}`}>{field}</Option>
+            // If this field has been given a label, then show it in parentheses next to the original field name
+            let label;
+            if (formState && formState.columns) {
+              const columnEquivalent = formState.columns.find(
+                column => column.datasource.value === datasource.id && column.field.value === field
+              );
+              if (columnEquivalent && columnEquivalent.label) label = columnEquivalent.label.value;
+            }
+            
+            // Disable the primary key in the list of available fields
+            const isDisabled = formState && formState.primary && formState.primary.value === `${i}_${j}`;
+
+            return <Option value={`${i}_${j}`} key={`${i}_${j}`} disabled={isDisabled}>{field} {label && `(${label})`}</Option>
           })}
         </OptGroup>
       )
@@ -589,6 +682,7 @@ class ViewModal extends React.Component {
         options={selectOptions}
         view={view}
 
+        onDuplicateField={this.onDuplicateField}
         onChangeFields={ (e) => onChangeFields(e) }
         onChangeDefaultMatchingField={ (matchingField, primaryKey) => { onChangeDefaultMatchingField(matchingField, primaryKey) }}
       />,
@@ -646,13 +740,35 @@ class ViewModal extends React.Component {
     });
   }
 
+  onDuplicateField = (newFields) => {
+    this.setState({
+      resolveFieldNameVisible: true,
+      newFields
+    })
+  }
+
+  resolveDuplicateField = () => {
+    const { form, onChangeFields } = this.props;
+    const { newFields } = this.state;
+
+    form.validateFields(['label'], (err, result) => {
+      if (err) return;
+      
+      onChangeFields(newFields, result.label);
+      this.setState({
+        resolveFieldNameVisible: false,
+        newFields: null
+      });
+    });
+  }
+
   render() {
-    const { current, resolveMatchVisible } = this.state;
+    const { current, resolveMatchVisible, resolveFieldNameVisible, newFields } = this.state;
     const { 
       form, visible, loading, error, datasources, views, view, fieldMatchResult, matchingField,
       onChange, onCreate, onUpdate, onCancel, onDelete, formState, onCancelResolveFieldMatch
     } = this.props;
-    
+
     return (
       <Modal
         visible={visible}
@@ -664,11 +780,10 @@ class ViewModal extends React.Component {
             {  (current > 0) && 
               <Button onClick={() => { this.prev() }}>Previous</Button> 
             }
-            <Button onClick={() => console.log(formState) }>FormState</Button>
             { (this.steps && current < this.steps.length - 1) ?
               <Button type="primary" onClick={() => { this.handleNext() }}>Next</Button>
             :
-              <Button type="primary" onClick={() => { form.validateFields((err, values) => { console.log({...this.state.formValues, ...values}) }) }}>{ view ? "Update" : "Create" }</Button>
+              <Button type="primary" onClick={() => { form.validateFields((err, values) => { console.log({...this.state.form, ...values}) }) }}>{ view ? "Update" : "Create" }</Button>
             }
           </div>
         }
@@ -697,6 +812,16 @@ class ViewModal extends React.Component {
             onOk={this.handleResolveConflict}
           />
 
+          <ResolveFieldNameModal 
+            form={form}
+            formState={formState}
+            visible={resolveFieldNameVisible}
+            newFields={newFields}
+
+            onCancel={() => { this.setState({ resolveFieldNameVisible: false, newFields: null }); }}
+            onOk={this.resolveDuplicateField}
+          />
+          
           { error && <Alert message={error} type="error"/>}
         </Form>
       </Modal>
@@ -712,20 +837,22 @@ export default Form.create({
     const formState = props.formState;
     let fields = {}
 
+    // These are fields that may have their values in the form state directly edited while they are still visible in the DOM
+    // Therefore, when receiving a new prop (formState) mapPropsToFields updates the form values for us properly
     if (formState) {
-      
       fields['primary'] = formState.primary && Form.createFormField(formState.primary);
 
-      fields['fields'] = formState.fields && Form.createFormField(formState.fields);
+      fields['fields'] = formState.fields && Form.createFormField({
+        ...formState.fields,
+        value: formState.fields.value
+      });
 
       formState.defaultMatchingFields && Object.entries(formState.defaultMatchingFields).forEach(([key, value]) => {
-        fields[`defaultMatchingFields.${key}`] = Form.createFormField(formState.defaultMatchingFields[key]);
+        fields[`defaultMatchingFields.${key}`] = Form.createFormField({
+          ...formState.defaultMatchingFields[key],
+          value: formState.defaultMatchingFields[key].value
+        });
       })
-
-      formState.columns && formState.columns.forEach((_, i) => {
-        fields[`columns[${i}]`] = Form.createFormField(formState.columns[i]);
-      })
-
     }
     return fields;
   }

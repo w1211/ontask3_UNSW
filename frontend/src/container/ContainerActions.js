@@ -467,7 +467,7 @@ export const changePrimary = (primary) => (dispatch, getState) => {
   dispatch(refreshViewFormState(formState));
 };
 
-export const changeFields = (fields) => (dispatch, getState) => {
+export const changeFields = (fields, label) => (dispatch, getState) => {
   const { containers } = getState();
   let formState = Object.assign({}, containers.viewFormState);
   const datasources = containers.datasources;
@@ -487,7 +487,8 @@ export const changeFields = (fields) => (dispatch, getState) => {
       datasource: { value: datasourceId },
       field: { value: fieldName },
       matching: { value: [formState.defaultMatchingFields[datasourceId] ? formState.defaultMatchingFields[datasourceId].value : undefined] },
-      type: { value: [getType(datasource.data[0][fieldName])] }
+      type: { value: [getType(datasource.data[0][fieldName])] },
+      label: { value: label } // This value is only provided to resolve the scenario where a field with a duplicate name is added
     })
   };
 
