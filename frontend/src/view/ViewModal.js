@@ -174,11 +174,13 @@ class ViewModal extends React.Component {
 
   handleViewChange = (e) => {
     const { form } = this.props;
+    const { formValues } = this.state;
+
     // If we're changing to the data preview mode, then store the form values on the details mode first
     if (e === 'data') {
       form.validateFields((err, values) => {
         if (err) return;
-        this.storeFormValues(values);
+        this.boundActionCreators.previewData({...formValues, ...values});
       });
     }
     this.setState({ viewMode: e });

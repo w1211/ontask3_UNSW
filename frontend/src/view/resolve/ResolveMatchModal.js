@@ -35,7 +35,7 @@ const ResolveMatchModal = ({ form, formState, visible, fieldMatchResult, matchin
             dataSource={mismatchedPrimaryRecords.map((record, index) => ({ key: index, record: record }))}
             columns={[{ title: 'Record', dataIndex: 'record', key: 'record' }]}
           />
-          {form.getFieldDecorator(`dropDiscrepencies.${primaryKey.datasource}.${primaryKey.field}`, {
+          {form.getFieldDecorator(`dropDiscrepencies.${matchingField.datasource}.${matchingField.field}.primary`, {
             rules: [{ required: true }]
           })(
             <RadioGroup style={{ position: 'absolute', bottom: '17px' }}>
@@ -54,7 +54,7 @@ const ResolveMatchModal = ({ form, formState, visible, fieldMatchResult, matchin
             dataSource={mismatchedMatchingFieldRecords.map((record, index) => ({ key: index, record: record }))}
             columns={[{ title: 'Record', dataIndex: 'record', key: 'record' }]}
           />
-          {form.getFieldDecorator(`dropDiscrepencies.${matchingField.datasource}.${matchingField.field}`, {
+          {form.getFieldDecorator(`dropDiscrepencies.${matchingField.datasource}.${matchingField.field}.matching`, {
             rules: [{ required: true }]
           })(
             <RadioGroup style={{ position: 'absolute', bottom: '17px' }}>
@@ -64,7 +64,7 @@ const ResolveMatchModal = ({ form, formState, visible, fieldMatchResult, matchin
           )}
         </div>
       }
-      { (form.getFieldError(`dropDiscrepencies.${primaryKey.datasource}.${primaryKey.field}`) || form.getFieldError(`dropDiscrepencies.${matchingField.datasource}.${matchingField.field}`)) &&
+      { (form.getFieldError(`dropDiscrepencies.${matchingField.datasource}.${matchingField.field}.primary`) || form.getFieldError(`dropDiscrepencies.${matchingField.datasource}.${matchingField.field}.matching`)) &&
         <span style={{ color: '#f5222d' }}>Conflicts must be resolved before continuing</span>
       }
     </Modal>

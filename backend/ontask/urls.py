@@ -21,6 +21,7 @@ from rest_framework.authtoken import views
 
 from container.views import ContainerViewSet
 from datasource.views import DataSourceViewSet
+from view.views import ViewViewSet
 from workflow.views import WorkflowViewSet
 
 import accounts.urls
@@ -31,6 +32,7 @@ router = routers.DefaultRouter()
 # register REST API endpoints with DRF router
 router.register(r'container', ContainerViewSet, r"container")
 router.register(r'datasource', DataSourceViewSet, r"datasource")
+router.register(r'view', ViewViewSet, r"view")
 router.register(r'workflow', WorkflowViewSet, r"workflow")
 
 urlpatterns = [
