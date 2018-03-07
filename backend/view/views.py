@@ -37,8 +37,6 @@ class ViewViewSet(viewsets.ModelViewSet):
     def preview_data(self, request):
         columns = self.request.data['columns']
         drop_discrepencies = self.request.data.get('dropDiscrepencies', {})
-        
-        results = defaultdict(dict)
 
         # Get the primary key's datasource data
         primary_datasource_id = columns[0]['datasource']
@@ -46,6 +44,10 @@ class ViewViewSet(viewsets.ModelViewSet):
         primary_field = columns[0]['field']
         primary_key_records = set([record[primary_field] for record in primary_datasource['data']])
     
+        # Initialize the defaultdict to hold the results, and seed it with the primary keys
+        results = defaultdict(dict)
+        results.update((primary_key, {}) for primary_key in primary_key_records)
+        
         # Initialise an object to store the data of each datasource
         # Add the datasource of the primary key to this object
         data = {}

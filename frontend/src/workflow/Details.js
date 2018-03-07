@@ -214,7 +214,6 @@ class Details extends React.Component {
       dataIndex: 'field',
       key: 'field',
       render: (text, record, index) => {
-        console.log(record);
         const datasource = record.field.length > 0 ? this.options.find(datasource => { return datasource.value === record.field[0]}) : undefined;
         // Do not show matching fields in the cascader of the primary field
         let primaryFieldOptions;

@@ -48,7 +48,7 @@ class ViewModal extends React.Component {
   }
 
   componentWillUpdate(nextProps, nextState) {
-    const { datasources, form, formState } = nextProps;
+    const { datasources, form, formState, dataLoading, dataPreview } = nextProps;
     const { viewMode } = nextState;
 
     const selectOptions = datasources && datasources.map((datasource, i) => {
@@ -100,9 +100,10 @@ class ViewModal extends React.Component {
         form={form}
         formState={formState}
         datasources={datasources}
-        components={this.components}
         moveRow={this.boundActionCreators.changeColumnOrder}
         viewMode={viewMode}
+        loading={dataLoading}
+        data={dataPreview}
 
         onChangeViewMode={this.handleViewChange}
       />
@@ -127,7 +128,7 @@ class ViewModal extends React.Component {
             { (this.steps && current < this.steps.length - 1) ?
               <Button type="primary" onClick={() => { this.handleNext() }}>Next</Button>
             :
-              <Button type="primary" onClick={() => { form.validateFields((err, values) => { console.log({...formValues, ...values}) }) }}>{ view ? "Update" : "Create" }</Button>
+              <Button type="primary" onClick={() => { form.validateFields((err, values) => { console.log({...formValues, ...values}) }); console.log(formState); }}>{ view ? "Update" : "Create" }</Button>
             }
           </div>
         }
@@ -249,21 +250,22 @@ class ViewModal extends React.Component {
 
 const mapStateToProps = (state) => {
   const { 
-    datasources, visible, loading, error, view, views, formState, fieldMatchResult, matchingField 
+    datasources, visible, dataLoading, dataPreview, error, view, views, formState, fieldMatchResult, matchingField 
   } = state.view;
   
   return { 
-    datasources, visible, loading, error, view, views, formState, fieldMatchResult, matchingField
+    datasources, visible, dataLoading, dataPreview, error, view, views, formState, fieldMatchResult, matchingField
   }
 }
 
 export default connect(mapStateToProps)(
   Form.create({
     onFieldsChange(props, payload) {
-      ViewActionCreators.updateViewFormState(payload);
+      const { dispatch } = props;
+      dispatch(ViewActionCreators.updateViewFormState(payload));
     },
     mapPropsToFields(props) {
-      const formState = props.formState;
+      const { formState } = props;
       let fields = {}
 
       // These are fields that may have their values in the form state directly edited while they are still visible in the DOM
@@ -271,17 +273,18 @@ export default connect(mapStateToProps)(
       if (formState) {
         fields['primary'] = formState.primary && Form.createFormField(formState.primary);
 
-        fields['fields'] = formState.fields && Form.createFormField({
-          ...formState.fields,
-          value: formState.fields.value
-        });
+        fields['fields'] = formState.fields && Form.createFormField(formState.fields);
 
         formState.defaultMatchingFields && Object.entries(formState.defaultMatchingFields).forEach(([key, value]) => {
-          fields[`defaultMatchingFields.${key}`] = Form.createFormField({
-            ...formState.defaultMatchingFields[key],
-            value: formState.defaultMatchingFields[key].value
-          });
+          fields[`defaultMatchingFields.${key}`] = Form.createFormField(formState.defaultMatchingFields[key]);
         })
+
+        formState.columns && formState.columns.forEach((column, i) => {
+          Object.entries(column).forEach(([key, value]) => {
+            fields[`columns[${i}].${key}`] = Form.createFormField(formState.columns[i][key]);
+          })
+        })
+        
       }
       return fields;
     }

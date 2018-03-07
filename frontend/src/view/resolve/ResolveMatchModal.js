@@ -6,9 +6,7 @@ const RadioGroup = Radio.Group;
 
 const ResolveMatchModal = ({ form, formState, visible, fieldMatchResult, matchingField, onCancel, onOk }) => {
   if (!fieldMatchResult || !formState) return null;
-
-  const primaryKey = { datasource: formState.columns[0].datasource.value, field: formState.columns[0].field.value };
-  
+    
   const mismatchedPrimaryRecords = fieldMatchResult.primary;
   const mismatchedMatchingFieldRecords = fieldMatchResult.matching;
 

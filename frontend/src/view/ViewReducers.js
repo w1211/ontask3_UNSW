@@ -5,7 +5,11 @@ import {
   RESOLVE_MATCHING_FIELD,
   RECIEVE_FIELD_MATCH_RESULT,
   REFRESH_VIEW_FORM_STATE,
-  UPDATE_VIEW_FORM_STATE
+  UPDATE_VIEW_FORM_STATE,
+
+  BEGIN_REQUEST_DATA_PREVIEW,
+  FAILURE_REQUEST_DATA_PREVIEW,
+  RECEIVE_DATA_PREVIEW
 } from './ViewActions';
 
 import _ from 'lodash';
@@ -59,6 +63,23 @@ function view(state = {}, action) {
     case UPDATE_VIEW_FORM_STATE:
       return Object.assign({}, state, {
         formState: _.merge(state.formState, action.payload)
+      });
+
+    case BEGIN_REQUEST_DATA_PREVIEW:
+      return Object.assign({}, state, {
+        dataLoading: true
+      });
+
+    case FAILURE_REQUEST_DATA_PREVIEW:
+      return Object.assign({}, state, {
+        dataLoading: false,
+        error: action.error
+      });
+
+    case RECEIVE_DATA_PREVIEW:
+      return Object.assign({}, state, {
+        dataLoading: false,
+        dataPreview: action.dataPreview
       });
 
     default:

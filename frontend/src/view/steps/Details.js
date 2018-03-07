@@ -7,6 +7,23 @@ import dragSort from '../../shared/DragSort';
 const Details = ({ form, formState, datasources, moveRow }) => {
   if (!datasources || !formState) return null;
 
+    // Build the data that will populate the details table
+    const details = formState.columns ? 
+    formState.columns.map((column, index) => {
+      const datasource = datasources.find(datasource => datasource.id === column.datasource.value);
+      return { 
+        key: index, 
+        datasource: datasource,
+        label: column.label ? column.label.value : undefined,
+        field: column.field.value,
+        matching: column.matching.value,
+        type: column.type.value
+      }
+    })
+  :
+    []
+  ;
+  
   // Build the columns of the details table
   // The matching field is only included for secondary fields (the primary key does not need a matching field)
   const columns = [
@@ -101,23 +118,6 @@ const Details = ({ form, formState, datasources, moveRow }) => {
       }
     }
   ];
-
-  // Build the data that will populate the details table
-  const details = formState.columns ? 
-    formState.columns.map((column, index) => {
-      const datasource = datasources.find(datasource => datasource.id === column.datasource.value);
-      return { 
-        key: index, 
-        datasource: datasource,
-        label: column.label ? column.label.value : undefined,
-        field: column.field.value,
-        matching: column.matching.value,
-        type: column.type.value
-      }
-    })
-  :
-    []
-  ;
 
   return (
     <Table
