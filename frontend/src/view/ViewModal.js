@@ -48,7 +48,7 @@ class ViewModal extends React.Component {
   }
 
   componentWillUpdate(nextProps, nextState) {
-    const { datasources, form, formState, dataLoading, dataPreview } = nextProps;
+    const { error, datasources, form, formState, dataLoading, dataPreview } = nextProps;
     const { viewMode } = nextState;
 
     const selectOptions = datasources && datasources.map((datasource, i) => {
@@ -85,6 +85,7 @@ class ViewModal extends React.Component {
     }, {
       title: 'Fields',
       content: <Fields 
+        error={error}
         form={form}
         formState={formState}
         datasources={datasources}
@@ -167,7 +168,7 @@ class ViewModal extends React.Component {
             onOk={this.resolveDuplicateField}
           />
           
-          { error && <Alert message={error} type="error"/>}
+          { error && <Alert style={{ marginTop: 10 }} message={error} type="error"/>}
         </Form>
       </Modal>
     )

@@ -4,6 +4,7 @@ export const OPEN_VIEW_MODAL = 'OPEN_VIEW_MODAL';
 export const CLOSE_VIEW_MODAL = 'CLOSE_VIEW_MODAL';
 export const CLEAR_MATCHING_FIELD = 'CLEAR_MATCHING_FIELD';
 export const RESOLVE_MATCHING_FIELD = 'RESOLVE_MATCHING_FIELD'
+export const FAILURE_FIELD_MATCH_RESULT = 'FAILURE_FIELD_MATCH_RESULT';
 export const RECIEVE_FIELD_MATCH_RESULT = 'RECIEVE_FIELD_MATCH_RESULT';
 export const REFRESH_VIEW_FORM_STATE = 'REFRESH_VIEW_FORM_STATE';
 export const UPDATE_VIEW_FORM_STATE = 'UPDATE_VIEW_FORM_STATE';
@@ -133,6 +134,11 @@ export const changeFields = (fields, label) => (dispatch, getState) => {
   dispatch(refreshViewFormState(formState));
 };
 
+const failureFieldMatchResult = (error) => ({
+  type: FAILURE_FIELD_MATCH_RESULT,
+  error
+});
+
 const receiveFieldMatchResult = (fieldMatchResult, matchingField) => ({
   type: RECIEVE_FIELD_MATCH_RESULT,
   fieldMatchResult,
@@ -161,7 +167,7 @@ export const changeDefaultMatchingField = (matchingField, primaryKey) => (dispat
     url: `/datasource/compare_matched_fields/`,
     method: 'POST',
     errorFn: (error) => {
-      console.log(error);
+      dispatch(failureFieldMatchResult(error));
     },
     successFn: (response) => {
       dispatch(receiveFieldMatchResult(response, matchingField));

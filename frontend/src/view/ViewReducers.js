@@ -1,8 +1,10 @@
 import {
   OPEN_VIEW_MODAL,
   CLOSE_VIEW_MODAL,
+  
   CLEAR_MATCHING_FIELD,
   RESOLVE_MATCHING_FIELD,
+  FAILURE_FIELD_MATCH_RESULT,
   RECIEVE_FIELD_MATCH_RESULT,
   REFRESH_VIEW_FORM_STATE,
   UPDATE_VIEW_FORM_STATE,
@@ -49,10 +51,16 @@ function view(state = {}, action) {
         matchingField: null
       });
 
+    case FAILURE_FIELD_MATCH_RESULT:
+      return Object.assign({}, state, {
+        error: action.error
+      });
+
     case RECIEVE_FIELD_MATCH_RESULT:
       return Object.assign({}, state, {
         fieldMatchResult: action.fieldMatchResult,
-        matchingField: action.matchingField
+        matchingField: action.matchingField,
+        error: null
       });
 
     case REFRESH_VIEW_FORM_STATE:

@@ -8,7 +8,7 @@ const confirm = Modal.confirm;
 const { Option } = Select;
 
 
-const Fields = ({ form, formState, datasources, options, onChangeFields, onDuplicateField, onChangeDefaultMatchingField }) => {
+const Fields = ({ error, form, formState, datasources, options, onChangeFields, onDuplicateField, onChangeDefaultMatchingField }) => {
   if (!datasources || !formState) return null;
 
   let chosenDatasources = new Set([]);
@@ -127,7 +127,7 @@ const Fields = ({ form, formState, datasources, options, onChangeFields, onDupli
 
         </div>
       }
-      <Alert style={{ marginTop: 10 }} message="Informational Notes" type="info" showIcon/>
+      { !error && <Alert style={{ marginTop: 10 }} message="Informational Notes" type="info" showIcon/> }
     </div>
   )
 };
