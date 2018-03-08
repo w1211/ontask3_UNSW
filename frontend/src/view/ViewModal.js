@@ -26,6 +26,8 @@ class ViewModal extends React.Component {
     super(props);
     const { dispatch } = props;
 
+    this.boundActionCreators = bindActionCreators(ViewActionCreators, dispatch);
+
     this.state = {
       current: 0,
       viewMode: 'details',
@@ -33,8 +35,6 @@ class ViewModal extends React.Component {
       resolveFieldNameVisible: false,
       newFields: null
     };
-
-    this.boundActionCreators = bindActionCreators(ViewActionCreators, dispatch);
   }
   
   componentWillReceiveProps(nextProps) {

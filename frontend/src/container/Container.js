@@ -5,12 +5,13 @@ import { Link } from 'react-router-dom';
 import { Layout, Breadcrumb, Icon, Button, Modal, notification, Spin } from 'antd';
 
 import * as ContainerActionCreators from './ContainerActions';
-import * as ViewActionCreators from '../view/ViewActions';
+import { openViewModal } from '../view/ViewActions';
+import { openDatasourceModal, deleteDatasource } from '../datasource/DatasourceActions';
 
 import ContainerModal from './ContainerModal';
 import ContainerList from './ContainerList';
 import WorkflowModal from './WorkflowModal';
-import DatasourceModal from './DatasourceModal';
+import DatasourceModal from '../datasource/DatasourceModal';
 import ViewModal from '../view/ViewModal';
 
 const confirm = Modal.confirm;
@@ -22,7 +23,9 @@ class Container extends React.Component {
     super(props);
     const { dispatch } = props;
 
-    this.boundActionCreators = bindActionCreators({...ContainerActionCreators, ...ViewActionCreators}, dispatch)
+    this.boundActionCreators = bindActionCreators({
+      ...ContainerActionCreators, openViewModal, openDatasourceModal, deleteDatasource 
+    }, dispatch)
   }
 
   componentWillReceiveProps(nextProps) {
@@ -104,20 +107,6 @@ class Container extends React.Component {
     });
   }
 
-  confirmDatasourceDelete = (datasourceId) => {
-    let deleteDatasource = this.boundActionCreators.deleteDatasource;
-    confirm({
-      title: 'Confirm datasource deletion',
-      content: 'Are you sure you want to delete this datasource?',
-      okText: 'Yes, delete it',
-      okType: 'danger',
-      cancelText: 'Cancel',
-      onOk() {
-        deleteDatasource(datasourceId);
-      }
-    });
-  }
-
   componentDidMount() {
     this.boundActionCreators.fetchContainers();
   };
@@ -173,27 +162,8 @@ class Container extends React.Component {
                     onUpdate={this.boundActionCreators.updateWorkflow}
                     onCancel={() => { dispatch(this.boundActionCreators.closeWorkflowModal()) }}
                   />
-                  <DatasourceModal
-                    visible={datasourceModalVisible}
-                    loading={datasourceLoading}
-                    error={datasourceError}
-                    containerId={containerId}
-                    datasources={datasources}
-                    datasource={datasource}
-                    isExternalFile={isExternalFile}
-                    uploadingFile={uploadingFile}
 
-                    onChange={this.boundActionCreators.changeDatasource}
-                    onCreate={this.boundActionCreators.createDatasource}
-                    onUpdate={this.boundActionCreators.updateDatasource}
-                    onDelete={this.confirmDatasourceDelete}
-                    onCancel={() => { dispatch(this.boundActionCreators.closeDatasourceModal()) }}
-
-                    //actions for interacting with datasource form uploading file list
-                    onSelect={this.boundActionCreators.handleDatasourceTypeSelction}
-                    addUploadingFile={this.boundActionCreators.addUploadingFile}
-                    removeFromFileList={this.boundActionCreators.removeFromFileList}
-                  />
+                  <DatasourceModal/>
                   
                   <ViewModal/>
 
@@ -210,6 +180,7 @@ class Container extends React.Component {
 
                     openDatasourceModal={(containerId, datasources) => { dispatch(this.boundActionCreators.openDatasourceModal(containerId, datasources)) }}
                     openViewModal={(containerId, datasources, views) => { dispatch(this.boundActionCreators.openViewModal(containerId, datasources, views)) }}
+                    deleteDatasource={this.boundActionCreators.deleteDatasource}
                   />
                 </div>
               :

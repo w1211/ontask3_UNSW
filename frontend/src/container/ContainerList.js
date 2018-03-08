@@ -18,7 +18,7 @@ const ButtonStyle = {
 }
 
 
-const ContainerPanelHeader = ({ container, openContainerModal, confirmContainerDelete, openWorkflowModal, openDatasourceModal, openViewModal }) => (
+const ContainerPanelHeader = ({ container, openContainerModal, confirmContainerDelete, openWorkflowModal, openDatasourceModal, openViewModal, deleteDatasource }) => (
   <div>
   {container.code}
   <div style={{ float: "right", marginRight: "10px", marginTop: "-5px" }}>
@@ -29,16 +29,6 @@ const ContainerPanelHeader = ({ container, openContainerModal, confirmContainerD
       </Tooltip>
       <Button disabled icon="share-alt"/>
     </ButtonGroup>
-    <Tooltip title="Modify datasources">
-      <Button icon="hdd" style={ButtonStyle} onClick={(e) => { e.stopPropagation(); openDatasourceModal(container.id, container.datasources); }}>
-        <Badge count={container.datasources.length} showZero style={{ backgroundColor: '#616161' }} />
-      </Button>
-    </Tooltip>
-    <Tooltip title="Modify views"> 
-      <Button icon="eye-o" style={ButtonStyle} onClick={(e) => { e.stopPropagation(); openViewModal(container.id, container.datasources, container.views); }}>
-        <Badge count={container.views.length} showZero style={{ backgroundColor: '#616161' }} />
-      </Button>
-    </Tooltip>
     <Button style={ButtonStyle} onClick={(e) => { e.stopPropagation(); openWorkflowModal(container.id); }}>
       <Icon type="plus"/>New Workflow
     </Button>
@@ -88,7 +78,7 @@ const ContainerList = ({
   containers, activeKey, changeAccordionKey, 
   openContainerModal, confirmContainerDelete, 
   openWorkflowModal, confirmWorkflowDelete, 
-  openDatasourceModal, openViewModal
+  openDatasourceModal, openViewModal, deleteDatasource
 }) => (
   <Collapse accordion onChange={changeAccordionKey} activeKey={activeKey} className="containerList">
   { containers.map((container, key) => {
@@ -119,10 +109,10 @@ const ContainerList = ({
                 title={datasource.name}
                 actions={[
                   <Tooltip title="Edit datasource">
-                    <Button icon="edit"/>
+                    <Button icon="edit" onClick={() => { openDatasourceModal(container.id, datasource); }}/>
                   </Tooltip>,
                   <Tooltip title="Delete datasource">
-                    <Button type="danger" icon="delete"/>
+                    <Button type="danger" icon="delete" onClick={() => { deleteDatasource(datasource.id) }} />
                   </Tooltip>
                 ]}
                 >
@@ -133,7 +123,7 @@ const ContainerList = ({
                 }/>
               </Card>
             ))}
-            <div className="add item">
+            <div className="add item" onClick={() => { openDatasourceModal(container.id); }}>
               <Icon type="plus"/>
               <span>Add datasource</span>
             </div>

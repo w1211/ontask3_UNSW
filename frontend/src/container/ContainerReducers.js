@@ -17,20 +17,7 @@ import {
   FAILURE_REQUEST_WORKFLOW,
   SUCCESS_CREATE_WORKFLOW,
   SUCCESS_UPDATE_WORKFLOW,
-  SUCCESS_DELETE_WORKFLOW,
-
-  OPEN_DATASOURCE_MODAL,
-  CLOSE_DATASOURCE_MODAL,
-  CHANGE_DATASOURCE,
-  BEGIN_REQUEST_DATASOURCE,
-  FAILURE_REQUEST_DATASOURCE,
-  SUCCESS_CREATE_DATASOURCE,
-  SUCCESS_UPDATE_DATASOURCE,
-  SUCCESS_DELETE_DATASOURCE,
-
-  UPLOAD_EXTERNAL_FILE,
-  ADD_UPLOADING_FILE,
-  REMOVE_UPLOADING_FILE,
+  SUCCESS_DELETE_WORKFLOW
 } from './ContainerActions';
 
 
@@ -161,93 +148,6 @@ function containers(state = initialState, action) {
         containerId: null,
         didDelete: true,
         model: 'workflow'
-      });
-
-    // Shared datasource actions
-    case OPEN_DATASOURCE_MODAL:
-      return Object.assign({}, state, {
-        datasourceModalVisible: true,
-        containerId: action.containerId,
-        datasources: action.datasources
-      });
-    case CLOSE_DATASOURCE_MODAL:
-      return Object.assign({}, state, {
-        datasourceModalVisible: false,
-        datasourceError: null,
-        datasourceLoading: false,
-        containerId: null,
-        datasource: null,
-        datasources: null,
-        uploadingFile: null,
-        isExternalFile: false
-      });
-    case CHANGE_DATASOURCE:
-      return Object.assign({}, state, {
-        datasource: action.datasource,
-        isExternalFile: action.isExternalFile
-      });
-    case BEGIN_REQUEST_DATASOURCE:
-      return Object.assign({}, state, {
-        datasourceLoading: true
-      });
-    case FAILURE_REQUEST_DATASOURCE:
-      return Object.assign({}, state, {
-        datasourceLoading: false,
-        datasourceError: action.error
-      });
-
-    // Specific datasource actions
-    case SUCCESS_CREATE_DATASOURCE:
-      return Object.assign({}, state, {
-        datasourceModalVisible: false,
-        datasourceLoading: false,
-        datasourceError: null,
-        datasource: null,
-        containerId: null,
-        datasources: null,
-        didCreate: true,
-        isExternalFile: false,
-        model: 'datasource'
-      });
-    case SUCCESS_UPDATE_DATASOURCE:
-      return Object.assign({}, state, {
-        datasourceModalVisible: false,
-        datasourceLoading: false,
-        datasourceError: null,
-        datasource: null,
-        containerId: null,
-        datasources: null,
-        didUpdate: true,
-        isExternalFile: false,
-        model: 'datasource'
-      });
-    case SUCCESS_DELETE_DATASOURCE:
-      return Object.assign({}, state, {
-        datasourceModalVisible: false,
-        datasourceLoading: false,
-        datasource: null,
-        containerId: null,
-        datasources: null,
-        didDelete: true,
-        isExternalFile: false,
-        model: 'datasource'
-      });
-
-    case UPLOAD_EXTERNAL_FILE:
-      return Object.assign({}, state, {
-        isExternalFile: action.isExternalFile
-      });
-
-    //for interacting with datasource form uploaidng file list
-    case ADD_UPLOADING_FILE:
-      return Object.assign({}, state, {
-        uploadingFile: action.file
-      });
-
-    case REMOVE_UPLOADING_FILE:
-      return Object.assign({}, state, {
-        uploadingFile: null,
-        isExternalFile: false
       });
 
     default:
