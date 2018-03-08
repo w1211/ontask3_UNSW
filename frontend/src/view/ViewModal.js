@@ -111,9 +111,19 @@ class ViewModal extends React.Component {
     }]
   }
 
+  handleSubmit = () => {
+    const { containerId, form } = this.props;
+    const { formValues } = this.state;
+
+    form.validateFields((err, values) => {
+      if (err) return;
+      this.boundActionCreators.createView(containerId, {...formValues, ...values});
+    });
+  }
+
   render() {
     const { current, resolveMatchVisible, resolveFieldNameVisible, newFields, formValues } = this.state;
-    const { form, formState, visible, loading, error, view, fieldMatchResult, matchingField } = this.props;
+    const { containerId, form, formState, visible, loading, error, view, fieldMatchResult, matchingField } = this.props;
 
     return (
       <Modal
@@ -129,7 +139,7 @@ class ViewModal extends React.Component {
             { (this.steps && current < this.steps.length - 1) ?
               <Button type="primary" onClick={() => { this.handleNext() }}>Next</Button>
             :
-              <Button type="primary" onClick={() => { form.validateFields((err, values) => { console.log({...formValues, ...values}) }); console.log(formState); }}>{ view ? "Update" : "Create" }</Button>
+              <Button type="primary" loading={loading} onClick={this.handleSubmit}>{ view ? "Update" : "Create" }</Button>
             }
           </div>
         }
@@ -182,6 +192,7 @@ class ViewModal extends React.Component {
     if (e === 'data') {
       form.validateFields((err, values) => {
         if (err) return;
+        this.storeFormValues(values);
         this.boundActionCreators.previewData({...formValues, ...values});
       });
     }
@@ -251,11 +262,11 @@ class ViewModal extends React.Component {
 
 const mapStateToProps = (state) => {
   const { 
-    datasources, visible, dataLoading, dataPreview, error, view, views, formState, fieldMatchResult, matchingField 
+    containerId, datasources, loading, visible, dataLoading, dataPreview, error, view, views, formState, fieldMatchResult, matchingField 
   } = state.view;
   
   return { 
-    datasources, visible, dataLoading, dataPreview, error, view, views, formState, fieldMatchResult, matchingField
+    containerId, datasources, loading, visible, dataLoading, dataPreview, error, view, views, formState, fieldMatchResult, matchingField
   }
 }
 

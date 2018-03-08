@@ -8,6 +8,7 @@ import json
 
 from .serializers import ViewSerializer
 
+from .models import View
 from datasource.models import DataSource
 
 
@@ -16,13 +17,11 @@ class ViewViewSet(viewsets.ModelViewSet):
     serializer_class = ViewSerializer
     permission_classes = [IsAuthenticated]
 
-    def __init__(self):
-        self.test = 'test'
-
     def get_queryset(self):
         return View.objects.all()
 
     def perform_create(self, serializer):
+        self.check_object_permissions(self.request, None)
         serializer.save()
 
     def perform_update(self, serializer):

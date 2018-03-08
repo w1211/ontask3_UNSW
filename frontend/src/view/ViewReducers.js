@@ -11,7 +11,11 @@ import {
 
   BEGIN_REQUEST_DATA_PREVIEW,
   FAILURE_REQUEST_DATA_PREVIEW,
-  RECEIVE_DATA_PREVIEW
+  RECEIVE_DATA_PREVIEW,
+
+  BEGIN_REQUEST_VIEW,
+  FAILURE_REQUEST_VIEW,
+  SUCCESS_CREATE_VIEW
 } from './ViewActions';
 
 import _ from 'lodash';
@@ -88,6 +92,23 @@ function view(state = {}, action) {
       return Object.assign({}, state, {
         dataLoading: false,
         dataPreview: action.dataPreview
+      });
+
+    case BEGIN_REQUEST_VIEW:
+      return Object.assign({}, state, {
+        loading: true
+      });
+
+    case FAILURE_REQUEST_VIEW:
+      return Object.assign({}, state, {
+        loading: false,
+        error: action.error
+      });
+
+    case SUCCESS_CREATE_VIEW:
+      return Object.assign({}, state, {
+        loading: false,
+        error: null
       });
 
     default:

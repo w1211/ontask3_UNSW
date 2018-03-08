@@ -13,6 +13,10 @@ export const BEGIN_REQUEST_DATA_PREVIEW = 'BEGIN_REQUEST_DATA_PREVIEW';
 export const FAILURE_REQUEST_DATA_PREVIEW = 'FAILURE_REQUEST_DATA_PREVIEW';
 export const RECEIVE_DATA_PREVIEW = 'RECEIVE_DATA_PREVIEW';
 
+export const BEGIN_REQUEST_VIEW = 'BEGIN_REQUEST_VIEW';
+export const FAILURE_REQUEST_VIEW = 'FAILURE_REQUEST_VIEW';
+export const SUCCESS_CREATE_VIEW = 'SUCCESS_CREATE_VIEW';
+
 
 export const openViewModal = (containerId, datasources, views) => ({
   type: OPEN_VIEW_MODAL,
@@ -260,6 +264,70 @@ export const previewData = (payload) => (dispatch, getState) => {
     },
     successFn: (dataPreview) => {
       dispatch(receiveDataPreview(dataPreview));
+    },
+    payload: payload
+  }
+
+  requestWrapper(parameters);
+};
+
+const beginRequestView = () => ({
+  type: BEGIN_REQUEST_VIEW
+});
+
+const failureRequestView = (error) => ({
+  type: FAILURE_REQUEST_VIEW,
+  error
+});
+
+const successCreateView = () => ({
+  type: SUCCESS_CREATE_VIEW
+});
+
+export const createView = (containerId, payload) => dispatch => {
+  payload.container = containerId;
+  
+  // Modify the payload into a format that the backend is expecting
+  payload.columns = Object.entries(payload.columns).map(([key, value]) => ({
+    ...value, 
+    matching: value.matching && value.matching[0], 
+    type: value.type && value.type[0] 
+  }));
+  
+  if ('defaultMatchingFields' in payload) {
+    payload.defaultMatchingFields = Object.entries(payload.defaultMatchingFields).map(([key, value]) => ({ 
+      datasource: key, 
+      matching: value 
+    }));
+  }
+  
+  if ('dropDiscrepencies' in payload) {
+    let dropDiscrepencies = [];
+    payload.dropDiscrepencies = Object.entries(payload.dropDiscrepencies).forEach(([datasource, fields]) => {
+      Object.entries(fields).forEach(([field, value]) => {
+        dropDiscrepencies.push({
+          datasource: datasource, 
+          matching: field, 
+          dropMatching: value.primary,
+          dropPrimary: value.matching
+        })
+      });
+    });
+    payload.dropDiscrepencies = dropDiscrepencies;
+  }
+  
+  const parameters = {
+    initialFn: () => {
+      dispatch(beginRequestView());
+    },
+    url: `/view/`,
+    method: 'POST',
+    errorFn: (error) => {
+      dispatch(failureRequestView(error));
+    },
+    successFn: (response) => {
+      dispatch(successCreateView());
+      console.log(response);
     },
     payload: payload
   }
