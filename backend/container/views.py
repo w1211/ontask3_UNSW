@@ -68,6 +68,14 @@ class ContainerViewSet(viewsets.ModelViewSet):
                 }
             },
             {
+                '$lookup': {
+                    'from': 'view',
+                    'localField': '_id',
+                    'foreignField': 'container',
+                    'as': 'views'
+                }
+            },
+            {
                 # Exclude fields that are not used in the containers component
                 '$project': {
                     'datasources.container': 0,
@@ -75,7 +83,8 @@ class ContainerViewSet(viewsets.ModelViewSet):
                     'workflows.container': 0,
                     'workflows.conditionGroups': 0,
                     'workflows.details': 0,
-                    'workflows.content': 0
+                    'workflows.content': 0,
+                    'view.container': 0
                 },
             }
         ]
