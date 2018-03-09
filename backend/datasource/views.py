@@ -28,6 +28,7 @@ from .permissions import DataSourcePermissions
 
 from container.models import Container
 from workflow.models import Workflow
+from view.models import View
 
 
 class DataSourceViewSet(viewsets.ModelViewSet):
@@ -213,14 +214,10 @@ class DataSourceViewSet(viewsets.ModelViewSet):
          # Ensure that the request.user is the owner of the object
         self.check_object_permissions(self.request, obj)
 
-        # Ensure that no workflow is currently using this datasource
-        # Because the details secondaryColumns field is a list of SecondaryColumn embedded documents, we use
-        # $elemMatch which is aliased to "match" in mongoengine
-        queryset = Workflow.objects.filter(
-            Q(details__secondaryColumns__match = { "datasource": obj }) | Q(details__primaryColumn__datasource = obj)
-        )
+        # Ensure that no view is currently using this datasource
+        queryset = View.objects.filter(columns__match = { "datasource": obj })
         if queryset.count():
-            raise ValidationError('This datasource is being used by a workflow')
+            raise ValidationError('This datasource is being used by a view')
         obj.delete()
 
     @list_route(methods=['post'])
