@@ -6,8 +6,6 @@ import requestWrapper from '../shared/requestWrapper';
 import aaf from '../img/aaf.png';
 import loginImg from '../img/loginImg.png';
 
-const queryString = require('query-string');
-
 const FormItem = Form.Item;
 const TabPane = Tabs.TabPane;
 
@@ -22,12 +20,10 @@ class Login extends React.Component {
 
   handleSubmit() {
     const { form, history, onLogin } = this.props;
-
     form.validateFields((err, values) => {
       if (err) {
         return;
       }
-
       const parameters = {
         url: `/user/local/`,
         method: 'POST',
@@ -43,42 +39,11 @@ class Login extends React.Component {
         isUnauthenticated: true
       }
       requestWrapper(parameters);
-
     });
-  }
-
-  componentDidMount() {
-    const { history, onLogin } = this.props;
-    const oneTimeToken = queryString.parse(window.location.search).tkn;
-    const authToken = localStorage.getItem('token');
-    const payload = { token: oneTimeToken };
-
-    if (!authToken && oneTimeToken) {
-      const parameters = {
-        url: `/user/token/`,
-        method: 'POST',
-        errorFn: (error) => {
-          this.setState({ error: error });
-        },
-        successFn: (response) => {
-          localStorage.setItem('token', response.token);
-          history.push("containers");
-          onLogin();
-        },
-        payload: payload,
-        isUnauthenticated: true
-      }
-      requestWrapper(parameters);
-
-    } else if (authToken) {
-      history.push("containers");
-    }
-
   }
 
   render() {
     const { form } = this.props;
-
     return (
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         { localStorage.getItem('token') ?

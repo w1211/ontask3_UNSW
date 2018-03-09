@@ -1,6 +1,7 @@
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
 from rest_framework.decorators import detail_route
+from rest_framework.decorators import list_route
 
 from django.http import JsonResponse
 import json
@@ -276,7 +277,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
             if matchedCount > 1:
                 raise ValidationError('An item has matched with more than one condition in the condition group \'{0}\''.format(condition_group['name']))
-
         return conditions_passed
 
     def validate_condition_group(self, details, filter, condition_group):
@@ -404,13 +404,13 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         return str(value)
 
-    def populate_content(self, workflow, content=None):
+    def populate_content(self, workflow, content=None, zid=None):
         condition_groups = workflow['conditionGroups']
         details = workflow['details']
         filter = workflow['filter']
         all_conditions_passed = defaultdict(list)
 
-        content = content if content else workflow['content']
+        content = content if content else workflow['content']['plain']
 
         # Combine all conditions from each condition group into a single dict
         for condition_group in condition_groups:
@@ -421,25 +421,36 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         data = self.combine_data(details, filter)['data']
         primary_field = details['primaryColumn']['field']
 
-        result = defaultdict(str)
-
-        for item in data:
-            # Parse the conditional statements
-            item_key = item[primary_field]
-            # Use a positive lookahead to match the expected template syntax without replacing the closing block
-            # E.g. we have a template given by: {% if low_grade %} Low! {% elif high_grade %} High! {% endif %}
-            # We have found a match if the snippet is enclosed between two {% %} blocks
-            # However, when we are replacing/subbing the match, we don't want to replace the closing block
-            # This is because the closing block of the current match could also be the opening block of the next match
-            # I.e. in the example above, {% elif high_grade %} is both the closing block of the first match, and the opening block of the second match
-            # However, if the closing block is {% endif %}, then we can actually replace it instead of using a lookahead
-            # Because we know that in that case, there would be no further matches
-            item_content = re.sub(r'{% .*? (.*?) %}(.*?)({% endif %}|(?={% .*? %}))', lambda match: self.check_condition_match(match, all_conditions_passed, item_key), content)
-            # Populate the field tags
-            item_content = re.sub(r'{{ (.*?) }}', lambda match: self.populate_field(match, item), item_content)
-            result[item_key] = item_content
-
-        return result
+        #generate content for specific user
+        if zid:
+            result=''
+            for item in data:
+                # Parse the conditional statements
+                item_key = item[primary_field]
+                if item_key == zid:
+                    item_content = re.sub(r'{% .*? (.*?) %}(.*?)({% endif %}|(?={% .*? %}))', lambda match: self.check_condition_match(match, all_conditions_passed, item_key), content)
+                    # Populate the field tags
+                    result = re.sub(r'{{ (.*?) }}', lambda match: self.populate_field(match, item), item_content)
+            #return result as a string if found otherwise return empty string
+            return result
+        else:
+            result = defaultdict(str)
+            for item in data:
+                # Parse the conditional statements
+                item_key = item[primary_field]
+                # Use a positive lookahead to match the expected template syntax without replacing the closing block
+                # E.g. we have a template given by: {% if low_grade %} Low! {% elif high_grade %} High! {% endif %}
+                # We have found a match if the snippet is enclosed between two {% %} blocks
+                # However, when we are replacing/subbing the match, we don't want to replace the closing block
+                # This is because the closing block of the current match could also be the opening block of the next match
+                # I.e. in the example above, {% elif high_grade %} is both the closing block of the first match, and the opening block of the second match
+                # However, if the closing block is {% endif %}, then we can actually replace it instead of using a lookahead
+                # Because we know that in that case, there would be no further matches
+                item_content = re.sub(r'{% .*? (.*?) %}(.*?)({% endif %}|(?={% .*? %}))', lambda match: self.check_condition_match(match, all_conditions_passed, item_key), content)
+                # Populate the field tags
+                item_content = re.sub(r'{{ (.*?) }}', lambda match: self.populate_field(match, item), item_content)
+                result[item_key] = item_content
+            return result
 
     @detail_route(methods=['put'])
     def preview_content(self, request, id=None):
@@ -474,11 +485,9 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         # Run the populate content function to validate the provided content before saving it
         self.populate_content(workflow, updated_content['plain'])
-
         serializer = WorkflowSerializer(instance=workflow, data={'content': updated_content}, partial=True)
         serializer.is_valid()
         serializer.save()
-
         return JsonResponse(serializer.data)
 
     @detail_route(methods=['put'])
@@ -545,12 +554,9 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                 
         if len(failed_emails) > 0:
             raise ValidationError('Emails to the following records failed to send: ' + str(failed_emails).strip('[]').strip("'"))
-        
         return JsonResponse({ 'success': 'true' }, safe=False)
-
-
+    
     #retrive email sending history and generate static page.
-    #search in audit db by matching workflowId and user email.
     @detail_route(methods=['get'])
     def retrieve_history(self, request, id=None):
         pipeline = [
@@ -569,11 +575,45 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             if isinstance(obj, ObjectId):
                 return str(obj)
         audits = list(Audit.objects.aggregate(*pipeline))
-        #get creator receiver content and timeStamp
-        columns = list(audits[0].keys())[2:-1]
-        audits_str = str(dumps(audits, default=json_serial)).replace('"_id":', '"id":')
+        #good to write this way?
         response = {}
-        response['data'] = json.loads(audits_str)
-        response['columns'] = columns    
-        print(response)    
+        response['data'] = None
+        response['columns'] = []  
+        if audits:
+            columns = list(audits[0].keys())[2:-1]
+            audits_str = str(dumps(audits, default=json_serial)).replace('"_id":', '"id":')
+            response['data'] = json.loads(audits_str)
+            response['columns'] = columns    
         return JsonResponse(response, safe=False)
+
+    #search workflow with link_id
+    @list_route(methods=['post'])
+    def search_workflow(self, request):
+        link_id = self.request.data['link_id']
+        pipeline = [
+            {
+                '$match':{'linkId': link_id}
+            }
+        ]
+
+        workflow = list(Workflow.objects.aggregate(*pipeline))
+        if len(workflow)==0:
+            return JsonResponse({'mismatch': True})
+        else:
+            return JsonResponse({'workflowId': str(workflow[0]['_id']) }, safe=False)
+
+    #search specific content for studentwith link_id and student zid
+    @list_route(methods=['post'])
+    def search_content(self, request):
+        link_id = self.request.data['link_id']
+        zid = self.request.data['zid']
+        try:
+            workflow = Workflow.objects.get(linkId=link_id)
+        except Workflow.DoesNotExist:
+            return JsonResponse({'mismatch': True})
+        content = self.populate_content(workflow, None, zid)
+        if content:
+            return JsonResponse({'content': content }, safe=False)
+        else:
+            return JsonResponse({'mismatch': True})
+

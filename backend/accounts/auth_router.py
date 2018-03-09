@@ -13,9 +13,13 @@ from ontask.settings import SECRET_KEY, FRONTEND_DOMAIN
 
 class AuthRouter(object):
     ''' Generic method wrapper for handling user login'''
-    def authenticate(self, request, auth_wrapper_object, is_local):
+    def authenticate(self, request, auth_wrapper_object, login_method):
         try:
-            user = auth_wrapper_object.authenticate_user(request.data)
+            #if user comes from LTI, get zid and link_id
+            if login_method=='LTI':
+                user, zid, link_id = auth_wrapper_object.authenticate_user(request.data)
+            else:
+                user = auth_wrapper_object.authenticate_user(request.data)
 
             # Check for invalid user login
             if user == "NOT_AUTHORIZED":
@@ -26,11 +30,10 @@ class AuthRouter(object):
                 return Response({"error": "Invalid login credentials"}, status=HTTP_401_UNAUTHORIZED)
 
             # Check for a valid user login
-            if user and is_local:
+            if user and login_method=='LOCAL':
                 long_term_token, _ = Token.objects.get_or_create(user=user)
                 # Convert the token into string format, to be sent as a JSON object in the response body
                 long_term_token = str(long_term_token)
-
                 return Response({ "token": long_term_token })
                 
             elif user:
@@ -43,7 +46,21 @@ class AuthRouter(object):
                 # Add the token to the database in order to validate any incoming tokens
                 OneTimeToken.objects(user=user.id).update_one(token=token, upsert=True)
 
-                return redirect(FRONTEND_DOMAIN + '?tkn=' + token)
+                #if user comes from LTI, redirect user based on user role
+                if login_method == 'LTI':
+                    #if user is staff, redirect to staticPageStaff page
+                    if user.is_staff:
+                        return redirect(FRONTEND_DOMAIN + '/staticPageStaff' + '?tkn=' + token + '&link_id=' + link_id)
+                    else:
+                    #if user is student, redirect to staticPageStudent
+                        return redirect(FRONTEND_DOMAIN + '/staticPageStudent' + '?tkn=' + token + '&link_id=' + link_id + '&zid=' + zid)
+                
+                #if student login through AAF, redirect them to staticPageHistoryStudent
+                elif login_method == 'AAF' and not user.is_staff:
+                    return redirect(FRONTEND_DOMAIN + '/staticPageHistoryStudent' + '?tkn=' + token)
+                #if staff login through AAF or user login through local auth, redirect them to home page
+                else:
+                    return redirect(FRONTEND_DOMAIN + '?tkn=' + token)
 
         except Exception as e:
             # TODO logging

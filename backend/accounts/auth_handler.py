@@ -36,8 +36,6 @@ class UserAuthHandler(object):
                 instructor_group = Group.objects.get(name='instructor')
                 instructor_group.user_set.add(user)
                 user.is_staff = True
-            
             user.save()
-                
         return user
 

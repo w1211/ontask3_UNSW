@@ -58,7 +58,6 @@ const FilterModal = ({
       confirmLoading={loading}
     >
       <Form layout="horizontal">
-
         <QueryBuilder 
           form={form} options={options}
           addFormula={addFormula} deleteFormula={deleteFormula}
@@ -69,7 +68,7 @@ const FilterModal = ({
         {/* { form.getFieldsError(['conditions']).conditions && form.getFieldsError(['conditions']).conditions.length > 0 &&
           <Alert message="All fields in the query builder must be filled." type="error"/>
         } */}
-  
+
       </Form>
     </Modal>
   )

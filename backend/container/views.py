@@ -122,3 +122,45 @@ class ContainerViewSet(viewsets.ModelViewSet):
         obj.delete()        
 
         # TODO fix bug https://stackoverflow.com/questions/32513388/how-would-i-override-the-perform-destroy-method-in-django-rest-framework
+
+    #retrieve all workflows owned by current user
+    @list_route(methods=['get'])
+    def retrieve_workflows(self, request):
+        def json_serial(obj):
+            if isinstance(obj, (datetime, date)):
+                return obj.isoformat()
+            if isinstance(obj, ObjectId):
+                return str(obj)
+
+        pipeline = [
+            {
+                '$match': {
+                    '$or': [
+                        { 'owner': self.request.user.id }
+                    ]
+                }
+            },
+            {
+                '$lookup': {
+                    'from': 'workflow',
+                    'localField': '_id',
+                    'foreignField': 'container',
+                    'as': 'workflows'
+                }
+            },
+            {
+                # Exclude fields that are not used in the containers component
+                '$project': {
+                    'workflows.container': 0,
+                    'workflows.conditionGroups': 0,
+                    'workflows.details': 0,
+                    'workflows.content': 0
+                },
+            }
+        ]
+        containers_after_dump = dumps(list(Container.objects.aggregate(*pipeline)), default=json_serial)
+        # Convert the queryset response into a string so that we can transform
+        # To remove the underscore from "id" key values
+        # For better consistency in field names
+        containers = str(containers_after_dump).replace('"_id":', '"id":')
+        return JsonResponse(json.loads(containers), safe=False)

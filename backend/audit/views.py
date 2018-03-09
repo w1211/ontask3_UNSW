@@ -1,14 +1,20 @@
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
 from mongoengine.queryset.visitor import Q
-
+from rest_framework.decorators import list_route
 from django.http import JsonResponse
 
 import requests
-
+import json
+import re
+import dateutil.parser
+import requests
 from .serializers import AuditSerializer
 from .models import Audit
 from .permissions import AuditPermissions
+from json import dumps
+from datetime import date, datetime
+from bson import ObjectId
 
 from collections import defaultdict
 
@@ -32,4 +38,31 @@ class AuditViewSet(viewsets.ModelViewSet):
         return Audit.objects.filter(
             Q(owner = self.request.user.id) | Q(sharing__readOnly__contains = self.request.user.id) | Q(sharing__readWrite__contains = self.request.user.id)
         )
+    
+    #retrieve all email history for student
+    @list_route(methods=['get'])
+    def retrieve_history(self, request):
+        #change to find?
+        pipeline = [
+            {
+                '$match':{'receiver' : request.user.email}
+            }
+        ]
+        def json_serial(obj):
+            if isinstance(obj, (datetime, date)):
+                return obj.strftime('%T %Y/%m/%d')
+            if isinstance(obj, ObjectId):
+                return str(obj)
+        audits = list(Audit.objects.aggregate(*pipeline))
+        response = {}
+        response['data'] = None
+        response['columns'] = []  
+        if audits:
+            columns = list(audits[0].keys())[1:-1]
+            audits_str = str(dumps(audits, default=json_serial)).replace('"_id":', '"id":')
+            response['data'] = json.loads(audits_str)
+            response['columns'] = columns
+        return JsonResponse(response, safe=False)
+        
+
     

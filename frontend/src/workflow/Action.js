@@ -146,7 +146,7 @@ class Action extends React.Component {
         <Divider/>
         <h3>Static Page</h3>
         <div>
-        <Link to={`/staticPage/${workflowId}/retrieve_history/`}>
+        <Link to={`/staticPageHistoryStaff/${workflowId}/`}>
           Email history
         </Link>
         </div>
