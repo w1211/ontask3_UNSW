@@ -1,4 +1,5 @@
 from rest_framework_mongoengine import viewsets
+from rest_framework_mongoengine.validators import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import list_route
 
@@ -9,6 +10,7 @@ import json
 from .serializers import ViewSerializer
 
 from .models import View
+# from workflow.models import Workflow
 from datasource.models import DataSource
 
 
@@ -22,14 +24,39 @@ class ViewViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         self.check_object_permissions(self.request, None)
+
+        queryset = View.objects.filter(
+            name = self.request.data['name'],
+            container = self.request.data['container']
+        )
+        if queryset.count():
+            raise ValidationError('A view with this name already exists')
+
         serializer.save()
 
     def perform_update(self, serializer):
         self.check_object_permissions(self.request, self.get_object())
+
+        queryset = View.objects.filter(
+            name = self.request.data['name'],
+            container = self.get_object()['container'],
+            id__ne = self.get_object()['id'] # Check against views other than the one being updated
+        )
+        if queryset.count():
+            raise ValidationError('A view with this name already exists')
+
         serializer.save()
 
     def perform_destroy(self, obj):
         self.check_object_permissions(self.request, obj)
+
+        # # Ensure that no workflow is currently using this view
+        # queryset = Workflow.objects.filter(
+        #     view = self.get_object()['id']
+        # )
+        # if queryset.count():
+        #     raise ValidationError('This view is being used by a workflow')
+
         obj.delete()
 
     @list_route(methods=['post'])
