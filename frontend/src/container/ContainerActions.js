@@ -1,4 +1,7 @@
+import { notification, Modal } from 'antd';
 import requestWrapper from '../shared/requestWrapper';
+
+const confirm = Modal.confirm;
 
 export const REQUEST_CONTAINERS = 'REQUEST_CONTAINERS';
 export const RECEIVE_CONTAINERS = 'RECEIVE_CONTAINERS';
@@ -8,9 +11,7 @@ export const OPEN_CONTAINER_MODAL = 'OPEN_CONTAINER_MODAL';
 export const CLOSE_CONTAINER_MODAL = 'CLOSE_CONTAINER_MODAL';
 export const BEGIN_REQUEST_CONTAINER = 'BEGIN_REQUEST_CONTAINER';
 export const FAILURE_REQUEST_CONTAINER = 'FAILURE_CREATE_CONTAINER';
-export const SUCCESS_CREATE_CONTAINER = 'SUCCESS_CREATE_CONTAINER';
-export const SUCCESS_UPDATE_CONTAINER = 'SUCCESS_UPDATE_CONTAINER';
-export const SUCCESS_DELETE_CONTAINER = 'SUCCESS_DELETE_CONTAINER';
+export const SUCCESS_REQUEST_CONTAINER = 'SUCCESS_CREATE_CONTAINER';
 
 export const OPEN_WORKFLOW_MODAL = 'OPEN_WORKFLOW_MODAL';
 export const CLOSE_WORKFLOW_MODAL = 'CLOSE_WORKFLOW_MODAL';
@@ -53,9 +54,9 @@ export const fetchContainers = () => dispatch => {
   requestWrapper(parameters);
 };
 
-export const openContainerModal = (container) => ({
+export const openContainerModal = (selected) => ({
   type: OPEN_CONTAINER_MODAL,
-  container
+  selected
 });
 
 export const closeContainerModal = () => ({
@@ -71,8 +72,8 @@ const failureRequestContainer = (error) => ({
   error
 });
 
-const successCreateContainer = () => ({
-  type: SUCCESS_CREATE_CONTAINER
+const successRequestContainer = () => ({
+  type: SUCCESS_REQUEST_CONTAINER
 });
 
 export const createContainer = (payload) => dispatch => {
@@ -86,18 +87,18 @@ export const createContainer = (payload) => dispatch => {
       dispatch(failureRequestContainer(error));
     },
     successFn: () => {
-      dispatch(successCreateContainer());
+      dispatch(successRequestContainer());
       dispatch(fetchContainers());
+      notification['success']({
+        message: 'Container created',
+        description: 'The container was successfully created.'
+      });
     },
     payload: payload
   }
 
   requestWrapper(parameters);
 };
-
-const successUpdateContainer = () => ({
-  type: SUCCESS_UPDATE_CONTAINER
-});
 
 export const updateContainer = (containerId, payload) => dispatch => {
   const parameters = {
@@ -110,18 +111,18 @@ export const updateContainer = (containerId, payload) => dispatch => {
       dispatch(failureRequestContainer(error));
     },
     successFn: () => {
-      dispatch(successUpdateContainer());
+      dispatch(successRequestContainer());
       dispatch(fetchContainers());
+      notification['success']({
+        message: 'Container updated',
+        description: 'The container was successfully updated.'
+      });
     },
     payload: payload
   }
 
   requestWrapper(parameters);
 };
-
-const successDeleteContainer = () => ({
-  type: SUCCESS_DELETE_CONTAINER
-});
 
 export const deleteContainer = (containerId) => dispatch => {
   const parameters = {
@@ -134,12 +135,25 @@ export const deleteContainer = (containerId) => dispatch => {
       dispatch(failureRequestContainer(error));
     },
     successFn: () => {
-      dispatch(successDeleteContainer());
+      dispatch(successRequestContainer());
       dispatch(fetchContainers());
+      notification['success']({
+        message: 'Container deleted',
+        description: 'The container and its associated datasources, views and workflows have been successfully deleted.'
+      });
     }
   }
 
-  requestWrapper(parameters);
+  confirm({
+    title: 'Confirm container deletion',
+    content: 'All associated datasources, views and workflows will be irrevocably deleted with the container.',
+    okText: 'Continue with deletion',
+    okType: 'danger',
+    cancelText: 'Cancel',
+    onOk() {
+      requestWrapper(parameters);
+    }
+  });
 };
 
 export const openWorkflowModal = (containerId, workflow) => ({

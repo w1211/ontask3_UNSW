@@ -114,10 +114,7 @@ class Container extends React.Component {
   render() {
     const {
       dispatch, isFetching, containers, containerAccordionKey, containerId,
-      containerModalVisible, containerLoading, containerError, container,
-      workflowModalVisible, workflowLoading, workflowError, workflow,
-      datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
-      isExternalFile, uploadingFile
+      workflowModalVisible, workflowLoading, workflowError, workflow
     } = this.props;
 
     return (
@@ -139,16 +136,9 @@ class Container extends React.Component {
               >
                 New container
               </Button>
-              <ContainerModal
-                visible={containerModalVisible}
-                loading={containerLoading}
-                error={containerError}
-                container={container}
 
-                onCreate={this.boundActionCreators.createContainer}
-                onUpdate={this.boundActionCreators.updateContainer}
-                onCancel={() => { dispatch(this.boundActionCreators.closeContainerModal()) }}
-              />
+              <ContainerModal/>
+              
               { containers && containers.length > 0 ?
                 <div>
                   <WorkflowModal
@@ -173,7 +163,7 @@ class Container extends React.Component {
                     changeAccordionKey={(key) => { dispatch(this.boundActionCreators.changeContainerAccordion(key)) }}
 
                     openContainerModal={(container) => { dispatch(this.boundActionCreators.openContainerModal(container)) }}
-                    confirmContainerDelete={this.confirmContainerDelete}
+                    confirmContainerDelete={this.boundActionCreators.deleteContainer}
 
                     openWorkflowModal={(containerId, workflow) => { dispatch(this.boundActionCreators.openWorkflowModal(containerId, workflow)) }}
                     confirmWorkflowDelete={this.confirmWorkflowDelete}
@@ -202,20 +192,12 @@ class Container extends React.Component {
 const mapStateToProps = (state) => {
   const {
     isFetching, containers, containerAccordionKey, containerId,
-    didCreate, didUpdate, didDelete, model,
-    containerModalVisible, containerLoading, containerError, container,
-    workflowModalVisible, workflowLoading, workflowError, workflow,
-    datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
-    isExternalFile, uploadingFile
+    workflowModalVisible, workflowLoading, workflowError, workflow
   } = state.containers;
   
   return {
     isFetching, containers, containerAccordionKey, containerId,
-    didCreate, didUpdate, didDelete, model,
-    containerModalVisible, containerLoading, containerError, container,
-    workflowModalVisible, workflowLoading, workflowError, workflow,
-    datasourceModalVisible, datasourceLoading, datasourceError, datasource, datasources,
-    isExternalFile, uploadingFile
+    workflowModalVisible, workflowLoading, workflowError, workflow
   };
 }
 

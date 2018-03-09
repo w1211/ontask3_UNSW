@@ -7,9 +7,7 @@ import {
   CLOSE_CONTAINER_MODAL,
   BEGIN_REQUEST_CONTAINER,
   FAILURE_REQUEST_CONTAINER,
-  SUCCESS_CREATE_CONTAINER,
-  SUCCESS_UPDATE_CONTAINER,
-  SUCCESS_DELETE_CONTAINER,
+  SUCCESS_REQUEST_CONTAINER,
 
   OPEN_WORKFLOW_MODAL,
   CLOSE_WORKFLOW_MODAL,
@@ -45,54 +43,33 @@ function containers(state = initialState, action) {
         containerAccordionKey: action.key
       });
 
-    // Shared container actions
     case OPEN_CONTAINER_MODAL:
       return Object.assign({}, state, {
-        containerModalVisible: true,
-        container: action.container
+        visible: true,
+        selected: action.selected
       });
     case CLOSE_CONTAINER_MODAL:
       return Object.assign({}, state, {
-        containerModalVisible: false,
-        containerError: null,
-        containerLoading: false,
-        container: null
+        visible: false,
+        error: null,
+        loading: false,
+        selected: null
       });
     case BEGIN_REQUEST_CONTAINER:
       return Object.assign({}, state, {
-        containerLoading: true
+        loading: true
       });
     case FAILURE_REQUEST_CONTAINER:
       return Object.assign({}, state, {
-        containerLoading: false,
-        containerError: action.error
+        loading: false,
+        error: action.error
       });
-
-    // Specific container actions
-    case SUCCESS_CREATE_CONTAINER:
+    case SUCCESS_REQUEST_CONTAINER:
       return Object.assign({}, state, {
-        containerModalVisible: false,
-        containerLoading: false,
-        containerError: null,
-        didCreate: true,
-        model: 'container',
-        container: null
-      });
-    case SUCCESS_UPDATE_CONTAINER:
-      return Object.assign({}, state, {
-        containerModalVisible: false,
-        containerLoading: false,
-        containerError: null,
-        container: null,
-        didUpdate: true,
-        model: 'container'
-      });
-    case SUCCESS_DELETE_CONTAINER:
-      return Object.assign({}, state, {
-        containerLoading: false,
-        container: null,
-        didDelete: true,
-        model: 'container'
+        visible: false,
+        loading: false,
+        error: null,
+        selected: null
       });
 
     // Shared container actions

@@ -4,7 +4,6 @@ import { fetchContainers } from '../container/ContainerActions';
 
 const confirm = Modal.confirm;
 
-
 export const OPEN_DATASOURCE_MODAL = 'OPEN_DATASOURCE_MODAL';
 export const CLOSE_DATASOURCE_MODAL = 'CLOSE_DATASOURCE_MODAL';
 
@@ -135,7 +134,7 @@ export const deleteDatasource = (datasourceId) => dispatch => {
   confirm({
     title: 'Confirm datasource deletion',
     content: 'Are you sure you want to delete this datasource?',
-    okText: 'Yes, delete it',
+    okText: 'Continue with deletion',
     okType: 'danger',
     cancelText: 'Cancel',
     onOk() {
