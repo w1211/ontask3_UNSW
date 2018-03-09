@@ -1,4 +1,10 @@
 import {
+  OPEN_WORKFLOW_MODAL,
+  CLOSE_WORKFLOW_MODAL,
+  BEGIN_REQUEST_WORKFLOW,
+  FAILURE_REQUEST_WORKFLOW,
+  SUCCESS_REQUEST_WORKFLOW,
+
   REQUEST_WORKFLOW,
   RECEIVE_WORKFLOW,
 
@@ -64,6 +70,34 @@ const initialState = {
 
 function workflow(state = initialState, action) {
   switch (action.type) {
+    case OPEN_WORKFLOW_MODAL:
+      return Object.assign({}, state, {
+        visible: true,
+        containerId: action.containerId
+      });
+    case CLOSE_WORKFLOW_MODAL:
+      return Object.assign({}, state, {
+        visible: false,
+        error: null,
+        loading: false,
+        containerId: null
+      });
+    case BEGIN_REQUEST_WORKFLOW:
+      return Object.assign({}, state, {
+        loading: true
+      });
+    case FAILURE_REQUEST_WORKFLOW:
+      return Object.assign({}, state, {
+        loading: false,
+        error: action.error
+      });
+    case SUCCESS_REQUEST_WORKFLOW:
+      return Object.assign({}, state, {
+        visible: false,
+        loading: false,
+        error: null,
+        containerId: null
+      });
 
     // Retrieve workflow with attached rules
     case REQUEST_WORKFLOW:

@@ -1,11 +1,17 @@
 import React from 'react';
+import { bindActionCreators } from 'redux';
+import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { Button, Collapse, Card, Col, Row, Badge, Icon, Tooltip, Tabs } from 'antd';
+import { Button, Collapse, Card, Icon, Tooltip, Tabs } from 'antd';
+
+import * as ContainerActionCreators from './ContainerActions';
+import { openViewModal } from '../view/ViewActions';
+import { openDatasourceModal, deleteDatasource } from '../datasource/DatasourceActions';
+import { openWorkflowModal, deleteWorkflow } from '../workflow/WorkflowActions';
 
 import './ContainerList.css';
 
 const TabPane = Tabs.TabPane;
-
 const Panel = Collapse.Panel;
 const { Meta } = Card;
 const ButtonGroup = Button.Group;
@@ -17,55 +23,6 @@ const ButtonStyle = {
   marginRight: '10px',
 }
 
-
-const ContainerPanelHeader = ({ container, openContainerModal, confirmContainerDelete, openWorkflowModal, openDatasourceModal, openViewModal, deleteDatasource }) => (
-  <div>
-  {container.code}
-  <div style={{ float: "right", marginRight: "10px", marginTop: "-5px" }}>
-    <ButtonGroup style={ButtonStyle}>
-      <Button disabled icon="user"/>
-      <Tooltip title="Edit container">
-        <Button icon="edit" onClick={(e) => { e.stopPropagation(); openContainerModal(container); }}/>
-      </Tooltip>
-      <Button disabled icon="share-alt"/>
-    </ButtonGroup>
-    <Button style={ButtonStyle} onClick={(e) => { e.stopPropagation(); openWorkflowModal(container.id); }}>
-      <Icon type="plus"/>New Workflow
-    </Button>
-    <Tooltip title="Delete container">
-      <Button type="danger" icon="delete" style={ButtonStyle} onClick={(e) => { e.stopPropagation(); confirmContainerDelete(container.id); }}/>
-    </Tooltip>
-  </div>
-</div>
-);
-
-const WorkflowCardHeader = ({ title }) => (
-  <div style={{ display: 'inline-flex', alignItems: 'center', width: '100%' }}>
-    <div style={{ flex: 1 }}>{title}</div>
-    <ButtonGroup style={ButtonStyle}>
-      <Button disabled icon="user"/>
-      <Button disabled icon="share-alt"/>
-    </ButtonGroup>
-  </div>
-)
-
-const tabListNoTitle = [{
-  key: 'article',
-  tab: 'article',
-}, {
-  key: 'app',
-  tab: 'app',
-}, {
-  key: 'project',
-  tab: 'project',
-}];
-
-const contentListNoTitle = {
-  article: <p>article content</p>,
-  app: <p>app content</p>,
-  project: <p>project content</p>,
-};
-
 const typeMap = {
   'mysql': 'MySQL',
   'postgresql': 'PostgreSQL',
@@ -74,140 +31,170 @@ const typeMap = {
   'mssql': 'MSSQL'
 }
 
-const ContainerList = ({ 
-  containers, activeKey, changeAccordionKey, 
-  openContainerModal, confirmContainerDelete, 
-  openWorkflowModal, confirmWorkflowDelete, 
-  openDatasourceModal, openViewModal, deleteDatasource
-}) => (
-  <Collapse accordion onChange={changeAccordionKey} activeKey={activeKey} className="containerList">
-  { containers.map((container, key) => {
+
+// const WorkflowCardHeader = ({ title }) => (
+//   <div style={{ display: 'inline-flex', alignItems: 'center', width: '100%' }}>
+//     <div style={{ flex: 1 }}>{title}</div>
+//     <ButtonGroup style={ButtonStyle}>
+//       <Button disabled icon="user"/>
+//       <Button disabled icon="share-alt"/>
+//     </ButtonGroup>
+//   </div>
+// )
+
+class ContainerList extends React.Component {
+  constructor(props) {
+    super(props);
+    const { dispatch } = props;
+    
+    this.boundActionCreators = bindActionCreators({
+      ...ContainerActionCreators, openViewModal, openDatasourceModal, deleteDatasource, openWorkflowModal, deleteWorkflow
+    }, dispatch);
+  }
+
+  render() {
+    const { dispatch, containers, accordionKey, tabKey } = this.props;
+
     return (
-      <Panel 
-        header={
-          <ContainerPanelHeader 
-            container={container}
-            openContainerModal={openContainerModal} 
-            confirmContainerDelete={confirmContainerDelete} 
-            openWorkflowModal={openWorkflowModal}
-            openDatasourceModal={openDatasourceModal}
-            openViewModal={openViewModal}
-          />}
-        key={container.code}
-      >
-      <Tabs
-        defaultActiveKey="1"
-        tabPosition="left"
-        tabBarStyle={{ minWidth: 160 }}
-      >
-        <TabPane tab={`Datasources (${container.datasources.length})`} key="1">
-          <div className="tab">
-            {container.datasources.map((datasource, i) => (
-              <Card
-                className="item"
-                bodyStyle={{ flex: 1 }}
-                title={datasource.name}
-                actions={[
-                  <Tooltip title="Edit datasource">
-                    <Button icon="edit" onClick={() => { openDatasourceModal(container.id, datasource); }}/>
-                  </Tooltip>,
-                  <Tooltip title="Delete datasource">
-                    <Button type="danger" icon="delete" onClick={() => { deleteDatasource(datasource.id) }} />
-                  </Tooltip>
-                ]}
-                >
-                <Meta description={
-                  <div >
-                    {typeMap[datasource.connection.dbType]}
+      <Collapse accordion onChange={this.boundActionCreators.changeContainerAccordion} activeKey={accordionKey} className="containerList">
+        { containers.map((container, i) => {
+          return (
+            <Panel 
+              header={
+                <div>
+                  {container.code}
+                  <div style={{ float: "right", marginRight: "10px", marginTop: "-5px" }}>
+                    <ButtonGroup style={ButtonStyle}>
+                      <Button disabled icon="user"/>
+                      <Button disabled icon="share-alt"/>
+                    </ButtonGroup>
+                    <Tooltip title="Edit container">
+                      <Button icon="edit" style={ButtonStyle} onClick={(e) => { e.stopPropagation(); this.boundActionCreators.openContainerModal(container); }}/>
+                    </Tooltip>
+                    <Tooltip title="Delete container">
+                      <Button type="danger" icon="delete" style={ButtonStyle} onClick={(e) => { e.stopPropagation(); this.boundActionCreators.deleteContainer(container.id); }}/>
+                    </Tooltip>
                   </div>
-                }/>
-              </Card>
-            ))}
-            <div className="add item" onClick={() => { openDatasourceModal(container.id); }}>
-              <Icon type="plus"/>
-              <span>Add datasource</span>
-            </div>
-          </div>
-        </TabPane>
-        
-        <TabPane tab={`Views (${container.views.length})`}  key="2">
-          <div className="tab">
-            {container.views.map((views, i) => (
-              <Card
-                className="item"
-                bodyStyle={{ flex: 1 }}
-                title="title"
-                actions={[
-                  <Tooltip title="Edit view">
-                    <Button icon="edit"/>
-                  </Tooltip>,
-                  <Tooltip title="Delete view">
-                    <Button type="danger" icon="delete"/>
-                  </Tooltip>
-                ]}
-                >
-                <Meta description={
-                  <div >
-                    view
+                </div>
+              }
+              key={i}
+            >
+
+              <Tabs
+                activeKey={tabKey}
+                tabPosition="left"
+                tabBarStyle={{ minWidth: 160 }}
+                onChange={this.boundActionCreators.changeContainerTab}
+              >
+
+                <TabPane tab={`Datasources (${container.datasources.length})`} key="1">
+                  <div className="tab">
+                    {container.datasources.map((datasource, i) => (
+                      <Card
+                        className="item"
+                        bodyStyle={{ flex: 1 }}
+                        title={datasource.name}
+                        actions={[
+                          <Tooltip title="Edit datasource">
+                            <Button icon="edit" onClick={() => { dispatch(this.boundActionCreators.openDatasourceModal(container.id, datasource)); }}/>
+                          </Tooltip>,
+                          <Tooltip title="Delete datasource">
+                            <Button type="danger" icon="delete" onClick={() => { this.boundActionCreators.deleteContainer(datasource.id) }} />
+                          </Tooltip>
+                        ]}
+                        key={i}
+                      >
+                        <Meta description={<span>{typeMap[datasource.connection.dbType]}</span>}/>
+                      </Card>
+                    ))}
+                    <div className="add item" onClick={() => { dispatch(this.boundActionCreators.openDatasourceModal(container.id)); }}>
+                      <Icon type="plus"/>
+                      <span>Add datasource</span>
+                    </div>
                   </div>
-                }/>
-              </Card>
-            ))}
-            <div className="add item">
-              <Icon type="plus"/>
-              <span>Create view</span>
-            </div>
-          </div>
-        </TabPane>
-        <TabPane tab={`Workflows (${container.workflows.length})`}  key="3">Content of tab 3</TabPane>
-      </Tabs>
+                </TabPane>
+              
+                <TabPane tab={`Views (${container.views.length})`}  key="2">
+                  <div className="tab">
+                    {container.views.map((views, i) => (
+                      <Card
+                        className="item"
+                        bodyStyle={{ flex: 1 }}
+                        title="title"
+                        actions={[
+                          <Tooltip title="Edit view">
+                            <Button icon="edit"/>
+                          </Tooltip>,
+                          <Tooltip title="Delete view">
+                            <Button type="danger" icon="delete"/>
+                          </Tooltip>
+                        ]}
+                        key={i}
+                      >
+                        <Meta description={
+                          <div >
+                            view
+                          </div>
+                        }/>
+                      </Card>
+                    ))}
+                    <div className="add item">
+                      <Icon type="plus"/>
+                      <span>Create view</span>
+                    </div>
+                  </div>
+                </TabPane>
 
-        {/* <div> */}
+                <TabPane tab={`Workflows (${container.workflows.length})`}  key="3">
+                  <div className="tab">
+                    {container.workflows.map((workflow, i) => (
+                      <Card
+                        className="item"
+                        bodyStyle={{ flex: 1 }}
+                        title={workflow.name}
+                        actions={[
+                          <Tooltip title="Enter workflow">
+                            <Link to={`/workflow/${workflow.id}`}>
+                              <Button icon="arrow-right"/>
+                            </Link>
+                          </Tooltip>,
+                          <Tooltip title="Delete workflow">
+                            <Button type="danger" icon="delete"  onClick={() => { this.boundActionCreators.deleteWorkflow(workflow.id); }}/>
+                          </Tooltip>
+                        ]}
+                        key={i}
+                      >
+                        <Meta description={
+                          <div >
+                            { workflow.description ? workflow.description : 'No description provided' }
+                          </div>
+                        }/>
+                      </Card>
+                    ))}
+                    <div className="add item" onClick={() => { dispatch(this.boundActionCreators.openWorkflowModal(container.id)); }}>
+                      <Icon type="plus"/>
+                      <span>Create workflow</span>
+                    </div>
+                  </div>
+                </TabPane>
+              </Tabs>
+            </Panel>        
+          )
+        })}
+      </Collapse>
+    );
+  };
 
-        {/* { container.workflows.length > 0 ?
-        <Row gutter={16} type="flex">
-          { container.workflows.map((workflow, index) => {
-              return (
-                <Col span={6} key={index} style={{ minHeight: '100%', marginBottom: '20px' }}>
-                  <Card
-                    style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', boxShadow: '0 3px 1px -2px rgba(0,0,0,.2), 0 2px 2px 0 rgba(0,0,0,.14), 0 1px 5px 0 rgba(0,0,0,.12)' }}
-                    bodyStyle={{ flex: 1 }}
-                    title={<WorkflowCardHeader title={workflow.name}/>}
-                    actions={[
-                      <Tooltip title="Enter workflow">
-                        <Link to={`/workflow/${workflow.id}`}>
-                          <Button icon="arrow-right"/>
-                        </Link>
-                      </Tooltip>,
-                      // <Tooltip title="Edit workflow">
-                      //   <Button icon="edit"  onClick={() => { openWorkflowModal(container.id, workflow) }}/>
-                      // </Tooltip>,
-                      <Tooltip title="Delete workflow">
-                        <Button type="danger" icon="delete" onClick={() => { confirmWorkflowDelete(workflow.id) }}/>
-                      </Tooltip>
-                    ]}
-                    >
-                    <Meta
-                      description={ workflow.description ?
-                        workflow.description
-                      :
-                        'No description provided'
-                      }
-                    />
-                  </Card>
-                </Col>
-              )
-            })
-          }
-        </Row>
-        :
-          <p style={{ margin: 0 }}>No workflows have been created yet.</p>
-        }
-      </div> */}
-      </Panel>        
-    )
-  })}
-</Collapse>
-)
+};
 
-export default ContainerList;
+const mapStateToProps = (state) => {
+  const {
+    containers, accordionKey, tabKey
+  } = state.containers;
+  
+  return {
+    containers, accordionKey, tabKey
+  };
+}
+
+export default connect(mapStateToProps)(ContainerList)

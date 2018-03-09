@@ -1,6 +1,16 @@
 import { EditorState, ContentState } from 'draft-js';
 import htmlToDraft from 'html-to-draftjs';
+import { notification, Modal } from 'antd';
 import requestWrapper from '../shared/requestWrapper';
+import { fetchContainers } from '../container/ContainerActions';
+
+const confirm = Modal.confirm;
+
+export const OPEN_WORKFLOW_MODAL = 'OPEN_WORKFLOW_MODAL';
+export const CLOSE_WORKFLOW_MODAL = 'CLOSE_WORKFLOW_MODAL';
+export const BEGIN_REQUEST_WORKFLOW = 'BEGIN_REQUEST_WORKFLOW';
+export const FAILURE_REQUEST_WORKFLOW = 'FAILURE_REQUEST_WORKFLOW';
+export const SUCCESS_REQUEST_WORKFLOW = 'SUCCESS_CREATE_WORKFLOW';
 
 export const REQUEST_WORKFLOW = 'REQUEST_WORKFLOW';
 export const RECEIVE_WORKFLOW = 'RECEIVE_WORKFLOW';
@@ -51,6 +61,86 @@ export const FAILURE_SEND_EMAIL = 'FAILURE_SEND_EMAIL';
 export const SUCCESS_SEND_EMAIL = 'SUCCESS_SEND_EMAIL';
 export const CLEAR_SEND_EMAIL = 'CLEAR_SEND_EMAIL';
 
+
+export const openWorkflowModal = (containerId) => ({
+  type: OPEN_WORKFLOW_MODAL,
+  containerId
+});
+
+export const closeWorkflowModal = () => ({
+  type: CLOSE_WORKFLOW_MODAL
+});
+
+const beginRequestWorkflow = () => ({
+  type: BEGIN_REQUEST_WORKFLOW
+});
+
+const failureRequestWorkflow = (error) => ({
+  type: FAILURE_REQUEST_WORKFLOW,
+  error
+});
+
+const successRequestWorkflow = () => ({
+  type: SUCCESS_REQUEST_WORKFLOW
+});
+
+export const createWorkflow = (containerId, payload) => dispatch => {
+  payload.container = containerId;
+
+  const parameters = {
+    initialFn: () => {
+      dispatch(beginRequestWorkflow());
+    },
+    url: `/workflow/`,
+    method: 'POST',
+    errorFn: (error) => {
+      dispatch(failureRequestWorkflow(error));
+    },
+    successFn: () => {
+      dispatch(successRequestWorkflow());
+      dispatch(fetchContainers());
+      notification['success']({
+        message: 'Workflow created',
+        description: 'The workflow was successfully created.'
+      });
+    },
+    payload: payload
+  }
+
+  requestWrapper(parameters);
+};
+
+export const deleteWorkflow = (workflowId) => dispatch => {
+  const parameters = {
+    initialFn: () => {
+      dispatch(beginRequestWorkflow());
+    },
+    url: `/workflow/${workflowId}/`,
+    method: 'DELETE',
+    errorFn: (error) => {
+      dispatch(failureRequestWorkflow(error));
+    },
+    successFn: () => {
+      dispatch(successRequestWorkflow());
+      dispatch(fetchContainers());
+      notification['success']({
+        message: 'Workflow deleted',
+        description: 'The workflow and its associated view, actions and scheduled tasks have been successfully deleted.'
+      });
+    }
+  }
+
+  confirm({
+    title: 'Confirm workflow deletion',
+    content: 'The associated view, actions and scheduled tasks will be irrevocably deleted with the workflow.',
+    okText: 'Continue with deletion',
+    okType: 'danger',
+    cancelText: 'Cancel',
+    onOk() {
+      requestWrapper(parameters);
+    }
+  });
+};
 
 const requestWorkflow = () => ({
   type: REQUEST_WORKFLOW

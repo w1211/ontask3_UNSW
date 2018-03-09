@@ -2,19 +2,16 @@ import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { Layout, Breadcrumb, Icon, Button, Modal, notification, Spin } from 'antd';
+import { Layout, Breadcrumb, Icon, Button, Spin } from 'antd';
 
 import * as ContainerActionCreators from './ContainerActions';
-import { openViewModal } from '../view/ViewActions';
-import { openDatasourceModal, deleteDatasource } from '../datasource/DatasourceActions';
 
 import ContainerModal from './ContainerModal';
 import ContainerList from './ContainerList';
-import WorkflowModal from './WorkflowModal';
 import DatasourceModal from '../datasource/DatasourceModal';
 import ViewModal from '../view/ViewModal';
+import WorkflowModal from '../workflow/WorkflowModal';
 
-const confirm = Modal.confirm;
 const { Content } = Layout;
 
 
@@ -23,88 +20,7 @@ class Container extends React.Component {
     super(props);
     const { dispatch } = props;
 
-    this.boundActionCreators = bindActionCreators({
-      ...ContainerActionCreators, openViewModal, openDatasourceModal, deleteDatasource 
-    }, dispatch)
-  }
-
-  componentWillReceiveProps(nextProps) {
-    if (!(nextProps.didCreate || nextProps.didUpdate || nextProps.didDelete)) return;
-
-    let message;
-    let description;
-
-    if (nextProps.didCreate) {
-      message = `${nextProps.model.charAt(0).toUpperCase() + nextProps.model.slice(1)} created`;
-      switch (nextProps.model) {
-        case 'container':
-          description = 'Next you should consider adding data sources and workflows to the container.';
-          break;
-        case 'workflow':
-          description = 'The workflow was successfuly created.';
-          break;
-        case 'datasource':
-          description = 'The datasource was successfuly created.';
-          break;
-        default:
-          break;
-      }
-    }
-
-    if (nextProps.didUpdate) {
-      message = `${nextProps.model.charAt(0).toUpperCase() + nextProps.model.slice(1)} updated`;
-      description = `The ${nextProps.model} was successfuly updated.`;
-    }
-
-    if (nextProps.didDelete) {
-      message = `${nextProps.model.charAt(0).toUpperCase() + nextProps.model.slice(1)} deleted`;
-      switch (nextProps.model) {
-        case 'container':
-          description = 'The container and its associated data sources and workflows have been successfully deleted.';
-          break;
-        case 'workflow':
-          description = 'The workflow and its associated data matrices and rules have been successfully deleted.';
-          break;
-        case 'datasource':
-          description = 'The datasource was successfully deleted.';
-          break;
-        default:
-          break;
-      }
-    }
-
-    notification['success']({
-      message: message,
-      description: description
-    });
-  }
-
-  confirmContainerDelete = (containerId) => {
-    let deleteContainer = this.boundActionCreators.deleteContainer;
-    confirm({
-      title: 'Confirm container deletion',
-      content: 'All associated datasources and workflows will be irrevocably deleted with the container.',
-      okText: 'Continue with deletion',
-      okType: 'danger',
-      cancelText: 'Cancel',
-      onOk() {
-        deleteContainer(containerId);
-      }
-    });
-  }
-
-  confirmWorkflowDelete = (workflowId) => {
-    let deleteWorkflow = this.boundActionCreators.deleteWorkflow;
-    confirm({
-      title: 'Confirm workflow deletion',
-      content: 'All associated data matrices and rules will be irrevocably deleted with the workflow.',
-      okText: 'Continue with deletion',
-      okType: 'danger',
-      cancelText: 'Cancel',
-      onOk() {
-        deleteWorkflow(workflowId);
-      }
-    });
+    this.boundActionCreators = bindActionCreators(ContainerActionCreators, dispatch);
   }
 
   componentDidMount() {
@@ -112,10 +28,7 @@ class Container extends React.Component {
   };
 
   render() {
-    const {
-      dispatch, isFetching, containers, containerAccordionKey, containerId,
-      workflowModalVisible, workflowLoading, workflowError, workflow
-    } = this.props;
+    const { dispatch, isFetching, containers } = this.props;
 
     return (
       <Content style={{ padding: '0 50px' }}>
@@ -141,37 +54,11 @@ class Container extends React.Component {
               
               { containers && containers.length > 0 ?
                 <div>
-                  <WorkflowModal
-                    visible={workflowModalVisible}
-                    loading={workflowLoading}
-                    error={workflowError}
-                    containerId={containerId}
-                    workflow={workflow}
-
-                    onCreate={this.boundActionCreators.createWorkflow}
-                    onUpdate={this.boundActionCreators.updateWorkflow}
-                    onCancel={() => { dispatch(this.boundActionCreators.closeWorkflowModal()) }}
-                  />
-
+                  <WorkflowModal/>
                   <DatasourceModal/>
-                  
                   <ViewModal/>
 
-                  <ContainerList
-                    containers={containers}
-                    activeKey={containerAccordionKey}
-                    changeAccordionKey={(key) => { dispatch(this.boundActionCreators.changeContainerAccordion(key)) }}
-
-                    openContainerModal={(container) => { dispatch(this.boundActionCreators.openContainerModal(container)) }}
-                    confirmContainerDelete={this.boundActionCreators.deleteContainer}
-
-                    openWorkflowModal={(containerId, workflow) => { dispatch(this.boundActionCreators.openWorkflowModal(containerId, workflow)) }}
-                    confirmWorkflowDelete={this.confirmWorkflowDelete}
-
-                    openDatasourceModal={(containerId, datasources) => { dispatch(this.boundActionCreators.openDatasourceModal(containerId, datasources)) }}
-                    openViewModal={(containerId, datasources, views) => { dispatch(this.boundActionCreators.openViewModal(containerId, datasources, views)) }}
-                    deleteDatasource={this.boundActionCreators.deleteDatasource}
-                  />
+                  <ContainerList/>
                 </div>
               :
                 <h2>
@@ -191,13 +78,11 @@ class Container extends React.Component {
 
 const mapStateToProps = (state) => {
   const {
-    isFetching, containers, containerAccordionKey, containerId,
-    workflowModalVisible, workflowLoading, workflowError, workflow
+    isFetching, containers
   } = state.containers;
   
   return {
-    isFetching, containers, containerAccordionKey, containerId,
-    workflowModalVisible, workflowLoading, workflowError, workflow
+    isFetching, containers
   };
 }
 

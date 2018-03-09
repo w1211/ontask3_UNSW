@@ -122,8 +122,8 @@ class ViewModal extends React.Component {
   }
 
   render() {
-    const { current, resolveMatchVisible, resolveFieldNameVisible, newFields, formValues } = this.state;
-    const { containerId, form, formState, visible, loading, error, view, fieldMatchResult, matchingField } = this.props;
+    const { current, resolveMatchVisible, resolveFieldNameVisible, newFields } = this.state;
+    const { form, formState, visible, loading, error, view, fieldMatchResult, matchingField } = this.props;
 
     return (
       <Modal

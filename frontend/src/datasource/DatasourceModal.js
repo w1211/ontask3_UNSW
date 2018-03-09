@@ -1,7 +1,7 @@
 import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
-import { Modal, Form, Input, Alert, Select, Button, Upload, Icon} from 'antd';
+import { Modal, Form, Input, Alert, Select, Upload, Icon} from 'antd';
 
 import * as DatasourceActionCreators from './DatasourceActions';
 
@@ -71,13 +71,12 @@ class DatasourceModal extends React.Component {
 
     // Validate file size
     const fileSize = file.size / Math.pow(1024, 2); // File size in MB
-    const sizeLimit = 2; // Size limit in MB
 
     if (fileSize > 2) return 'File must not be larger than 2MB';
   };
 
   render() {
-    const { dispatch, selected, visible, loading, error, form } = this.props;
+    const { selected, visible, loading, error, form } = this.props;
 
     const isFile = form.getFieldValue('connection.dbType') === 'file';
 
