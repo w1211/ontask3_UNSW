@@ -119,7 +119,11 @@ export const deleteDatasource = (datasourceId) => dispatch => {
     url: `/datasource/${datasourceId}/`,
     method: 'DELETE',
     errorFn: (error) => {
-      dispatch(failureRequestDatasource(error));
+      dispatch(failureRequestDatasource()); // Don't pass in the error here since we don't need it stored in the state
+      notification['error']({
+        message: 'Datasource deletion failed',
+        description: error
+      });
     },
     successFn: () => {
       dispatch(successRequestDatasource());

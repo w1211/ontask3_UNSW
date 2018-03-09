@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { Button, Collapse, Card, Icon, Tooltip, Tabs } from 'antd';
 
 import * as ContainerActionCreators from './ContainerActions';
-import { openViewModal } from '../view/ViewActions';
+import { openViewModal, deleteView } from '../view/ViewActions';
 import { openDatasourceModal, deleteDatasource } from '../datasource/DatasourceActions';
 import { openWorkflowModal, deleteWorkflow } from '../workflow/WorkflowActions';
 
@@ -48,7 +48,10 @@ class ContainerList extends React.Component {
     const { dispatch } = props;
     
     this.boundActionCreators = bindActionCreators({
-      ...ContainerActionCreators, openViewModal, openDatasourceModal, deleteDatasource, openWorkflowModal, deleteWorkflow
+      ...ContainerActionCreators, 
+      openViewModal, deleteView, 
+      openDatasourceModal, deleteDatasource, 
+      openWorkflowModal, deleteWorkflow
     }, dispatch);
   }
 
@@ -99,7 +102,7 @@ class ContainerList extends React.Component {
                             <Button icon="edit" onClick={() => { dispatch(this.boundActionCreators.openDatasourceModal(container.id, datasource)); }}/>
                           </Tooltip>,
                           <Tooltip title="Delete datasource">
-                            <Button type="danger" icon="delete" onClick={() => { this.boundActionCreators.deleteContainer(datasource.id) }} />
+                            <Button type="danger" icon="delete" onClick={() => { this.boundActionCreators.deleteDatasource(datasource.id) }} />
                           </Tooltip>
                         ]}
                         key={i}
@@ -116,7 +119,7 @@ class ContainerList extends React.Component {
               
                 <TabPane tab={`Views (${container.views.length})`}  key="2">
                   <div className="tab">
-                    {container.views.map((views, i) => (
+                    {container.views.map((view, i) => (
                       <Card
                         className="item"
                         bodyStyle={{ flex: 1 }}
@@ -126,7 +129,7 @@ class ContainerList extends React.Component {
                             <Button icon="edit"/>
                           </Tooltip>,
                           <Tooltip title="Delete view">
-                            <Button type="danger" icon="delete"/>
+                            <Button type="danger" icon="delete" onClick={() => { this.boundActionCreators.deleteView(view.id); }}/>
                           </Tooltip>
                         ]}
                         key={i}
@@ -138,7 +141,7 @@ class ContainerList extends React.Component {
                         }/>
                       </Card>
                     ))}
-                    <div className="add item">
+                    <div className="add item" onClick={() => { dispatch(this.boundActionCreators.openViewModal(container.id, container.datasources)); }}>
                       <Icon type="plus"/>
                       <span>Create view</span>
                     </div>
@@ -159,7 +162,7 @@ class ContainerList extends React.Component {
                             </Link>
                           </Tooltip>,
                           <Tooltip title="Delete workflow">
-                            <Button type="danger" icon="delete"  onClick={() => { this.boundActionCreators.deleteWorkflow(workflow.id); }}/>
+                            <Button type="danger" icon="delete" onClick={() => { this.boundActionCreators.deleteWorkflow(workflow.id); }}/>
                           </Tooltip>
                         ]}
                         key={i}

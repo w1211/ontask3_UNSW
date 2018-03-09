@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Form, Alert, Select } from 'antd';
+import { Modal, Form, Alert, Select, Input } from 'antd';
 
 import formItemLayout from '../../shared/FormItemLayout';
 
@@ -36,10 +36,16 @@ const Primary = ({ form, formState, options, view, onChange }) => {
 
   return (
     <div>
-      <FormItem
-        {...formItemLayout}
-        label="Primary key"
-      >
+      <FormItem {...formItemLayout} label="Name">
+        {form.getFieldDecorator('name', {
+          initialValue: formState && formState.name ? formState.name.value : undefined,
+          rules: [{ required: true, message: 'Name is required' }]
+        })(
+          <Input/>
+        )}
+      </FormItem>
+
+      <FormItem {...formItemLayout} label="Primary key">
         {form.getFieldDecorator('primary', {
           rules: [{ required: true, message: 'Primary key is required' }],
           initialValue: formState && formState.primary ? formState.primary.value : undefined,

@@ -15,7 +15,7 @@ import {
 
   BEGIN_REQUEST_VIEW,
   FAILURE_REQUEST_VIEW,
-  SUCCESS_CREATE_VIEW
+  SUCCESS_REQUEST_VIEW
 } from './ViewActions';
 
 import _ from 'lodash';
@@ -27,7 +27,8 @@ function view(state = {}, action) {
         visible: true,
         containerId: action.containerId,
         datasources: action.datasources,
-        views: action.views
+        selectedId: action.selectedId,
+        formState: action.payload,
       });
 
     case CLOSE_VIEW_MODAL:
@@ -37,8 +38,7 @@ function view(state = {}, action) {
         loading: false,
         containerId: null,
         datasources: null,
-        views: null,
-        view: null,
+        selectedId: null,
         formState: null
       });
 
@@ -105,12 +105,16 @@ function view(state = {}, action) {
         error: action.error
       });
 
-    case SUCCESS_CREATE_VIEW:
+    case SUCCESS_REQUEST_VIEW:
       return Object.assign({}, state, {
+        visible: false,
         loading: false,
-        error: null
+        error: null,
+        datasources: null,
+        selectedId: null,
+        formState: null
       });
-
+      
     default:
       return state;
   }

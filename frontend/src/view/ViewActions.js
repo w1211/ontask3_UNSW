@@ -1,4 +1,8 @@
+import { notification, Modal } from 'antd';
 import requestWrapper from '../shared/requestWrapper';
+import { fetchContainers } from '../container/ContainerActions';
+
+const confirm = Modal.confirm;
 
 export const OPEN_VIEW_MODAL = 'OPEN_VIEW_MODAL';
 export const CLOSE_VIEW_MODAL = 'CLOSE_VIEW_MODAL';
@@ -15,15 +19,19 @@ export const RECEIVE_DATA_PREVIEW = 'RECEIVE_DATA_PREVIEW';
 
 export const BEGIN_REQUEST_VIEW = 'BEGIN_REQUEST_VIEW';
 export const FAILURE_REQUEST_VIEW = 'FAILURE_REQUEST_VIEW';
-export const SUCCESS_CREATE_VIEW = 'SUCCESS_CREATE_VIEW';
+export const SUCCESS_REQUEST_VIEW = 'SUCCESS_REQUEST_VIEW';
 
 
-export const openViewModal = (containerId, datasources, views) => ({
-  type: OPEN_VIEW_MODAL,
-  containerId,
-  datasources,
-  views
-});
+export const openViewModal = (containerId, datasources, selected) => {
+  let payload;
+  
+  return {
+    type: OPEN_VIEW_MODAL,
+    containerId,
+    datasources,
+    payload
+  }
+};
 
 export const closeViewModal = () => ({
   type: CLOSE_VIEW_MODAL
@@ -280,8 +288,8 @@ const failureRequestView = (error) => ({
   error
 });
 
-const successCreateView = () => ({
-  type: SUCCESS_CREATE_VIEW
+const successRequestView = () => ({
+  type: SUCCESS_REQUEST_VIEW
 });
 
 export const createView = (containerId, payload) => dispatch => {
@@ -326,11 +334,49 @@ export const createView = (containerId, payload) => dispatch => {
       dispatch(failureRequestView(error));
     },
     successFn: (response) => {
-      dispatch(successCreateView());
-      console.log(response);
+      dispatch(successRequestView());
+      dispatch(fetchContainers());
+      notification['success']({
+        message: 'View created',
+        description: 'The view was successfully created.'
+      });
     },
     payload: payload
   }
 
   requestWrapper(parameters);
+};
+
+export const deleteView = (viewId) => dispatch => {
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestView()); },
+    url: `/view/${viewId}/`,
+    method: 'DELETE',
+    errorFn: (error) => {
+      dispatch(failureRequestView()); // Don't pass in the error here since we don't need it stored in the state
+      notification['error']({
+        message: 'View deletion failed',
+        description: error
+      });
+    },
+    successFn: () => {
+      dispatch(successRequestView());
+      dispatch(fetchContainers());
+      notification['success']({
+        message: 'View deleted',
+        description: 'The view was successfully deleted.'
+      });
+    }
+  }
+
+  confirm({
+    title: 'Confirm view deletion',
+    content: 'Are you sure you want to delete this view?',
+    okText: 'Continue with deletion',
+    okType: 'danger',
+    cancelText: 'Cancel',
+    onOk() {
+      requestWrapper(parameters);
+    }
+  });
 };

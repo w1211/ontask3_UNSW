@@ -77,7 +77,7 @@ class ContainerModal extends React.Component {
               <TextArea rows={4}/>
             )}
           </FormItem>
-          { error && <Alert message={error} type="error"/>}
+          { error && <Alert style={{ marginTop: 10 }} message={error} type="error"/>}
         </Form>
       </Modal>
     );
