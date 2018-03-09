@@ -139,6 +139,13 @@ class DataSourceViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         self.check_object_permissions(self.request, None)
 
+        queryset = DataSource.objects.filter(
+            name = self.request.data['name'],
+            container = self.request.data['container']
+        )
+        if queryset.count():
+            raise ValidationError('A datasource with this name already exists')
+
         # Connect to specified database and get the data from the query
         # Data passed in to the DataSource model must be a list of dicts of the form {column_name: value}
         # TO DO: if isDynamic, then store values into lists as objects with timestamps
@@ -163,6 +170,15 @@ class DataSourceViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         self.check_object_permissions(self.request, self.get_object())
+
+        queryset = DataSource.objects.filter(
+            name = self.request.data['name'],
+            container = self.get_object()['container'],
+            id__ne = self.get_object()['id'] # Check against datasources other than the one being updated
+        )
+        if queryset.count():
+            raise ValidationError('A datasource with this name already exists')
+
 
         if self.request.data['dbType'] == 'file':
             connection = {}

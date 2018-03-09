@@ -186,7 +186,7 @@ class DatasourceModal extends React.Component {
               </FormItem>
             </div>
           }
-          { error && <Alert message={error} type="error"/>}
+          { error && <Alert style={{ marginTop: 10 }} message={error} type="error"/>}
         </Form>
       </Modal>
     );
