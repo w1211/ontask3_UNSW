@@ -28,7 +28,7 @@ function view(state = {}, action) {
         containerId: action.containerId,
         datasources: action.datasources,
         selectedId: action.selectedId,
-        formState: action.payload,
+        formState: action.formState
       });
 
     case CLOSE_VIEW_MODAL:

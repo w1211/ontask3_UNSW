@@ -111,19 +111,56 @@ class ViewModal extends React.Component {
     }]
   }
 
+  mergeDiscrepencies = () => {
+    // If we are editing a view, then ensure that the dropDiscrepency values are included in the payload
+    // It is necessary to manually ensure this, because the dropDiscrepency form fields are only shown in the DOM
+    // when a default matching field triggers onChange and a discrepency for that specific field is identified
+    // Therefore we iterate over all dropDiscrepency values in the formState and manually merge them
+    const { formState } = this.props;
+
+    let values;
+
+    Object.entries(formState.dropDiscrepencies).forEach(([datasource, fields]) => {
+      Object.entries(fields).forEach(([field, discrepency]) => {
+        
+        values = Object.assign({}, values, {
+          dropDiscrepencies: {
+            [datasource]: {
+              [field]: {
+                primary: discrepency.primary.value,
+                matching: discrepency.matching.value
+              }
+            }
+          }
+        });
+
+      });
+    });
+
+    return values;
+  }
+
   handleSubmit = () => {
-    const { containerId, form } = this.props;
+    const { containerId, form, selectedId, formState } = this.props;
     const { formValues } = this.state;
 
     form.validateFields((err, values) => {
       if (err) return;
-      this.boundActionCreators.createView(containerId, {...formValues, ...values});
+
+      values = {...formValues, ...values};
+
+      if (selectedId) {
+        values = {...values, ...this.mergeDiscrepencies()};
+        this.boundActionCreators.updateView(containerId, selectedId, values);
+      } else {
+        this.boundActionCreators.createView(containerId, values);
+      }
     });
   }
 
   render() {
     const { current, resolveMatchVisible, resolveFieldNameVisible, newFields } = this.state;
-    const { form, formState, visible, loading, error, view, fieldMatchResult, matchingField } = this.props;
+    const { form, formState, visible, loading, error, selectedId, fieldMatchResult, matchingField } = this.props;
 
     return (
       <Modal
@@ -139,7 +176,7 @@ class ViewModal extends React.Component {
             { (this.steps && current < this.steps.length - 1) ?
               <Button type="primary" onClick={() => { this.handleNext() }}>Next</Button>
             :
-              <Button type="primary" loading={loading} onClick={this.handleSubmit}>{ view ? "Update" : "Create" }</Button>
+              <Button type="primary" loading={loading} onClick={this.handleSubmit}>{ selectedId ? "Update" : "Create" }</Button>
             }
           </div>
         }
@@ -193,7 +230,7 @@ class ViewModal extends React.Component {
       form.validateFields((err, values) => {
         if (err) return;
         this.storeFormValues(values);
-        this.boundActionCreators.previewData({...formValues, ...values});
+        this.boundActionCreators.previewData({...formValues, ...values, ...this.mergeDiscrepencies()});
       });
     }
     this.setState({ viewMode: e });
@@ -262,11 +299,11 @@ class ViewModal extends React.Component {
 
 const mapStateToProps = (state) => {
   const { 
-    containerId, datasources, loading, visible, dataLoading, dataPreview, error, view, views, formState, fieldMatchResult, matchingField 
+    containerId, datasources, loading, visible, dataLoading, dataPreview, error, formState, fieldMatchResult, matchingField, selectedId
   } = state.view;
   
   return { 
-    containerId, datasources, loading, visible, dataLoading, dataPreview, error, view, views, formState, fieldMatchResult, matchingField
+    containerId, datasources, loading, visible, dataLoading, dataPreview, error, formState, fieldMatchResult, matchingField, selectedId
   }
 }
 
@@ -289,13 +326,13 @@ export default connect(mapStateToProps)(
 
         formState.defaultMatchingFields && Object.entries(formState.defaultMatchingFields).forEach(([key, value]) => {
           fields[`defaultMatchingFields.${key}`] = Form.createFormField(formState.defaultMatchingFields[key]);
-        })
+        });
 
         formState.columns && formState.columns.forEach((column, i) => {
           Object.entries(column).forEach(([key, value]) => {
             fields[`columns[${i}].${key}`] = Form.createFormField(formState.columns[i][key]);
-          })
-        })
+          });
+        });
         
       }
       return fields;

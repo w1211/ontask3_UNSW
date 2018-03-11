@@ -23,14 +23,66 @@ export const SUCCESS_REQUEST_VIEW = 'SUCCESS_REQUEST_VIEW';
 
 
 export const openViewModal = (containerId, datasources, selected) => {
-  let payload;
+  let formState = {};
   
+  // If a view is being edited, then construct the formstate based on its values
+  // Form field objects are of the form { value: _value, error: _error } so we just provide the value
+  if (selected) {
+    formState.name = { value: selected.name };
+
+    formState.fields = { value: [] };
+
+    formState.columns = selected.columns.map((column, index) => {
+      const datasourceIndex = datasources.findIndex(datasource => datasource.id === column.datasource);
+      const fieldIndex = datasources[datasourceIndex].fields.findIndex(field => field === column.field);
+      if (index > 0) {
+        formState.fields.value.push(`${datasourceIndex}_${fieldIndex}`);
+      } else {
+        formState.primary = { value: `${datasourceIndex}_${fieldIndex}`}
+      }
+    
+      return {
+        datasource: { value: column.datasource },
+        field: { value: column.field },
+        matching: { value: [column.matching] }, // Cascader requires an iterable value, so we just put [value]
+        type: { value: [column.type] }, // Cascader requires an iterable value, so we just put [value]
+        label: { value: column.label }
+      };
+    });
+
+    if ('defaultMatchingFields' in selected) {
+      formState.defaultMatchingFields = {};
+      selected.defaultMatchingFields.forEach(matchingField => {
+        const datasourceId = matchingField.datasource;
+        formState.defaultMatchingFields[datasourceId] = { value: matchingField.matching };
+      });
+    }
+    
+    if ('dropDiscrepencies' in selected) {
+      formState.dropDiscrepencies = {};
+      selected.dropDiscrepencies.forEach(discrepency => {
+        const datasourceId = discrepency.datasource;
+        const matchingField = discrepency.matching;
+
+        formState.dropDiscrepencies[datasourceId] = {
+          ...formState.dropDiscrepencies[datasourceId],
+          [matchingField]: {
+            primary: { value: discrepency.dropPrimary },
+            matching: { value: discrepency.dropMatching }
+          }
+        };
+      });
+    }
+
+  };
+
   return {
     type: OPEN_VIEW_MODAL,
     containerId,
     datasources,
-    payload
-  }
+    selectedId: selected ? selected.id : null,
+    formState
+  };
 };
 
 export const closeViewModal = () => ({
@@ -292,10 +344,9 @@ const successRequestView = () => ({
   type: SUCCESS_REQUEST_VIEW
 });
 
-export const createView = (containerId, payload) => dispatch => {
-  payload.container = containerId;
-  
-  // Modify the payload into a format that the backend is expecting
+const transformPayload = (payload) => {
+  // When passing objects as parameters, JavaScript passes them by reference
+  // Therefore we can directly modify the payload without needing to return anything from the function
   payload.columns = Object.entries(payload.columns).map(([key, value]) => ({
     ...value, 
     matching: value.matching && value.matching[0], 
@@ -323,7 +374,14 @@ export const createView = (containerId, payload) => dispatch => {
     });
     payload.dropDiscrepencies = dropDiscrepencies;
   }
+}
+
+export const createView = (containerId, payload) => dispatch => {
+  payload.container = containerId;
   
+  // Modify the payload into a format that the backend is expecting
+  transformPayload(payload);
+
   const parameters = {
     initialFn: () => {
       dispatch(beginRequestView());
@@ -339,6 +397,33 @@ export const createView = (containerId, payload) => dispatch => {
       notification['success']({
         message: 'View created',
         description: 'The view was successfully created.'
+      });
+    },
+    payload: payload
+  }
+
+  requestWrapper(parameters);
+};
+
+export const updateView = (containerId, selectedId, payload) => dispatch => {  
+  // Modify the payload into a format that the backend is expecting
+  transformPayload(payload);
+
+  const parameters = {
+    initialFn: () => {
+      dispatch(beginRequestView());
+    },
+    url: `/view/${selectedId}/`,
+    method: 'PATCH',
+    errorFn: (error) => {
+      dispatch(failureRequestView(error));
+    },
+    successFn: (response) => {
+      dispatch(successRequestView());
+      dispatch(fetchContainers());
+      notification['success']({
+        message: 'View updated',
+        description: 'The view was successfully updated.'
       });
     },
     payload: payload

@@ -123,10 +123,10 @@ class ContainerList extends React.Component {
                       <Card
                         className="item"
                         bodyStyle={{ flex: 1 }}
-                        title="title"
+                        title={view.name}
                         actions={[
                           <Tooltip title="Edit view">
-                            <Button icon="edit"/>
+                            <Button icon="edit" onClick={() => { dispatch(this.boundActionCreators.openViewModal(container.id, container.datasources, view)); }}/>
                           </Tooltip>,
                           <Tooltip title="Delete view">
                             <Button type="danger" icon="delete" onClick={() => { this.boundActionCreators.deleteView(view.id); }}/>
@@ -136,7 +136,7 @@ class ContainerList extends React.Component {
                       >
                         <Meta description={
                           <div >
-                            view
+                            {view.columns.length} fields
                           </div>
                         }/>
                       </Card>

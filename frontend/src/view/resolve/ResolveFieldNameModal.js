@@ -35,10 +35,7 @@ const ResolveFieldNameModal = ({ form, formState, visible, onCancel, onOk }) => 
       width={350}
     >
       <p>A field is already being used with this name. Provide a new name (label) for this field:</p>
-      <FormItem
-          {...formItemLayout}
-          label="Label"
-        >
+      <FormItem {...formItemLayout} label="Label">
           {form.getFieldDecorator('label', {
             rules: [
               { required: true, message: 'Label is required' },
