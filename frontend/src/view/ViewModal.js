@@ -141,7 +141,7 @@ class ViewModal extends React.Component {
   }
 
   handleSubmit = () => {
-    const { containerId, form, selectedId, formState } = this.props;
+    const { containerId, form, selectedId } = this.props;
     const { formValues } = this.state;
 
     form.validateFields((err, values) => {
@@ -166,7 +166,7 @@ class ViewModal extends React.Component {
       <Modal
         visible={visible}
         title='Views'
-        onCancel={() => { form.resetFields(); this.setState({ current: 0 }); this.boundActionCreators.closeViewModal(); }}
+        onCancel={() => { form.resetFields(); this.setState({ current: 0, viewMode: 'details' }); this.boundActionCreators.closeViewModal(); }}
         footer={
           <div>
             <Button onClick={() => { form.resetFields(); this.boundActionCreators.closeViewModal(); }}>Cancel</Button> 

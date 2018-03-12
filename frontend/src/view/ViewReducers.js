@@ -39,7 +39,9 @@ function view(state = {}, action) {
         containerId: null,
         datasources: null,
         selectedId: null,
-        formState: null
+        formState: null,
+        dataLoading: null,
+        dataPreview: null
       });
 
     case CLEAR_MATCHING_FIELD:
