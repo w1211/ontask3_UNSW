@@ -2,7 +2,7 @@ import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { Button, Collapse, Card, Icon, Tooltip, Tabs } from 'antd';
+import { Button, Collapse, Card, Icon, Tooltip, Tabs, Input } from 'antd';
 
 import * as ContainerActionCreators from './ContainerActions';
 import { openViewModal, deleteView } from '../view/ViewActions';
@@ -53,6 +53,12 @@ class ContainerList extends React.Component {
       openDatasourceModal, deleteDatasource, 
       openWorkflowModal, deleteWorkflow
     }, dispatch);
+
+    this.state = {
+      datasourceFilter: null,
+      viewFilter: null,
+      workflowFilter: null
+    }
   }
 
   render() {
@@ -89,27 +95,41 @@ class ContainerList extends React.Component {
                 tabBarStyle={{ minWidth: 160 }}
                 onChange={this.boundActionCreators.changeContainerTab}
               >
-
                 <TabPane tab={`Datasources (${container.datasources.length})`} key="1">
                   <div className="tab">
-                    {container.datasources.map((datasource, i) => (
-                      <Card
-                        className="item"
-                        bodyStyle={{ flex: 1 }}
-                        title={datasource.name}
-                        actions={[
-                          <Tooltip title="Edit datasource">
-                            <Button icon="edit" onClick={() => { dispatch(this.boundActionCreators.openDatasourceModal(container.id, datasource)); }}/>
-                          </Tooltip>,
-                          <Tooltip title="Delete datasource">
-                            <Button type="danger" icon="delete" onClick={() => { this.boundActionCreators.deleteDatasource(datasource.id) }} />
-                          </Tooltip>
-                        ]}
-                        key={i}
-                      >
-                        <Meta description={<span>{typeMap[datasource.connection.dbType]}</span>}/>
-                      </Card>
-                    ))}
+                    {container.datasources.length > 0 && 
+                      <div style={{ width: '100%' }}>
+                        <Input style={{ marginBottom: 10, maxWidth: 500 }} placeholder="Filter datasources by name"
+                          value={this.state.datasourceFilter} 
+                          addonAfter={
+                            <Icon style={{ cursor: 'pointer' }} type="close" onClick={() => this.setState({ datasourceFilter: null })}/>
+                          }
+                          onChange={(e) => this.setState({ datasourceFilter: e.target.value }) }
+                        />
+                      </div> 
+                    }
+                    {container.datasources.map((datasource, i) => {
+                      if (this.state.datasourceFilter && !datasource.name.includes(this.state.datasourceFilter)) return null;
+
+                      return (
+                        <Card
+                          className="item"
+                          bodyStyle={{ flex: 1 }}
+                          title={datasource.name}
+                          actions={[
+                            <Tooltip title="Edit datasource">
+                              <Button icon="edit" onClick={() => { dispatch(this.boundActionCreators.openDatasourceModal(container.id, datasource)); }}/>
+                            </Tooltip>,
+                            <Tooltip title="Delete datasource">
+                              <Button type="danger" icon="delete" onClick={() => { this.boundActionCreators.deleteDatasource(datasource.id) }} />
+                            </Tooltip>
+                          ]}
+                          key={i}
+                        >
+                          <Meta description={<span>{typeMap[datasource.connection.dbType]}</span>}/>
+                        </Card>
+                      )
+                    })}
                     <div className="add item" onClick={() => { dispatch(this.boundActionCreators.openDatasourceModal(container.id)); }}>
                       <Icon type="plus"/>
                       <span>Add datasource</span>
@@ -119,28 +139,43 @@ class ContainerList extends React.Component {
               
                 <TabPane tab={`Views (${container.views.length})`}  key="2">
                   <div className="tab">
-                    {container.views.map((view, i) => (
-                      <Card
-                        className="item"
-                        bodyStyle={{ flex: 1 }}
-                        title={view.name}
-                        actions={[
-                          <Tooltip title="Edit view">
-                            <Button icon="edit" onClick={() => { dispatch(this.boundActionCreators.openViewModal(container.id, container.datasources, view)); }}/>
-                          </Tooltip>,
-                          <Tooltip title="Delete view">
-                            <Button type="danger" icon="delete" onClick={() => { this.boundActionCreators.deleteView(view.id); }}/>
-                          </Tooltip>
-                        ]}
-                        key={i}
-                      >
-                        <Meta description={
-                          <div >
-                            {view.columns.length} fields
-                          </div>
-                        }/>
-                      </Card>
-                    ))}
+                    {container.views.length > 0 && 
+                      <div style={{ width: '100%' }}>
+                        <Input style={{ marginBottom: 10, maxWidth: 500 }} placeholder="Filter views by name"
+                          value={this.state.viewFilter} 
+                          addonAfter={
+                            <Icon style={{ cursor: 'pointer' }} type="close" onClick={() => this.setState({ viewFilter: null })}/>
+                          }
+                          onChange={(e) => this.setState({ viewFilter: e.target.value }) }
+                        />
+                      </div> 
+                    }
+                    {container.views.map((view, i) => {
+                      if (this.state.viewFilter && !view.name.includes(this.state.viewFilter)) return null;
+
+                      return (
+                        <Card
+                          className="item"
+                          bodyStyle={{ flex: 1 }}
+                          title={view.name}
+                          actions={[
+                            <Tooltip title="Edit view">
+                              <Button icon="edit" onClick={() => { dispatch(this.boundActionCreators.openViewModal(container.id, container.datasources, view)); }}/>
+                            </Tooltip>,
+                            <Tooltip title="Delete view">
+                              <Button type="danger" icon="delete" onClick={() => { this.boundActionCreators.deleteView(view.id); }}/>
+                            </Tooltip>
+                          ]}
+                          key={i}
+                        >
+                          <Meta description={
+                            <div >
+                              {view.columns.length} fields
+                            </div>
+                          }/>
+                        </Card>
+                      )
+                    })}
                     <div className="add item" onClick={() => { dispatch(this.boundActionCreators.openViewModal(container.id, container.datasources)); }}>
                       <Icon type="plus"/>
                       <span>Create view</span>
@@ -150,30 +185,45 @@ class ContainerList extends React.Component {
 
                 <TabPane tab={`Workflows (${container.workflows.length})`}  key="3">
                   <div className="tab">
-                    {container.workflows.map((workflow, i) => (
-                      <Card
-                        className="item"
-                        bodyStyle={{ flex: 1 }}
-                        title={workflow.name}
-                        actions={[
-                          <Tooltip title="Enter workflow">
-                            <Link to={`/workflow/${workflow.id}`}>
-                              <Button icon="arrow-right"/>
-                            </Link>
-                          </Tooltip>,
-                          <Tooltip title="Delete workflow">
-                            <Button type="danger" icon="delete" onClick={() => { this.boundActionCreators.deleteWorkflow(workflow.id); }}/>
-                          </Tooltip>
-                        ]}
-                        key={i}
-                      >
-                        <Meta description={
-                          <div >
-                            { workflow.description ? workflow.description : 'No description provided' }
-                          </div>
-                        }/>
-                      </Card>
-                    ))}
+                    {container.workflows.length > 0 && 
+                      <div style={{ width: '100%' }}>
+                        <Input style={{ marginBottom: 10, maxWidth: 500 }} placeholder="Filter workflows by name"
+                          value={this.state.workflowFilter} 
+                          addonAfter={
+                            <Icon style={{ cursor: 'pointer' }} type="close" onClick={() => this.setState({ workflowFilter: null })}/>
+                          }
+                          onChange={(e) => this.setState({ workflowFilter: e.target.value }) }
+                        />
+                      </div> 
+                    }
+                    {container.workflows.map((workflow, i) => {
+                      if (this.state.workflowFilter && !workflow.name.includes(this.state.workflowFilter)) return null;
+
+                      return (
+                        <Card
+                          className="item"
+                          bodyStyle={{ flex: 1 }}
+                          title={workflow.name}
+                          actions={[
+                            <Tooltip title="Enter workflow">
+                              <Link to={`/workflow/${workflow.id}`}>
+                                <Button icon="arrow-right"/>
+                              </Link>
+                            </Tooltip>,
+                            <Tooltip title="Delete workflow">
+                              <Button type="danger" icon="delete" onClick={() => { this.boundActionCreators.deleteWorkflow(workflow.id); }}/>
+                            </Tooltip>
+                          ]}
+                          key={i}
+                        >
+                          <Meta description={
+                            <div >
+                              { workflow.description ? workflow.description : 'No description provided' }
+                            </div>
+                          }/>
+                        </Card>
+                      )
+                    })}
                     <div className="add item" onClick={() => { dispatch(this.boundActionCreators.openWorkflowModal(container.id)); }}>
                       <Icon type="plus"/>
                       <span>Create workflow</span>
