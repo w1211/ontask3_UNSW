@@ -31,7 +31,7 @@ const Data = ({ form, formState, loading, data }) => {
           pagination={{ size: 'small', pageSize: 5 }}
           scroll={{ x: (columns.length - 1) * 175 }}
         />
-        <Alert style={{ marginTop: 10 }} message="Note that only the first 10 records are shown in this data preview" type="info" showIcon/>
+        { data && data.length > 10 && <Alert style={{ marginTop: 10 }} message="Note that only the first 10 records are shown in this data preview" type="info" showIcon/> }
       </div>
   );
 }
