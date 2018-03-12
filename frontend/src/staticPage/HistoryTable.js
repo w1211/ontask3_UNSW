@@ -6,21 +6,24 @@ class HistoryTable extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      filterDropdownVisibleObj: {}
+      filterDropdownVisibleObj: {},
+      filterDropdownTextObj: {}
     }
   }
 
   //srote input
-  onInputChange = (e) => {
-      this.setState({ 'searchText': e.target.value });
-    }
+  onInputChange = (e, field) => {
+    let filterDropdownTextObj = {...this.state.filterDropdownTextObj};
+    filterDropdownTextObj[field] =  e.target.value;
+    this.setState({filterDropdownTextObj});
+  }
     
   //store date picked
   onDateChange = (field, date, dateString) => {
-      let filterDropdownVisibleObj = {...this.state.filterDropdownVisibleObj}
-      filterDropdownVisibleObj[field] = true;
-      this.setState({'searchDate': dateString, filterDropdownVisibleObj});
-    }
+    let filterDropdownVisibleObj = {...this.state.filterDropdownVisibleObj};
+    filterDropdownVisibleObj[field] = true;
+    this.setState({'searchDate': dateString, filterDropdownVisibleObj});
+  }
 
   //search input text and date picked
   onSearch = (field, onSearchColumn) => {
@@ -33,7 +36,7 @@ class HistoryTable extends React.Component {
       onSearchColumn(searchDate, field, this.props.data, true);
     }
     else{
-      const { searchText } = this.state;
+      const searchText = this.state.filterDropdownTextObj[field];
       const reg = new RegExp(searchText, 'gi');
       onSearchColumn(reg, field, this.props.data, false);
     }
@@ -61,8 +64,8 @@ class HistoryTable extends React.Component {
             <Input
               ref={ele => this.searchInput = ele}
               placeholder="Search"
-              value={this.state.searchText}
-              onChange={this.onInputChange}
+              value={this.state.filterDropdownTextObj[field]}
+              onChange={(e)=>this.onInputChange(e, field)}
               onPressEnter={this.onSearch}
             />
           }

@@ -15,7 +15,6 @@ class StaticPageStaff extends React.Component {
     }
 
     componentDidMount(){
-        console.log("in did mount page staff");
         const linkId = queryString.parse(window.location.search).link_id;
         this.boundActionCreators.searchWorkflow(linkId);
     }

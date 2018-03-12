@@ -33,7 +33,8 @@ function staticPage(state = initialState, action) {
       return Object.assign({}, state, {
         isFetching: false,
         data: action.data,
-        columns: action.columns
+        columns: action.columns,
+        matchReg: ''
       });
     case REQUEST_EMAIL_HISTORY:
       return Object.assign({}, state, {

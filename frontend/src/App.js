@@ -54,6 +54,7 @@ class App extends React.Component {
         },
         successFn: (response) => {
           localStorage.setItem('token', response.token);
+          this.forceUpdate();
         },
         payload: payload,
         isUnauthenticated: true

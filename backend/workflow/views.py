@@ -574,11 +574,11 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             if isinstance(obj, ObjectId):
                 return str(obj)
         audits = list(Audit.objects.aggregate(*pipeline))
-        #good to write this way?
         response = {}
         response['data'] = None
         response['columns'] = []  
         if audits:
+            #will change based on which column we wish to show users
             columns = list(audits[0].keys())[2:-1]
             audits_str = str(dumps(audits, default=json_serial)).replace('"_id":', '"id":')
             response['data'] = json.loads(audits_str)

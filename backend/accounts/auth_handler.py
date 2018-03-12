@@ -30,6 +30,9 @@ class UserAuthHandler(object):
             user = User.objects.create_user(email=email, password=password, name=fullname)
             # Set the parameters for the new user and save the new user
             user.is_superuser = False
+
+            print("user role")
+            print(role)
             
             # Enables permissions based on a user role
             if role == 'STAFF':
