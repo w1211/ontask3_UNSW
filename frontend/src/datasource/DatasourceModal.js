@@ -100,10 +100,10 @@ class DatasourceModal extends React.Component {
             )}
           </FormItem>
 
-          <FormItem {...formItemLayout} label="Datasource type">
+          <FormItem {...formItemLayout} label="Type">
             {form.getFieldDecorator('connection.dbType', {
               initialValue: selected ? selected.connection.dbType : null,
-              rules: [{ required: true, message: 'Datasource type is required' }]
+              rules: [{ required: true, message: 'Type is required' }]
             })(
               <Select onChange={(type) => { if (type !== 'file') this.setState({ file: null }); }}>
                 <Option value="mysql">MySQL</Option>
