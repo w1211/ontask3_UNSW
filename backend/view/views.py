@@ -32,7 +32,9 @@ class ViewViewSet(viewsets.ModelViewSet):
         if queryset.count():
             raise ValidationError('A view with this name already exists')
 
-        serializer.save()
+        data = self.combine_data(self.request.data)
+
+        serializer.save(data=data)
 
     def perform_update(self, serializer):
         self.check_object_permissions(self.request, self.get_object())
@@ -45,7 +47,9 @@ class ViewViewSet(viewsets.ModelViewSet):
         if queryset.count():
             raise ValidationError('A view with this name already exists')
 
-        serializer.save()
+        data = self.combine_data(self.request.data)
+
+        serializer.save(data=data)
 
     def perform_destroy(self, obj):
         self.check_object_permissions(self.request, obj)
@@ -61,8 +65,14 @@ class ViewViewSet(viewsets.ModelViewSet):
 
     @list_route(methods=['post'])
     def preview_data(self, request):
-        columns = self.request.data['columns']
-        drop_discrepencies = self.request.data.get('dropDiscrepencies', {})
+        data = self.combine_data(self.request.data)
+
+        # Return the first 10 records of the results
+        return JsonResponse(data[:10], safe=False)
+
+    def combine_data(self, view):
+        columns = view['columns']
+        drop_discrepencies = view.get('dropDiscrepencies', {})
 
         # Get the primary key's datasource data
         primary_datasource_id = columns[0]['datasource']
@@ -137,5 +147,4 @@ class ViewViewSet(viewsets.ModelViewSet):
         for primary_key, fields in results.items():
             response.append({ primary_field: primary_key, **fields })
 
-        # Return the first 10 records of the results
-        return JsonResponse(response[:10], safe=False)
+        return response
