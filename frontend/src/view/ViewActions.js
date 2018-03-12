@@ -315,6 +315,12 @@ const receiveDataPreview = (dataPreview) => ({
 });
 
 export const previewData = (payload) => (dispatch, getState) => {
+  // Convert the matching fields from array to string
+  // This is because the cascader used to select the matching field in the Details view stores values as an array
+  payload.columns = payload.columns.map(column => (
+    { ...column, matching: column.matching ? column.matching[0] : null }
+  ))
+  
   const parameters = {
     initialFn: () => { dispatch(beginRequestDataPreview()); },
     url: `/view/preview_data/`,

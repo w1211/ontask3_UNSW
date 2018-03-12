@@ -106,7 +106,7 @@ class ViewViewSet(viewsets.ModelViewSet):
             # Create a defaultdict of matching fields used from this datasource
             matching_fields_used = defaultdict(list)
             for column in related_columns:
-                matching_fields_used[column['matching'][0]].append(column)
+                matching_fields_used[column['matching']].append(column)
 
             # Iterate over the grouped matching fields
             for matching_field, matched_columns in matching_fields_used.items():
