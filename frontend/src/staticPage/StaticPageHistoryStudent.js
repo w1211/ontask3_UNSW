@@ -21,9 +21,13 @@ class StaticPageHistoryStudent extends React.Component {
       this.boundActionCreators.fetchEmailHistory();
   };
 
+  onReset = () => {
+    this.boundActionCreators.fetchEmailHistory();
+  };
+
   render() {
     const {
-      isFetching, data, matchField, matchReg, columns, error
+      isFetching, data, matchField, matchReg, columns, error, onReset
     } = this.props;
 
     return (
@@ -35,6 +39,7 @@ class StaticPageHistoryStudent extends React.Component {
             columns={columns}
             error={error}
             onSearchColumn={this.boundActionCreators.onSearchColumn}
+            onReset={this.onReset}
         />
     );
   };

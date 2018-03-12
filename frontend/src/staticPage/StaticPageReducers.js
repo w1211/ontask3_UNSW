@@ -15,7 +15,8 @@ import {
   FAILURE_FIND_CONTENT,
   ERROR_SEARCH_CONTENT,
   ERROR_CONTENT,
-  ERROR_WORKFLOW
+  ERROR_WORKFLOW,
+  REQUEST_BIND_WORKFLOW
 } from './StaticPageActions';
 
 const initialState = {
@@ -63,8 +64,7 @@ function staticPage(state = initialState, action) {
       return Object.assign({}, state, {
         linkId: action.linkId,
         isSearching: false,
-        isWorkflowFound: false,
-        error: action.error
+        isWorkflowFound: false
       });
     case RECEIVE_WORKFLOW_LIST:
       return Object.assign({}, state, {
@@ -94,6 +94,10 @@ function staticPage(state = initialState, action) {
     case ERROR_WORKFLOW:
       return Object.assign({}, state, {
         error: action.error
+      });
+    case REQUEST_BIND_WORKFLOW:
+      return Object.assign({}, state, {
+        bindWorkflowSuccess: false
       });
     default:
       return state;

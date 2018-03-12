@@ -23,9 +23,14 @@ class StaticPageHistoryStaff extends React.Component {
     }
   };
 
+  onReset = () => {
+    const { match } = this.props;
+    this.boundActionCreators.fetchWorkflowEmailHistory(match.params.id);
+  };
+
   render() {
     const {
-      isFetching, data, matchField, matchReg, columns, error
+      isFetching, data, matchField, matchReg, columns, error, onReset
     } = this.props;
 
     return (
@@ -36,6 +41,8 @@ class StaticPageHistoryStaff extends React.Component {
             matchReg={matchReg}
             columns={columns}
             error={error}
+            onSearchColumn={this.boundActionCreators.onSearchColumn}
+            onReset={this.onReset}
         />
     );
   };

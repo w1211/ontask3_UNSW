@@ -15,6 +15,7 @@ export const FOUND_CONTENT = 'FOUND_CONTENT';
 export const REQUEST_SEARCH_CONTENT = 'REQUEST_SEARCH_CONTENT';
 export const ERROR_WORKFLOW = 'ERROR_WORKFLOW';
 export const ERROR_CONTENT = 'ERROR_CONTENT';
+export const REQUEST_BIND_WORKFLOW = 'REQUEST_BIND_WORKFLOW';
 
 
 const requestEmailHistory = () => ({
@@ -45,9 +46,8 @@ const foundWorkflow = (workflowId) => ({
   workflowId
 });
 
-const failureFindWorkflow = (error, linkId) => ({
+const failureFindWorkflow = (linkId) => ({
   type: FAILURE_FIND_WORKFLOW,
-  error,
   linkId
 });
 
@@ -88,6 +88,10 @@ const errorContent = (error) => ({
   error
 });
 
+const requestBindWorkflow = () =>({
+  type: REQUEST_BIND_WORKFLOW,
+});
+
 
 //fetch email history for pass in worflowId
 export const fetchWorkflowEmailHistory = (workflowId) => dispatch => {
@@ -125,24 +129,24 @@ export const fetchEmailHistory = () => dispatch => {
   requestWrapper(parameters);
 };
 
-
 //store matched row to data, matching item type can be text or date
-export const onSearchColumn = (reg, field, data, isSearchDate) => dispatch => {
+//matchingData is a date string if isSeaerchDate is true or a regex is isSearchDate is false
+export const onSearchColumn = (matchingData, field, data, isSearchDate) => dispatch => {
   if(isSearchDate){
     const updatedData = data.map((record) => {
-      const date = record[field].split(" ")[-1];
-      if (date === reg) {
+      const date = record[field].split(" ")[1];
+      if (date === matchingData) {
         return {
           ...record
         };
       }
       return null;
     }).filter(record => !!record);
-    dispatch(updateEmailData(updatedData, reg, field));
+    dispatch(updateEmailData(updatedData, matchingData, field));
   }
   else{
     const updatedData = data.map((record) => {
-      const match = record[field].match(reg);
+      const match = record[field].match(matchingData);
       if (!match) {
         return null;
       }
@@ -150,7 +154,7 @@ export const onSearchColumn = (reg, field, data, isSearchDate) => dispatch => {
         ...record,
       };
     }).filter(record => !!record);
-    dispatch(updateEmailData(updatedData, reg, field));
+    dispatch(updateEmailData(updatedData, matchingData, field));
   }
 };
 
@@ -212,8 +216,9 @@ export const searchWorkflow = (linkId) => dispatch => {
     successFn: (response) => {
       if(response['mismatch']){
         print(response['mismatch']);
-        dispatch(failureFindWorkflow(linkId));
+        print(linkId)
         dispatch(fetchWorkflowList());
+        dispatch(failureFindWorkflow(linkId));
       }
       else{
         dispatch(foundWorkflow(response['workflowId']));
@@ -226,7 +231,11 @@ export const searchWorkflow = (linkId) => dispatch => {
 
 //bind workflow with link_id
 export const bindWorkflow = (linkId, workflowId) => dispatch => {
+  print("biding"+workflowId+"with"+linkId);
   const parameters = {
+    initialFn: () => {
+      dispatch(requestBindWorkflow());
+    },
     url: `/workflow/${workflowId}/`,
     method: 'PATCH',
     errorFn: (error) => {

@@ -394,7 +394,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         return content_value if item_key in all_conditions_passed[condition] else None
 
-
     def populate_field(self, match, item):
         field = match.group(1)
         try:

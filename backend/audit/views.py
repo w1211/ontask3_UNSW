@@ -58,6 +58,7 @@ class AuditViewSet(viewsets.ModelViewSet):
         response['data'] = None
         response['columns'] = []  
         if audits:
+            #tmp choose what to display
             columns = list(audits[0].keys())[1:-1]
             audits_str = str(dumps(audits, default=json_serial)).replace('"_id":', '"id":')
             response['data'] = json.loads(audits_str)
