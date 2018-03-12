@@ -33,9 +33,10 @@ class UserAuthHandler(object):
             
             # Enables permissions based on a user role
             if role == 'STAFF':
-                instructor_group = Group.objects.get(name='instructor')
-                instructor_group.user_set.add(user)
                 user.is_staff = True
+                # TODO: Troubleshoot why the below two lines cause an error
+                # instructor_group = Group.objects.get(name='instructor')
+                # instructor_group.user_set.add(user)
             
             user.save()
                 
