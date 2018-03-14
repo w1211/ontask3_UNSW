@@ -300,56 +300,6 @@ export const changeColumnOrder = (dragIndex, hoverIndex) => (dispatch, getState)
   dispatch(refreshViewFormState(formState));
 };
 
-const beginRequestDataPreview = () => ({
-  type: BEGIN_REQUEST_DATA_PREVIEW
-});
-
-const failureRequestDataPreview = (error) => ({
-  type: FAILURE_REQUEST_DATA_PREVIEW,
-  error
-});
-
-const receiveDataPreview = (dataPreview) => ({
-  type: RECEIVE_DATA_PREVIEW,
-  dataPreview
-});
-
-export const previewData = (payload) => (dispatch, getState) => {
-  // Convert the matching fields from array to string
-  // This is because the cascader used to select the matching field in the Details view stores values as an array
-  payload.columns = payload.columns.map(column => (
-    { ...column, matching: column.matching ? column.matching[0] : null }
-  ))
-  
-  const parameters = {
-    initialFn: () => { dispatch(beginRequestDataPreview()); },
-    url: `/view/preview_data/`,
-    method: 'POST',
-    errorFn: (error) => {
-      dispatch(failureRequestDataPreview(error));
-    },
-    successFn: (dataPreview) => {
-      dispatch(receiveDataPreview(dataPreview));
-    },
-    payload: payload
-  }
-
-  requestWrapper(parameters);
-};
-
-const beginRequestView = () => ({
-  type: BEGIN_REQUEST_VIEW
-});
-
-const failureRequestView = (error) => ({
-  type: FAILURE_REQUEST_VIEW,
-  error
-});
-
-const successRequestView = () => ({
-  type: SUCCESS_REQUEST_VIEW
-});
-
 const transformPayload = (payload) => {
   // When passing objects as parameters, JavaScript passes them by reference
   // Therefore we can directly modify the payload without needing to return anything from the function
@@ -381,6 +331,53 @@ const transformPayload = (payload) => {
     payload.dropDiscrepencies = dropDiscrepencies;
   }
 }
+
+const beginRequestDataPreview = () => ({
+  type: BEGIN_REQUEST_DATA_PREVIEW
+});
+
+const failureRequestDataPreview = (error) => ({
+  type: FAILURE_REQUEST_DATA_PREVIEW,
+  error
+});
+
+const receiveDataPreview = (dataPreview) => ({
+  type: RECEIVE_DATA_PREVIEW,
+  dataPreview
+});
+
+export const previewData = (payload) => (dispatch, getState) => {
+  // Modify the payload into a format that the backend is expecting
+  transformPayload(payload);
+
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestDataPreview()); },
+    url: `/view/preview_data/`,
+    method: 'POST',
+    errorFn: (error) => {
+      dispatch(failureRequestDataPreview(error));
+    },
+    successFn: (dataPreview) => {
+      dispatch(receiveDataPreview(dataPreview));
+    },
+    payload: payload
+  }
+
+  requestWrapper(parameters);
+};
+
+const beginRequestView = () => ({
+  type: BEGIN_REQUEST_VIEW
+});
+
+const failureRequestView = (error) => ({
+  type: FAILURE_REQUEST_VIEW,
+  error
+});
+
+const successRequestView = () => ({
+  type: SUCCESS_REQUEST_VIEW
+});
 
 export const createView = (containerId, payload) => dispatch => {
   payload.container = containerId;

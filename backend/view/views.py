@@ -72,7 +72,7 @@ class ViewViewSet(viewsets.ModelViewSet):
 
     def combine_data(self, view):
         columns = view['columns']
-        drop_discrepencies = view.get('dropDiscrepencies', {})
+        drop_discrepencies = view.get('dropDiscrepencies', [])
 
         # Get the primary key's datasource data
         primary_datasource_id = columns[0]['datasource']
@@ -116,9 +116,9 @@ class ViewViewSet(viewsets.ModelViewSet):
                 unique_in_matching = matching_field_records - primary_key_records
                 unique_in_primary = primary_key_records - matching_field_records
 
-                should_drop_discrepency = drop_discrepencies[datasource_id].get(matching_field, {}) if datasource_id in drop_discrepencies else {}
+                should_drop_discrepency = next((discrepency for discrepency in drop_discrepencies if discrepency['datasource'] == datasource_id and discrepency['matching'] == matching_field), {})
 
-                if 'primary' in should_drop_discrepency and should_drop_discrepency['primary']:
+                if 'dropPrimary' in should_drop_discrepency and should_drop_discrepency['dropPrimary']:
                     # If primary discrepencies should be dropped, and some are detected, then add them to the list for removal later in the function
                     primary_key_records_to_drop.update(unique_in_primary)
 
@@ -131,7 +131,7 @@ class ViewViewSet(viewsets.ModelViewSet):
 
                         # If matching field discrepencies should be dropped, and this particular record is one such discrepency
                         # Then do not add this record to the results dict
-                        if ('matching' in should_drop_discrepency and should_drop_discrepency['matching']) and matching_value in unique_in_matching:
+                        if ('dropMatching' in should_drop_discrepency and should_drop_discrepency['dropMatching']) and matching_value in unique_in_matching:
                             continue
                         # Otherwise, do add this record to the results dict
                         results[matching_value][field] = value  
