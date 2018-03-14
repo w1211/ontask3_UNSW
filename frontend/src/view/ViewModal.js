@@ -16,9 +16,9 @@ import Preview from './steps/Preview';
 import ResolveFieldNameModal from './resolve/ResolveFieldNameModal';
 import ResolveMatchModal from './resolve/ResolveMatchModal';
 
-
 const Step = Steps.Step;
 const { Option, OptGroup } = Select;
+const confirm = Modal.confirm;
 
 
 class ViewModal extends React.Component {
@@ -158,6 +158,29 @@ class ViewModal extends React.Component {
     });
   }
 
+  handleClose = () => {
+    const { form } = this.props;
+
+    const performClose = () => {
+      form.resetFields(); 
+      this.setState({ current: 0, viewMode: 'details' }); 
+      this.boundActionCreators.closeViewModal(); 
+    }
+
+    if (form.isFieldsTouched()) {
+      confirm({
+        title: 'Discard changes',
+        content: 'You have not saved your work. If you continue, any changes made will be discarded.',
+        okText: 'Discard',
+        onOk() {
+          performClose();
+        }
+      });
+    } else {
+      performClose();
+    }
+  }
+
   render() {
     const { current, resolveMatchVisible, resolveFieldNameVisible, newFields } = this.state;
     const { form, formState, visible, loading, error, selectedId, fieldMatchResult, matchingField } = this.props;
@@ -166,7 +189,7 @@ class ViewModal extends React.Component {
       <Modal
         visible={visible}
         title='Views'
-        onCancel={() => { form.resetFields(); this.setState({ current: 0, viewMode: 'details' }); this.boundActionCreators.closeViewModal(); }}
+        onCancel={this.handleClose}
         footer={
           <div>
             <Button onClick={() => { form.resetFields(); this.boundActionCreators.closeViewModal(); }}>Cancel</Button> 
