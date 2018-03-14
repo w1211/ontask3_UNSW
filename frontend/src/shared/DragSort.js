@@ -1,6 +1,7 @@
 import React from 'react';
 import { DragSource, DropTarget } from 'react-dnd';
 
+import './DragSort.css';
 
 function dragDirection(
     dragIndex,

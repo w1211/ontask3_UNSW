@@ -18,3 +18,7 @@
 .views .details .ant-table-tbody tr:first-child {
   cursor: default !important;
 }
+
+.short-cascader ul {
+  height: auto;
+}

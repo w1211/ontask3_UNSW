@@ -81,7 +81,7 @@ const Details = ({ form, formState, datasources, moveRow }) => {
                 rules: [{ required: true, message: 'Matching field is required' }],
                 initialValue: record.matching
               })(
-                <Cascader options={fields} popupClassName="types">
+                <Cascader options={fields} popupClassName="short-cascader">
                   <a>{record.matching[0]}</a>
                 </Cascader>
               )
@@ -109,7 +109,7 @@ const Details = ({ form, formState, datasources, moveRow }) => {
               rules: [{ required: true, message: 'Type is required' }],
               initialValue: record.type
             })(
-              <Cascader options={(index > 0) ? types : primaryTypes} popupClassName="types">
+              <Cascader options={(index > 0) ? types : primaryTypes} popupClassName="short-cascader">
                 <a>{record.type[0]}</a>
               </Cascader>
             )}
