@@ -111,6 +111,10 @@ class ViewModal extends React.Component {
     }]
   }
 
+  componentWillUnmount() {
+    this.performClose();
+  }
+
   mergeDiscrepencies = () => {
     // If we are editing a view, then ensure that the dropDiscrepency values are included in the payload
     // It is necessary to manually ensure this, because the dropDiscrepency form fields are only shown in the DOM
@@ -160,14 +164,16 @@ class ViewModal extends React.Component {
     });
   }
 
-  handleClose = () => {
+  performClose = () => {
     const { form } = this.props;
 
-    const performClose = () => {
-      form.resetFields(); 
-      this.setState({ current: 0, viewMode: 'details' }); 
-      this.boundActionCreators.closeViewModal(); 
-    }
+    form.resetFields(); 
+    this.setState({ current: 0, viewMode: 'details' }); 
+    this.boundActionCreators.closeViewModal(); 
+  }
+
+  handleClose = () => {
+    const { form } = this.props;
 
     if (form.isFieldsTouched()) {
       confirm({
@@ -175,11 +181,11 @@ class ViewModal extends React.Component {
         content: 'You have not saved your work. If you continue, any changes made will be discarded.',
         okText: 'Discard',
         onOk() {
-          performClose();
+          this.performClose();
         }
       });
     } else {
-      performClose();
+      this.performClose();
     }
   }
 
