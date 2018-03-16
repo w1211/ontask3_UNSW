@@ -21,6 +21,7 @@ export const BEGIN_REQUEST_VIEW = 'BEGIN_REQUEST_VIEW';
 export const FAILURE_REQUEST_VIEW = 'FAILURE_REQUEST_VIEW';
 export const SUCCESS_REQUEST_VIEW = 'SUCCESS_REQUEST_VIEW';
 
+export const RECEIVE_VIEW = 'RECEIVE_VIEW';
 
 export const openViewModal = (containerId, datasources, selected) => {
   let formState = {};
@@ -31,6 +32,7 @@ export const openViewModal = (containerId, datasources, selected) => {
     formState.name = { value: selected.name };
 
     formState.fields = { value: [] };
+    formState.defaultMatchingFields = {};
 
     formState.columns = selected.columns.map((column, index) => {
       const datasourceIndex = datasources.findIndex(datasource => datasource.id === column.datasource);
@@ -39,6 +41,8 @@ export const openViewModal = (containerId, datasources, selected) => {
         formState.fields.value.push(`${datasourceIndex}_${fieldIndex}`);
       } else {
         formState.primary = { value: `${datasourceIndex}_${fieldIndex}`}
+        // Set the matching default field for the datsource of the primary field
+        formState.defaultMatchingFields[datasources[datasourceIndex].id] = { value: datasources[datasourceIndex].fields[fieldIndex] }
       }
     
       return {
@@ -51,7 +55,6 @@ export const openViewModal = (containerId, datasources, selected) => {
     });
 
     if ('defaultMatchingFields' in selected) {
-      formState.defaultMatchingFields = {};
       selected.defaultMatchingFields.forEach(matchingField => {
         const datasourceId = matchingField.datasource;
         formState.defaultMatchingFields[datasourceId] = { value: matchingField.matching };
@@ -323,8 +326,8 @@ const transformPayload = (payload) => {
         dropDiscrepencies.push({
           datasource: datasource, 
           matching: field, 
-          dropMatching: value.primary,
-          dropPrimary: value.matching
+          dropMatching: value.matching,
+          dropPrimary: value.primary
         })
       });
     });
@@ -467,4 +470,24 @@ export const deleteView = (viewId) => dispatch => {
       requestWrapper(parameters);
     }
   });
+};
+
+const receiveView = (view) => ({
+  type: RECEIVE_VIEW,
+  view
+});
+
+export const fetchView = (viewId) => dispatch => {
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestView()); },
+    url: `/view/${viewId}/`,
+    method: 'GET',
+    errorFn: (error) => { 
+      dispatch(failureRequestView(error));
+    },
+    successFn: (view) => {
+      dispatch(receiveView(view));
+    }
+  }
+  requestWrapper(parameters);
 };

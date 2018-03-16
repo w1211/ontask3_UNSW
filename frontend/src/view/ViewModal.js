@@ -120,22 +120,24 @@ class ViewModal extends React.Component {
 
     let values;
 
-    Object.entries(formState.dropDiscrepencies).forEach(([datasource, fields]) => {
-      Object.entries(fields).forEach(([field, discrepency]) => {
-        
-        values = Object.assign({}, values, {
-          dropDiscrepencies: {
-            [datasource]: {
-              [field]: {
-                primary: discrepency.primary.value,
-                matching: discrepency.matching.value
+    if ('dropDiscrepencies' in formState) {
+      Object.entries(formState.dropDiscrepencies).forEach(([datasource, fields]) => {
+        Object.entries(fields).forEach(([field, discrepency]) => {
+          
+          values = Object.assign({}, values, {
+            dropDiscrepencies: {
+              [datasource]: {
+                [field]: {
+                  primary: discrepency.primary.value,
+                  matching: discrepency.matching.value
+                }
               }
             }
-          }
+          });
+  
         });
-
       });
-    });
+    }
 
     return values;
   }
@@ -204,7 +206,7 @@ class ViewModal extends React.Component {
           </div>
         }
         confirmLoading={loading}
-        className="views" 
+        className="views"
       >
         <Form layout="horizontal">
           <Steps current={current}>
