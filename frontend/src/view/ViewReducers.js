@@ -15,7 +15,9 @@ import {
 
   BEGIN_REQUEST_VIEW,
   FAILURE_REQUEST_VIEW,
-  SUCCESS_REQUEST_VIEW
+  SUCCESS_REQUEST_VIEW,
+
+  RECEIVE_VIEW
 } from './ViewActions';
 
 import _ from 'lodash';
@@ -30,7 +32,6 @@ function view(state = {}, action) {
         selectedId: action.selectedId,
         formState: action.formState
       });
-
     case CLOSE_VIEW_MODAL:
       return Object.assign({}, state, {
         visible: false,
@@ -50,18 +51,15 @@ function view(state = {}, action) {
         matchingField: null,
         formState: action.payload
       });
-
     case RESOLVE_MATCHING_FIELD:
       return Object.assign({}, state, {
         fieldMatchResult: null,
         matchingField: null
       });
-
     case FAILURE_FIELD_MATCH_RESULT:
       return Object.assign({}, state, {
         error: action.error
       });
-
     case RECIEVE_FIELD_MATCH_RESULT:
       return Object.assign({}, state, {
         fieldMatchResult: action.fieldMatchResult,
@@ -73,7 +71,6 @@ function view(state = {}, action) {
       return Object.assign({}, state, {
         formState: action.payload
       });
-
     case UPDATE_VIEW_FORM_STATE:
       return Object.assign({}, state, {
         formState: _.merge(state.formState, action.payload)
@@ -83,13 +80,11 @@ function view(state = {}, action) {
       return Object.assign({}, state, {
         dataLoading: true
       });
-
     case FAILURE_REQUEST_DATA_PREVIEW:
       return Object.assign({}, state, {
         dataLoading: false,
         error: action.error
       });
-
     case RECEIVE_DATA_PREVIEW:
       return Object.assign({}, state, {
         dataLoading: false,
@@ -100,13 +95,11 @@ function view(state = {}, action) {
       return Object.assign({}, state, {
         loading: true
       });
-
     case FAILURE_REQUEST_VIEW:
       return Object.assign({}, state, {
         loading: false,
         error: action.error
       });
-
     case SUCCESS_REQUEST_VIEW:
       return Object.assign({}, state, {
         visible: false,
@@ -117,6 +110,12 @@ function view(state = {}, action) {
         formState: null
       });
       
+    case RECEIVE_VIEW:
+      return Object.assign({}, state, {
+        loading: false,
+        view: action.view
+      });
+
     default:
       return state;
   }

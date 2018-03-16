@@ -2,7 +2,6 @@ from mongoengine import Document, EmbeddedDocument, fields
 
 from container.models import Container
 from datasource.models import DataSource
-from workflow.models import Workflow
 
 class Column(EmbeddedDocument):
     field = fields.StringField(required=True)
@@ -23,8 +22,7 @@ class DropDiscrepencies(EmbeddedDocument):
 
 class View(Document):
     container = fields.ReferenceField(Container, required=True, reverse_delete_rule=2) # Cascade delete if container is deleted
-    workflow = fields.ReferenceField(Workflow, reverse_delete_rule=2) # Cascade delete if workflow is deleted
-    name = fields.StringField(required=True)
+    name = fields.StringField()
     columns = fields.EmbeddedDocumentListField(Column)
     defaultMatchingFields = fields.EmbeddedDocumentListField(DefaultMatchingField)
     dropDiscrepencies = fields.EmbeddedDocumentListField(DropDiscrepencies)

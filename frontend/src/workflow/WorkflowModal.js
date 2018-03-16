@@ -1,7 +1,7 @@
 import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
-import { Modal, Form, Input, Alert } from 'antd';
+import { Modal, Form, Input, Alert, Select } from 'antd';
 
 import * as WorkflowActionCreators from './WorkflowActions';
 
@@ -9,6 +9,7 @@ import formItemLayout from '../shared/FormItemLayout';
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
+const Option = Select.Option;
 
 
 class WorkflowModal extends React.Component {
@@ -29,7 +30,7 @@ class WorkflowModal extends React.Component {
   }
 
   render() {
-    const { dispatch, visible, loading, error, form } = this.props;
+    const { dispatch, visible, loading, error, form, views } = this.props;
 
     return (
       <Modal
@@ -55,6 +56,17 @@ class WorkflowModal extends React.Component {
               <TextArea rows={4}/>
             )}
           </FormItem>
+          <FormItem {...formItemLayout} label="View">
+            {form.getFieldDecorator('view', {
+              rules: [{ required: true, message: 'View is required' }]
+            })(
+              <Select>
+                { views && views.map((view, i) => {
+                  return <Option value={view.id} key={i}>{view.name}</Option>
+                })}
+              </Select>
+            )}
+          </FormItem>
           { error && <Alert message={error} type="error"/>}
         </Form>
       </Modal>
@@ -65,11 +77,11 @@ class WorkflowModal extends React.Component {
 
 const mapStateToProps = (state) => {
   const {
-    visible, loading, error, containerId
+    visible, loading, error, containerId, views
   } = state.workflow;
   
   return {
-    visible, loading, error, containerId
+    visible, loading, error, containerId, views
   };
 }
 

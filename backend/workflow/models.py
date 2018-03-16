@@ -2,6 +2,7 @@ from mongoengine import Document, EmbeddedDocument, fields
 
 from datasource.models import DataSource
 from container.models import Container
+from view.models import View
 
 
 # Details
@@ -54,6 +55,7 @@ class EmailSettings(EmbeddedDocument):
 # Workflow
 class Workflow(Document):
     container = fields.ReferenceField(Container, required=True, reverse_delete_rule=2) # Cascade delete if container is deleted
+    view = fields.ReferenceField(View, required=True, reverse_delete_rule=2) # Cascade delete if view is deleted
     name = fields.StringField(required=True, unique_with='container')
     description = fields.StringField(null=True)
     details = fields.EmbeddedDocumentField(Details)

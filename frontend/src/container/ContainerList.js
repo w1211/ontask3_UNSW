@@ -102,7 +102,9 @@ class ContainerList extends React.Component {
                         <Input style={{ marginBottom: 10, maxWidth: 500 }} placeholder="Filter datasources by name"
                           value={this.state.datasourceFilter} 
                           addonAfter={
-                            <Icon style={{ cursor: 'pointer' }} type="close" onClick={() => this.setState({ datasourceFilter: null })}/>
+                            <Tooltip title="Clear filter">
+                              <Icon style={{ cursor: 'pointer' }} type="close" onClick={() => this.setState({ datasourceFilter: null })}/>
+                            </Tooltip>
                           }
                           onChange={(e) => this.setState({ datasourceFilter: e.target.value }) }
                         />
@@ -144,9 +146,11 @@ class ContainerList extends React.Component {
                         <Input style={{ marginBottom: 10, maxWidth: 500 }} placeholder="Filter views by name"
                           value={this.state.viewFilter} 
                           addonAfter={
-                            <Icon style={{ cursor: 'pointer' }} type="close" onClick={() => this.setState({ viewFilter: null })}/>
+                            <Tooltip title="Clear filter">
+                              <Icon style={{ cursor: 'pointer' }} type="close" onClick={() => this.setState({ viewFilter: null }) }/>
+                            </Tooltip>
                           }
-                          onChange={(e) => this.setState({ viewFilter: e.target.value }) }
+                          onChange={(e) => this.setState({ viewFilter: e.target.value })}
                         />
                       </div> 
                     }
@@ -159,6 +163,11 @@ class ContainerList extends React.Component {
                           bodyStyle={{ flex: 1 }}
                           title={view.name}
                           actions={[
+                            <Tooltip title="Data manipulation">
+                              <Link to={`/view/${view.id}`}>
+                                <Button icon="table"/>
+                              </Link>
+                            </Tooltip>,
                             <Tooltip title="Edit view">
                               <Button icon="edit" onClick={() => { dispatch(this.boundActionCreators.openViewModal(container.id, container.datasources, view)); }}/>
                             </Tooltip>,
@@ -190,7 +199,9 @@ class ContainerList extends React.Component {
                         <Input style={{ marginBottom: 10, maxWidth: 500 }} placeholder="Filter workflows by name"
                           value={this.state.workflowFilter} 
                           addonAfter={
-                            <Icon style={{ cursor: 'pointer' }} type="close" onClick={() => this.setState({ workflowFilter: null })}/>
+                            <Tooltip title="Clear filter">
+                              <Icon style={{ cursor: 'pointer' }} type="close" onClick={() => this.setState({ workflowFilter: null })}/>
+                            </Tooltip>
                           }
                           onChange={(e) => this.setState({ workflowFilter: e.target.value }) }
                         />
@@ -198,7 +209,7 @@ class ContainerList extends React.Component {
                     }
                     {container.workflows.map((workflow, i) => {
                       if (this.state.workflowFilter && !workflow.name.includes(this.state.workflowFilter)) return null;
-
+                      
                       return (
                         <Card
                           className="item"
@@ -224,7 +235,7 @@ class ContainerList extends React.Component {
                         </Card>
                       )
                     })}
-                    <div className="add item" onClick={() => { dispatch(this.boundActionCreators.openWorkflowModal(container.id)); }}>
+                    <div className="add item" onClick={() => { dispatch(this.boundActionCreators.openWorkflowModal(container.id, container.views)); }}>
                       <Icon type="plus"/>
                       <span>Create workflow</span>
                     </div>

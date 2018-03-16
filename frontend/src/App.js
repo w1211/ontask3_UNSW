@@ -6,6 +6,7 @@ import logo from './img/logo.png'; // Tell Webpack this JS file uses this image
 
 import Login from './login/Login';
 import Container from './container/Container';
+import View from './view/View';
 import Workflow from './workflow/Workflow';
 
 const { Header, Footer } = Layout;
@@ -52,6 +53,7 @@ class App extends React.Component {
               <Login {...props} onLogin={() => { this.setState({ didLogin: true }) }} />
             )}/>
             <AuthenticatedRoute path="/containers" component={Container}/>
+            <AuthenticatedRoute path="/view/:id" component={View}/>
             <AuthenticatedRoute path="/workflow/:id" component={Workflow}/>
           </Switch>
         </Router>

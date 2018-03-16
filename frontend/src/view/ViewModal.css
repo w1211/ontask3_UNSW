@@ -22,3 +22,7 @@
 .short-cascader ul {
   height: auto;
 }
+
+.views.ant-modal {
+  min-width: 625px !important;
+}
