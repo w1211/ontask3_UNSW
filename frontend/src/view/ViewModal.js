@@ -119,23 +119,24 @@ class ViewModal extends React.Component {
     const { formState } = this.props;
 
     let values;
-
-    Object.entries(formState.dropDiscrepencies).forEach(([datasource, fields]) => {
-      Object.entries(fields).forEach(([field, discrepency]) => {
-        
-        values = Object.assign({}, values, {
-          dropDiscrepencies: {
-            [datasource]: {
-              [field]: {
-                primary: discrepency.primary.value,
-                matching: discrepency.matching.value
+    if ('dropDiscrepencies' in formState) {
+      Object.entries(formState.dropDiscrepencies).forEach(([datasource, fields]) => {
+        Object.entries(fields).forEach(([field, discrepency]) => {
+          
+          values = Object.assign({}, values, {
+            dropDiscrepencies: {
+              [datasource]: {
+                [field]: {
+                  primary: discrepency.primary.value,
+                  matching: discrepency.matching.value
+                }
               }
             }
-          }
+          });
+  
         });
-
-      });
-    });
+      });  
+    }
 
     return values;
   }

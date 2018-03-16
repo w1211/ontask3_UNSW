@@ -39,6 +39,7 @@ export const createDatasource = (containerId, payload, file) => dispatch => {
   payload.container = containerId;
 
   const isFile = (payload.connection.dbType === 'file');
+
   let data;
   if (isFile) {
     data = new FormData();

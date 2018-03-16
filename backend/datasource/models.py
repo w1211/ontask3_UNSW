@@ -5,7 +5,7 @@ from container.models import Container
 
 
 class Connection(EmbeddedDocument):
-    dbType = fields.StringField(choices=('mysql', 'postgresql', 'sqlite', 'mssql', 'file'), required=True)
+    dbType = fields.StringField(choices=('mysql', 'postgresql', 'sqlite', 'mssql', 'file', 's3BucketFile'), required=True)
     host = fields.StringField()
     database = fields.StringField()
     user = fields.StringField()
