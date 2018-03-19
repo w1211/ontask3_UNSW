@@ -40,9 +40,7 @@ class ViewModal extends React.Component {
   componentWillReceiveProps(nextProps) {
     const { fieldMatchResult } = nextProps;
     
-    if (fieldMatchResult && fieldMatchResult.error) {
-
-    } else if (fieldMatchResult && (fieldMatchResult.primary || fieldMatchResult.matching)) {
+    if (fieldMatchResult && (fieldMatchResult.primary || fieldMatchResult.matching)) {
       this.setState({ resolveMatchVisible: true });
     };
   }
@@ -230,7 +228,6 @@ class ViewModal extends React.Component {
 
           <ResolveMatchModal 
             form={form}
-            formState={formState}
             visible={resolveMatchVisible}
             fieldMatchResult={fieldMatchResult}
             matchingField={matchingField}

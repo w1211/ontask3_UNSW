@@ -510,7 +510,7 @@ export const closeColumnModal = () => ({
   type: CLOSE_COLUMN_MODAL
 });
 
-export const updateColumns = (viewId, columns, isAdd) => (dispatch, getState) => {
+export const updateColumns = (viewId, columns, dropDiscrepencies, isAdd) => (dispatch, getState) => {
   const parameters = {
     initialFn: () => { dispatch(beginRequestView()); },
     url: `/view/${viewId}/update_columns/`,
@@ -526,7 +526,7 @@ export const updateColumns = (viewId, columns, isAdd) => (dispatch, getState) =>
         description: `The column was successfully ${isAdd ? 'added' : 'updated'}.`
       });
     },
-    payload: { columns }
+    payload: { columns, dropDiscrepencies }
   }
 
   requestWrapper(parameters);
@@ -548,6 +548,22 @@ export const deleteColumn = (viewId, columnIndex) => (dispatch, getState) => {
       });
     },
     payload: { columnIndex }
+  }
+
+  requestWrapper(parameters);
+};
+
+export const checkMatchingfield = (matchingField, primaryKey) => (dispatch, getState) => {
+  const parameters = {
+    url: `/datasource/compare_matched_fields/`,
+    method: 'POST',
+    errorFn: (error) => {
+      dispatch(failureFieldMatchResult(error));
+    },
+    successFn: (response) => {
+      dispatch(receiveFieldMatchResult(response, matchingField));
+    },
+    payload: { matchingField, primaryKey }
   }
 
   requestWrapper(parameters);

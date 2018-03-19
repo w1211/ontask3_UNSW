@@ -4,8 +4,8 @@ import { Modal, Icon, Table, Radio } from 'antd';
 const RadioGroup = Radio.Group;
 
 
-const ResolveMatchModal = ({ form, formState, visible, fieldMatchResult, matchingField, onCancel, onOk }) => {
-  if (!fieldMatchResult || !formState) return null;
+const ResolveMatchModal = ({ form, visible, fieldMatchResult, matchingField, onCancel, onOk }) => {
+  if (!fieldMatchResult) return null;
     
   const mismatchedPrimaryRecords = fieldMatchResult.primary;
   const mismatchedMatchingFieldRecords = fieldMatchResult.matching;

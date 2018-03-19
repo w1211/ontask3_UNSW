@@ -86,9 +86,14 @@ class ViewViewSet(viewsets.ModelViewSet):
         self.check_object_permissions(self.request, view)
 
         view.columns = request.data['columns']
+        view.dropDiscrepencies = request.data['dropDiscrepencies']
         data = self.combine_data(view)
 
-        serializer = ViewSerializer(instance=view, data={'data': data, 'columns': view.columns}, partial=True)
+        serializer = ViewSerializer(instance=view, data={
+            'data': data, 
+            'columns': view.columns,
+            'dropDiscrepencies': view.dropDiscrepencies
+        }, partial=True)
 
         serializer.is_valid()
         serializer.save()

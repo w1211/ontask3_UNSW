@@ -242,7 +242,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         unique_in_matching = matching_fields - primary_keys # Values which are in the matching datasource but not the primary
 
         if len(unique_in_matching) == len(matching_fields):
-            raise ValidationError('Matching field failed to match with this primary key. Are you sure the right matching field is set?')
+            raise ValidationError('Matching field failed to match with the primary key. Are you sure the right matching field is set?')
 
         if len(unique_in_matching) > 0:
             response['matching'] = [value for value in unique_in_matching]

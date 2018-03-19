@@ -56,7 +56,8 @@ function view(state = {}, action) {
     case RESOLVE_MATCHING_FIELD:
       return Object.assign({}, state, {
         fieldMatchResult: null,
-        matchingField: null
+        matchingField: null,
+        error: null
       });
     case FAILURE_FIELD_MATCH_RESULT:
       return Object.assign({}, state, {
