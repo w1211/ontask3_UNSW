@@ -1,7 +1,7 @@
 import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
-import { Modal, Form, Alert, Select, Input } from 'antd';
+import { Modal, Form, Alert, Select, Input, Tooltip, Icon } from 'antd';
 
 import * as ViewActionCreators from './ViewActions';
 
@@ -26,7 +26,8 @@ class ColumnModal extends React.Component {
     // The state is used to render the available matching fields for a given field/datasource
     this.state = {
       datasource: null,
-      field: null
+      field: null,
+      labelRequired: false // If the field chosen has a duplicate name
     }
   };
 
@@ -34,14 +35,19 @@ class ColumnModal extends React.Component {
     const { form, view, column, index } = this.props;
     const { datasource, field } = this.state;
 
-    form.validateFields(['label', 'type', 'matching'], (err, values) => {
+    let fields = ['label', 'type', 'matching']
+    if (!column) fields.push('field');
+
+    form.validateFields(fields, (err, values) => {
       if (err) return;
 
       if (column) {
+        if (!values.label) values.label = column.field;
         const payload = {...column, ...values};
         view.columns[index] = payload;
         this.boundActionCreators.updateColumns(view.id, view.columns, false);
       } else {
+        if (!values.label) values.label = field;
         const payload = {...values, field, datasource: datasource.id};
         view.columns.push(payload);
         this.boundActionCreators.updateColumns(view.id, view.columns, true);
@@ -70,8 +76,32 @@ class ColumnModal extends React.Component {
       if (defaultMatchingField) form.setFieldsValue({ 'matching': defaultMatchingField.matching });
     }
 
-    this.setState({ datasource, field });
+    // If the field chosen has a duplicate name, then require that the user enters a label
+    const fields = view.columns.map(column => column.label ? column.label : column.field);
+    const labelRequired = fields.includes(field);
+
+    this.setState({ datasource, field, labelRequired });
   }
+
+  checkFields = (rule, value, callback) => {
+    const { view, column } = this.props;
+    const fields = view.columns.map(column => column.label ? column.label : column.field);
+
+    // If we are editing an existing column, only validate if the name is different than the original column name
+    if (column && (column.label ? column.label : column.field) === value) {
+      callback(); 
+      return;
+    }
+
+    // If the provided label is already in the list of fields for this view, then show an error
+    if (fields.includes(value)) {
+      callback('Field name is already being used');
+    }
+
+    // Otherwise return no errors
+    callback();
+    return;
+  };
 
   render() {
     const { dispatch, form, visible, loading, error, view, column } = this.props;
@@ -96,7 +126,7 @@ class ColumnModal extends React.Component {
     return (
       <Modal
         visible={visible}
-        title={column ? 'Edit column' : 'Add column'}
+        title={column ? 'Edit imported column' : 'Add imported column'}
         okText={column ? 'Update' : 'Add'}
         onCancel={() => { form.resetFields(); dispatch(this.boundActionCreators.closeColumnModal()); }}
         onOk={this.handleSubmit}
@@ -106,7 +136,7 @@ class ColumnModal extends React.Component {
           {!column && 
             <FormItem {...formItemLayout} label="Field">
               {form.getFieldDecorator('field', {
-                rules: [{ required: false, message: 'Field is required' }],
+                rules: [{ required: true, message: 'Field is required' }],
                 onChange: this.handleChangeField
               })(
                 <Select>
@@ -116,9 +146,19 @@ class ColumnModal extends React.Component {
             </FormItem>
           }
 
-          <FormItem {...formItemLayout} label="Label">
+          <FormItem {...formItemLayout} label={
+            <span>Label {this.state.labelRequired && 
+              <Tooltip title="A label is required because a field already exists with this name in the view.">
+                <Icon style={{ cursor: 'help' }} type="question-circle-o" />
+              </Tooltip>
+            }</span>
+          }>
             {form.getFieldDecorator('label', {
-              initialValue: column ? column.label ? column.label : column.field : null
+              initialValue: column ? column.label ? column.label : column.field : null,
+              rules: [
+                { required: this.state.labelRequired, message: 'Label is required' },
+                { validator: this.checkFields } // Custom validator to ensure that the label is not a duplicate field name
+              ]
             })(
               <Input/>
             )}
