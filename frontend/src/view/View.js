@@ -2,11 +2,14 @@ import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { Table, Spin, Layout, Breadcrumb, Icon } from 'antd';
+import { Table, Spin, Layout, Breadcrumb, Icon, Menu, Dropdown, Button, Modal } from 'antd';
 
 import * as ViewActionCreators from './ViewActions';
 
+import ColumnModal from './ColumnModal';
+
 const { Content, Sider } = Layout;
+const confirm = Modal.confirm;
 
 
 class View extends React.Component {
@@ -20,18 +23,50 @@ class View extends React.Component {
       filtered: null,
       sorted: null
     };
-  }
+  };
+
+  componentDidMount() {
+    const { match } = this.props;
+    this.boundActionCreators.fetchView(match.params.id);
+  };
 
   handleChange = (pagination, filters, sorter) => {
     this.setState({
       filtered: filters,
       sorted: sorter
     });
-  }
+  };
 
-  componentDidMount() {
-    const { match } = this.props;
-    this.boundActionCreators.fetchView(match.params.id);
+  handleAddColumn = (e) => {
+    switch (e.key) {
+      case 'imported':
+        this.boundActionCreators.openColumnModal();
+        break;
+    };
+  };
+
+  handleHeaderDropdownClick = (e, columnIndex) => {
+    const { view } = this.props;
+
+    switch (e.key)  {
+      case 'edit':
+        this.boundActionCreators.openColumnModal(view.columns[columnIndex], columnIndex);
+        break;
+
+      case 'delete':
+        confirm({
+          title: 'Confirm column deletion',
+          content: 'Are you sure you want to delete this column?',
+          okText: 'Continue with deletion',
+          okType: 'danger',
+          cancelText: 'Cancel',
+          onOk: () => {
+            this.boundActionCreators.deleteColumn(view.id, columnIndex);
+          }
+        });
+        break;
+
+    };
   };
 
   render() {
@@ -41,11 +76,33 @@ class View extends React.Component {
     let columns = [];
     let data;
 
+    const HeaderDropdown = ({ column, label, index }) => (
+      <Dropdown trigger={["click"]} overlay={
+        <Menu onClick={(e) => this.handleHeaderDropdownClick(e, index)}>
+          <Menu.Item key="visualise" disabled><Icon type="area-chart" style={{ marginRight: 5 }}/>Visualise</Menu.Item>
+          <Menu.Item key="edit"><Icon type="edit" style={{ marginRight: 5 }}/>Edit</Menu.Item>
+          <Menu.Item key="delete"><Icon type="delete" style={{ marginRight: 5 }}/>Delete</Menu.Item>
+        </Menu>
+      }>
+        <a>{label}</a>
+      </Dropdown>
+    );
+
+    const PrimaryKeyDropdown = ({ text }) => (
+      <Dropdown trigger={["click"]} overlay={
+        <Menu>
+          <Menu.Item key="visualise" disabled><Icon type="area-chart" style={{ marginRight: 5 }}/>Visualise</Menu.Item>
+        </Menu>
+      }>
+        <a>{text}</a>
+      </Dropdown>
+    );
+
     if (view) {
       columns = view.columns.map((column, i) => {
         const field = column.label ? column.label : column.field;
         return {
-          title: field,
+          title: (i === 0) ? field : <HeaderDropdown column={column} label={field} index={i}/>,
           dataIndex: field,
           key: field,
           fixed: i === 0 ? 'left' : undefined,
@@ -56,12 +113,13 @@ class View extends React.Component {
             b = field in b ? b[field] : '';
             return a.localeCompare(b);
           },
-          sortOrder: sorted && sorted.columnKey === field && sorted.order
+          sortOrder: sorted && sorted.columnKey === field && sorted.order,
+          render: (text) => ((i === 0) ? PrimaryKeyDropdown({text}) : text)
         }
       });
   
       data = view.data.map((data, i) => ({...data, key: i }));
-    }
+    };
 
     return (
       <div>
@@ -78,21 +136,43 @@ class View extends React.Component {
 
               <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '1em' }}>
                 <h1 style={{ display: 'inline-block', margin: 0 }}>{view && view.name}</h1>
-                <Link to="/containers">
+                <Link to="/containers" style={{ width: 'fit-content' }}>
                   <Icon type="arrow-left" />
-                  <span>Back to containers</span>
+                  <span >Back to containers</span>
                 </Link>
               </div>
               
               { loading ?
                 <Spin size="large" />
               :
-                <Table
-                  columns={columns}
-                  dataSource={data}
-                  scroll={{ x: (columns.length - 1) * 175 }}
-                  onChange={this.handleChange} 
-                />
+                <div>
+                  <div style={{ marginBottom: 10 }}>
+                    <Button size="large" style={{ marginRight: 10 }}>
+                      <Icon type="bars"/> Order columns
+                    </Button>
+
+                    <Dropdown trigger={["click"]} overlay={
+                      <Menu onClick={this.handleAddColumn}>
+                        <Menu.Item key="imported">Imported column</Menu.Item>
+                        <Menu.Item key="derived" disabled>Derived column</Menu.Item>
+                        <Menu.Item key="custom" disabled>Custom column</Menu.Item>
+                      </Menu>
+                    }>
+                      <Button size="large">
+                        <Icon type="plus"/> Add column
+                      </Button>
+                    </Dropdown>
+                  </div>
+
+                  <ColumnModal/>
+                  
+                  <Table
+                    columns={columns}
+                    dataSource={data}
+                    scroll={{ x: (columns.length - 1) * 175 }}
+                    onChange={this.handleChange} 
+                  />
+                </div>
               }
             </Content>
           </Layout>
@@ -111,6 +191,6 @@ const mapStateToProps = (state) => {
   return {
     loading, error, view
   };
-}
+};
 
-export default connect(mapStateToProps)(View)
+export default connect(mapStateToProps)(View);

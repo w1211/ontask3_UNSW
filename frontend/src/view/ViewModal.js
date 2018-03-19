@@ -56,12 +56,15 @@ class ViewModal extends React.Component {
         <OptGroup label={datasource.name} key={datasource.name}>
           {datasource.fields.map((field, j) => {
             // If this field has been given a label, then show it in parentheses next to the original field name
+            // But only if the label is actually different than the field name
             let label;
             if (formState && formState.columns) {
               const columnEquivalent = formState.columns.find(
                 column => column.datasource.value === datasource.id && column.field.value === field
               );
-              if (columnEquivalent && columnEquivalent.label) label = columnEquivalent.label.value;
+              if (columnEquivalent && columnEquivalent.label && columnEquivalent.label.value !== columnEquivalent.field.value) {
+                label = columnEquivalent.label.value;
+              };
             }
             
             // Disable the primary key in the list of available fields
@@ -147,7 +150,7 @@ class ViewModal extends React.Component {
   }
 
   handleSubmit = () => {
-    const { containerId, form, selectedId } = this.props;
+    const { containerId, form, selectedId, history } = this.props;
     const { formValues } = this.state;
 
     form.validateFields((err, values) => {
@@ -157,9 +160,9 @@ class ViewModal extends React.Component {
 
       if (selectedId) {
         values = {...values, ...this.mergeDiscrepencies()};
-        this.boundActionCreators.updateView(containerId, selectedId, values);
+        this.boundActionCreators.updateView(containerId, selectedId, values, history);
       } else {
-        this.boundActionCreators.createView(containerId, values);
+        this.boundActionCreators.createView(containerId, values, history);
       }
     });
   }

@@ -17,7 +17,9 @@ import {
   FAILURE_REQUEST_VIEW,
   SUCCESS_REQUEST_VIEW,
 
-  RECEIVE_VIEW
+  RECEIVE_VIEW,
+  OPEN_COLUMN_MODAL,
+  CLOSE_COLUMN_MODAL
 } from './ViewActions';
 
 import _ from 'lodash';
@@ -114,6 +116,18 @@ function view(state = {}, action) {
       return Object.assign({}, state, {
         loading: false,
         view: action.view
+      });
+    case OPEN_COLUMN_MODAL:
+      return Object.assign({}, state, {
+        visible: true,
+        column: action.column,
+        index: action.index
+      });
+    case CLOSE_COLUMN_MODAL:
+      return Object.assign({}, state, {
+        visible: false,
+        column: null,
+        index: null
       });
 
     default:

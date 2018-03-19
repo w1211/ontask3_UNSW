@@ -22,6 +22,9 @@ export const FAILURE_REQUEST_VIEW = 'FAILURE_REQUEST_VIEW';
 export const SUCCESS_REQUEST_VIEW = 'SUCCESS_REQUEST_VIEW';
 
 export const RECEIVE_VIEW = 'RECEIVE_VIEW';
+export const OPEN_COLUMN_MODAL = 'OPEN_COLUMN_MODAL';
+export const CLOSE_COLUMN_MODAL = 'CLOSE_COLUMN_MODAL';
+
 
 export const openViewModal = (containerId, datasources, selected) => {
   let formState = {};
@@ -102,7 +105,7 @@ export const updateViewFormState = (payload) => ({
   payload
 });
 
-const getType = (str) => {
+export const getType = (str) => {
   // isNan() returns false if the input only contains numbers
   if (!isNaN(str)) return 'number';
   const dateCheck = new Date(str);
@@ -382,7 +385,7 @@ const successRequestView = () => ({
   type: SUCCESS_REQUEST_VIEW
 });
 
-export const createView = (containerId, payload) => dispatch => {
+export const createView = (containerId, payload, history) => dispatch => {
   payload.container = containerId;
   
   // Modify the payload into a format that the backend is expecting
@@ -399,7 +402,8 @@ export const createView = (containerId, payload) => dispatch => {
     },
     successFn: (response) => {
       dispatch(successRequestView());
-      dispatch(fetchContainers());
+      // Redirect to data manipulation interface
+      history.push(`view/${response.id}`);
       notification['success']({
         message: 'View created',
         description: 'The view was successfully created.'
@@ -411,7 +415,8 @@ export const createView = (containerId, payload) => dispatch => {
   requestWrapper(parameters);
 };
 
-export const updateView = (containerId, selectedId, payload) => dispatch => {  
+export const updateView = (containerId, selectedId, payload, history) => dispatch => {  
+  
   // Modify the payload into a format that the backend is expecting
   transformPayload(payload);
 
@@ -426,7 +431,8 @@ export const updateView = (containerId, selectedId, payload) => dispatch => {
     },
     successFn: (response) => {
       dispatch(successRequestView());
-      dispatch(fetchContainers());
+      // Redirect to data manipulation interface
+      history.push(`view/${response.id}`);
       notification['success']({
         message: 'View updated',
         description: 'The view was successfully updated.'
@@ -480,7 +486,9 @@ const receiveView = (view) => ({
 export const fetchView = (viewId) => dispatch => {
   const parameters = {
     initialFn: () => { dispatch(beginRequestView()); },
-    url: `/view/${viewId}/`,
+    // The 'retrieve_view' endpoint includes the datasources from the view's container, as 'datasources' in the response object
+    // The datasources are used in the 'add imported column' interface of the view
+    url: `/view/${viewId}/retrieve_view/`,
     method: 'GET',
     errorFn: (error) => { 
       dispatch(failureRequestView(error));
@@ -489,5 +497,58 @@ export const fetchView = (viewId) => dispatch => {
       dispatch(receiveView(view));
     }
   }
+  requestWrapper(parameters);
+};
+
+export const openColumnModal = (column, index) => ({
+  type: OPEN_COLUMN_MODAL,
+  column, 
+  index
+});
+
+export const closeColumnModal = () => ({
+  type: CLOSE_COLUMN_MODAL
+});
+
+export const updateColumns = (viewId, columns, isAdd) => (dispatch, getState) => {
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestView()); },
+    url: `/view/${viewId}/update_columns/`,
+    method: 'PUT',
+    errorFn: (error) => {
+      dispatch(failureRequestView(error));
+    },
+    successFn: () => {
+      dispatch(fetchView(viewId));
+      dispatch(closeColumnModal());
+      notification['success']({
+        message: `Column ${isAdd ? 'added' : 'updated'}`,
+        description: `The column was successfully ${isAdd ? 'added' : 'updated'}.`
+      });
+    },
+    payload: { columns }
+  }
+
+  requestWrapper(parameters);
+};
+
+export const deleteColumn = (viewId, columnIndex) => (dispatch, getState) => {
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestView()); },
+    url: `/view/${viewId}/delete_column/`,
+    method: 'POST',
+    errorFn: (error) => {
+      dispatch(failureRequestView(error));
+    },
+    successFn: () => {
+      dispatch(fetchView(viewId));
+      notification['success']({
+        message: 'Column deleted',
+        description: 'The column was successfully deleted from the view.'
+      });
+    },
+    payload: { columnIndex }
+  }
+
   requestWrapper(parameters);
 };

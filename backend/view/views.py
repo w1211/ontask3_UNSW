@@ -1,7 +1,7 @@
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import list_route
+from rest_framework.decorators import list_route, detail_route
 
 from collections import defaultdict
 from django.http import JsonResponse
@@ -63,6 +63,56 @@ class ViewViewSet(viewsets.ModelViewSet):
 
         obj.delete()
 
+    @detail_route(methods=['get'])
+    def retrieve_view(self, request, id=None):
+        view = View.objects.get(id=id)
+        self.check_object_permissions(self.request, view)
+
+        serializer = ViewSerializer(instance=view)
+
+        datasources = DataSource.objects(container=view.container.id).only('id', 'name', 'fields', 'data')
+        # Return only the first row of each datasource's data
+        # To be used in guessing the type of a field when trying to add a new column to the view
+        for datasource in datasources:
+            datasource['data'] = datasource['data'][:1]
+
+        serializer.instance.datasources = datasources
+       
+        return JsonResponse(serializer.data, safe=False)
+
+    @detail_route(methods=['put'])
+    def update_columns(self, request, id=None):
+        view = View.objects.get(id=id)
+        self.check_object_permissions(self.request, view)
+
+        view.columns = request.data['columns']
+        data = self.combine_data(view)
+
+        serializer = ViewSerializer(instance=view, data={'data': data, 'columns': view.columns}, partial=True)
+
+        serializer.is_valid()
+        serializer.save()
+
+        return JsonResponse({ 'success': 'true' }, safe=False)
+
+    @detail_route(methods=['post'])
+    def delete_column(self, request, id=None):
+        view = View.objects.get(id=id)
+        self.check_object_permissions(self.request, view)
+
+        columnIndex = self.request.data['columnIndex']
+        if columnIndex == 0:
+            raise ValidationError('The primary key cannot be deleted')
+
+        del view.columns[columnIndex]
+        data = self.combine_data(view)
+        serializer = ViewSerializer(instance=view, data={'data': data}, partial=True)
+
+        serializer.is_valid()
+        serializer.save()
+
+        return JsonResponse({ 'success': 'true' }, safe=False)
+
     @list_route(methods=['post'])
     def preview_data(self, request):
         data = self.combine_data(self.request.data)
@@ -72,7 +122,7 @@ class ViewViewSet(viewsets.ModelViewSet):
 
     def combine_data(self, view):
         columns = view['columns']
-        drop_discrepencies = view.get('dropDiscrepencies', [])
+        drop_discrepencies = view['dropDiscrepencies'] if 'dropDiscrepencies' in view else []
 
         # Get the primary key's datasource data
         primary_datasource_id = columns[0]['datasource']
@@ -83,12 +133,12 @@ class ViewViewSet(viewsets.ModelViewSet):
         # Initialize the defaultdict to hold the results, and seed it with the primary keys
         results = defaultdict(dict)
         results.update((primary_key, {}) for primary_key in primary_key_records)
-        
+
         # Initialise an object to store the data of each datasource
         # Add the datasource of the primary key to this object
         data = {}
         data[primary_datasource_id] = primary_datasource['data']
-        
+                
         primary_key_records_to_drop = set()
 
         # Create a defaultdict of datasources & the fields used from each datasource
@@ -102,7 +152,7 @@ class ViewViewSet(viewsets.ModelViewSet):
             if not datasource_id in data:
                 datasource = DataSource.objects.get(id=datasource_id)
                 data[datasource_id] = datasource['data']
-            
+        
             # Create a defaultdict of matching fields used from this datasource
             matching_fields_used = defaultdict(list)
             for column in related_columns:
@@ -117,7 +167,6 @@ class ViewViewSet(viewsets.ModelViewSet):
                 unique_in_primary = primary_key_records - matching_field_records
 
                 should_drop_discrepency = next((discrepency for discrepency in drop_discrepencies if discrepency['datasource'] == datasource_id and discrepency['matching'] == matching_field), {})
-
                 if 'dropPrimary' in should_drop_discrepency and should_drop_discrepency['dropPrimary']:
                     # If primary discrepencies should be dropped, and some are detected, then add them to the list for removal later in the function
                     primary_key_records_to_drop.update(unique_in_primary)
@@ -126,7 +175,7 @@ class ViewViewSet(viewsets.ModelViewSet):
                     matching_value = record[matching_field]
 
                     for column in matched_columns:
-                        field = column['label'] if 'label' in column else column['field']
+                        field = column['label'] if ('label' in column and column['label'] is not None) else column['field']
                         value = record[column['field']]
 
                         # If matching field discrepencies should be dropped, and this particular record is one such discrepency

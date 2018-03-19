@@ -6,7 +6,7 @@ const Data = ({ form, formState, loading, data }) => {
   if (!formState) return null;
   
   const columns = formState.columns.map((column, i) => {
-    const field = column.label && column.label.value ? column.label.value : column.field.value;
+    const field = (column.label && column.label.value && column.label.value !== column.field.value) ? column.label.value : column.field.value;
     return {
       title: field,
       dataIndex: field,

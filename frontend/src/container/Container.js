@@ -28,7 +28,7 @@ class Container extends React.Component {
   };
 
   render() {
-    const { dispatch, isFetching, containers } = this.props;
+    const { dispatch, isFetching, containers, history } = this.props;
 
     return (
       <Content style={{ padding: '0 50px' }}>
@@ -56,7 +56,7 @@ class Container extends React.Component {
                 <div>
                   <WorkflowModal/>
                   <DatasourceModal/>
-                  <ViewModal/>
+                  <ViewModal history={history}/>
 
                   <ContainerList/>
                 </div>

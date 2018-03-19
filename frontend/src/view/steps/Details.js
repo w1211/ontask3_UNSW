@@ -14,7 +14,7 @@ const Details = ({ form, formState, datasources, moveRow }) => {
       return { 
         key: index, 
         datasource: datasource,
-        label: column.label ? column.label.value : undefined,
+        label: (column.label && column.label.value !== column.field.value) ? column.label.value : undefined,
         field: column.field.value,
         matching: column.matching.value,
         type: column.type.value
