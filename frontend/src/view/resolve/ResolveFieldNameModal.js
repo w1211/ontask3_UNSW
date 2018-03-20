@@ -7,7 +7,9 @@ const FormItem = Form.Item;
 
 
 const ResolveFieldNameModal = ({ form, formState, visible, onCancel, onOk }) => {
-  if (!formState) return null;
+  // Don't render anything if visible is false, 
+  // So that the form does not try to validate against the fields in this component
+  if (!formState || !visible) return null;
 
   const fields = formState && formState.columns ? formState.columns.map(column => (column.label && column.label.value) ? column.label.value : column.field.value): [];
 

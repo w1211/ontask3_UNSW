@@ -5,7 +5,9 @@ const RadioGroup = Radio.Group;
 
 
 const ResolveMatchModal = ({ form, visible, fieldMatchResult, matchingField, onCancel, onOk }) => {
-  if (!fieldMatchResult) return null;
+  // Don't render anything if visible is false, 
+  // So that the form does not try to validate against the fields in this component
+  if (!fieldMatchResult || !visible) return null;
     
   const mismatchedPrimaryRecords = fieldMatchResult.primary;
   const mismatchedMatchingFieldRecords = fieldMatchResult.matching;
