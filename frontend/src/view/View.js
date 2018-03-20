@@ -155,7 +155,7 @@ class View extends React.Component {
               :
                 <div>
                   <div style={{ marginBottom: 10 }}>
-                    { view && 'dropDiscrepencies' in view &&
+                    { view && 'dropDiscrepencies' in view && Object.keys(view.dropDiscrepencies).length > 0 &&
                       <Button size="large" style={{ marginRight: 10 }} onClick={() => this.setState({ discrepenciesModalVisible: true })}>
                         <Icon type="disconnect"/> Manage discrepencies
                       </Button>
