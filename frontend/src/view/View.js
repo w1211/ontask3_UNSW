@@ -7,6 +7,7 @@ import { Table, Spin, Layout, Breadcrumb, Icon, Menu, Dropdown, Button, Modal } 
 import * as ViewActionCreators from './ViewActions';
 
 import ColumnModal from './ColumnModal';
+import DiscrepenciesModal from './resolve/DiscrepenciesModal';
 
 const { Content, Sider } = Layout;
 const confirm = Modal.confirm;
@@ -21,7 +22,8 @@ class View extends React.Component {
 
     this.state = {
       filtered: null,
-      sorted: null
+      sorted: null,
+      discrepenciesModalVisible: false
     };
   };
 
@@ -35,6 +37,12 @@ class View extends React.Component {
       filtered: filters,
       sorted: sorter
     });
+  };
+
+  handleUpdateDiscrepencies = (dropDiscrepencies) => {
+    const { view } = this.props;
+    this.boundActionCreators.updateDiscrepencies(view.id, dropDiscrepencies);
+    this.setState({ discrepenciesModalVisible: false });
   };
 
   handleAddColumn = (e) => {
@@ -147,10 +155,12 @@ class View extends React.Component {
               :
                 <div>
                   <div style={{ marginBottom: 10 }}>
-                    <Button size="large" style={{ marginRight: 10 }}>
-                      <Icon type="bars"/> Order columns
-                    </Button>
-
+                    { view && 'dropDiscrepencies' in view &&
+                      <Button size="large" style={{ marginRight: 10 }} onClick={() => this.setState({ discrepenciesModalVisible: true })}>
+                        <Icon type="disconnect"/> Manage discrepencies
+                      </Button>
+                    }
+                    
                     <Dropdown trigger={["click"]} overlay={
                       <Menu onClick={this.handleAddColumn}>
                         <Menu.Item key="imported">Imported column</Menu.Item>
@@ -165,6 +175,13 @@ class View extends React.Component {
                   </div>
 
                   <ColumnModal/>
+                  
+                  <DiscrepenciesModal
+                    visible={this.state.discrepenciesModalVisible}
+                    onCancel={() => { this.setState({ discrepenciesModalVisible: false }) }}
+                    onOk={this.handleUpdateDiscrepencies}
+                    view={view}
+                  />
                   
                   <Table
                     columns={columns}

@@ -81,6 +81,25 @@ class ViewViewSet(viewsets.ModelViewSet):
         return JsonResponse(serializer.data, safe=False)
 
     @detail_route(methods=['put'])
+    def update_discrepencies(self, request, id=None):
+        view = View.objects.get(id=id)
+        self.check_object_permissions(self.request, view)
+
+        view.dropDiscrepencies = request.data['dropDiscrepencies']
+        print(view.dropDiscrepencies)
+        data = self.combine_data(view)
+
+        serializer = ViewSerializer(instance=view, data={
+            'data': data, 
+            'dropDiscrepencies': view.dropDiscrepencies
+        }, partial=True)
+
+        serializer.is_valid()
+        serializer.save()
+
+        return JsonResponse({ 'success': 'true' }, safe=False)
+
+    @detail_route(methods=['put'])
     def update_columns(self, request, id=None):
         view = View.objects.get(id=id)
         self.check_object_permissions(self.request, view)

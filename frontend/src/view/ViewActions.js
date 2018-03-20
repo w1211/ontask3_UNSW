@@ -568,3 +568,24 @@ export const checkMatchingfield = (matchingField, primaryKey) => (dispatch, getS
 
   requestWrapper(parameters);
 };
+
+export const updateDiscrepencies = (viewId, dropDiscrepencies) => (dispatch, getState) => {
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestView()); },
+    url: `/view/${viewId}/update_discrepencies/`,
+    method: 'PUT',
+    errorFn: (error) => {
+      dispatch(failureRequestView(error));
+    },
+    successFn: () => {
+      dispatch(fetchView(viewId));
+      notification['success']({
+        message: 'Discrepency management updated',
+        description: 'The discrepency management settings were successfully updated.'
+      });
+    },
+    payload: { dropDiscrepencies }
+  }
+
+  requestWrapper(parameters);
+};
