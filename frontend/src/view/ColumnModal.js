@@ -57,7 +57,7 @@ class ColumnModal extends React.Component {
         const payload = {...column, ...values};
         view.columns[index] = payload;
         if (dropDiscrepencies) view.dropDiscrepencies.push(...dropDiscrepencies);
-        this.boundActionCreators.updateColumns(view.id, view.columns, false);
+        this.boundActionCreators.updateColumns(view.id, view.columns, view.dropDiscrepencies, false);
       } else {
         if (!values.label) values.label = field;
         const payload = {...values, field, datasource: datasource.id};
