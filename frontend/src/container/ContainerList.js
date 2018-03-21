@@ -26,7 +26,8 @@ const ButtonStyle = {
 const typeMap = {
   'mysql': 'MySQL',
   'postgresql': 'PostgreSQL',
-  'file': 'External file',
+  'xlsXlsxFile': 'Excel file',
+  'csvTextFile': 'CSV/text file',
   'sqlite': 'SQLite',
   'mssql': 'MSSQL'
 }

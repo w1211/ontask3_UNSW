@@ -4,7 +4,9 @@ import {
 
   BEGIN_REQUEST_DATASOURCE,
   FAILURE_REQUEST_DATASOURCE,
-  SUCCESS_REQUEST_DATASOURCE
+  SUCCESS_REQUEST_DATASOURCE,
+
+  RECEIVE_SHEETNAMES
 } from './DatasourceActions';
 
 
@@ -22,9 +24,15 @@ function datasource(state = {}, action) {
         error: null,
         loading: false,
         containerId: null,
-        selected: null
+        selected: null,
+        sheetnames: null
       });
       
+    case RECEIVE_SHEETNAMES:
+      return Object.assign({}, state, {
+        sheetnames: action.sheetnames
+      });
+
     case BEGIN_REQUEST_DATASOURCE:
       return Object.assign({}, state, {
         loading: true
@@ -40,7 +48,8 @@ function datasource(state = {}, action) {
         loading: false,
         error: null,
         selected: null,
-        containerId: null
+        containerId: null,
+        sheetnames: null
       });
 
     default:

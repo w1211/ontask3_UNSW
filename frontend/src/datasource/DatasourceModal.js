@@ -40,7 +40,7 @@ class DatasourceModal extends React.Component {
     form.validateFields((err, values) => {
       if (err || error) return;
 
-      if (values.connection.dbType === 'file' && !file && !selected) {
+      if (['xlsXlsxFile', 'csvTextFile'].includes(values.connection.dbType) && !file && !selected) {
         this.setState({ error: 'File is required' });
         return;
       }
@@ -56,29 +56,34 @@ class DatasourceModal extends React.Component {
   handleFileDrop(e) {
     const file = e.file;
 
-    const error = this.validateFile(file);
+    const fileName = file.name.split('.');
+    const extension = fileName[fileName.length - 1].toLowerCase();
+    const fileSize = file.size / Math.pow(1024, 2); // File size in MB
+
+    if (['xlsx', 'xls'].includes(extension)) {
+      this.boundActionCreators.fetchSheetnames(file);
+    };
+    
+    const error = this.validateFile(extension, fileSize);
     this.setState({
       error, // If there are errors, save them to the state so they can be shown in the interface
       file: error ? null : file // If there are no errors, then save the file in the state
     });
   }
 
-  validateFile = (file, callback) => {
+  validateFile = (extension, fileSize, callback) => {
     // Validate file type
-    const fileName = file.name.split('.');
-    const extension = fileName[fileName.length - 1].toLowerCase();
     if (!['csv', 'xlsx', 'xls'].includes(extension)) return 'Only csv, xls and xlsx file types supported';
 
     // Validate file size
-    const fileSize = file.size / Math.pow(1024, 2); // File size in MB
-
     if (fileSize > 2) return 'File must not be larger than 2MB';
   };
 
   render() {
-    const { selected, visible, loading, error, form } = this.props;
+    const { selected, visible, loading, error, form, sheetnames } = this.props;
 
-    const isFile = form.getFieldValue('connection.dbType') === 'file';
+    const isFile = ['xlsXlsxFile', 'csvTextFile'].includes(form.getFieldValue('connection.dbType'));
+    const isCSV = form.getFieldValue('connection.dbType') == 'csvTextFile';
 
     return (
       <Modal
@@ -105,10 +110,11 @@ class DatasourceModal extends React.Component {
               initialValue: selected ? selected.connection.dbType : null,
               rules: [{ required: true, message: 'Type is required' }]
             })(
-              <Select onChange={(type) => { if (type !== 'file') this.setState({ file: null }); }}>
+              <Select onChange={(type) => { if (type !== 'csvTextFile' || type !== 'xlsXlsxFile') this.setState({ file: null }); }}>
                 <Option value="mysql">MySQL</Option>
                 <Option value="postgresql">PostgreSQL</Option>
-                <Option value="file">External file</Option>
+                <Option value="csvTextFile">csv/text file</Option>
+                <Option value="xlsXlsxFile">xls/xlsx file</Option>
                 <Option value="sqlite" disabled>SQLite</Option>
                 <Option value="mssql" disabled>MSSQL</Option>
               </Select>
@@ -117,13 +123,22 @@ class DatasourceModal extends React.Component {
           
           { isFile ?
             <div>
-              <FormItem {...formItemLayout} label="Delimiter">
-                {form.getFieldDecorator('delimiter', {
-                  initialValue: ','
-                })(
-                  <Input placeholder="Default delimiter ','"/>
-                )}
-              </FormItem>
+              { isCSV &&
+                <FormItem {...formItemLayout} label="Delimiter">
+                  { form.getFieldDecorator('delimiter', {
+                    initialValue: ',',
+                  })(
+                    <Select>
+                      <Option value=",">Comma ,</Option>
+                      <Option value=" ">Tabs "  "</Option>
+                      <Option value=";">Semi-colons ;</Option>
+                      <Option value="|">Pipes |</Option>
+                      <Option value="^">Carets ^</Option>
+                      <Option value="~">Tildes ~</Option>
+                    </Select>
+                  )}
+                </FormItem>
+              }
 
               <Dragger
                 name='file'
@@ -139,9 +154,25 @@ class DatasourceModal extends React.Component {
                 <p className="ant-upload-hint">Supported file formats: csv/xls/xlsx</p>
               </Dragger>
 
-              { this.state.error && <Alert style={{ marginTop: 10 }} message={this.state.error} type="error"/> }
+              { this.state.file && 
+                <div>
+                  <span><Icon type='paper-clip'/>{this.state.file.name}</span> 
 
-              { this.state.file && <span><Icon type='paper-clip'/>{this.state.file.name}</span> }
+                  { sheetnames &&
+                    <FormItem {...formItemLayout} label="Sheet name">
+                      { form.getFieldDecorator('sheetname',{
+                        rules: [{ required: true, message: 'Sheet name is required' }]
+                      })(
+                        <Select>
+                          { sheetnames.map((option, i) => (<Option key={i} value={option}>{option}</Option>)) }
+                        </Select>
+                      )}
+                    </FormItem>
+                  }
+                </div>
+              }
+
+              { this.state.error && <Alert style={{ marginTop: 10 }} message={this.state.error} type="error"/> }
             </div>
           :
             <div>
@@ -196,11 +227,11 @@ class DatasourceModal extends React.Component {
 
 const mapStateToProps = (state) => {
   const {
-    visible, loading, error, containerId, selected
+    visible, loading, error, containerId, selected, sheetnames
   } = state.datasource;
   
   return {
-    visible, loading, error, containerId, selected
+    visible, loading, error, containerId, selected, sheetnames
   };
 }
 

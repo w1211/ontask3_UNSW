@@ -11,6 +11,8 @@ export const BEGIN_REQUEST_DATASOURCE = 'BEGIN_REQUEST_DATASOURCE';
 export const FAILURE_REQUEST_DATASOURCE = 'FAILURE_REQUEST_DATASOURCE';
 export const SUCCESS_REQUEST_DATASOURCE = 'SUCCESS_REQUEST_DATASOURCE';
 
+export const RECEIVE_SHEETNAMES = 'RECEIVE_SHEETNAMES';
+
 
 export const openDatasourceModal = (containerId, selected) => ({
   type: OPEN_DATASOURCE_MODAL,
@@ -35,10 +37,33 @@ const successRequestDatasource = () => ({
   type: SUCCESS_REQUEST_DATASOURCE
 });
 
+const receiveSheetnames = (sheetnames) => ({
+  type: RECEIVE_SHEETNAMES,
+  sheetnames
+});
+
+export const fetchSheetnames = (file) => dispatch => {
+  let data = new FormData();
+  data.append('file', file);
+  const parameters = {
+    url: `/datasource/get_sheetnames/`,
+    method: 'POST',
+    errorFn: (error) => {
+      console.error(error);
+    },
+    successFn: (response) => {
+      dispatch(receiveSheetnames(response["sheetnames"]));
+    },
+    payload: data,
+    isNotJSON: true
+  }
+  requestWrapper(parameters);
+}
+
 export const createDatasource = (containerId, payload, file) => dispatch => {
   payload.container = containerId;
-
-  const isFile = (payload.connection.dbType === 'file');
+  console.log(payload);
+  const isFile = ['xlsXlsxFile', 'csvTextFile'].includes(payload.connection.dbType);
   let data;
   if (isFile) {
     data = new FormData();
@@ -46,7 +71,8 @@ export const createDatasource = (containerId, payload, file) => dispatch => {
     data.append('delimiter', payload.delimiter)
     data.append('container', containerId);
     data.append('name', payload.name);
-    data.append('dbType', 'file');
+    data.append('dbType', payload.connection.dbType);
+    data.append('sheetname', payload.sheetname);
   } else {
     data = payload;
   }
