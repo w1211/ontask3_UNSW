@@ -23,6 +23,7 @@ from container.views import ContainerViewSet
 from datasource.views import DataSourceViewSet
 from view.views import ViewViewSet
 from workflow.views import WorkflowViewSet
+from audit.views import AuditViewSet
 
 import accounts.urls
 
@@ -34,6 +35,7 @@ router.register(r'container', ContainerViewSet, r"container")
 router.register(r'datasource', DataSourceViewSet, r"datasource")
 router.register(r'view', ViewViewSet, r"view")
 router.register(r'workflow', WorkflowViewSet, r"workflow")
+router.register(r'audit', AuditViewSet, r"audit")
 
 urlpatterns = [
     url(r'^api/', include(router.urls, namespace='api')),

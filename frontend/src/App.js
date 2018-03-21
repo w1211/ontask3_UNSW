@@ -4,16 +4,27 @@ import { BrowserRouter as Router, Switch, Route, Redirect } from 'react-router-d
 import { Layout, Menu, Button } from 'antd';
 import logo from './img/logo.png'; // Tell Webpack this JS file uses this image
 
+import requestWrapper from './shared/requestWrapper';
+
 import Login from './login/Login';
 import Container from './container/Container';
 import View from './view/View';
 import Workflow from './workflow/Workflow';
+import StaticPageStudent from './staticPage/StaticPageStudent';
+import StaticPageStaff from './staticPage/StaticPageStaff';
+import StaticPageHistoryStaff from './staticPage/StaticPageHistoryStaff';
+import StaticPageHistoryStudent from './staticPage/StaticPageHistoryStudent';
 
 const { Header, Footer } = Layout;
+const queryString = require('query-string');
+const link_id = queryString.parse(window.location.search).link_id;
+const zid = queryString.parse(window.location.search).zid;
 
+//if user has longtime token in localstorage then can access the page they wish to access
+//if user does not has longtime token redirect them to login page
 const AuthenticatedRoute = ({ component: Component, ...routeProps }) => (
   <Route {...routeProps} render={props => (
-    localStorage.getItem('token') ? (
+    localStorage.getItem('token')? (
       <Component {...props}/>
     ) : (
       <Redirect to="/"/>
@@ -28,6 +39,29 @@ class App extends React.Component {
   logout() {
     localStorage.removeItem('token');
     this.setState({ didLogout: true });
+  }
+
+  //if there is one time toke in query string, post it to backend to get longtimetoken and store in local storage
+  componentWillMount(){
+    const oneTimeToken = queryString.parse(window.location.search).tkn;
+
+    if (oneTimeToken) {
+      const payload = { token: oneTimeToken };
+      const parameters = {
+        url: `/user/token/`,
+        method: 'POST',
+        errorFn: (error) => {
+          this.setState({ error: error });
+        },
+        successFn: (response) => {
+          localStorage.setItem('token', response.token);
+          this.forceUpdate();
+        },
+        payload: payload,
+        isUnauthenticated: true
+      }
+      requestWrapper(parameters);
+    } 
   }
 
   render() {
@@ -55,6 +89,10 @@ class App extends React.Component {
             <AuthenticatedRoute path="/containers" component={Container}/>
             <AuthenticatedRoute path="/view/:id" component={View}/>
             <AuthenticatedRoute path="/workflow/:id" component={Workflow}/>
+            <AuthenticatedRoute path="/staticPageHistoryStaff/:id" component={StaticPageHistoryStaff}/>
+            <AuthenticatedRoute path="/staticPageHistoryStudent" component={StaticPageHistoryStudent}/>
+            <AuthenticatedRoute path="/staticPageStudent" component={StaticPageStudent}/>
+            <AuthenticatedRoute path="/staticPageStaff" component={StaticPageStaff}/>
           </Switch>
         </Router>
         <Footer style={{ textAlign: 'center' }}>

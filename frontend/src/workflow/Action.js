@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link, Route } from 'react-router-dom';
 import { Form, Divider, Button, Select, DatePicker, InputNumber, Row, Col, TimePicker, Popover, Modal, Input, Alert, notification } from 'antd';
 
 const confirm = Modal.confirm;
@@ -21,6 +22,8 @@ class Action extends React.Component {
       onSendEmail(values);
     });
   }
+
+  
 
   // updateSchedule = () => {
   //   this.setState({update: !this.state.update});
@@ -47,11 +50,15 @@ class Action extends React.Component {
       });
     }
   }
+
+  componentDidMount() {
+    const { match } = this.props;
+  };
   
   render() {
     const { 
       form, emailLoading, emailError, emailSuccess, onSendEmail,
-      emailSettings, details
+      emailSettings, details, workflowId
     } = this.props;
 
     const options = [];
@@ -98,6 +105,7 @@ class Action extends React.Component {
     //   marginBottom: '20px'
     // };
 
+    //temporary put static page entry here, will integrate this part after current interface changing finished 
     return (
       <div>
         <h3>Email</h3>
@@ -134,6 +142,13 @@ class Action extends React.Component {
         </Form>
         <div style={{ marginTop: '10px' }}>
           <Button loading={emailLoading} type="primary" size="large" onClick={() => { this.handleSubmit() }}>Send once-off email</Button>
+        </div>
+        <Divider/>
+        <h3>Static Page</h3>
+        <div>
+        <Link to={`/staticPageHistoryStaff/${workflowId}/`}>
+          Email history
+        </Link>
         </div>
         {/* <Divider dashed />
 

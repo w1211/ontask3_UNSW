@@ -24,7 +24,7 @@ class LocalAuthRouter(APIView):
         to the landing page of the application'''
         local_authhandler = LocalAuthHandler()
         auth_router = AuthRouter()
-        return auth_router.authenticate(request, local_authhandler, True) # True boolean specifies that the authentication was local
+        return auth_router.authenticate(request, local_authhandler, 'LOCAL') # True boolean specifies that the authentication was local
 
 class AAFAuthRouter(APIView):
     '''Hosts the logic to handle the post request from AAF and authenticate the
@@ -37,7 +37,7 @@ class AAFAuthRouter(APIView):
         to the landing page of the application'''
         aaf_authhandler = AAFAuthHandler()
         auth_router = AuthRouter()
-        return auth_router.authenticate(request, aaf_authhandler, False)
+        return auth_router.authenticate(request, aaf_authhandler, 'AAF')
       
 class LTIAuthRouter(APIView):
     '''Hosts the logic to handle the post request from LTI and authenticate the
@@ -50,7 +50,7 @@ class LTIAuthRouter(APIView):
         to the landing page of the application'''
         lti_authhandler = LTIAuthHandler()
         auth_router = AuthRouter()
-        return auth_router.authenticate(request, lti_authhandler, False)
+        return auth_router.authenticate(request, lti_authhandler, 'LTI')
 
 class ValidateOneTimeToken(APIView):
     '''Validates the one time token received and returns a long term token'''
@@ -63,14 +63,16 @@ class ValidateOneTimeToken(APIView):
         # Ensure that the token has not expired
         try:
             decrypted_token = jwt.decode(one_time_token, SECRET_KEY, algorithms=['HS256'])
-        except jwt.ExpiredSignatureError:
+        except jwt.ExpiredSignatureError as e:
+            print(str(e))
             return Response({ "error": "Token expired" }, status=HTTP_401_UNAUTHORIZED)
 
         # Ensure that the token exists in the one time token document
         # Otherwise it must have already been used, or was never generated (is fake)
         try:
             token = OneTimeToken.objects.get(token=one_time_token)
-        except:
+        except Exception as e:
+            print(str(e))
             return Response({ "error": "Token does not exist" }, status=HTTP_401_UNAUTHORIZED)
 
         if token:

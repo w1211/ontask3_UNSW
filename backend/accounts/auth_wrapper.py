@@ -29,12 +29,18 @@ class LTIAuthHandler(UserAuthHandler):
     def authenticate_user(self, payload):
         '''Verifies if LTI has authenticated the user and returns a User object'''
         try:
-            email = payload["lis_person_contact_email_primary"]
-            fullname = payload["lis_person_name_full"]
+            email = payload["lis_person_contact_email_primary"][0]
+            fullname = payload["lis_person_name_full"][0]
             password = base64.b64encode(self.cipher.encrypt(email))
-            role = self.extract_user_role(payload["roles"])
+            role = self.extract_user_role(payload["roles"][0])
             user = self.authenticateOrCreate(email, fullname, password, role)
-            return user
+            #zid for checking if user is workflow owner
+            zid = payload["ext_user_username"][0]
+            #create unique link_id for this link, will use this id to map with workflow
+            context_id = payload["context_id"][0]
+            resource_link_id = payload["resource_link_id"][0]
+            link_id = context_id + '.' + resource_link_id
+            return user, zid, link_id
         except Exception as ex:
             return None
     

@@ -6,6 +6,7 @@ from view.models import View
 
 
 # Details
+#TODO: what's the senario for number as primary key
 class PrimaryColumn(EmbeddedDocument):
     field = fields.StringField(required=True)
     type = fields.StringField(choices=('number', 'text'))
@@ -64,3 +65,4 @@ class Workflow(Document):
     content = fields.EmbeddedDocumentField(Content)
     emailSettings = fields.EmbeddedDocumentField(EmailSettings)
     schedule = fields.EmbeddedDocumentField(Schedule, null=True, required=False)
+    linkId = fields.StringField(null=True)#link_id is unique across workflow objects
