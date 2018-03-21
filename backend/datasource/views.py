@@ -18,9 +18,11 @@ import csv
 import io
 from xlrd import open_workbook
 
+import boto3
+
 # Imports for encrypting the datasource db password
 from cryptography.fernet import Fernet
-from ontask.settings import SECRET_KEY
+from ontask.settings import SECRET_KEY, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
 
 from .serializers import DataSourceSerializer
 from .models import DataSource
@@ -138,9 +140,30 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         data["sheetnames"] = sheetnames
         return JsonResponse(data, safe=False)
 
+    def get_file_data(self, upload_file, delimiter, file_name=""):
+        if file_name.lower().endswith('.csv') or upload_file.name.lower().endswith('.csv'):
+            return self.get_csv_data(upload_file, delimiter)
+        elif file_name.lower().endswith('.xls', 'xlsx') or upload_file.name.lower().endswith('.xls', 'xlsx'):
+            return self.get_xsl_data(upload_file)
+        else:
+            raise ValidationError('File type is not supported')
+
+    def get_s3bucket_file_data(self, bucket, file_name, delimiter):
+        #try:
+        session = boto3.Session(
+            aws_access_key_id = AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+            region_name='ap-southeast-2'
+        )
+        s3 = session.resource('s3')
+        obj = s3.Object(bucket, file_name)
+        response = obj.get()
+        return self.get_file_data(response[u'Body'], delimiter, file_name)
+        #except:
+        #    raise ValidationError('Error reading file from s3 bucket')
+        
     def perform_create(self, serializer):
         self.check_object_permissions(self.request, None)
-
         queryset = DataSource.objects.filter(
             name = self.request.data['name'],
             container = self.request.data['container']
@@ -151,19 +174,28 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         # Connect to specified database and get the data from the query
         # Data passed in to the DataSource model must be a list of dicts of the form {column_name: value}
         # TO DO: if isDynamic, then store values into lists as objects with timestamps
-        if self.request.data['dbType']=='csvTextFile':
-            connection = {}
-            connection['dbType'] = 'csvTextFile'
-            external_file = self.request.data['file']
-            delimiter = self.request.data['delimiter']
-            (data, fields) = self.get_csv_data(external_file, delimiter)
+        if 'dbType' in self.request.data:
+            if self.request.data['dbType']=='csvTextFile':
+                connection = {}
+                connection['dbType'] = 'csvTextFile'
+                external_file = self.request.data['file']
+                delimiter = self.request.data['delimiter']
+                (data, fields) = self.get_csv_data(external_file, delimiter)
 
-        elif self.request.data['dbType']=='xlsXlsxFile':
-            connection = {}
-            connection['dbType'] = 'xlsXlsxFile'
-            external_file = self.request.data['file']
-            sheetname = self.request.data['sheetname']
-            (data, fields) = self.get_xls_data(external_file, sheetname)
+            elif self.request.data['dbType']=='xlsXlsxFile':
+                connection = {}
+                connection['dbType'] = 'xlsXlsxFile'
+                external_file = self.request.data['file']
+                sheetname = self.request.data['sheetname']
+                (data, fields) = self.get_xls_data(external_file, sheetname)
+
+        # connect to s3 bucket and get the file
+        elif self.request.data['connection']['dbType'] == 's3BucketFile':
+            connection = self.request.data['connection']
+            bucket = self.request.data['bucket']
+            file_name = self.request.data['fileName']
+            delimiter = self.request.data['delimiter']
+            (data, fields) = self.get_s3bucket_file_data(bucket, file_name, delimiter)
 
         else:
             connection = self.request.data['connection']
@@ -171,6 +203,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
             cipher = Fernet(SECRET_KEY)
             connection['password'] = cipher.encrypt(bytes(connection['password'], encoding="UTF-8"))
             (data, fields) = self.get_datasource_data(connection)
+
         serializer.save(
             connection = connection,
             data = data,
@@ -188,20 +221,28 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         if queryset.count():
             raise ValidationError('A datasource with this name already exists')
 
-        if self.request.data['dbType']=='csvTextFile':
-            connection = {}
-            connection['dbType'] = 'csvTextFile'
-            external_file = self.request.data['file']
+        if 'dbType' in self.request.data:
+            if self.request.data['dbType']=='csvTextFile':
+                connection = {}
+                connection['dbType'] = 'csvTextFile'
+                external_file = self.request.data['file']
+                delimiter = self.request.data['delimiter']
+                (data, fields) = self.get_csv_data(external_file, delimiter)
+            
+            elif self.request.data['dbType']=='xlsXlsxFile':
+                connection = {}
+                connection['dbType'] = 'xlsXlsxFile'
+                external_file = self.request.data['file']
+                sheetname = self.request.data['sheetname']
+                (data, fields) = self.get_xls_data(external_file, sheetname)
+        
+        elif self.request.data['connection']['dbType'] == 's3BucketFile':
+            connection = self.request.data['connection']
+            bucket = self.request.data['bucket']
+            file_name = self.request.data['fileName']
             delimiter = self.request.data['delimiter']
-            (data, fields) = self.get_csv_data(external_file, delimiter)
-        
-        elif self.request.data['dbType']=='xlsXlsxFile':
-            connection = {}
-            connection['dbType'] = 'xlsXlsxFile'
-            external_file = self.request.data['file']
-            sheetname = self.request.data['sheetname']
-            (data, fields) = self.get_xls_data(external_file, sheetname)
-        
+            (data, fields) = self.get_s3bucket_file_data(bucket, file_name, delimiter)
+
         else:
             connection = self.request.data['connection']
             if 'password' in connection:

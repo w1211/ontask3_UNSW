@@ -62,7 +62,7 @@ export const fetchSheetnames = (file) => dispatch => {
 
 export const createDatasource = (containerId, payload, file) => dispatch => {
   payload.container = containerId;
-  console.log(payload);
+
   const isFile = ['xlsXlsxFile', 'csvTextFile'].includes(payload.connection.dbType);
   let data;
   if (isFile) {

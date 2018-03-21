@@ -1,7 +1,7 @@
 import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
-import { Modal, Form, Input, Alert, Select, Upload, Icon} from 'antd';
+import { Modal, Form, Input, Alert, Select, Upload, Icon } from 'antd';
 
 import * as DatasourceActionCreators from './DatasourceActions';
 
@@ -84,6 +84,7 @@ class DatasourceModal extends React.Component {
 
     const isFile = ['xlsXlsxFile', 'csvTextFile'].includes(form.getFieldValue('connection.dbType'));
     const isCSV = form.getFieldValue('connection.dbType') == 'csvTextFile';
+    const isS3Bucket = form.getFieldValue('connection.dbType') === 's3BucketFile';
 
     return (
       <Modal
@@ -115,13 +116,14 @@ class DatasourceModal extends React.Component {
                 <Option value="postgresql">PostgreSQL</Option>
                 <Option value="csvTextFile">csv/text file</Option>
                 <Option value="xlsXlsxFile">xls/xlsx file</Option>
+                <Option value="s3BucketFile">S3 bucket file</Option>
                 <Option value="sqlite" disabled>SQLite</Option>
                 <Option value="mssql" disabled>MSSQL</Option>
               </Select>
             )}
           </FormItem>
-          
-          { isFile ?
+
+          { isFile ? 
             <div>
               { isCSV &&
                 <FormItem {...formItemLayout} label="Delimiter">
@@ -175,47 +177,75 @@ class DatasourceModal extends React.Component {
               { this.state.error && <Alert style={{ marginTop: 10 }} message={this.state.error} type="error"/> }
             </div>
           :
+            isS3Bucket ?
             <div>
-              <FormItem {...formItemLayout} label="Host">
-                {form.getFieldDecorator('connection.host', {
-                  initialValue: selected ? selected.connection.host : null,
-                  rules: [{ required: !isFile && true, message: 'Host is required' }]
+              <p>please copy following policy to your bucket permission</p>
+              <FormItem {...formItemLayout} label="Bucket name">
+                {form.getFieldDecorator('bucket', {
+                  initialValue: null,
+                  rules: [{ required: isS3Bucket && true, message: 'Bucket name is required' }]
                 })(
                   <Input/>
                 )}
               </FormItem>
-              <FormItem {...formItemLayout} label="Database">
-                {form.getFieldDecorator('connection.database', {
-                  initialValue: selected ? selected.connection.database : null,
-                  rules: [{ required: !isFile && true, message: 'Database is required' }]
+              <FormItem {...formItemLayout} label="File name">
+                {form.getFieldDecorator('fileName', {
+                  initialValue: null,
+                  rules: [{ required: isS3Bucket && true, message: 'File name is required' }]
                 })(
                   <Input/>
                 )}
               </FormItem>
-              <FormItem {...formItemLayout} label="User">
-                {form.getFieldDecorator('connection.user', {
-                  initialValue: selected ? selected.connection.user : null,
-                  rules: [{ required: !isFile && true, message: 'Database user is required' }]
+              <FormItem {...formItemLayout} label="Delimiter">
+                {form.getFieldDecorator('delimiter', {
+                  initialValue: ','
                 })(
-                  <Input/>
-                )}
-              </FormItem>
-              <FormItem {...formItemLayout} label="Password">
-                {form.getFieldDecorator('connection.password', {
-                  rules: [{ required: (isFile || selected) ? false : true, message: 'Database password is required' }]
-                })(
-                  <Input type="password" placeholder={selected && 'Change password'}/>
-                )}
-              </FormItem>
-              <FormItem {...formItemLayout} label="Query">
-                {form.getFieldDecorator('connection.query', {
-                  initialValue: selected ? selected.connection.query : null,
-                  rules: [{ required: isFile && true, message: 'Database query is required' }]
-                })(
-                  <TextArea rows={2}/>
+                  <Input placeholder="Default delimiter ','"/>
                 )}
               </FormItem>
             </div>
+            :
+              <div>
+                <FormItem {...formItemLayout} label="Host">
+                  {form.getFieldDecorator('connection.host', {
+                    initialValue: selected ? selected.connection.host : null,
+                    rules: [{ required: !isFile && true, message: 'Host is required' }]
+                  })(
+                    <Input/>
+                  )}
+                </FormItem>
+                <FormItem {...formItemLayout} label="Database">
+                  {form.getFieldDecorator('connection.database', {
+                    initialValue: selected ? selected.connection.database : null,
+                    rules: [{ required: !isFile && true, message: 'Database is required' }]
+                  })(
+                    <Input/>
+                  )}
+                </FormItem>
+                <FormItem {...formItemLayout} label="User">
+                  {form.getFieldDecorator('connection.user', {
+                    initialValue: selected ? selected.connection.user : null,
+                    rules: [{ required: !isFile && true, message: 'Database user is required' }]
+                  })(
+                    <Input/>
+                  )}
+                </FormItem>
+                <FormItem {...formItemLayout} label="Password">
+                  {form.getFieldDecorator('connection.password', {
+                    rules: [{ required: (isFile || selected) ? false : true, message: 'Database password is required' }]
+                  })(
+                    <Input type="password" placeholder={selected && 'Change password'}/>
+                  )}
+                </FormItem>
+                <FormItem {...formItemLayout} label="Query">
+                  {form.getFieldDecorator('connection.query', {
+                    initialValue: selected ? selected.connection.query : null,
+                    rules: [{ required: isFile && true, message: 'Database query is required' }]
+                  })(
+                    <TextArea rows={2}/>
+                  )}
+                </FormItem>
+              </div>
           }
           { error && <Alert style={{ marginTop: 10 }} message={error} type="error"/>}
         </Form>

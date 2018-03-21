@@ -28,6 +28,7 @@ const typeMap = {
   'postgresql': 'PostgreSQL',
   'xlsXlsxFile': 'Excel file',
   'csvTextFile': 'CSV/text file',
+  's3BucketFile': 'S3 bucket file',
   'sqlite': 'SQLite',
   'mssql': 'MSSQL'
 }
