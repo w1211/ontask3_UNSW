@@ -33,5 +33,5 @@ django-cors-headers==2.1.0
 python-dateutil==2.6.1
 xlrd==1.1.0
 requests==2.18.4
-uWSGI==2.0.
+uWSGI==2.0.16
 boto3==1.6.12
