@@ -112,6 +112,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
 
         return (data, fields)
 
+    #get data from csv file with default separator "," or user specified
     def get_csv_data(self, csv_file, separator_char=','):
         #checking file format
         reader = csv.DictReader(io.StringIO(csv_file.read().decode('utf-8')), delimiter=separator_char)
@@ -119,9 +120,11 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         fields = list(data[0].keys())
         return (data, fields)
 
+    #get excel data with user specified sheetname
     def get_xls_data(self, xls_file, sheetname):
         book = open_workbook(file_contents=xls_file.read())
         sheet = book.sheet_by_name(sheetname)
+        print("get sheet from book")
         # read header values into the list
         keys = [sheet.cell(0, col_index).value for col_index in range(sheet.ncols)]
         dict_list = []
@@ -131,36 +134,58 @@ class DataSourceViewSet(viewsets.ModelViewSet):
             dict_list.append(d)
         return (dict_list, keys)
 
+    #aske user for sheetname if uploading file is excel 
     @list_route(methods=['post'])
     def get_sheetnames(self, request):
-        xls_file = request.data["file"]
-        workbook = open_workbook(file_contents=xls_file.read())
-        sheetnames = workbook.sheet_names()
-        data = {}
-        data["sheetnames"] = sheetnames
-        return JsonResponse(data, safe=False)
+        try:
+            xls_file = request.data["file"]
+            workbook = open_workbook(file_contents=xls_file.read())
+            sheetnames = workbook.sheet_names()
+            data = {}
+            data["sheetnames"] = sheetnames
+            return JsonResponse(data, safe=False)
+        except:
+            raise ValidationError('Error reading file from s3 bucket')
 
-    def get_file_data(self, upload_file, delimiter, file_name=""):
-        if file_name.lower().endswith('.csv') or upload_file.name.lower().endswith('.csv'):
-            return self.get_csv_data(upload_file, delimiter)
-        elif file_name.lower().endswith('.xls', 'xlsx') or upload_file.name.lower().endswith('.xls', 'xlsx'):
-            return self.get_xsl_data(upload_file)
-        else:
-            raise ValidationError('File type is not supported')
+    #ask user for sheetname if s3 file is excel
+    @list_route(methods=['post'])
+    def get_s3_sheetnames(self, request):
+        try:
+            session = boto3.Session(
+                aws_access_key_id = AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+                region_name='ap-southeast-2'
+            )
+            s3 = session.resource('s3')
+            print(request.data)
+            obj = s3.Object(request.data["bucket"], request.data["fileName"])
+            xls_file = obj.get()['Body']
+            workbook = open_workbook(file_contents=xls_file.read())
+            sheetnames = workbook.sheet_names()
+            data = {}
+            data["sheetnames"] = sheetnames
+            return JsonResponse(data, safe=False)
+        except:
+            raise ValidationError('Error reading file from s3 bucket')
 
-    def get_s3bucket_file_data(self, bucket, file_name, delimiter):
-        #try:
-        session = boto3.Session(
-            aws_access_key_id = AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-            region_name='ap-southeast-2'
-        )
-        s3 = session.resource('s3')
-        obj = s3.Object(bucket, file_name)
-        response = obj.get()
-        return self.get_file_data(response[u'Body'], delimiter, file_name)
-        #except:
-        #    raise ValidationError('Error reading file from s3 bucket')
+    def get_s3bucket_file_data(self, bucket, file_name, delimiter=None, sheetname=None):
+        try:
+            session = boto3.Session(
+                aws_access_key_id = AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+                region_name='ap-southeast-2'
+            )
+            s3 = session.resource('s3')
+            obj = s3.Object(bucket, file_name)
+            file = obj.get()['Body']
+            if file_name.lower().endswith('.csv'):
+                return self.get_csv_data(file, delimiter)
+            elif file_name.lower().endswith(('.xls', '.xlsx')):
+                return self.get_xls_data(file, sheetname)
+            else:
+                raise ValidationError('File type is not supported')
+        except:
+            raise ValidationError('Error reading file from s3 bucket')
         
     def perform_create(self, serializer):
         self.check_object_permissions(self.request, None)
@@ -194,9 +219,9 @@ class DataSourceViewSet(viewsets.ModelViewSet):
             connection = self.request.data['connection']
             bucket = self.request.data['bucket']
             file_name = self.request.data['fileName']
-            delimiter = self.request.data['delimiter']
-            (data, fields) = self.get_s3bucket_file_data(bucket, file_name, delimiter)
-
+            delimiter = self.request.data['delimiter'] if ('delimiter' in self.request.data) else None
+            sheetname = self.request.data['sheetname'] if ('sheetname' in self.request.data) else None
+            (data, fields) = self.get_s3bucket_file_data(bucket, file_name, delimiter, sheetname)
         else:
             connection = self.request.data['connection']
             # Encrypt the db password of the data source

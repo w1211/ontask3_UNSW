@@ -42,6 +42,26 @@ const receiveSheetnames = (sheetnames) => ({
   sheetnames
 });
 
+export const fetchS3Sheetnames = (bucket, fileName) => dispatch => {
+  const data = {
+    bucket: bucket,
+    fileName: fileName
+  }
+  const parameters = {
+    url: `/datasource/get_s3_sheetnames/`,
+    method: 'POST',
+    errorFn: (error) => {
+      dispatch(failureRequestDatasource(error));
+    },
+    successFn: (response) => {
+      dispatch(receiveSheetnames(response["sheetnames"]));
+    },
+    payload: data,
+    isNotJSON: false
+  }
+  requestWrapper(parameters);
+}
+
 export const fetchSheetnames = (file) => dispatch => {
   let data = new FormData();
   data.append('file', file);
@@ -49,7 +69,7 @@ export const fetchSheetnames = (file) => dispatch => {
     url: `/datasource/get_sheetnames/`,
     method: 'POST',
     errorFn: (error) => {
-      console.error(error);
+      dispatch(failureRequestDatasource(error));
     },
     successFn: (response) => {
       dispatch(receiveSheetnames(response["sheetnames"]));
