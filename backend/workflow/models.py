@@ -4,25 +4,6 @@ from datasource.models import DataSource
 from container.models import Container
 from view.models import View
 
-
-# Details
-#TODO: what's the senario for number as primary key
-class PrimaryColumn(EmbeddedDocument):
-    field = fields.StringField(required=True)
-    type = fields.StringField(choices=('number', 'text'))
-    datasource = fields.ReferenceField(DataSource, required=True)
-
-class SecondaryColumn(EmbeddedDocument):
-    field = fields.StringField(required=True)
-    type = fields.StringField(choices=('number', 'text', 'date'))
-    datasource = fields.ReferenceField(DataSource)
-    matchesWith = fields.StringField()
-    isCustom = fields.BooleanField()
-
-class Details(EmbeddedDocument):
-    primaryColumn = fields.EmbeddedDocumentField(PrimaryColumn, required=True)
-    secondaryColumns = fields.EmbeddedDocumentListField(SecondaryColumn)
-
 # Condition groups
 class Formula(EmbeddedDocument):
     field = fields.StringField()
@@ -59,7 +40,6 @@ class Workflow(Document):
     view = fields.ReferenceField(View, required=True, reverse_delete_rule=2) # Cascade delete if view is deleted
     name = fields.StringField(required=True, unique_with='container')
     description = fields.StringField(null=True)
-    details = fields.EmbeddedDocumentField(Details)
     filter = fields.EmbeddedDocumentField(Condition)
     conditionGroups = fields.EmbeddedDocumentListField(ConditionGroup)
     content = fields.EmbeddedDocumentField(Content)

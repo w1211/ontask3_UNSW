@@ -9,7 +9,7 @@ import * as ViewActionCreators from './ViewActions';
 import ColumnModal from './ColumnModal';
 import DiscrepenciesModal from './resolve/DiscrepenciesModal';
 
-const { Content, Sider } = Layout;
+const { Content } = Layout;
 const confirm = Modal.confirm;
 
 
@@ -149,7 +149,7 @@ class View extends React.Component {
                   <span >Back to containers</span>
                 </Link>
               </div>
-              
+
               { loading ?
                 <Spin size="large" />
               :

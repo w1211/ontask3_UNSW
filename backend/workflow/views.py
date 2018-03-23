@@ -12,13 +12,14 @@ from json import dumps
 from datetime import date, datetime
 from bson import ObjectId
 
-from .serializers import WorkflowSerializer
+from .serializers import WorkflowSerializer, RetrieveWorkflowSerializer
 from .models import Workflow
 from .permissions import WorkflowPermissions
 
 from datasource.models import DataSource
 from audit.models import Audit
 from audit.serializers import AuditSerializer
+from view.models import View
 
 from collections import defaultdict
 
@@ -131,14 +132,15 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         workflow = Workflow.objects.get(id=id)
         self.check_object_permissions(self.request, workflow)
 
-        serializer = WorkflowSerializer(instance=workflow)
+        serializer = RetrieveWorkflowSerializer(instance=workflow)
 
         datasources = DataSource.objects(container=workflow.container.id).only('id', 'name', 'fields')
         serializer.instance.datasources = datasources
-        if serializer.data['schedule']:
-            serializer.data['schedule']['startDate'] = dateutil.parser.parse(serializer.data['schedule']['startDate']).strftime('%Y-%m-%d')
-            serializer.data['schedule']['endDate'] = dateutil.parser.parse(serializer.data['schedule']['endDate']).strftime('%Y-%m-%d')
-            serializer.data['schedule']['time'] = dateutil.parser.parse(serializer.data['schedule']['time']).strftime('%H:%M')
+
+        # if serializer.data['schedule']:
+        #     serializer.data['schedule']['startDate'] = dateutil.parser.parse(serializer.data['schedule']['startDate']).strftime('%Y-%m-%d')
+        #     serializer.data['schedule']['endDate'] = dateutil.parser.parse(serializer.data['schedule']['endDate']).strftime('%Y-%m-%d')
+        #     serializer.data['schedule']['time'] = dateutil.parser.parse(serializer.data['schedule']['time']).strftime('%H:%M')
         return JsonResponse(serializer.data, safe=False)
 
     @detail_route(methods=['put'])
@@ -184,26 +186,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         return filtered_data
 
-    def validate_filter(self, details, filter):
-        primary_column = details['primaryColumn']
-        secondary_columns = details['secondaryColumns']
-
-        # Confirm that all provided fields are defined in the workflow details
-        fields = [primary_column.field] + [secondary_column.field for secondary_column in secondary_columns]
-
-        for formula in filter['formulas']:
-            # Parse the output of the field/operator cascader from the condition group form in the frontend
-            # Only necessary if this is being called after a post from the frontend
-            if 'fieldOperator' in formula:
-                formula['field'] = formula['fieldOperator'][0]
-                formula['operator'] = formula['fieldOperator'][1]
-                del formula['fieldOperator']
-
-            if formula['field'] not in fields:
-                raise ValidationError('Invalid formula: field \'{0}\' does not exist in the workflow details'.format(formula['field']))
-
-        return True
-
     @detail_route(methods=['put'])
     def update_filter(self, request, id=None):
         workflow = Workflow.objects.get(id=id)
@@ -212,10 +194,20 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         updated_filter = self.request.data
         updated_filter['name'] = 'filter'
 
-        # Only validate the filter if there are formulas provided, otherwise the filter must be empty
-        if 'formulas' in updated_filter:
-            self.validate_filter(workflow['details'], updated_filter)
+        fields = [column['label'] if column['label'] else column['field'] for column in workflow.view.columns]
 
+        # Validate the filter
+        for formula in updated_filter['formulas']:
+            # Parse the output of the field/operator cascader from the condition group form in the frontend
+            # Only necessary if this is being called after a post from the frontend
+            if 'fieldOperator' in formula:
+                formula['field'] = formula['fieldOperator'][0]
+                formula['operator'] = formula['fieldOperator'][1]
+                del formula['fieldOperator']
+
+            if formula['field'] not in fields:
+                raise ValidationError(f'Invalid formula: field \'{formula["field"]}\' does not exist in the view')
+    
         # Update the filter
         serializer = WorkflowSerializer(instance=workflow, data={'filter': updated_filter}, partial=True)
         serializer.is_valid()

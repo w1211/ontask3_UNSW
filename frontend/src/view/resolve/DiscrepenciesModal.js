@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Form, Icon, Input, Radio } from 'antd';
+import { Modal, Form, Icon, Radio } from 'antd';
 
 import formItemLayout from '../../shared/FormItemLayout';
 
@@ -38,11 +38,11 @@ const DiscrepenciesModal = ({ form, visible, onCancel, onOk, view }) => {
       onOk={handleSubmit}
     >
       <Form layout="horizontal">
-        {view.dropDiscrepencies.map(discrepency => {
+        {view.dropDiscrepencies.map((discrepency, i) => {
           const datasource = view.datasources.find(datasource => datasource.id === discrepency.datasource)
           
           return (
-            <div>
+            <div key={i}>
               <h4 style={{ marginBottom: 0}}>
                 {discrepency.matching} ({datasource.name}) <Icon type="arrow-right" /> {view.columns[0].field}
               </h4>
