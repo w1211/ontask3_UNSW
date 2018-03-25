@@ -31,6 +31,13 @@ class DatasourceModal extends React.Component {
       file: null,
       error: null
     });
+
+    // If we are opening the modal
+    if (!this.props.visible && nextProps.visible && nextProps.selected) {
+      // Set the state that indicates the file type, so that the view renders correctly
+      // This is only relevant whenn editing an existing datasource
+      this.setState({ fileType: nextProps.selected.connection.dbType });
+    }
   }
 
   handleOk = () => {
@@ -105,7 +112,7 @@ class DatasourceModal extends React.Component {
     const isCSV = fileType === 'csvTextFile';
     const isLocalFile = ['xlsXlsxFile', 'csvTextFile'].includes(fileType);
     const isS3Bucket = fileType === 's3BucketFile';
-    const text = "please copy following policy to your bucket permission: ";
+    const text = "Informational text"; // TODO: add text here
 
     const checkS3FileType = () => {
       const fileName = form.getFieldValue('fileName').split('.');
