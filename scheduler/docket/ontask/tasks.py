@@ -14,7 +14,7 @@ from .rules_engine.matrix import Matrix
 from .rules_engine.rules import Rules
 
 from .settings import DB_DRIVER_MAPPING
-
+from .utils import send_email, get_s3bucket_file_data
 
 @shared_task
 def import_data_to_data_container(connection, query, owner):
@@ -42,7 +42,6 @@ def import_data_to_data_container(connection, query, owner):
     data_source = {'owner' : owner,\
                    'connection': connection,\
                    'data': data}
-    
     connection.close()
     return 'Data imported successfully '
 
@@ -60,8 +59,6 @@ def update_data_in_data_container(data_source_container_id):
         db = client['ontask_api']
         data_source_collection = db['data_source']
         
-
-
         # Match the data source container
         # TO-DO: The data field that is attached to the data_source is 
         # of concern here since the whole of the table data is brought
@@ -161,7 +158,6 @@ def update_data_in_data_container(data_source_container_id):
         response_message = "Successfully updated %i records" %row_count
     except Exception as exception:
         response_message = exception   
-    
     return response_message
 
 
@@ -187,3 +183,53 @@ def execute_rules(workflow_id):
         response_message = exception
 
     return response_message
+
+@shared_task
+def send_email_schedule(workflow_id):
+    '''Periodic task that send email based on content generate from workflow'''
+    try:
+        mongo_url = 'mongodb://localhost:27017/'
+        app_db_identifier = 'ontask'
+        client = MongoClient(mongo_url)
+        db = client[app_db_identifier]
+        collection = db['workflow']
+
+        # Match the workflow document
+        # workflow = collection.find_one({'_id': ObjectId(workflow_id)})
+        # hard coding email content, will generate from workflow function later
+        result = send_email(
+            'zLNTLada@ad.unsw.edu.au',
+            "z5087544@ad.unsw.edu.au",
+            "email_subject",
+            "text_content",
+            "<p>html_content</p>",
+            "z5087544@ad.unsw.edu.au",
+        )
+        # Return 1 or 0 to the backend indicating whether the email was sent successfully or not
+        response_message = "Completed sending email to  - %s" % "receiver"
+    except Exception as exception:
+        response_message = exception
+    return response_message
+
+
+@shared_task
+def update_remote_file(datasource_id, bucket, file_name, delimiter, sheetname):
+    ''' Periodic task pulling file from S3 bucket and update datasource'''
+    try:
+        mongo_url = 'mongodb://localhost:27017/'
+        app_db_identifier = 'ontask'
+        client = MongoClient(mongo_url)
+        db = client[app_db_identifier]
+        data_source_collection = db['data_source']
+        #comman is used as separator in json when passing in arguments, use comma to avoid error
+        if delimiter=="comma":
+            delimiter=","
+        #get data from file based on file type, implemented in get_s3bucket_file_data
+        (data, fields) = get_s3bucket_file_data(bucket, file_name, delimiter, sheetname)
+        data_source_collection.update({"_id":ObjectId(datasource_id)},\
+        {"$set":{"data":data, "fields":fields}})
+        response_message = "Completed updating for datasource - %s" % datasource_id
+    except Exception as exception:
+        response_message = exception
+    return response_message
+

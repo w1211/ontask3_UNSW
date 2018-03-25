@@ -178,7 +178,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
             s3 = session.resource('s3')
             obj = s3.Object(bucket, file_name)
             file = obj.get()['Body']
-            if file_name.lower().endswith('.csv'):
+            if file_name.lower().endswith(('.csv', '.txt')):
                 return self.get_csv_data(file, delimiter)
             elif file_name.lower().endswith(('.xls', '.xlsx')):
                 return self.get_xls_data(file, sheetname)

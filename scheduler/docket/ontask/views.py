@@ -25,7 +25,6 @@ class DataSourceUpdateTaskView(APIView):
     
     def post(self, request, format=None):
         '''Post handle to create a schedule'''
-
         task_name = "data_source_update_task_" + str(uuid4())
         arguments= '{"data_source_container_id":"' + request.data['data_source_container_id'] + '"}'
         
@@ -51,9 +50,7 @@ class DataSourceUpdateTaskView(APIView):
     
     def delete(self, request, format=None):
         '''DELETE handle to remove a scheduler from the beat schedule'''
-        print(self.request.data)
         task = PeriodicTask.objects.get(name=request.data['name'])
-        print(task)
         task.delete()
 
         return Response({'task_name':task.name,'message':'Periodic task deleted'})
@@ -63,20 +60,76 @@ class SendEmailTaskView(APIView):
     # Assigns the authentication permissions
     authentication_classes = ()
     permission_classes = ()
-    
+
     def post(self, request, format=None):
-        '''Post handle to send an email once-off'''
-        result = send_email(
-            'zLNTLada@ad.unsw.edu.au', # TODO: Provide a config variable for specifying this, and the SMTP credentials
-            request.data['recipient_address'],
-            request.data['email_subject'],
-            request.data['text_content'],
-            request.data['html_content']
+        '''Post handle to create sending email schedule'''
+        task_name = "send_email_task_" + str(uuid4())
+        arguments= '{"workflow_id":"' + self.request.data['workflow_id'] + '"}'
+        schedule, _ = CrontabSchedule.objects.get_or_create(
+            minute = request.data['schedule']['minute'],
+            hour = request.data['schedule']['hour'],
+            day_of_week = request.data['schedule']['day_of_week'],
+            day_of_month = request.data['schedule']['day_of_month'],
+            month_of_year = request.data['schedule']['month_of_year'],
         )
 
-        # Return 1 or 0 to the backend indicating whether the email was sent successfully or not
-        return Response({ 'success': result })
+        periodic_task = PeriodicTask.objects.create(
+           crontab=schedule,
+           name=task_name,
+           task='ontask.tasks.send_email_schedule',
+           kwargs=arguments
+        )
+        print("################ {Periodic Task} ###################")
+        print(periodic_task)
+        print(task_name)
+        return Response({'task_name': task_name})
 
+    def delete(self, request, format=None):
+        '''DELETE handle to remove a scheduler from the beat schedule'''
+        print(self.request.data)
+        task = PeriodicTask.objects.get(name=request.data['name'])
+        print(task)
+        task.delete()
+        return Response({'task_name':task.name,'message':'Periodic task deleted'})
+
+class FileUpdateView(APIView):
+    '''Container for s3 bucket file update'''
+    def post(self, request, format=None):
+        '''Post handle to create a schedule'''
+        task_name = "file_update_task_" + str(uuid4())
+        #update s3 file with bucket, file_name, delimiter or sheetname
+        delimiter = request.data['delimiter'] if ('delimiter' in request.data) else ""
+        sheetname = request.data['sheetname'] if ('sheetname' in request.data) else ""
+        arguments= '{"datasource_id":"' + request.data['datasource_id'] + '",'\
+                    + '"bucket":"' + request.data['bucket'] + '",'\
+                    + '"file_name":"' + request.data['file_name'] + '",'\
+                    + '"delimiter":"' + delimiter + '",'\
+                    + '"sheetname":"' + sheetname + '"}'
+        schedule, _ = CrontabSchedule.objects.get_or_create(
+            minute = request.data['schedule']['minute'],
+            hour = request.data['schedule']['hour'],
+            day_of_week = request.data['schedule']['day_of_week'],
+            day_of_month = request.data['schedule']['day_of_month'],
+            month_of_year = request.data['schedule']['month_of_year'],
+        )
+
+        periodic_task = PeriodicTask.objects.create(
+           crontab=schedule,
+           name=task_name,
+           task='ontask.tasks.update_remote_file',
+           kwargs=arguments
+        )
+
+        print("################ {Periodic Task} ###################")
+        print(periodic_task)
+
+        return Response({'task_name': task_name})
+
+    def delete(self, request, format=None):
+        '''DELETE handle to remove a scheduler from the beat schedule'''
+        task = PeriodicTask.objects.get(name=request.data['name'])
+        task.delete()
+        return Response({'task_name':task.name,'message':'Periodic task deleted'})
 
 class WorkflowTaskView(APIView):
     ''' Container for the Rules execution task scheduler '''
@@ -86,7 +139,6 @@ class WorkflowTaskView(APIView):
     
     def post(self, request, format=None):
         '''Post handle to create a schedule'''
-
         task_name = "workflow_notification_task_" + str(uuid4())
         arguments= '{"workflow_id":"' + request.data['workflow_id'] + '"}'
         
@@ -112,9 +164,7 @@ class WorkflowTaskView(APIView):
     
     def delete(self, request, format=None):
         '''DELETE handle to remove a scheduler from the beat schedule'''
-        print(self.request.data)
         task = PeriodicTask.objects.get(name=request.data['name'])
-        print(task)
         task.delete()
 
         return Response({'task_name':task.name,'message':'Periodic task deleted'})

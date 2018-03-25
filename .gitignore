@@ -31,7 +31,7 @@ frontend/.env.*
 
 # Scheduler files
 scheduler/docket/celerybeat\.pid
-scheduler/docket/db\.sqlite3
+scheduler/docket/db.sqlite3
 scheduler/docket/config/dev.*
 scheduler/docket/config/prod.*
 
