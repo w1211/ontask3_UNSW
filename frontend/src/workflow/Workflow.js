@@ -59,8 +59,8 @@ class Workflow extends React.Component {
                     onClick={() => { this.boundActionCreators.openFilterModal(workflow.filter); }} 
                   />
                 </h3>
-                { workflow && workflow.filter && workflow.filter.formulas.length > 0 ?
-                  'A filter is being applied' 
+                { workflow && workflow.filtered_count ?
+                  `${workflow.view.data.length - workflow.filtered_count} records selected out of ${workflow.view.data.length} (${workflow.filtered_count} filtered)`
                 :
                   'No filter is currently being applied' 
                 }

@@ -160,24 +160,51 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         data = self.combine_data(workflow.details)
         return JsonResponse(data, safe=False)
 
-    def evaluate_filter(self, primary_column, secondary_columns, data, filter):
+    def parse_field(self, field_name, fields, value):
+        field = next((x for x in fields if x['field'] == field_name), None)
+        # Enclose string values with quotation marks, otherwise simply return the number value as is
+        # Still must be returned as a string, since eval() takes a string input
+        if field['type'] == 'text':
+            return '\'{0}\''.format(value)
+        else:
+            return str(value)
+
+    def did_pass_formula(self, fields, item, formula):
+        operator = formula['operator']
+        comparator = formula['comparator']
+        value = item[formula['field']]
+
+        if operator == '==':
+            return value == comparator
+        elif operator == '!=':
+            return value != comparator
+        elif operator == '<':
+            return value < comparator
+        elif operator == '<=':
+            return value <= comparator
+        elif operator == '>':
+            return value > comparator
+        elif operator == '>=':
+            return value >= comparator
+        
+    def evaluate_filter(self, view, filter):
         filtered_data = list()
 
         # Iterate over the rows in the data and return any rows which pass true
-        for item in data:
+        for item in view.data:
             didPass = False
 
             if len(filter['formulas']) == 1:
-                if self.did_pass_formula(secondary_columns, item, filter['formulas'][0]):
+                if self.did_pass_formula(view.columns, item, filter['formulas'][0]):
                     didPass = True
 
             elif filter['type'] == 'and':
-                pass_counts = [self.did_pass_formula(secondary_columns, item, formula) for formula in filter['formulas']]
+                pass_counts = [self.did_pass_formula(view.columns, item, formula) for formula in filter['formulas']]
                 if sum(pass_counts) == len(filter['formulas']):
                     didPass = True
 
             elif filter['type'] == 'or':
-                pass_counts = [self.did_pass_formula(secondary_columns, item, formula) for formula in filter['formulas']]
+                pass_counts = [self.did_pass_formula(view.columns, item, formula) for formula in filter['formulas']]
                 if sum(pass_counts) > 0:
                     didPass = True
 
@@ -208,31 +235,16 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             if formula['field'] not in fields:
                 raise ValidationError(f'Invalid formula: field \'{formula["field"]}\' does not exist in the view')
     
+        # Filter the data to store the number of records
+        filtered_data = self.evaluate_filter(workflow.view, updated_filter)
+        workflow.filtered_count = len(filtered_data)
+
         # Update the filter
         serializer = WorkflowSerializer(instance=workflow, data={'filter': updated_filter}, partial=True)
         serializer.is_valid()
         serializer.save()
 
         return JsonResponse(serializer.data, safe=False)
-
-    def parse_field(self, field_name, fields, value):
-        field = next((x for x in fields if x['field'] == field_name), None)
-        # Enclose string values with quotation marks, otherwise simply return the number value as is
-        # Still must be returned as a string, since eval() takes a string input
-        if field['type'] == 'text':
-            return '\'{0}\''.format(value)
-        else:
-            return str(value)
-
-    def did_pass_formula(self, fields, item, formula):
-        populated_formula = str(self.parse_field(formula['field'], fields, item[formula['field']]) + formula['operator'] + self.parse_field(formula['field'], fields, formula['comparator']))
-        # Eval the populated formula to see if it passes for this item
-        try:
-            if eval(populated_formula):
-                return True
-        except NameError:
-            raise ValidationError('An issue occured while trying to evaluate the formula. Do each of the fields used have the correct \'type\' set?')
-        return False
 
     def evaluate_condition_group(self, primary_column, secondary_columns, data, condition_group):
         conditions_passed = defaultdict(list)

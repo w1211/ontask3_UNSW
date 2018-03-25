@@ -323,16 +323,16 @@ export const deleteFormulaFromFilter = (formulaIndex) => (dispatch, getState) =>
 export const updateFilter = (workflowId, payload) => dispatch => {
   const parameters = {
     initialFn: () => {
-      dispatch(beginRequestWorkflow());
+      dispatch(beginRequestModal());
     },
     url: `/workflow/${workflowId}/update_filter/`,
     method: 'PUT',
     errorFn: (error) => {
-      dispatch(failureRequestWorkflow(error));
+      dispatch(failureRequestModal(error));
     },
     successFn: () => {
-      dispatch(successRequestWorkflow());
-      dispatch(fetchContainers());
+      dispatch(successRequestModal());
+      dispatch(fetchWorkflow(workflowId));
       notification['success']({
         message: 'Filter updated',
         description: 'The filter was successfully updated.'

@@ -125,7 +125,9 @@ function workflow(state = {}, action) {
     case SUCCESS_REQUEST_MODAL:
       return Object.assign({}, state, {
         modalLoading: false,
-        modalError: null
+        modalError: null,
+        formState: null,
+        filterModalVisible: false
       });
 
     // Used when a condition or formula is added to a condition group/filter

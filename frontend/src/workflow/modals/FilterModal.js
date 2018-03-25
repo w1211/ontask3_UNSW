@@ -61,10 +61,10 @@ class FilterModal extends React.Component {
       // If an error is not present in a particular field, Ant Design stores the error value as undefined
       // We can easily remove these undefined errors by using JSON.parse(JSON.stringify(obj))
       formErrors = JSON.parse(JSON.stringify(formErrors.formulas));
-      // Therefore, if there are actually and keys present in the object, then there must be an error
+      // Therefore, if there are actually keys present in the object, then there must be an error
       formErrors.forEach(field => { if (Object.keys(field).length > 0) hasError = true });
     }
-
+    
     return (
       <Modal
         visible={filterModalVisible}
@@ -83,10 +83,8 @@ class FilterModal extends React.Component {
             deleteFormula={this.boundActionCreators.deleteFormulaFromFilter}
           />
 
-          { modalError && <Alert message={modalError} type="error"/>}
-          { hasError &&
-            <Alert message="Formulas cannot be incomplete" type="error"/>
-          }
+          { modalError && <Alert message={modalError} type="error"/> }
+          { hasError && <Alert message="Formulas cannot be incomplete" type="error"/> }
     
         </Form>
       </Modal>

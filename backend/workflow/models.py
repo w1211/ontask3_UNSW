@@ -41,6 +41,7 @@ class Workflow(Document):
     name = fields.StringField(required=True, unique_with='container')
     description = fields.StringField(null=True)
     filter = fields.EmbeddedDocumentField(Condition)
+    filtered_count = fields.IntField(null=True)
     conditionGroups = fields.EmbeddedDocumentListField(ConditionGroup)
     content = fields.EmbeddedDocumentField(Content)
     emailSettings = fields.EmbeddedDocumentField(EmailSettings)
