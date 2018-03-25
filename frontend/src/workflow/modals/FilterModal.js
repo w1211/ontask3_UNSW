@@ -146,7 +146,7 @@ const Field = ({ form, options, formula, i, formulaCount, deleteFormula }) => {
         <Input size="small" placeholder="Comparator" style={{ marginLeft:'3px' }}/>
       )}
       <Button 
-        disabled={formulaCount < 2} size="small" type="danger" icon="delete" shape="circle" style={{ marginLeft:'3px' }}
+        size="small" type="danger" icon="delete" shape="circle" style={{ marginLeft:'3px' }}
         onClick={(e) => { e.stopPropagation(); deleteFormula(i); }} 
       />
     </div>

@@ -224,20 +224,23 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         fields = [column['label'] if column['label'] else column['field'] for column in workflow.view.columns]
 
         # Validate the filter
-        for formula in updated_filter['formulas']:
-            # Parse the output of the field/operator cascader from the condition group form in the frontend
-            # Only necessary if this is being called after a post from the frontend
-            if 'fieldOperator' in formula:
-                formula['field'] = formula['fieldOperator'][0]
-                formula['operator'] = formula['fieldOperator'][1]
-                del formula['fieldOperator']
+        if 'formulas' in updated_filter:
+            for formula in updated_filter['formulas']:
+                # Parse the output of the field/operator cascader from the condition group form in the frontend
+                # Only necessary if this is being called after a post from the frontend
+                if 'fieldOperator' in formula:
+                    formula['field'] = formula['fieldOperator'][0]
+                    formula['operator'] = formula['fieldOperator'][1]
+                    del formula['fieldOperator']
 
-            if formula['field'] not in fields:
-                raise ValidationError(f'Invalid formula: field \'{formula["field"]}\' does not exist in the view')
-    
-        # Filter the data to store the number of records
-        filtered_data = self.evaluate_filter(workflow.view, updated_filter)
-        workflow.filtered_count = len(filtered_data)
+                if formula['field'] not in fields:
+                    raise ValidationError(f'Invalid formula: field \'{formula["field"]}\' does not exist in the view')
+
+            # Filter the data to store the number of records
+            filtered_data = self.evaluate_filter(workflow.view, updated_filter)
+            workflow.filtered_count = len(filtered_data)
+        else:
+            workflow.filtered_count = 0
 
         # Update the filter
         serializer = WorkflowSerializer(instance=workflow, data={'filter': updated_filter}, partial=True)
