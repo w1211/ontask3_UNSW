@@ -50,6 +50,8 @@ class View extends React.Component {
       case 'imported':
         this.boundActionCreators.openColumnModal();
         break;
+      default:
+        break;
     };
   };
 
@@ -74,11 +76,13 @@ class View extends React.Component {
         });
         break;
 
+      default:
+        break;
     };
   };
 
   render() {
-    const { dispatch, loading, error, view } = this.props;
+    const { loading, view } = this.props;
     const { filtered, sorted } = this.state;
 
     let columns = [];

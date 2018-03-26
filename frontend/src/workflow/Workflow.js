@@ -2,7 +2,7 @@ import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { Layout, Breadcrumb, Icon, Modal, notification, Spin, Button, Divider, Alert, Select, Menu, Dropdown } from 'antd';
+import { Layout, Breadcrumb, Icon, Spin, Button, Divider, Menu, Dropdown } from 'antd';
 import Draggable from 'react-draggable';
 
 import * as WorkflowActionCreators from './WorkflowActions';
@@ -12,7 +12,6 @@ import ConditionGroupModal from './modals/ConditionGroupModal';
 
 import './Workflow.css';
 
-const confirm = Modal.confirm;
 const { Content } = Layout;
 
 
@@ -45,7 +44,7 @@ class Workflow extends React.Component {
   };
 
   render() {
-    const { dispatch, isFetching, workflow, loading, error } = this.props;
+    const { isFetching, workflow } = this.props;
 
     return (
       <Content style={{ padding: '0 50px' }}>
