@@ -30,7 +30,7 @@ class StaticPageHistoryStaff extends React.Component {
 
   render() {
     const {
-      isFetching, data, matchField, matchReg, columns, error, onReset
+      isFetching, data, matchField, matchReg, columns, error
     } = this.props;
 
     return (

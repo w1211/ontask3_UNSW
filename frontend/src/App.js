@@ -17,8 +17,6 @@ import StaticPageHistoryStudent from './staticPage/StaticPageHistoryStudent';
 
 const { Header, Footer } = Layout;
 const queryString = require('query-string');
-const link_id = queryString.parse(window.location.search).link_id;
-const zid = queryString.parse(window.location.search).zid;
 
 //if user has longtime token in localstorage then can access the page they wish to access
 //if user does not has longtime token redirect them to login page

@@ -31,7 +31,7 @@ class BindWorkflowForm extends React.Component {
 
   render(){
     const {
-        containers, onBind, linkId, bindWorkflowSuccess
+        containers, onBind, linkId
     } = this.props;
 
     const radioStyle = {
