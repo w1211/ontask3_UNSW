@@ -25,32 +25,8 @@ export const UPDATE_FORM_STATE = 'UPDATE_FORM_STATE';
 export const OPEN_FILTER_MODAL = 'OPEN_FILTER_MODAL';
 export const CLOSE_FILTER_MODAL = 'CLOSE_FILTER_MODAL';
 
-// export const REFRESH_DETAILS_FORM_STATE = 'REFRESH_DETAILS_FORM_STATE';
-// export const UPDATE_DETAILS_FORM_STATE = 'UPDATE_DETAILS_FORM_STATE';
-// export const BEGIN_REQUEST_DETAILS = 'BEGIN_REQUEST_DETAILS';
-// export const FAILURE_REQUEST_DETAILS = 'FAILURE_REQUEST_DETAILS';
-// export const SUCCESS_UPDATE_DETAILS = 'SUCCESS_UPDATE_DETAILS';
-
-// export const BEGIN_REQUEST_DATA = 'BEGIN_REQUEST_DATA';
-// export const SUCCESS_REQUEST_DATA = 'SUCCESS_REQUEST_DATA';
-// export const FAILURE_REQUEST_DATA = 'FAILURE_REQUEST_DATA';
-
-
-// export const REFRESH_FILTER_FORM_STATE = 'REFRESH_FILTER_FORM_STATE';
-// export const UPDATE_FILTER_FORM_STATE = 'UPDATE_FILTER_FORM_STATE';
-// export const BEGIN_REQUEST_FILTER = 'BEGIN_REQUEST_FILTER';
-// export const FAILURE_REQUEST_FILTER = 'FAILURE_REQUEST_FILTER';
-// export const SUCCESS_UPDATE_FILTER = 'SUCCESS_UPDATE_FILTER';
-
-// export const OPEN_CONDITION_GROUP_MODAL = 'OPEN_CONDITION_GROUP_MODAL';
-// export const CLOSE_CONDITION_GROUP_MODAL = 'CLOSE_CONDITION_GROUP_MODAL';
-// export const REFRESH_CONDITION_GROUP_FORM_STATE = 'REFRESH_CONDITION_GROUP_FORM_STATE';
-// export const UPDATE_CONDITION_GROUP_FORM_STATE = 'UPDATE_CONDITION_GROUP_FORM_STATE';
-// export const BEGIN_REQUEST_CONDITION_GROUP = 'BEGIN_REQUEST_CONDITION_GROUP';
-// export const FAILURE_REQUEST_CONDITION_GROUP = 'FAILURE_REQUEST_CONDITION_GROUP';
-// export const SUCCESS_CREATE_CONDITION_GROUP = 'SUCCESS_CREATE_CONDITION_GROUP';
-// export const SUCCESS_UPDATE_CONDITION_GROUP = 'SUCCESS_UPDATE_CONDITION_GROUP';
-// export const SUCCESS_DELETE_CONDITION_GROUP = 'SUCCESS_DELETE_CONDITION_GROUP';
+export const OPEN_CONDITION_GROUP_MODAL = 'OPEN_CONDITION_GROUP_MODAL';
+export const CLOSE_CONDITION_GROUP_MODAL = 'CLOSE_CONDITION_GROUP_MODAL';
 
 // export const UPDATE_EDITOR_STATE = 'UPDATE_EDITOR_STATE';
 // export const BEGIN_REQUEST_CONTENT = 'BEGIN_REQUEST_CONTENT';
@@ -250,49 +226,55 @@ export const updateFormState = (payload) => ({
 
 export const openFilterModal = (filter) => {
   // Map the object representing the Filter model from the database into
-  // the form object that will be used in the condition group modal
-  let formState = { formulas: [] }
+  // the form object that will be used in the modal
+  let formState = { formulas: [] };
 
   if (filter) {
-    formState.type = { name: 'type', value: filter.type }
+    formState.type = { name: 'type', value: filter.type };
+
     filter.formulas.forEach((formula, i) => {
       formState.formulas.push({})
       formState.formulas[i].fieldOperator = {
         name: `formulas[${i}].fieldOperator`, value: [formula.field, formula.operator]
-      }
+      };
+
       formState.formulas[i].comparator = {
         name: `formulas[${i}].comparator`, value: formula.comparator
-      }
-
+      };
     })
   } else {
     formState.formulas.push({});
-  }
+  };
   
   return {
     type: OPEN_FILTER_MODAL,
     formState
-  }
+  };
 }
 
 export const closeFilterModal = () => ({
   type: CLOSE_FILTER_MODAL
 });
 
-export const addFormulaToFilter = () => (dispatch, getState) => {
-  const { workflow } = getState();
-  let formState = Object.assign({}, workflow.formState)
-  
+const validateFilterErrors = (formState) => {
   // Reset the errors in the form if the field has a value
   // Because we are directly modifying the form state, 
   // this step is necessary to ensure that error messages do not get incorrectly displayed
-  let hasError;
+  let hasError = false;
   formState.formulas.forEach((formula, i) => {
     Object.keys(formula).forEach((field) => { 
       field = formState.formulas[i][field];
       if (field.value) { field['errors'] = undefined } else { hasError = true };
     });
   });
+  return hasError;
+}
+
+export const addFormulaToFilter = () => (dispatch, getState) => {
+  const { workflow } = getState();
+  let formState = Object.assign({}, workflow.formState)
+  
+  const hasError = validateFilterErrors(formState);
 
   formState.formulas.push({ 
     fieldOperator: hasError ? { errors: [{}] } : {},
@@ -307,15 +289,7 @@ export const deleteFormulaFromFilter = (formulaIndex) => (dispatch, getState) =>
   let formState = Object.assign({}, workflow.formState)
   formState.formulas.splice(formulaIndex, 1);
 
-  // Reset the errors in the form if the field has a value
-  // Because we are directly modifying the form state, 
-  // this step is necessary to ensure that error messages do not get incorrectly displayed
-  formState.formulas.forEach((formula, i) => {
-    Object.keys(formula).forEach((field) => { 
-      field = formState.formulas[i][field];
-      if (field.value) field['errors'] = undefined;
-    });
-  });
+  validateFilterErrors(formState);
 
   dispatch(refreshFormState(formState));
 };
@@ -344,156 +318,176 @@ export const updateFilter = (workflowId, payload) => dispatch => {
   requestWrapper(parameters);
 };
 
-// export const openConditionGroupModal = (conditionGroup) => {
-//   // Map the object representing the ConditionGroup model from the database into
-//   // the form object that will be used in the condition group modal
-//   let formState = { conditions: [] }
+export const openConditionGroupModal = (conditionGroup) => {
+  // Map the object representing the Condition Group model from the database into
+  // the form object that will be used in the modal
+  let formState = { conditions: [] };
 
-//   if (conditionGroup) {
-//     formState.name = { name: 'name', value: conditionGroup.name };
+  if (conditionGroup) {
+    formState.name = { name: 'name', value: conditionGroup.name };
 
-//     conditionGroup.conditions.forEach((condition, i) => {
-//       formState.conditions.push({ formulas: [] })
-//       formState.conditions[i].name = { name: `conditions[${i}].name`, value: condition.name }
-//       formState.conditions[i].type = { name: `conditions[${i}].type`, value: condition.type }
+    conditionGroup.conditions.forEach((condition, i) => {
+      formState.conditions.push({ formulas: [] });
+      formState.conditions[i].name = { name: `conditions[${i}].name`, value: condition.name };
+      formState.conditions[i].type = { name: `conditions[${i}].type`, value: condition.type };
 
-//       condition.formulas.forEach((formula, j) => {
-//         formState.conditions[i].formulas.push({})
-//         formState.conditions[i].formulas[j].fieldOperator = {
-//           name: `conditions[${i}].formulas[${j}].fieldOperator`, value: [formula.field, formula.operator]
-//         }
-//         formState.conditions[i].formulas[j].comparator = {
-//           name: `conditions[${i}].formulas[${j}].comparator`, value: formula.comparator
-//         }
-//       })
+      condition.formulas.forEach((formula, j) => {
+        formState.conditions[i].formulas.push({});
+        formState.conditions[i].formulas[j].fieldOperator = {
+          name: `conditions[${i}].formulas[${j}].fieldOperator`, value: [formula.field, formula.operator]
+        };
+        formState.conditions[i].formulas[j].comparator = {
+          name: `conditions[${i}].formulas[${j}].comparator`, value: formula.comparator
+        };
+      });
 
-//     })
-//   } else {
-//     formState.conditions.push({ formulas: [{}] });
-//   }
+    })
+  } else {
+    formState.conditions.push({ formulas: [{}] });
+  };
 
-//   return {
-//     type: OPEN_CONDITION_GROUP_MODAL,
-//     conditionGroup,
-//     formState
-//   }
-// }
+  return {
+    type: OPEN_CONDITION_GROUP_MODAL,
+    formState,
+    conditionGroup
+  };
+};
 
-// export const closeConditionGroupModal = () => ({
-//   type: CLOSE_CONDITION_GROUP_MODAL
-// });
+export const closeConditionGroupModal = () => ({
+  type: CLOSE_CONDITION_GROUP_MODAL
+});
 
-// const beginRequestConditionGroup = () => ({
-//   type: BEGIN_REQUEST_CONDITION_GROUP
-// });
+const validateConditionGroupErrors = (formState) => {
+  // Reset the errors in the form if the field has a value
+  // Because we are directly modifying the form state, 
+  // this step is necessary to ensure that error messages do not get incorrectly displayed
+  if (formState.name && formState.name.value) formState.name.errors = undefined;
 
-// const failureRequestConditionGroup = (error) => ({
-//   type: FAILURE_REQUEST_CONDITION_GROUP,
-//   error
-// });
+  let hasError;
+  formState.conditions.forEach((condition, i) => {
+    if (condition.name && condition.name.value) condition.name.errors = undefined;
 
-// const successCreateConditionGroup = () => ({
-//   type: SUCCESS_CREATE_CONDITION_GROUP
-// });
+    condition.formulas.forEach((formula, j) => {
+      Object.keys(formula).forEach((field) => { 
+        field = formState.conditions[i].formulas[j][field];
+        if (field.value) { field['errors'] = undefined } else { hasError = true };
+      });
+    });
+  });
+  return hasError;
+}
 
-// export const createConditionGroup = (workflowId, payload) => dispatch => {
-//   const parameters = {
-//     initialFn: () => { dispatch(beginRequestConditionGroup()); },
-//     url: `/workflow/${workflowId}/create_condition_group/`,
-//     method: 'PUT',
-//     errorFn: (error) => { dispatch(failureRequestConditionGroup(error)); },
-//     successFn: (response) => {
-//       dispatch(successCreateConditionGroup());
-//       dispatch(fetchWorkflow(workflowId));
-//     },
-//     payload: payload
-//   }
+export const addConditionToConditionGroup = () => (dispatch, getState) => {
+  const { workflow } = getState();
+  let formState = Object.assign({}, workflow.formState)
+  
+  const hasError = validateConditionGroupErrors(formState);
 
-//   requestWrapper(parameters);
-// };
+  formState.conditions.push({
+    formulas: [{
+      fieldOperator: hasError ? { errors: [{}] } : {},
+      comparator: hasError ? { errors: [{}] } : {}
+    }] 
+  });
 
-// const refreshConditionGroupFormState = (payload) => ({
-//   type: REFRESH_CONDITION_GROUP_FORM_STATE,
-//   payload
-// });
+  dispatch(refreshFormState(formState));
+};
 
-// export const addConditionToConditionGroup = () => (dispatch, getState) => {
-//   const { workflow } = getState();
-//   let formState = Object.assign({}, workflow.conditionGroupFormState)
-//   formState.conditions.push({ formulas: [{}] });
+export const deleteConditionFromConditionGroup = (conditionIndex) => (dispatch, getState) => {
+  const { workflow } = getState();
+  let formState = Object.assign({}, workflow.formState)
+  formState.conditions.splice(conditionIndex, 1);
 
-//   dispatch(refreshConditionGroupFormState(formState));
-// };
+  validateConditionGroupErrors(formState);
 
-// export const deleteConditionFromConditionGroup = (index) => (dispatch, getState) => {
-//   const { workflow } = getState();
-//   let formState = Object.assign({}, workflow.conditionGroupFormState)
-//   formState.conditions.splice(index, 1);
+  dispatch(refreshFormState(formState));
+};
 
-//   dispatch(refreshConditionGroupFormState(formState));
-// };
 
-// export const addFormulaToConditionGroup = (conditionIndex) => (dispatch, getState) => {
-//   const { workflow } = getState();
-//   let formState = Object.assign({}, workflow.conditionGroupFormState)
-//   formState.conditions[conditionIndex].formulas.push({});
+export const addFormulaToConditionGroup = (conditionIndex) => (dispatch, getState) => {
+  const { workflow } = getState();
+  let formState = Object.assign({}, workflow.formState)
 
-//   dispatch(refreshConditionGroupFormState(formState));
-// };
+  const hasError = validateConditionGroupErrors(formState);
 
-// export const deleteFormulaFromConditionGroup = (conditionIndex, formulaIndex) => (dispatch, getState) => {
-//   const { workflow } = getState();
-//   let formState = Object.assign({}, workflow.conditionGroupFormState)
-//   formState.conditions[conditionIndex].formulas.splice(formulaIndex, 1);
+  formState.conditions[conditionIndex].formulas.push({
+    fieldOperator: hasError ? { errors: [{}] } : {},
+    comparator: hasError ? { errors: [{}] } : {}
+  });
 
-//   dispatch(refreshConditionGroupFormState(formState));
-// };
+  dispatch(refreshFormState(formState));
+};
 
-// export const updateConditionGroupFormState = (payload) => ({
-//   type: UPDATE_CONDITION_GROUP_FORM_STATE,
-//   payload
-// });
+export const deleteFormulaFromConditionGroup = (conditionIndex, formulaIndex) => (dispatch, getState) => {
+  const { workflow } = getState();
+  let formState = Object.assign({}, workflow.formState)
+  formState.conditions[conditionIndex].formulas.splice(formulaIndex, 1);
 
-// const successUpdateConditionGroup = () => ({
-//   type: SUCCESS_UPDATE_CONDITION_GROUP
-// });
+  validateConditionGroupErrors(formState);
 
-// export const updateConditionGroup = (workflowId, conditionGroup, payload) => dispatch => {
-//   payload.originalName = conditionGroup.name;
-//   const parameters = {
-//     initialFn: () => { dispatch(beginRequestConditionGroup()); },
-//     url: `/workflow/${workflowId}/update_condition_group/`,
-//     method: 'PUT',
-//     errorFn: (error) => { dispatch(failureRequestConditionGroup(error)); },
-//     successFn: (response) => {
-//       dispatch(successUpdateConditionGroup());
-//       dispatch(fetchWorkflow(workflowId));
-//     },
-//     payload: payload
-//   }
+  dispatch(refreshFormState(formState));
+};
 
-//   requestWrapper(parameters);
-// };
+export const createConditionGroup = (workflowId, payload) => dispatch => {
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestModal()); },
+    url: `/workflow/${workflowId}/create_condition_group/`,
+    method: 'PUT',
+    errorFn: (error) => { dispatch(failureRequestModal(error)); },
+    successFn: (response) => {
+      dispatch(successRequestModal());
+      dispatch(fetchWorkflow(workflowId));
+      notification['success']({
+        message: 'Condition group created',
+        description: 'The condition group was successfully created.'
+      });
+    },
+    payload: payload
+  };
 
-// const successDeleteConditionGroup = () => ({
-//   type: SUCCESS_DELETE_CONDITION_GROUP
-// });
+  requestWrapper(parameters);
+};
 
-// export const deleteConditionGroup = (workflowId, index) => dispatch => {
-//   const parameters = {
-//     initialFn: () => { dispatch(beginRequestConditionGroup()); },
-//     url: `/workflow/${workflowId}/delete_condition_group/`,
-//     method: 'PUT',
-//     errorFn: (error) => { dispatch(failureRequestConditionGroup(error)); },
-//     successFn: (response) => {
-//       dispatch(successDeleteConditionGroup());
-//       dispatch(fetchWorkflow(workflowId));
-//     },
-//     payload: { index: index }
-//   }
+export const updateConditionGroup = (workflowId, conditionGroup, payload) => dispatch => {
+  payload.originalName = conditionGroup.name;
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestModal()); },
+    url: `/workflow/${workflowId}/update_condition_group/`,
+    method: 'PUT',
+    errorFn: (error) => { dispatch(failureRequestModal(error)); },
+    successFn: (response) => {
+      dispatch(successRequestModal());
+      dispatch(fetchWorkflow(workflowId));
+      notification['success']({
+        message: 'Condition group updated',
+        description: 'The condition group was successfully updated.'
+      });
+    },
+    payload: payload
+  };
 
-//   requestWrapper(parameters);
-// };
+  requestWrapper(parameters);
+};
+
+export const deleteConditionGroup = (workflowId, index) => dispatch => {
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestModal()); },
+    url: `/workflow/${workflowId}/delete_condition_group/`,
+    method: 'PUT',
+    errorFn: (error) => { dispatch(failureRequestModal(error)); },
+    successFn: (response) => {
+      dispatch(successRequestModal());
+      dispatch(fetchWorkflow(workflowId));
+      notification['success']({
+        message: 'Condition group deleted',
+        description: 'The condition group was successfully deleted.'
+      });
+    },
+    payload: { index: index }
+  }
+
+  requestWrapper(parameters);
+};
 
 // export const updateEditorState = (payload) => ({
 //   type: UPDATE_EDITOR_STATE,

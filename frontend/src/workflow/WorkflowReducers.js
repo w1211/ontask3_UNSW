@@ -15,28 +15,11 @@ import {
   UPDATE_FORM_STATE,
 
   OPEN_FILTER_MODAL,
-  CLOSE_FILTER_MODAL
+  CLOSE_FILTER_MODAL,
 
-  // REFRESH_DETAILS_FORM_STATE,
-  // UPDATE_DETAILS_FORM_STATE,
-  // BEGIN_REQUEST_DETAILS,
-  // FAILURE_REQUEST_DETAILS,
-  // SUCCESS_UPDATE_DETAILS,
+  OPEN_CONDITION_GROUP_MODAL,
+  CLOSE_CONDITION_GROUP_MODAL,
 
-  // BEGIN_REQUEST_DATA,
-  // SUCCESS_REQUEST_DATA,
-  // FAILURE_REQUEST_DATA,
-
-  // OPEN_FILTER_MODAL,
-  // CLOSE_FILTER_MODAL,
-  // REFRESH_FILTER_FORM_STATE,
-  // UPDATE_FILTER_FORM_STATE,
-  // BEGIN_REQUEST_FILTER,
-  // FAILURE_REQUEST_FILTER,
-  // SUCCESS_UPDATE_FILTER,
-
-  // OPEN_CONDITION_GROUP_MODAL,
-  // CLOSE_CONDITION_GROUP_MODAL,
   // REFRESH_CONDITION_GROUP_FORM_STATE,
   // UPDATE_CONDITION_GROUP_FORM_STATE,
   // BEGIN_REQUEST_CONDITION_GROUP,
@@ -127,7 +110,8 @@ function workflow(state = {}, action) {
         modalLoading: false,
         modalError: null,
         formState: null,
-        filterModalVisible: false
+        filterModalVisible: false,
+        conditionGroupModalVisible: false
       });
 
     // Used when a condition or formula is added to a condition group/filter
@@ -158,8 +142,20 @@ function workflow(state = {}, action) {
         formState: null
       });
 
-
-
+    case OPEN_CONDITION_GROUP_MODAL:
+      return Object.assign({}, state, {
+        conditionGroupModalVisible: true,
+        formState: action.formState,
+        conditionGroup: action.conditionGroup
+      });
+    case CLOSE_CONDITION_GROUP_MODAL:
+      return Object.assign({}, state, {
+        conditionGroupModalVisible: false,
+        modalError: null,
+        modalLoading: false,
+        formState: null,
+        conditionGroup: null
+      });
 
     // // Scheduler Actions
     // case FAILURE_CREATE_SCHEDULE:
@@ -171,122 +167,6 @@ function workflow(state = {}, action) {
     //   return Object.assign({}, state, {
     //     scheduleLoading: false,
     //     scheduleError: null
-    //   });
-
-    // // Filter actions
-    // case OPEN_FILTER_MODAL:
-    //   return Object.assign({}, state, {
-    //     filterModalVisible: true,
-    //     filterFormState: action.formState
-    //   });
-    // case CLOSE_FILTER_MODAL:
-    //   return Object.assign({}, state, {
-    //     filterModalVisible: false,
-    //     filterError: null,
-    //     filterLoading: false,
-    //     filterFormState: null
-    //   });
-    // // Used when a formula is added to the filter
-    // case REFRESH_FILTER_FORM_STATE:
-    //   return Object.assign({}, state, {
-    //     filterFormState: action.payload
-    //   });
-    // // Used when a field is changed in the filter form
-    // case UPDATE_FILTER_FORM_STATE:
-    //   return Object.assign({}, state, {
-    //     // By design in ant design forms, if a field belonging to a list is updated, then the payload is given by:
-    //     // [null, null, updated_field, null] where null are the unchanged fields in the list
-    //     // Therefore, when updating the form state we must ensure that the null fields do not overwrite the values of those fields in the state
-    //     // This is handled by the merge function from lodash, a third party plugin
-    //     filterFormState: _.merge(state.filterFormState, action.payload)
-    //   });
-    // case BEGIN_REQUEST_FILTER:
-    //   return Object.assign({}, state, {
-    //     filterLoading: true
-    //   });
-    // case FAILURE_REQUEST_FILTER:
-    //   return Object.assign({}, state, {
-    //     filterLoading: false,
-    //     filterError: action.error
-    //   });
-    // case SUCCESS_UPDATE_FILTER:
-    //   return Object.assign({}, state, {
-    //     filterModalVisible: false,
-    //     filterLoading: false,
-    //     filterError: null,
-    //     didUpdate: true,
-    //     model: 'filter',
-    //     filterFormState: null
-    //   });
-    
-    // // Shared condition group actions
-    // case OPEN_CONDITION_GROUP_MODAL:
-    //   return Object.assign({}, state, {
-    //     conditionGroupModalVisible: true,
-    //     conditionGroup: action.conditionGroup,
-    //     conditionGroupFormState: action.formState
-    //   });
-    // case CLOSE_CONDITION_GROUP_MODAL:
-    //   return Object.assign({}, state, {
-    //     conditionGroupModalVisible: false,
-    //     conditionGroupError: null,
-    //     conditionGroupLoading: false,
-    //     conditionGroup: null,
-    //     conditionGroupFormState: null
-    //   });
-    // // Used when a condition or formula is added to a condition group
-    // case REFRESH_CONDITION_GROUP_FORM_STATE:
-    //   return Object.assign({}, state, {
-    //     conditionGroupFormState: action.payload
-    //   });
-    // // Used when a field is changed in the condition group form
-    // case UPDATE_CONDITION_GROUP_FORM_STATE:
-    //   return Object.assign({}, state, {
-    //     // By design in ant design forms, if a field belonging to a list is updated, then the payload is given by:
-    //     // [null, null, updated_field, null] where null are the unchanged fields in the list
-    //     // Therefore, when updating the form state we must ensure that the null fields do not overwrite the values of those fields in the state
-    //     // This is handled by the merge function from lodash, a third party plugin
-    //     conditionGroupFormState: _.merge(state.conditionGroupFormState, action.payload)
-    //   });
-    // case BEGIN_REQUEST_CONDITION_GROUP:
-    //   return Object.assign({}, state, {
-    //     conditionGroupLoading: true
-    //   });
-    // case FAILURE_REQUEST_CONDITION_GROUP:
-    //   return Object.assign({}, state, {
-    //     conditionGroupLoading: false,
-    //     conditionGroupError: action.error
-    //   });
-
-    // // Specific condition group actions
-    // case SUCCESS_CREATE_CONDITION_GROUP:
-    //   return Object.assign({}, state, {
-    //     conditionGroupModalVisible: false,
-    //     conditionGroupLoading: false,
-    //     conditionGroupError: null,
-    //     didCreate: true,
-    //     model: 'condition group',
-    //     conditionGroupFormState: null
-    //   });
-    // case SUCCESS_UPDATE_CONDITION_GROUP:
-    //   return Object.assign({}, state, {
-    //     conditionGroupModalVisible: false,
-    //     conditionGroupLoading: false,
-    //     conditionGroupError: null,
-    //     didUpdate: true,
-    //     model: 'condition group',
-    //     conditionGroupFormState: null,
-    //     conditionGroup: null
-    //   });
-    // case SUCCESS_DELETE_CONDITION_GROUP:
-    //   return Object.assign({}, state, {
-    //     conditionGroupModalVisible: false,
-    //     conditionGroupLoading: false,
-    //     conditionGroupError: null,
-    //     didDelete: true,
-    //     model: 'condition group',
-    //     conditionGroupForm: null,
-    //     conditionGroup: null
     //   });
 
     // // Compose actions

@@ -31,74 +31,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     serializer_class = WorkflowSerializer
     permission_classes = [IsAuthenticated, WorkflowPermissions]
 
-    def combine_data(self, details, filter=None):
-        # Create a dict of dicts which will hold the values for each secondary column
-        # Our goal is to end up with something like:
-        # column_data = {
-        #   'firstName': { 1: 'John', 2: 'Frank', 3: 'Billy' },
-        #   'lastName': { 1: 'Smith', 2: 'Johnson', 3: 'Sanders' },
-        # }
-        # I.e. User with id 1 is John Smith
-        column_data = defaultdict(dict)
-
-        # Group secondary columns by datasource
-        secondary_column_datasource = defaultdict(list)
-        if details is None:
-            raise ValidationError('This is not available until the workflow details have been configured')
-
-        primary_is_integer = True if details['primaryColumn'].type == 'number' else False # Dict key for secondary column is string or integer dependant on the primary field type
-
-        for column in details['secondaryColumns']:
-            secondary_column_datasource[column.datasource].append(column)
-
-        for datasource, secondary_columns in secondary_column_datasource.items():
-            data = datasource.data # Imported data source which was saved as a dictField in the Datasource model
-            for row in data:
-                for column in secondary_columns:
-                    # Each secondary column is represented by a dict in the column_data defaultdict
-                    # Add key-value pair of the form { matching_column_value: field_value } to the secondary column dict
-                    # E.g. { 1: 'John' } in the case of { id: firstName }
-                    try:
-                        matching_column_value = int(row[column.matchesWith]) if primary_is_integer else str(row[column.matchesWith]) # E.g. "id" of 1
-                        field_name = column.field # E.g. "firstName"
-                        field_value = row[field_name] # E.g. John
-                        column_data[field_name][matching_column_value] = field_value
-                    except (KeyError, ValueError):
-                        raise ValidationError('The matching column for \'{0}\' is incorrectly configured'.format(column.field))
-
-        primaryColumn = details['primaryColumn']
-        primaryField = primaryColumn.field
-        primaryData = primaryColumn.datasource.data
-        data = []
-
-        for row in primaryData:
-            # Construct a dict which will represent a single joined record
-            item = {}
-            item[primaryField] = row[primaryField] # E.g. item['id'] = 1
-            # Loop through the defined secondary columns and get the data for this particular record's id for each column
-            for secondary_column in details['secondaryColumns']:
-                try:
-                    # E.g. item['firstName'] = column_data['firstName'][1] gets the firstName of user with id 1
-                    item[secondary_column.field] = column_data[secondary_column.field][int(row[primaryField]) if primary_is_integer else str(row[primaryField])]
-                except KeyError:
-                    raise ValidationError('The \'type\' of the primary column is incorrectly configured')
-            # We end up with a joined single record
-            # E.g. { id: 1, firstName: 'John', lastName: 'Smith' }
-            # And then we append this to the list of joined items which will be returned to the front-end
-            data.append(item)
-
-        # Define the fields (and retain their order) to be consumed by the data table
-        columns = [primaryColumn.field] + [secondary_column.field for secondary_column in details['secondaryColumns']]
-
-        # If there is a filter, then filter the data
-        if filter and len(filter['formulas']) > 0:
-            data = self.evaluate_filter(primaryColumn, details['secondaryColumns'], data, filter)
-
-        response = {}
-        response['data'] = data
-        response['columns'] = columns
-        return response
-        
     def get_queryset(self):
         pipeline = [
             {
@@ -142,34 +74,8 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         #     serializer.data['schedule']['endDate'] = dateutil.parser.parse(serializer.data['schedule']['endDate']).strftime('%Y-%m-%d')
         #     serializer.data['schedule']['time'] = dateutil.parser.parse(serializer.data['schedule']['time']).strftime('%H:%M')
         return JsonResponse(serializer.data, safe=False)
-
-    @detail_route(methods=['put'])
-    def update_details(self, request, id=None):
-        workflow = Workflow.objects.get(id=id)
-        self.check_object_permissions(self.request, workflow)
-
-        serializer = WorkflowSerializer(instance=workflow, data={'details': request.data}, partial=True)
-        serializer.is_valid()
-        serializer.save()
-        return JsonResponse(serializer.data)
-
-    @detail_route(methods=['get'])
-    def get_data(self, request, id=None):
-        workflow = Workflow.objects.get(id=id)
-        self.check_object_permissions(self.request, workflow)
-        data = self.combine_data(workflow.details)
-        return JsonResponse(data, safe=False)
-
-    def parse_field(self, field_name, fields, value):
-        field = next((x for x in fields if x['field'] == field_name), None)
-        # Enclose string values with quotation marks, otherwise simply return the number value as is
-        # Still must be returned as a string, since eval() takes a string input
-        if field['type'] == 'text':
-            return '\'{0}\''.format(value)
-        else:
-            return str(value)
-
-    def did_pass_formula(self, fields, item, formula):
+        
+    def did_pass_formula(self, item, formula):
         operator = formula['operator']
         comparator = formula['comparator']
         value = item[formula['field']]
@@ -188,6 +94,9 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             return value >= comparator
         
     def evaluate_filter(self, view, filter):
+        if not filter:
+            return view.data
+
         filtered_data = list()
 
         # Iterate over the rows in the data and return any rows which pass true
@@ -195,16 +104,16 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             didPass = False
 
             if len(filter['formulas']) == 1:
-                if self.did_pass_formula(view.columns, item, filter['formulas'][0]):
+                if self.did_pass_formula(item, filter['formulas'][0]):
                     didPass = True
 
             elif filter['type'] == 'and':
-                pass_counts = [self.did_pass_formula(view.columns, item, formula) for formula in filter['formulas']]
+                pass_counts = [self.did_pass_formula(item, formula) for formula in filter['formulas']]
                 if sum(pass_counts) == len(filter['formulas']):
                     didPass = True
 
             elif filter['type'] == 'or':
-                pass_counts = [self.did_pass_formula(view.columns, item, formula) for formula in filter['formulas']]
+                pass_counts = [self.did_pass_formula(item, formula) for formula in filter['formulas']]
                 if sum(pass_counts) > 0:
                     didPass = True
 
@@ -249,50 +158,44 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         return JsonResponse(serializer.data, safe=False)
 
-    def evaluate_condition_group(self, primary_column, secondary_columns, data, condition_group):
+    def evaluate_condition_group(self, data, condition_group, primary_field):
         conditions_passed = defaultdict(list)
-        fields = [primary_column] + secondary_columns
+
         # Iterate over the rows in the data and return any rows which pass true
         for item in data:
             # Ensure that each item passes the test for only one condition per condition group
             matchedCount = 0
 
             for condition in condition_group['conditions']:
-                # Initialise the condition name as a key in the defaultdict
-                if not conditions_passed[condition['name']]:
-                    conditions_passed[condition['name']] = []
-
                 didPass = False
 
                 if len(condition['formulas']) == 1:
-                    if self.did_pass_formula(fields, item, condition['formulas'][0]):
+                    if self.did_pass_formula(item, condition['formulas'][0]):
                         didPass = True
 
                 elif condition['type'] == 'and':
-                    pass_counts = [self.did_pass_formula(fields, item, formula) for formula in condition['formulas']]
+                    pass_counts = [self.did_pass_formula(item, formula) for formula in condition['formulas']]
                     if sum(pass_counts) == len(condition['formulas']):
                         didPass = True
 
                 elif condition['type'] == 'or':
-                    pass_counts = [self.did_pass_formula(fields, item, formula) for formula in condition['formulas']]
+                    pass_counts = [self.did_pass_formula(item, formula) for formula in condition['formulas']]
                     if sum(pass_counts) > 0:
                         didPass = True
 
                 if didPass:
-                    conditions_passed[condition['name']].append(item[primary_column['field']])
+                    conditions_passed[condition['name']].append(item[primary_field])
                     matchedCount += 1
 
             if matchedCount > 1:
                 raise ValidationError('An item has matched with more than one condition in the condition group \'{0}\''.format(condition_group['name']))
         return conditions_passed
 
-    def validate_condition_group(self, details, filter, condition_group):
-        primary_column = details['primaryColumn']
-        secondary_columns = details['secondaryColumns']
-        data = self.combine_data(details, filter)['data']
+    def validate_condition_group(self, workflow, condition_group):
+        data = self.evaluate_filter(workflow.view, workflow.filter)
 
         # Confirm that all provided fields are defined in the workflow details
-        fields = [primary_column.field] + [secondary_column.field for secondary_column in secondary_columns]
+        fields = [column['label'] if column['label'] else column['field'] for column in workflow.view.columns]
 
         for condition in condition_group['conditions']:
             for formula in condition['formulas']:
@@ -307,7 +210,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                 if formula['field'] not in fields:
                     raise ValidationError('Invalid formula: field \'{0}\' does not exist in the workflow details'.format(formula['field']))
 
-        conditions_passed = self.evaluate_condition_group(primary_column, secondary_columns, data, condition_group)
+        conditions_passed = self.evaluate_condition_group(data, condition_group, fields[0])
 
         return conditions_passed
 
@@ -327,7 +230,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                 if condition['name'] in [condition['name'] for condition in new_condition_group['conditions']]:
                     raise ValidationError('\'{0}\' is already being used as a condition name in this workflow'.format(condition['name']))
 
-        conditions_passed = self.validate_condition_group(workflow['details'], workflow['filter'], new_condition_group)
+        self.validate_condition_group(workflow, new_condition_group)
 
         result = workflow.update(push__conditionGroups=new_condition_group)
 
@@ -357,7 +260,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                 if condition['name'] in [condition['name'] for condition in updated_condition_group['conditions']]:
                     raise ValidationError('\'{0}\' is already being used as a condition name in this workflow'.format(condition['name']))
 
-        conditions_passed = self.validate_condition_group(workflow['details'], workflow['filter'], updated_condition_group)
+        self.validate_condition_group(workflow, updated_condition_group)
 
         condition_groups = workflow['conditionGroups']
         for i in range(len(condition_groups)):

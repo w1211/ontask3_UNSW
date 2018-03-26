@@ -2,11 +2,15 @@ import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { Layout, Breadcrumb, Icon, Modal, notification, Spin, Button, Divider, Alert } from 'antd';
+import { Layout, Breadcrumb, Icon, Modal, notification, Spin, Button, Divider, Alert, Select, Menu, Dropdown } from 'antd';
+import Draggable from 'react-draggable';
 
 import * as WorkflowActionCreators from './WorkflowActions';
 
 import FilterModal from './modals/FilterModal';
+import ConditionGroupModal from './modals/ConditionGroupModal';
+
+import './Workflow.css';
 
 const confirm = Modal.confirm;
 const { Content } = Layout;
@@ -25,6 +29,20 @@ class Workflow extends React.Component {
     this.boundActionCreators.fetchWorkflow(match.params.id);
   };
 
+  handleConditionGroupMenuClick = (e, conditionGroup, index) => {
+    const { workflow } = this.props;
+
+    switch (e.key) {
+      case 'edit':
+        this.boundActionCreators.openConditionGroupModal(conditionGroup);
+        break;
+      case 'delete':
+        this.boundActionCreators.deleteConditionGroup(workflow.id, index);
+        break;
+      default:
+        break;
+    };
+  };
 
   render() {
     const { dispatch, isFetching, workflow, loading, error } = this.props;
@@ -59,8 +77,8 @@ class Workflow extends React.Component {
                     onClick={() => { this.boundActionCreators.openFilterModal(workflow.filter); }} 
                   />
                 </h3>
-                { workflow && workflow.filtered_count ?
-                  `${workflow.view.data.length - workflow.filtered_count} records selected out of ${workflow.view.data.length} (${workflow.filtered_count} filtered)`
+                { workflow && workflow.filter && workflow.filter.formulas.length > 0 ?
+                  `${workflow.filtered_count} records selected out of ${workflow.view.data.length} (${workflow.view.data.length - workflow.filtered_count} filtered out)`
                 :
                   'No filter is currently being applied' 
                 }
@@ -68,38 +86,45 @@ class Workflow extends React.Component {
 
                 <Divider dashed />
 
-                {/* <FilterModal
-                  visible={filterModalVisible}
-                  loading={filterLoading}
-                  error={filterError}
-                  details={details}
-                  formState={filterFormState}
+                <h3>
+                  Condition groups
+                  <Button 
+                    style={{ marginLeft: '10px' }} shape="circle" icon="plus"
+                    onClick={() => { this.boundActionCreators.openConditionGroupModal(); }} 
+                    />
+                </h3>
+                <ConditionGroupModal/>
+                { workflow && workflow.conditionGroups && workflow.conditionGroups.length > 0 ?
+                  workflow.conditionGroups.map((conditionGroup, i) => {
+                    return (
+                      <Draggable
+                        key={i}
+                        position={{ x: 0, y: 0 }}
+                        // onDrag={ (e) => { this.isInsideContent(e, this.editor); }}
+                        // onStop={ () => { this.stopDrag(conditionGroup); }}
+                        onMouseDown={ (e) => { e.preventDefault(); }} // Keeps the content editor in focus when user starts to drag a condition group
+                      >
+                        <Dropdown.Button
+                          overlay={
+                            <Menu onClick={(e) => this.handleConditionGroupMenuClick(e, conditionGroup, i)}>
+                              <Menu.Item key="edit">Edit</Menu.Item>
+                              <Menu.Item key="delete">Delete</Menu.Item>
+                            </Menu>
+                          }
+                          className="conditionGroupBtn"
+                          key={i} type="primary" trigger={['click']}
+                          style={{ marginRight: '5px', zIndex: 10 }}
+                        >
+                          {conditionGroup.name}
+                        </Dropdown.Button>
+                      </Draggable>
+                    )
+                  })
+                :
+                  'No condition groups have been added yet.'
+                }
+                {/*
 
-                  onUpdate={(payload) => { this.boundActionCreators.updateFilter(match.params.id, payload) }}
-                  onCancel={() => { dispatch(this.boundActionCreators.closeFilterModal()) }}
-
-                  addFormula={this.boundActionCreators.addFormulaToFilter}
-                  deleteFormula={this.boundActionCreators.deleteFormulaFromFilter}
-                  updateFormState={this.boundActionCreators.updateFilterFormState}
-                />
-                <ConditionGroupModal
-                  visible={conditionGroupModalVisible}
-                  loading={conditionGroupLoading}
-                  error={conditionGroupError}
-                  details={details}
-                  conditionGroup={conditionGroup}
-                  formState={conditionGroupFormState}
-
-                  onCreate={(payload) => { this.boundActionCreators.createConditionGroup(match.params.id, payload) }}
-                  onUpdate={(conditionGroup, payload) => { this.boundActionCreators.updateConditionGroup(match.params.id, conditionGroup, payload) }}
-                  onCancel={() => { dispatch(this.boundActionCreators.closeConditionGroupModal()) }}
-
-                  addCondition={this.boundActionCreators.addConditionToConditionGroup}
-                  deleteCondition={this.boundActionCreators.deleteConditionFromConditionGroup}
-                  addFormula={this.boundActionCreators.addFormulaToConditionGroup}
-                  deleteFormula={this.boundActionCreators.deleteFormulaFromConditionGroup}
-                  updateFormState={this.boundActionCreators.updateConditionGroupFormState}
-                />
                 <Compose
                   contentLoading={actionContentLoading}
                   error={actionContentError}
