@@ -1,7 +1,7 @@
 import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
-import {Button, Modal, Form, Input, Alert, Select, Upload, Icon, Tooltip } from 'antd';
+import {Button, Modal, Form, Input, Alert, Select, Upload, Icon, Tooltip, message } from 'antd';
 
 import * as DatasourceActionCreators from './DatasourceActions';
 
@@ -93,17 +93,6 @@ class DatasourceModal extends React.Component {
     // Validate file size
     if (fileSize > 2) return 'File must not be larger than 2MB';
   };
-  
-  copyToClipboard = () => {
-    const AWSCredentials = `AWS_ACCESS_KEY_ID = ${process.env.REACT_APP_AWS_ACCESS_KEY_ID}\nAWS_SECRET_ACCESS_KEY = ${process.env.REACT_APP_AWS_SECRET_ACCESS_KEY}`;
-    console.log(AWSCredentials);
-    var textField = document.createElement('textarea');
-    textField.innerText = AWSCredentials;
-    document.body.appendChild(textField);
-    textField.select();
-    document.execCommand('copy');
-    textField.remove();
-  }
 
   checkS3FileType = () => {
     const { form } = this.props;
@@ -171,7 +160,7 @@ class DatasourceModal extends React.Component {
             )}
           </FormItem>
 
-          { isS3Bucket && <S3Bucket form={form} checkS3FileType={this.checkS3FileType} copyToClipboard={this.copyToClipboard}/> }
+          { isS3Bucket && <S3Bucket form={form} checkS3FileType={this.checkS3FileType}/> }
 
           { (isCSV || isS3Csv) && <Delimiter form={form} /> }
 
@@ -196,7 +185,7 @@ class DatasourceModal extends React.Component {
 
 };
 
-const S3Bucket = ({ form, checkS3FileType, copyToClipboard }) => {
+const S3Bucket = ({ form, checkS3FileType }) => {
   const permission = {
     'Version': '2012-10-17',
     'Statement': [{
@@ -213,6 +202,16 @@ const S3Bucket = ({ form, checkS3FileType, copyToClipboard }) => {
       ]
     }]
   };
+
+  const copyToClipboard = () => {
+    var textField = document.createElement('textarea');
+    textField.innerHTML = JSON.stringify(permission, null, 2);
+    document.body.appendChild(textField);
+    textField.select();
+    document.execCommand('copy');
+    textField.remove();
+    message.success('Copied bucket policy to clipboard');
+  }
 
   return (
     <div>
@@ -241,7 +240,7 @@ const S3Bucket = ({ form, checkS3FileType, copyToClipboard }) => {
         </Tooltip>
       </p>
       <code style={{ background: '#eeeeee', padding: '1em', margin: '0.5em 0', border: '1px dashed #cccccc', borderRadius: '5px', display: 'block' }}>
-        <Button shape="circle" icon="copy" size="small" style={{position: "relative", float: "right"}} onClick={this.copyToClipboard}/>
+        <Button shape="circle" icon="copy" size="small" style={{position: "relative", float: "right"}} onClick={copyToClipboard}/>
         <pre style={{ fontSize: '0.75em', margin: 0 }}>
           { JSON.stringify(permission, null, 2) }
         </pre>
