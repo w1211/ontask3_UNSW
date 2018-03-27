@@ -196,40 +196,59 @@ class DatasourceModal extends React.Component {
 
 };
 
-const S3Bucket = ({ form, checkS3FileType, copyToClipboard }) => (
-  <div>
-    <p>
-      Please copy following policy to your bucket permission: 
-      <Tooltip placement="right" title="Informational text" >
-        <Icon type="question-circle-o" style={{ margin: 5, cursor: 'help'}}/>
-      </Tooltip>
-    </p>
+const S3Bucket = ({ form, checkS3FileType, copyToClipboard }) => {
+  const permission = {
+    'Version': '2012-10-17',
+    'Statement': [{
+      'Sid': 'Ontask access permission',
+      'Effect': 'Allow',
+      'Principal': {
+        'AWS': [ process.env.REACT_APP_AWS_ID ]
+      },
+      'Action': [
+        's3:GetObject'
+      ],
+      'Resource': [
+        `arn:aws:s3:::${form.getFieldValue('bucket') ? form.getFieldValue('bucket') : 'YOUR_BUCKET_NAME'}/${form.getFieldValue('fileName') ? form.getFieldValue('fileName') : 'YOUR_FILE_NAME'}`
+      ]
+    }]
+  };
 
-    <code style={{ background: '#eeeeee', padding: '1em', margin: '0.5em 0', border: '1px dashed #cccccc', borderRadius: '5px', display: 'block' }}>
-      <Button shape="circle" icon="copy" size="small" style={{position: "relative", float: "right"}} onClick={this.copyToClipboard}/>
-      <div>AWS_ACCESS_KEY_ID = {process.env.REACT_APP_AWS_ACCESS_KEY_ID}</div>
-      <div>AWS_SECRET_ACCESS_KEY = {process.env.REACT_APP_AWS_SECRET_ACCESS_KEY}</div>
-    </code>
+  return (
+    <div>
+      <FormItem {...formItemLayout} label="Bucket name">
+        {form.getFieldDecorator('bucket', {
+          initialValue: null,
+          rules: [{ required: true, message: 'Bucket name is required' }]
+        })(
+          <Input/>
+        )}
+      </FormItem>
+                  
+      <FormItem {...formItemLayout} label="File name">
+        {form.getFieldDecorator('fileName', {
+          initialValue: null,
+          rules: [{ required: true, message: 'File name is required' }]
+        })(
+          <Input onBlur={checkS3FileType}/>
+        )}
+      </FormItem>
 
-    <FormItem {...formItemLayout} label="Bucket name">
-      {form.getFieldDecorator('bucket', {
-        initialValue: null,
-        rules: [{ required: true, message: 'Bucket name is required' }]
-      })(
-        <Input/>
-      )}
-    </FormItem>
-                
-    <FormItem {...formItemLayout} label="File name">
-      {form.getFieldDecorator('fileName', {
-        initialValue: null,
-        rules: [{ required: true, message: 'File name is required' }]
-      })(
-        <Input onBlur={checkS3FileType}/>
-      )}
-    </FormItem>
-  </div>
-);
+      <p>
+        Please copy following policy to your bucket permission: 
+        <Tooltip placement="right" title="Adding this policy to your bucket permission is neccessary in order to provide OnTask with access to your file." >
+          <Icon type="question-circle-o" style={{ margin: 5, cursor: 'help'}}/>
+        </Tooltip>
+      </p>
+      <code style={{ background: '#eeeeee', padding: '1em', margin: '0.5em 0', border: '1px dashed #cccccc', borderRadius: '5px', display: 'block' }}>
+        <Button shape="circle" icon="copy" size="small" style={{position: "relative", float: "right"}} onClick={this.copyToClipboard}/>
+        <pre style={{ fontSize: '0.75em', margin: 0 }}>
+          { JSON.stringify(permission, null, 2) }
+        </pre>
+      </code>
+    </div>
+  )
+};
 
 const Delimiter = ({ form }) => (
   <FormItem {...formItemLayout} label="Delimiter">
