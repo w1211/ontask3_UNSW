@@ -270,7 +270,8 @@ class DataSourceViewSet(viewsets.ModelViewSet):
             bucket = self.request.data['bucket']
             file_name = self.request.data['fileName']
             delimiter = self.request.data['delimiter'] if 'delimiter' in self.request.data else None
-            (data, fields) = self.get_s3bucket_file_data(bucket, file_name, delimiter)
+            sheetname = self.request.data['sheetname'] if ('sheetname' in self.request.data) else None
+            (data, fields) = self.get_s3bucket_file_data(bucket, file_name, delimiter, sheetname)
 
         else:
             connection = self.request.data['connection']

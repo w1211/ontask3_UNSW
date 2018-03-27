@@ -10,6 +10,7 @@ export const CLOSE_DATASOURCE_MODAL = 'CLOSE_DATASOURCE_MODAL';
 export const BEGIN_REQUEST_DATASOURCE = 'BEGIN_REQUEST_DATASOURCE';
 export const FAILURE_REQUEST_DATASOURCE = 'FAILURE_REQUEST_DATASOURCE';
 export const SUCCESS_REQUEST_DATASOURCE = 'SUCCESS_REQUEST_DATASOURCE';
+export const SUCCESS_REQUEST_DATASOURCE_WITHOUT_CLOSE = 'SUCCESS_REQUEST_DATASOURCE_WITHOUT_CLOSE';
 
 export const RECEIVE_SHEETNAMES = 'RECEIVE_SHEETNAMES';
 
@@ -37,6 +38,10 @@ const successRequestDatasource = () => ({
   type: SUCCESS_REQUEST_DATASOURCE
 });
 
+const successRequestDatasourceWithoutClose = () => ({
+  type: SUCCESS_REQUEST_DATASOURCE_WITHOUT_CLOSE
+});
+
 const receiveSheetnames = (sheetnames) => ({
   type: RECEIVE_SHEETNAMES,
   sheetnames
@@ -48,12 +53,16 @@ export const fetchS3Sheetnames = (bucket, fileName) => dispatch => {
     fileName: fileName
   }
   const parameters = {
+    initialFn: () => {
+      dispatch(beginRequestDatasource());
+    },
     url: `/datasource/get_s3_sheetnames/`,
     method: 'POST',
     errorFn: (error) => {
       dispatch(failureRequestDatasource(error));
     },
     successFn: (response) => {
+      dispatch(successRequestDatasourceWithoutClose());
       dispatch(receiveSheetnames(response["sheetnames"]));
     },
     payload: data,
@@ -66,12 +75,16 @@ export const fetchSheetnames = (file) => dispatch => {
   let data = new FormData();
   data.append('file', file);
   const parameters = {
+    initialFn: () => {
+      dispatch(beginRequestDatasource());
+    },
     url: `/datasource/get_sheetnames/`,
     method: 'POST',
     errorFn: (error) => {
       dispatch(failureRequestDatasource(error));
     },
     successFn: (response) => {
+      dispatch(successRequestDatasourceWithoutClose());
       dispatch(receiveSheetnames(response["sheetnames"]));
     },
     payload: data,
