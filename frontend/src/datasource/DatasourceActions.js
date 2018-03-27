@@ -124,14 +124,14 @@ export const createDatasource = (containerId, payload, file) => dispatch => {
 export const updateDatasource = (datasourceId, payload, file) => dispatch => {
   dispatch(beginRequestDatasource());
 
-  const isFile = (payload.connection.dbType === 'file');
+  const isFile = ['xlsXlsxFile', 'csvTextFile'].includes(payload.connection.dbType);
   let data;
   if (isFile) {
     data = new FormData();
     if (file) data.append('file', file);
     data.append('delimiter', payload.delimiter)
     data.append('name', payload.name);
-    data.append('dbType', 'file');
+    data.append('dbType', payload.connection.dbType);
   } else {
     data = payload;
   }

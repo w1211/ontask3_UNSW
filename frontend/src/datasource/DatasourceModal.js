@@ -69,7 +69,7 @@ class DatasourceModal extends React.Component {
     }
   }
 
-  handleFileDrop(e) {
+  handleFileDrop = (e) => {
     const file = e.file;
     const fileName = file.name.split('.');
     const extension = fileName[fileName.length - 1].toLowerCase();
@@ -94,7 +94,7 @@ class DatasourceModal extends React.Component {
     if (fileSize > 2) return 'File must not be larger than 2MB';
   };
   
-  copyToClipboard(){
+  copyToClipboard = () => {
     const AWSCredentials = `AWS_ACCESS_KEY_ID = ${process.env.REACT_APP_AWS_ACCESS_KEY_ID}\nAWS_SECRET_ACCESS_KEY = ${process.env.REACT_APP_AWS_SECRET_ACCESS_KEY}`;
     console.log(AWSCredentials);
     var textField = document.createElement('textarea');
@@ -105,6 +105,27 @@ class DatasourceModal extends React.Component {
     textField.remove();
   }
 
+  checkS3FileType = () => {
+    const { form } = this.props;
+
+    let fileName = form.getFieldValue('fileName');
+    if (!fileName) return;
+
+    fileName = fileName.split('.');
+    const extension = fileName[fileName.length - 1].toLowerCase();
+
+    if(['xlsx', 'xls'].includes(extension)){
+      this.boundActionCreators.fetchS3Sheetnames(form.getFieldValue('bucket'), form.getFieldValue('fileName'));
+      this.setState({isS3Csv:false})
+    }
+    else if(['csv', 'txt'].includes(extension)){
+      this.setState({isS3Csv:true});
+    }
+    else {
+      this.setState({isS3Csv:false});
+    }
+  }
+
   render() {
     const { selected, visible, loading, error, form, sheetnames } = this.props;
     const { fileType, file, isS3Csv} = this.state
@@ -113,19 +134,7 @@ class DatasourceModal extends React.Component {
     const isLocalFile = ['xlsXlsxFile', 'csvTextFile'].includes(fileType);
     const isS3Bucket = fileType === 's3BucketFile';
     const text = "Informational text"; // TODO: add text here
-
-    const checkS3FileType = () => {
-      const fileName = form.getFieldValue('fileName').split('.');
-      const extension = fileName[fileName.length - 1].toLowerCase();
-      if(['xlsx', 'xls'].includes(extension)){
-        this.boundActionCreators.fetchS3Sheetnames(form.getFieldValue('bucket'), form.getFieldValue('fileName'));
-        this.setState({isS3Csv:false})
-      }
-      else if(['csv', 'txt'].includes(extension)){
-        this.setState({isS3Csv:true});
-      }
-    }
-
+    
     return (
       <Modal
         visible={visible}
@@ -144,6 +153,7 @@ class DatasourceModal extends React.Component {
               <Input/>
             )}
           </FormItem>
+          
           <FormItem {...formItemLayout} label="Type">
             {form.getFieldDecorator('connection.dbType', {
               initialValue: selected ? selected.connection.dbType : null,
@@ -160,134 +170,160 @@ class DatasourceModal extends React.Component {
               </Select>
             )}
           </FormItem>
-          { isS3Bucket &&
-              <div>
-                <p>Please copy following policy to your bucket permission: 
-                <Tooltip placement="right" title={text} >
-                  <Icon type="question-circle-o" style={{ margin: 5, cursor: 'help'}}/>
-                </Tooltip>
-                </p>
-                <code style={{ background: '#eeeeee', padding: '1em', margin: '0.5em 0', border: '1px dashed #cccccc', borderRadius: '5px', display: 'block' }}>
-                  <Button shape="circle" icon="copy" size="small" style={{position: "relative", float: "right"}} onClick={this.copyToClipboard}/>
-                  <div>AWS_ACCESS_KEY_ID = {process.env.REACT_APP_AWS_ACCESS_KEY_ID}</div>
-                  <div>AWS_SECRET_ACCESS_KEY = {process.env.REACT_APP_AWS_SECRET_ACCESS_KEY}</div>
-                </code>
-                <FormItem {...formItemLayout} label="Bucket name">
-                  {form.getFieldDecorator('bucket', {
-                    initialValue: null,
-                    rules: [{ required: isS3Bucket && true, message: 'Bucket name is required' }]
-                  })(
-                    <Input/>
-                  )}
-                </FormItem>
-                <FormItem {...formItemLayout} label="File name">
-                  {form.getFieldDecorator('fileName', {
-                    initialValue: null,
-                    rules: [{ required: isS3Bucket && true, message: 'File name is required' }]
-                  })(
-                    <Input onBlur={checkS3FileType}/>
-                  )}
-                </FormItem>
-              </div>
-          }
-          { (isCSV || isS3Csv) &&
-            <FormItem {...formItemLayout} label="Delimiter">
-              { form.getFieldDecorator('delimiter', {
-                initialValue: ',',
-              })(
-                <Select>
-                  <Option value=",">Comma ,</Option>
-                  <Option value=" ">Tabs "  "</Option>
-                  <Option value=";">Semi-colons ;</Option>
-                  <Option value="|">Pipes |</Option>
-                  <Option value="^">Carets ^</Option>
-                  <Option value="~">Tildes ~</Option>
-                </Select>
-              )}
-            </FormItem>
-          }
-          { isLocalFile &&
-            <Dragger
-              name='file'
-              multiple={false}
-              onChange={(e) => this.handleFileDrop(e)}
-              beforeUpload = {() => false} // Prevent immediate upload upon file drop
-              action='' // The uploading URL (required) however we do not make use of 
-            >
-              <p className="ant-upload-drag-icon">
-                <Icon type="inbox"/>
-              </p>
-              <p className="ant-upload-text">Click or drag file to this area to upload</p>
-              <p className="ant-upload-hint">Supported file formats: csv/xls/xlsx</p>
-            </Dragger>
-          }
+
+          { isS3Bucket && <S3Bucket form={form} checkS3FileType={this.checkS3FileType} copyToClipboard={this.copyToClipboard}/> }
+
+          { (isCSV || isS3Csv) && <Delimiter form={form} /> }
+
+          { isLocalFile && <LocalFile form={form} onChange={this.handleFileDrop} /> }
+          
           { file && 
             <div>
-            <span><Icon type='paper-clip'/>{file.name}</span> 
+              <span><Icon type='paper-clip'/>{file.name}</span> 
             </div>
           }
-          { sheetnames &&
-            <FormItem {...formItemLayout} label="Sheet name">
-              { form.getFieldDecorator('sheetname',{
-                rules: [{ required: true, message: 'Sheet name is required' }]
-              })(
-                <Select>
-                  { sheetnames.map((option, i) => (<Option key={i} value={option}>{option}</Option>)) }
-                </Select>
-              )}
-            </FormItem>
-          }
+
+          { sheetnames && <SheetNames form={form} sheetnames={sheetnames}/> }
+          
+          { !isFile && <ConnectionSettings form={form} selected={selected} isFile={isFile}/> }
+
           { this.state.error && <Alert style={{ marginTop: 10 }} message={this.state.error} type="error"/> }
-          { !isFile &&
-            <div>
-              <FormItem {...formItemLayout} label="Host">
-                {form.getFieldDecorator('connection.host', {
-                  initialValue: selected ? selected.connection.host : null,
-                  rules: [{ required: !isFile && true, message: 'Host is required' }]
-                })(
-                  <Input/>
-                )}
-              </FormItem>
-              <FormItem {...formItemLayout} label="Database">
-                {form.getFieldDecorator('connection.database', {
-                  initialValue: selected ? selected.connection.database : null,
-                  rules: [{ required: !isFile && true, message: 'Database is required' }]
-                })(
-                  <Input/>
-                )}
-              </FormItem>
-              <FormItem {...formItemLayout} label="User">
-                {form.getFieldDecorator('connection.user', {
-                  initialValue: selected ? selected.connection.user : null,
-                  rules: [{ required: !isFile && true, message: 'Database user is required' }]
-                })(
-                  <Input/>
-                )}
-              </FormItem>
-              <FormItem {...formItemLayout} label="Password">
-                {form.getFieldDecorator('connection.password', {
-                  rules: [{ required: (isFile || selected) ? false : true, message: 'Database password is required' }]
-                })(
-                  <Input type="password" placeholder={selected && 'Change password'}/>
-                )}
-              </FormItem>
-              <FormItem {...formItemLayout} label="Query">
-                {form.getFieldDecorator('connection.query', {
-                  initialValue: selected ? selected.connection.query : null,
-                  rules: [{ required: isFile && true, message: 'Database query is required' }]
-                })(
-                  <TextArea rows={2}/>
-                )}
-              </FormItem>
-            </div>
-          }
           { error && <Alert style={{ marginTop: 10 }} message={error} type="error"/>}
         </Form>
       </Modal>
     );
-  };
+  };  
 
 };
+
+const S3Bucket = ({ form, checkS3FileType, copyToClipboard }) => (
+  <div>
+    <p>
+      Please copy following policy to your bucket permission: 
+      <Tooltip placement="right" title="Informational text" >
+        <Icon type="question-circle-o" style={{ margin: 5, cursor: 'help'}}/>
+      </Tooltip>
+    </p>
+
+    <code style={{ background: '#eeeeee', padding: '1em', margin: '0.5em 0', border: '1px dashed #cccccc', borderRadius: '5px', display: 'block' }}>
+      <Button shape="circle" icon="copy" size="small" style={{position: "relative", float: "right"}} onClick={this.copyToClipboard}/>
+      <div>AWS_ACCESS_KEY_ID = {process.env.REACT_APP_AWS_ACCESS_KEY_ID}</div>
+      <div>AWS_SECRET_ACCESS_KEY = {process.env.REACT_APP_AWS_SECRET_ACCESS_KEY}</div>
+    </code>
+
+    <FormItem {...formItemLayout} label="Bucket name">
+      {form.getFieldDecorator('bucket', {
+        initialValue: null,
+        rules: [{ required: true, message: 'Bucket name is required' }]
+      })(
+        <Input/>
+      )}
+    </FormItem>
+                
+    <FormItem {...formItemLayout} label="File name">
+      {form.getFieldDecorator('fileName', {
+        initialValue: null,
+        rules: [{ required: true, message: 'File name is required' }]
+      })(
+        <Input onBlur={checkS3FileType}/>
+      )}
+    </FormItem>
+  </div>
+);
+
+const Delimiter = ({ form }) => (
+  <FormItem {...formItemLayout} label="Delimiter">
+    { form.getFieldDecorator('delimiter', {
+      initialValue: ',',
+    })(
+      <Select>
+        <Option value=",">Comma ,</Option>
+        <Option value=" ">Tabs "  "</Option>
+        <Option value=";">Semi-colons ;</Option>
+        <Option value="|">Pipes |</Option>
+        <Option value="^">Carets ^</Option>
+        <Option value="~">Tildes ~</Option>
+      </Select>
+    )}
+  </FormItem>
+);
+
+const LocalFile = ({ form, onChange }) => (
+  <Dragger
+    name='file'
+    multiple={false}
+    onChange={onChange}
+    beforeUpload = {() => false} // Prevent immediate upload upon file drop
+    action='' // The uploading URL (required) however we do not make use of 
+  >
+    <p className="ant-upload-drag-icon">
+      <Icon type="inbox"/>
+    </p>
+    <p className="ant-upload-text">Click or drag file to this area to upload</p>
+    <p className="ant-upload-hint">Supported file formats: csv/xls/xlsx</p>
+  </Dragger>
+);
+
+const SheetNames = ({ form, sheetnames }) => (
+  <FormItem {...formItemLayout} label="Sheet name">
+    { form.getFieldDecorator('sheetname',{
+      rules: [{ required: true, message: 'Sheet name is required' }]
+    })(
+      <Select>
+        { sheetnames.map((option, i) => (<Option key={i} value={option}>{option}</Option>)) }
+      </Select>
+    )}
+  </FormItem>
+);
+
+const ConnectionSettings = ({ form, selected }) => (
+  <div>
+    <FormItem {...formItemLayout} label="Host">
+      {form.getFieldDecorator('connection.host', {
+        initialValue: selected ? selected.connection.host : null,
+        rules: [{ required: true, message: 'Host is required' }]
+      })(
+        <Input/>
+      )}
+    </FormItem>
+
+    <FormItem {...formItemLayout} label="Database">
+      {form.getFieldDecorator('connection.database', {
+        initialValue: selected ? selected.connection.database : null,
+        rules: [{ required: true, message: 'Database is required' }]
+      })(
+        <Input/>
+      )}
+    </FormItem>
+
+    <FormItem {...formItemLayout} label="User">
+      {form.getFieldDecorator('connection.user', {
+        initialValue: selected ? selected.connection.user : null,
+        rules: [{ required: true, message: 'Database user is required' }]
+      })(
+        <Input/>
+      )}
+    </FormItem>
+
+    <FormItem {...formItemLayout} label="Password">
+      {form.getFieldDecorator('connection.password', {
+        rules: [{ required: !selected, message: 'Database password is required' }]
+      })(
+        <Input type="password" placeholder={selected && 'Change password'}/>
+      )}
+    </FormItem>
+
+    <FormItem {...formItemLayout} label="Query">
+      {form.getFieldDecorator('connection.query', {
+        initialValue: selected ? selected.connection.query : null,
+        rules: [{ required: true, message: 'Database query is required' }]
+      })(
+        <TextArea rows={2}/>
+      )}
+    </FormItem>
+  </div>
+);
+  
 
 const mapStateToProps = (state) => {
   const {

@@ -246,26 +246,30 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         if queryset.count():
             raise ValidationError('A datasource with this name already exists')
 
+        data = None
+
         if 'dbType' in self.request.data:
             if self.request.data['dbType']=='csvTextFile':
                 connection = {}
                 connection['dbType'] = 'csvTextFile'
-                external_file = self.request.data['file']
                 delimiter = self.request.data['delimiter']
-                (data, fields) = self.get_csv_data(external_file, delimiter)
+                if 'file' in self.request.data:
+                    external_file = self.request.data['file']
+                    (data, fields) = self.get_csv_data(external_file, delimiter)
             
             elif self.request.data['dbType']=='xlsXlsxFile':
                 connection = {}
                 connection['dbType'] = 'xlsXlsxFile'
-                external_file = self.request.data['file']
-                sheetname = self.request.data['sheetname']
-                (data, fields) = self.get_xls_data(external_file, sheetname)
+                if 'file' in self.request.data:
+                    external_file = self.request.data['file']
+                    sheetname = self.request.data['sheetname']
+                    (data, fields) = self.get_xls_data(external_file, sheetname)
         
         elif self.request.data['connection']['dbType'] == 's3BucketFile':
             connection = self.request.data['connection']
             bucket = self.request.data['bucket']
             file_name = self.request.data['fileName']
-            delimiter = self.request.data['delimiter']
+            delimiter = self.request.data['delimiter'] if 'delimiter' in self.request.data else None
             (data, fields) = self.get_s3bucket_file_data(bucket, file_name, delimiter)
 
         else:
@@ -281,11 +285,14 @@ class DataSourceViewSet(viewsets.ModelViewSet):
 
             (data, fields) = self.get_datasource_data(connection)
 
-        serializer.save(
-            connection = connection,
-            data = data,
-            fields = fields
-        )
+        if data:
+            serializer.save(
+                connection = connection,
+                data = data,
+                fields = fields
+            )
+        else:
+            serializer.save(connection = connection)
 
     def perform_destroy(self, obj):
          # Ensure that the request.user is the owner of the object
