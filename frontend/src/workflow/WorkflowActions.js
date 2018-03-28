@@ -28,15 +28,16 @@ export const CLOSE_FILTER_MODAL = 'CLOSE_FILTER_MODAL';
 export const OPEN_CONDITION_GROUP_MODAL = 'OPEN_CONDITION_GROUP_MODAL';
 export const CLOSE_CONDITION_GROUP_MODAL = 'CLOSE_CONDITION_GROUP_MODAL';
 
-// export const UPDATE_EDITOR_STATE = 'UPDATE_EDITOR_STATE';
-// export const BEGIN_REQUEST_CONTENT = 'BEGIN_REQUEST_CONTENT';
-// export const FAILURE_REQUEST_CONTENT = 'FAILURE_REQUEST_CONTENT';
-// export const SUCCESS_UPDATE_CONTENT = 'SUCCESS_UPDATE_CONTENT';
+export const UPDATE_EDITOR_STATE = 'UPDATE_EDITOR_STATE';
 
-// export const BEGIN_REQUEST_PREVIEW_CONTENT = 'BEGIN_REQUEST_PREVIEW_CONTENT';
-// export const FAILURE_REQUEST_PREVIEW_CONTENT = 'FAILURE_REQUEST_PREVIEW_CONTENT';
-// export const SUCCESS_PREVIEW_CONTENT = 'SUCCESS_PREVIEW_CONTENT';
-// export const CLOSE_PREVIEW_CONTENT = 'CLOSE_PREVIEW_CONTENT';
+export const BEGIN_REQUEST_CONTENT = 'BEGIN_REQUEST_CONTENT';
+export const FAILURE_REQUEST_CONTENT = 'FAILURE_REQUEST_CONTENT';
+export const SUCCESS_UPDATE_CONTENT = 'SUCCESS_UPDATE_CONTENT';
+
+export const BEGIN_REQUEST_PREVIEW_CONTENT = 'BEGIN_REQUEST_PREVIEW_CONTENT';
+export const FAILURE_REQUEST_PREVIEW_CONTENT = 'FAILURE_REQUEST_PREVIEW_CONTENT';
+export const SUCCESS_PREVIEW_CONTENT = 'SUCCESS_PREVIEW_CONTENT';
+export const CLOSE_PREVIEW_CONTENT = 'CLOSE_PREVIEW_CONTENT';
 
 // export const FAILURE_CREATE_SCHEDULE = 'FAILURE_CREATE_SCHEDULE';
 // export const SUCCESS_CREATE_SCHEDULE = 'SUCCESS_CREATE_SCHEDULE';
@@ -135,9 +136,10 @@ const requestWorkflow = () => ({
   type: REQUEST_WORKFLOW
 });
 
-const receiveWorkflow = (workflow) => ({
+const receiveWorkflow = (workflow, editorState) => ({
   type: RECEIVE_WORKFLOW,
-  workflow
+  workflow,
+  editorState
 });
 
 export const fetchWorkflow = (workflowId) => dispatch => {
@@ -489,72 +491,76 @@ export const deleteConditionGroup = (workflowId, index) => dispatch => {
   requestWrapper(parameters);
 };
 
-// export const updateEditorState = (payload) => ({
-//   type: UPDATE_EDITOR_STATE,
-//   payload
-// });
+export const updateEditorState = (payload) => ({
+  type: UPDATE_EDITOR_STATE,
+  payload
+});
 
-// const beginRequestContent = () => ({
-//   type: BEGIN_REQUEST_CONTENT
-// });
+const beginRequestContent = () => ({
+  type: BEGIN_REQUEST_CONTENT
+});
 
-// const failureRequestContent = (error) => ({
-//   type: FAILURE_REQUEST_CONTENT,
-//   error
-// });
+const failureRequestContent = (error) => ({
+  type: FAILURE_REQUEST_CONTENT,
+  error
+});
 
-// const successUpdateContent = () => ({
-//   type: SUCCESS_UPDATE_CONTENT
-// });
+const successUpdateContent = () => ({
+  type: SUCCESS_UPDATE_CONTENT
+});
 
-// export const updateContent = (workflowId, payload) => dispatch => {
-//   const parameters = {
-//     initialFn: () => { dispatch(beginRequestContent()); },
-//     url: `/workflow/${workflowId}/update_content/`,
-//     method: 'PUT',
-//     errorFn: (error) => { dispatch(failureRequestContent(error)); },
-//     successFn: (response) => {
-//       dispatch(successUpdateContent());
-//       dispatch(fetchWorkflow(workflowId));
-//     },
-//     payload: payload
-//   }
+export const updateContent = (workflowId, payload) => dispatch => {
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestContent()); },
+    url: `/workflow/${workflowId}/update_content/`,
+    method: 'PUT',
+    errorFn: (error) => { dispatch(failureRequestContent(error)); },
+    successFn: (response) => {
+      dispatch(successUpdateContent());
+      dispatch(fetchWorkflow(workflowId));
+      notification['success']({
+        message: 'Content saved',
+        description: 'The content was successfully saved.'
+      });
+    },
+    payload: payload
+  }
 
-//   requestWrapper(parameters);
-// };
+  requestWrapper(parameters);
+};
 
-// const beginRequestPreviewContent = () => ({
-//   type: BEGIN_REQUEST_PREVIEW_CONTENT
-// });
+const beginRequestPreviewContent = () => ({
+  type: BEGIN_REQUEST_PREVIEW_CONTENT
+});
 
-// const failureRequestPreviewContent = (error) => ({
-//   type: FAILURE_REQUEST_PREVIEW_CONTENT,
-//   error
-// });
+const failureRequestPreviewContent = (error) => ({
+  type: FAILURE_REQUEST_PREVIEW_CONTENT,
+  error
+});
 
-// const successPreviewContent = (preview) => ({
-//   type: SUCCESS_PREVIEW_CONTENT,
-//   preview
-// });
+const successPreviewContent = (preview) => ({
+  type: SUCCESS_PREVIEW_CONTENT,
+  preview
+});
 
-// export const closePreviewContent = () => ({
-//   type: CLOSE_PREVIEW_CONTENT
-// });
+export const closePreviewContent = () => ({
+  type: CLOSE_PREVIEW_CONTENT
+});
 
-// export const previewContent = (workflowId, payload) => dispatch => {
-//   const parameters = {
-//     initialFn: () => { dispatch(beginRequestPreviewContent()); },
-//     url: `/workflow/${workflowId}/preview_content/`,
-//     method: 'PUT',
-//     errorFn: (error) => { dispatch(failureRequestPreviewContent(error)); },
-//     successFn: (preview) => {
-//       dispatch(successPreviewContent(preview));
-//     },
-//     payload: payload
-//   }
+export const previewContent = (workflowId, payload) => dispatch => {
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestPreviewContent()); },
+    url: `/workflow/${workflowId}/preview_content/`,
+    method: 'PUT',
+    errorFn: (error) => { dispatch(failureRequestPreviewContent(error)); },
+    successFn: (preview) => {
+      dispatch(successPreviewContent(preview));
+    },
+    payload: payload
+  }
 
-//   requestWrapper(parameters);
-// };
+  requestWrapper(parameters);
+};
 
 // const beginSendEmail = () => ({
 //   type: BEGIN_SEND_EMAIL

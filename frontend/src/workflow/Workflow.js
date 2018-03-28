@@ -2,14 +2,19 @@ import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { Layout, Breadcrumb, Icon, Spin, Button, Divider, Menu, Dropdown } from 'antd';
+import { Layout, Breadcrumb, Icon, Spin, Button, Divider, Menu, Dropdown, Alert } from 'antd';
+import { convertToRaw, EditorState, Modifier } from 'draft-js';
+import { Editor } from 'react-draft-wysiwyg';
+import draftToHtml from 'draftjs-to-html';
 import Draggable from 'react-draggable';
 
 import * as WorkflowActionCreators from './WorkflowActions';
 
 import FilterModal from './modals/FilterModal';
 import ConditionGroupModal from './modals/ConditionGroupModal';
+import PreviewModal from './modals/PreviewModal';
 
+import 'react-draft-wysiwyg/dist/react-draft-wysiwyg.css';
 import './Workflow.css';
 
 const { Content } = Layout;
@@ -21,7 +26,11 @@ class Workflow extends React.Component {
     const { dispatch } = props;
 
     this.boundActionCreators = bindActionCreators(WorkflowActionCreators, dispatch);
-  }
+
+    this.state = {
+      isInside: false
+    };
+  };
 
   componentDidMount() {
     const { match } = this.props;
@@ -43,11 +52,77 @@ class Workflow extends React.Component {
     };
   };
 
+  isInsideContent(mouseEvent, editor) {
+    const contentEditor = editor.editorContainer.parentElement.parentElement.getBoundingClientRect();
+    const isInsideX = mouseEvent.clientX >= contentEditor.x && mouseEvent.clientX <= (contentEditor.x + contentEditor.width);
+    const isInsideY = mouseEvent.clientY >= contentEditor.y && mouseEvent.clientY <= (contentEditor.y + contentEditor.height);
+
+    // isInside flag is consumed by:
+    //   The conditional css class on the content editor (darkens the border)
+    //   Determining whether to add the dragged condition group to the content editor after drag stops
+    this.setState({ isInside: (isInsideX && isInsideY) ? true : false })
+  }
+
+  stopDrag(conditionGroup) {
+    if (!this.state.isInside) return;
+    this.setState({ isInside: false });
+
+    const { editorState } = this.props;
+
+    // Concatenate a string that will comprise the template tags to be added to the content editor
+    let newText = '';
+    conditionGroup.conditions.forEach((condition, i) => {
+      if (i === 0) newText += `{% if ${condition.name} %}`
+      if (i > 0) newText += `{% elif ${condition.name} %}`
+    })
+    newText += '{% endif %}'
+
+    // Create a new content state in which the template tags string has been added
+    const newContentState = Modifier.replaceText(
+      editorState.getCurrentContent(),
+      editorState.getSelection(), // Determine the cursor position inside the content editor
+      newText, // The characters to add to the content editor at the cursor position
+      editorState.getCurrentInlineStyle() // Determine the style around the cursor position, to apply to the new characters
+    );
+
+    // Create a new editor state to include the new content state created above
+    let newEditorState = EditorState.push(editorState, newContentState, 'insert-characters');
+
+    // Get the user's selection in the content editor at the time of dragging
+    const previousSelection = editorState.getSelection();
+    // Select the newly added template tags
+    // Give the selection focus so that the text becomes highlighted
+    const updatedSelection = previousSelection.merge({
+      focusOffset: newText.length + previousSelection.focusOffset,
+      hasFocus: true
+    });
+
+    // Apply the new selection to the new editor state
+    newEditorState = EditorState.forceSelection(newEditorState, updatedSelection)
+
+    // Update the editor state in redux, so that the component is re-rendered
+    this.boundActionCreators.updateEditorState(newEditorState);
+  }
+
+  handleContent = (contentFunction) => {
+    const { workflow, editorState } = this.props;
+
+    const currentContent = editorState.getCurrentContent();
+    if (!currentContent.hasText()) return;
+
+    const payload = {
+      html: draftToHtml(convertToRaw(currentContent)),
+      plain: currentContent.getPlainText()
+    };
+    
+    contentFunction(workflow.id, payload);
+  }
+
   render() {
-    const { isFetching, workflow } = this.props;
+    const { isFetching, workflow, editorState, contentLoading, error, previewLoading } = this.props;
 
     return (
-      <Content style={{ padding: '0 50px' }}>
+      <Content style={{ padding: '0 50px' }} className="workflow">
 
         <Breadcrumb style={{ margin: '16px 0' }}>
           <Breadcrumb.Item><Link to="/">Dashboard</Link></Breadcrumb.Item>
@@ -99,8 +174,8 @@ class Workflow extends React.Component {
                       <Draggable
                         key={i}
                         position={{ x: 0, y: 0 }}
-                        // onDrag={ (e) => { this.isInsideContent(e, this.editor); }}
-                        // onStop={ () => { this.stopDrag(conditionGroup); }}
+                        onDrag={ (e) => { this.isInsideContent(e, this.editor); }}
+                        onStop={ () => { this.stopDrag(conditionGroup); }}
                         onMouseDown={ (e) => { e.preventDefault(); }} // Keeps the content editor in focus when user starts to drag a condition group
                       >
                         <Dropdown.Button
@@ -122,32 +197,30 @@ class Workflow extends React.Component {
                 :
                   'No condition groups have been added yet.'
                 }
-                {/*
 
-                <Compose
-                  contentLoading={actionContentLoading}
-                  error={actionContentError}
-                  conditionGroups={conditionGroups}
-                  editorState={actionEditorState}
-                  details={details}
-                  filter={filter}
+                <Divider dashed />
 
-                  openFilterModal={() => { dispatch(this.boundActionCreators.openFilterModal(filter)) }}
-                  confirmFilterDelete={this.confirmFilterDelete}
+                <h3>Content</h3>
+                <Editor
+                  toolbar={{
+                    options: ['inline', 'blockType', 'fontSize', 'fontFamily', 'textAlign', 'colorPicker', 'link', 'history', 'list'],
+                    inline: { options: ['bold', 'italic', 'underline', 'strikethrough', 'monospace'] }
+                  }}
+                  wrapperClassName="editor-wrapper"
+                  editorClassName={{ 'editor': true, 'isInside': this.state.isInside }}
+                  editorState={editorState}
+                  onEditorStateChange={this.boundActionCreators.updateEditorState}
+                  editorRef={(el) => { this.editor = el; }}
+                />
 
-                  openConditionGroupModal={(conditionGroup) => { dispatch(this.boundActionCreators.openConditionGroupModal(conditionGroup)) }}
-                  confirmConditionGroupDelete={(conditionGroupIndex) => { this.confirmConditionGroupDelete(match.params.id, conditionGroupIndex) }}
+                <PreviewModal/>
 
-                  updateEditorState={(payload) => { dispatch(this.boundActionCreators.updateEditorState(payload)) }}
-                  onUpdateContent={(payload) => { this.boundActionCreators.updateContent(match.params.id, payload) }}
+                <div style={{ marginTop: '10px' }}>
+                  <Button loading={previewLoading} style={{ marginRight: '10px' }} size="large" onClick={() => { this.handleContent(this.boundActionCreators.previewContent) }}>Preview</Button>
+                  <Button loading={contentLoading} type="primary" size="large" onClick={() => { this.handleContent(this.boundActionCreators.updateContent) }}>Save</Button>
+                </div>
 
-                  previewLoading={previewContentLoading}
-                  previewVisible={previewContentModalVisible}
-                  previewContent={previewContent}
-                  onPreviewContent={(payload) => { this.boundActionCreators.previewContent(match.params.id, payload) }}
-                  onClosePreview={() => { dispatch(this.boundActionCreators.closePreviewContent()) }}
-                /> */}
-
+                { error && <Alert message={error} type="error" style={{ marginTop: '10px' }}/>}
               </div>
             }
 
@@ -160,11 +233,11 @@ class Workflow extends React.Component {
 
 const mapStateToProps = (state) => {
   const {
-    isFetching, loading, error, workflow
+    isFetching, error, workflow, editorState, contentLoading, previewLoading
   } = state.workflow;
   return {
-    isFetching, loading, error, workflow
+    isFetching, error, workflow, editorState, contentLoading, previewLoading
   };
-}
+};
 
-export default connect(mapStateToProps)(Workflow)
+export default connect(mapStateToProps)(Workflow);

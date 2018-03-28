@@ -295,7 +295,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         return JsonResponse(serializer.data, safe=False)
 
     def check_condition_match(self, match, all_conditions_passed, item_key):
-        # print(match.groups())
         condition = match.group(1)
         content_value = match.group(2)
 
@@ -306,60 +305,72 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
     def populate_field(self, match, item):
         field = match.group(1)
-        try:
-            value = item[field]
-        except KeyError:
-            raise ValidationError('The field \'{0}\' does not exist in the details of this workflow'.format(field))
-
-        return str(value)
+        if field in item:
+            return str(item[field])
+        else:
+            return None
 
     def populate_content(self, workflow, content=None, zid=None):
+        filtered_data = self.evaluate_filter(workflow.view, workflow.filter)
+
         condition_groups = workflow['conditionGroups']
-        details = workflow['details']
-        filter = workflow['filter']
-        all_conditions_passed = defaultdict(list)
-
         content = content if content else workflow['content']['plain']
+        primary_key = workflow.view['columns'][0]['field']
 
+        all_conditions_passed = dict()
         # Combine all conditions from each condition group into a single dict
         for condition_group in condition_groups:
-            conditions_passed = self.validate_condition_group(details, filter, condition_group)
+            conditions_passed = self.validate_condition_group(workflow, condition_group)
             for condition in conditions_passed:
                 all_conditions_passed[condition] = conditions_passed[condition]
 
-        data = self.combine_data(details, filter)['data']
-        primary_field = details['primaryColumn']['field']
+        result = dict()
+        for item in filtered_data:
+            # Parse the conditional statements
+            item_key = item[primary_key]
+            # Use a positive lookahead to match the expected template syntax without replacing the closing block
+            # E.g. we have a template given by: {% if low_grade %} Low! {% elif high_grade %} High! {% endif %}
+            # We have found a match if the snippet is enclosed between two {% %} blocks
+            # However, when we are replacing/subbing the match, we don't want to replace the closing block
+            # This is because the closing block of the current match could also be the opening block of the next match
+            # I.e. in the example above, {% elif high_grade %} is both the closing block of the first match, and the opening block of the second match
+            # However, if the closing block is {% endif %}, then we can actually replace it instead of using a lookahead
+            # Because we know that in that case, there would be no further matches
+            item_content = re.sub(r'{% .*? (.*?) %}(.*?)({% endif %}|(?={% .*? %}))', lambda match: self.check_condition_match(match, all_conditions_passed, item_key), content)
+            # Populate the field tags
+            item_content = re.sub(r'{{ (.*?) }}', lambda match: self.populate_field(match, item), item_content)
+            result[item_key] = item_content
 
-        #generate content for specific user
-        if zid:
-            result=''
-            for item in data:
-                # Parse the conditional statements
-                item_key = item[primary_field]
-                if item_key == zid:
-                    item_content = re.sub(r'{% .*? (.*?) %}(.*?)({% endif %}|(?={% .*? %}))', lambda match: self.check_condition_match(match, all_conditions_passed, item_key), content)
-                    # Populate the field tags
-                    result = re.sub(r'{{ (.*?) }}', lambda match: self.populate_field(match, item), item_content)
-            #return result as a string if found otherwise return empty string
-            return result
-        else:
-            result = defaultdict(str)
-            for item in data:
-                # Parse the conditional statements
-                item_key = item[primary_field]
-                # Use a positive lookahead to match the expected template syntax without replacing the closing block
-                # E.g. we have a template given by: {% if low_grade %} Low! {% elif high_grade %} High! {% endif %}
-                # We have found a match if the snippet is enclosed between two {% %} blocks
-                # However, when we are replacing/subbing the match, we don't want to replace the closing block
-                # This is because the closing block of the current match could also be the opening block of the next match
-                # I.e. in the example above, {% elif high_grade %} is both the closing block of the first match, and the opening block of the second match
-                # However, if the closing block is {% endif %}, then we can actually replace it instead of using a lookahead
-                # Because we know that in that case, there would be no further matches
-                item_content = re.sub(r'{% .*? (.*?) %}(.*?)({% endif %}|(?={% .*? %}))', lambda match: self.check_condition_match(match, all_conditions_passed, item_key), content)
-                # Populate the field tags
-                item_content = re.sub(r'{{ (.*?) }}', lambda match: self.populate_field(match, item), item_content)
-                result[item_key] = item_content
-            return result
+        # #generate content for specific user
+        # if zid:
+        #     result=''
+        #     for item in data:
+        #         # Parse the conditional statements
+        #         item_key = item[primary_field]
+        #         if item_key == zid:
+        #             item_content = re.sub(r'{% .*? (.*?) %}(.*?)({% endif %}|(?={% .*? %}))', lambda match: self.check_condition_match(match, all_conditions_passed, item_key), content)
+        #             # Populate the field tags
+        #             result = re.sub(r'{{ (.*?) }}', lambda match: self.populate_field(match, item), item_content)
+        #     #return result as a string if found otherwise return empty string
+        #     return result
+        # else:
+        #     result = defaultdict(str)
+        #     for item in data:
+        #         # Parse the conditional statements
+        #         item_key = item[primary_field]
+        #         # Use a positive lookahead to match the expected template syntax without replacing the closing block
+        #         # E.g. we have a template given by: {% if low_grade %} Low! {% elif high_grade %} High! {% endif %}
+        #         # We have found a match if the snippet is enclosed between two {% %} blocks
+        #         # However, when we are replacing/subbing the match, we don't want to replace the closing block
+        #         # This is because the closing block of the current match could also be the opening block of the next match
+        #         # I.e. in the example above, {% elif high_grade %} is both the closing block of the first match, and the opening block of the second match
+        #         # However, if the closing block is {% endif %}, then we can actually replace it instead of using a lookahead
+        #         # Because we know that in that case, there would be no further matches
+        #         item_content = re.sub(r'{% .*? (.*?) %}(.*?)({% endif %}|(?={% .*? %}))', lambda match: self.check_condition_match(match, all_conditions_passed, item_key), content)
+        #         # Populate the field tags
+        #         item_content = re.sub(r'{{ (.*?) }}', lambda match: self.populate_field(match, item), item_content)
+        #         result[item_key] = item_content
+        return result
 
     @detail_route(methods=['put'])
     def preview_content(self, request, id=None):
@@ -394,9 +405,11 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         # Run the populate content function to validate the provided content before saving it
         self.populate_content(workflow, updated_content['plain'])
+
         serializer = WorkflowSerializer(instance=workflow, data={'content': updated_content}, partial=True)
         serializer.is_valid()
         serializer.save()
+
         return JsonResponse(serializer.data)
 
     @detail_route(methods=['put'])

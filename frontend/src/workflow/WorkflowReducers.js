@@ -20,23 +20,16 @@ import {
   OPEN_CONDITION_GROUP_MODAL,
   CLOSE_CONDITION_GROUP_MODAL,
 
-  // REFRESH_CONDITION_GROUP_FORM_STATE,
-  // UPDATE_CONDITION_GROUP_FORM_STATE,
-  // BEGIN_REQUEST_CONDITION_GROUP,
-  // FAILURE_REQUEST_CONDITION_GROUP,
-  // SUCCESS_CREATE_CONDITION_GROUP,
-  // SUCCESS_UPDATE_CONDITION_GROUP,
-  // SUCCESS_DELETE_CONDITION_GROUP,
+  UPDATE_EDITOR_STATE,
 
-  // UPDATE_EDITOR_STATE,
-  // BEGIN_REQUEST_CONTENT,
-  // FAILURE_REQUEST_CONTENT,
-  // SUCCESS_UPDATE_CONTENT,
+  BEGIN_REQUEST_CONTENT,
+  FAILURE_REQUEST_CONTENT,
+  SUCCESS_UPDATE_CONTENT,
 
-  // BEGIN_REQUEST_PREVIEW_CONTENT,
-  // FAILURE_REQUEST_PREVIEW_CONTENT,
-  // SUCCESS_PREVIEW_CONTENT,
-  // CLOSE_PREVIEW_CONTENT,
+  BEGIN_REQUEST_PREVIEW_CONTENT,
+  FAILURE_REQUEST_PREVIEW_CONTENT,
+  SUCCESS_PREVIEW_CONTENT,
+  CLOSE_PREVIEW_CONTENT,
 
   // FAILURE_CREATE_SCHEDULE,
   // SUCCESS_CREATE_SCHEDULE,
@@ -157,6 +150,25 @@ function workflow(state = {}, action) {
         conditionGroup: null
       });
 
+    case UPDATE_EDITOR_STATE:
+      return Object.assign({}, state, {
+        editorState: action.payload
+      });
+    case BEGIN_REQUEST_CONTENT:
+      return Object.assign({}, state, {
+        contentLoading: true
+      });
+    case FAILURE_REQUEST_CONTENT:
+      return Object.assign({}, state, {
+        contentLoading: false,
+        error: action.error
+      });
+    case SUCCESS_UPDATE_CONTENT:
+      return Object.assign({}, state, {
+        contentLoading: false,
+        error: null
+      });
+
     // // Scheduler Actions
     // case FAILURE_CREATE_SCHEDULE:
     //   return Object.assign({}, state, {
@@ -169,48 +181,27 @@ function workflow(state = {}, action) {
     //     scheduleError: null
     //   });
 
-    // // Compose actions
-    // case UPDATE_EDITOR_STATE:
-    //   return Object.assign({}, state, {
-    //     actionEditorState: action.payload
-    //   });
-    // case BEGIN_REQUEST_CONTENT:
-    //   return Object.assign({}, state, {
-    //     actionContentLoading: true
-    //   });
-    // case FAILURE_REQUEST_CONTENT:
-    //   return Object.assign({}, state, {
-    //     actionContentLoading: false,
-    //     actionContentError: action.error
-    //   });
-    // case SUCCESS_UPDATE_CONTENT:
-    //   return Object.assign({}, state, {
-    //     actionContentLoading: false,
-    //     actionContentError: null,
-    //     didUpdate: true,
-    //     model: 'content'
-    //   });
-    // case BEGIN_REQUEST_PREVIEW_CONTENT:
-    //   return Object.assign({}, state, {
-    //     previewContentLoading: true
-    //   });
-    // case FAILURE_REQUEST_PREVIEW_CONTENT:
-    //   return Object.assign({}, state, {
-    //     previewContentLoading: false,
-    //     actionContentError: action.error
-    //   });
-    // case SUCCESS_PREVIEW_CONTENT:
-    //   return Object.assign({}, state, {
-    //     previewContentLoading: false,
-    //     actionContentError: null,
-    //     previewContentModalVisible: true,
-    //     previewContent: action.preview
-    //   });
-    // case CLOSE_PREVIEW_CONTENT:
-    //   return Object.assign({}, state, {
-    //     previewContentModalVisible: false,
-    //     previewContent: null
-    //   });
+    case BEGIN_REQUEST_PREVIEW_CONTENT:
+      return Object.assign({}, state, {
+        previewLoading: true
+      });
+    case FAILURE_REQUEST_PREVIEW_CONTENT:
+      return Object.assign({}, state, {
+        previewLoading: false,
+        error: action.error
+      });
+    case SUCCESS_PREVIEW_CONTENT:
+      return Object.assign({}, state, {
+        previewLoading: false,
+        error: null,
+        previewModalVisible: true,
+        previewContent: action.preview
+      });
+    case CLOSE_PREVIEW_CONTENT:
+      return Object.assign({}, state, {
+        previewModalVisible: false,
+        previewContent: null
+      });
     
     // // Action actions
     // case BEGIN_SEND_EMAIL:

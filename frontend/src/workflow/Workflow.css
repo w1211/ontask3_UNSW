@@ -1,4 +1,4 @@
-.action .editor {
+.workflow .editor {
   border: 1px solid #F1F1F1;
   padding: 0 10px;
   min-height: 300px;
@@ -8,14 +8,18 @@
 }
 
 /* Padding fix for toolbar modals in content editor */
-.action .editor-wrapper * {
+.workflow .editor-wrapper {
+  max-width: 1200px;
+}
+
+.workflow .editor-wrapper * {
   box-sizing: initial !important;
 }
 
-.action .conditionGroupBtn button:first-child {
+.workflow .conditionGroupBtn button:first-child {
   cursor: move;
 }
 
-.action .isInside {
+.workflow .isInside {
   border-color: #9E9E9E;
 }
