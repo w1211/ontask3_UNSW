@@ -8,6 +8,7 @@ import * as ContainerActionCreators from './ContainerActions';
 import { openViewModal, deleteView } from '../view/ViewActions';
 import { openDatasourceModal, deleteDatasource } from '../datasource/DatasourceActions';
 import { openWorkflowModal, deleteWorkflow } from '../workflow/WorkflowActions';
+import { openSchedulerModal } from '../scheduler/SchedulerActions';
 
 import './ContainerList.css';
 
@@ -53,6 +54,7 @@ class ContainerList extends React.Component {
       ...ContainerActionCreators, 
       openViewModal, deleteView, 
       openDatasourceModal, deleteDatasource, 
+      openSchedulerModal,
       openWorkflowModal, deleteWorkflow
     }, dispatch);
 
@@ -123,6 +125,9 @@ class ContainerList extends React.Component {
                           actions={[
                             <Tooltip title="Edit datasource">
                               <Button icon="edit" onClick={() => { dispatch(this.boundActionCreators.openDatasourceModal(container.id, datasource)); }}/>
+                            </Tooltip>,
+                            <Tooltip title="Edit Schedule">
+                              <Button icon="calendar" onClick={() => {dispatch(this.boundActionCreators.openSchedulerModal(datasource.id, datasource.schedule)); }}/>
                             </Tooltip>,
                             <Tooltip title="Delete datasource">
                               <Button type="danger" icon="delete" onClick={() => { this.boundActionCreators.deleteDatasource(datasource.id) }} />

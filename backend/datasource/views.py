@@ -1,6 +1,6 @@
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
-from rest_framework.decorators import list_route
+from rest_framework.decorators import list_route, detail_route
 from rest_framework.permissions import IsAuthenticated
 from datetime import datetime
 
@@ -124,7 +124,6 @@ class DataSourceViewSet(viewsets.ModelViewSet):
     def get_xls_data(self, xls_file, sheetname):
         book = open_workbook(file_contents=xls_file.read())
         sheet = book.sheet_by_name(sheetname)
-        print("get sheet from book")
         # read header values into the list
         keys = [sheet.cell(0, col_index).value for col_index in range(sheet.ncols)]
         dict_list = []
@@ -157,7 +156,6 @@ class DataSourceViewSet(viewsets.ModelViewSet):
                 region_name='ap-southeast-2'
             )
             s3 = session.resource('s3')
-            print(request.data)
             obj = s3.Object(request.data["bucket"], request.data["fileName"])
             xls_file = obj.get()['Body']
             workbook = open_workbook(file_contents=xls_file.read())
@@ -331,3 +329,20 @@ class DataSourceViewSet(viewsets.ModelViewSet):
             response['primary'] = [value for value in unique_in_primary]
 
         return JsonResponse(response, safe=False)
+
+    #schedule realted
+    @detail_route(methods=['patch'])
+    def delete_schedule(self, request, id=None):
+        datasource = DataSource.objects.get(id=id)
+        datasource.update(unset__schedule=1)
+        serializer = DataSourceSerializer(instance=datasource)
+        return JsonResponse({"success":True}, safe=False)
+
+    @detail_route(methods=['patch'])
+    def create_schedule(self, request, id=None):
+        datasource = DataSource.objects.get(id=id)
+        schedule = {'schedule': request.data}
+        serializer = DataSourceSerializer(datasource, schedule, partial=True)
+        serializer.is_valid()
+        serializer.save()
+        return JsonResponse({"success":True}, safe=False)

@@ -1,6 +1,7 @@
 import { notification, Modal } from 'antd';
 import requestWrapper from '../shared/requestWrapper';
 import { fetchContainers } from '../container/ContainerActions';
+import { openSchedulerModal } from '../scheduler/SchedulerActions';
 
 const confirm = Modal.confirm;
 
@@ -33,13 +34,13 @@ const failureRequestDatasource = (error) => ({
   error
 });
 
-const successRequestDatasource = () => ({
-  type: SUCCESS_REQUEST_DATASOURCE
-});
-
 const receiveSheetnames = (sheetnames) => ({
   type: RECEIVE_SHEETNAMES,
   sheetnames
+});
+
+const successRequestDatasource = () => ({
+  type: SUCCESS_REQUEST_DATASOURCE,
 });
 
 export const fetchS3Sheetnames = (bucket, fileName) => dispatch => {
@@ -88,7 +89,7 @@ export const createDatasource = (containerId, payload, file) => dispatch => {
   if (isFile) {
     data = new FormData();
     data.append('file', file);
-    data.append('delimiter', payload.delimiter)
+    data.append('delimiter', payload.delimiter);
     data.append('container', containerId);
     data.append('name', payload.name);
     data.append('dbType', payload.connection.dbType);
@@ -99,15 +100,16 @@ export const createDatasource = (containerId, payload, file) => dispatch => {
 
   const parameters = {
     initialFn: () => {
-      dispatch(beginRequestDatasource());
+      dispatch(beginRequestDatasource(payload.scheduler));
     },
     url: `/datasource/`,
     method: 'POST',
     errorFn: (error) => {
       dispatch(failureRequestDatasource(error));
     },
-    successFn: () => {
+    successFn: (datasourceId) => {
       dispatch(successRequestDatasource());
+      dispatch(openSchedulerModal(datasourceId, null));
       dispatch(fetchContainers());
       notification['success']({
         message: 'Datasource created',

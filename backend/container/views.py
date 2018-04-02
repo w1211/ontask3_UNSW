@@ -103,6 +103,7 @@ class ContainerViewSet(viewsets.ModelViewSet):
         # To remove the underscore from "id" key values
         # For better consistency in field names
         containers = str(containers_after_dump).replace('"_id":', '"id":')
+        print(containers)
         return JsonResponse(json.loads(containers), safe=False)
 
     def perform_create(self, serializer):

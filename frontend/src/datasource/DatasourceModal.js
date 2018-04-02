@@ -1,7 +1,7 @@
 import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
-import {Button, Modal, Form, Input, Alert, Select, Upload, Icon, Tooltip } from 'antd';
+import {Button, Modal, Form, Input, Alert, Select, Upload, Icon, Tooltip, Checkbox } from 'antd';
 
 import * as DatasourceActionCreators from './DatasourceActions';
 
@@ -36,7 +36,7 @@ class DatasourceModal extends React.Component {
   handleOk = () => {
     const { form, selected, containerId } = this.props;
     const { file, error } = this.state;
-    
+   
     form.validateFields((err, values) => {
       if (err || error) return;
 
@@ -44,11 +44,10 @@ class DatasourceModal extends React.Component {
         this.setState({ error: 'File is required' });
         return;
       }
-
       if (selected) {
         this.boundActionCreators.updateDatasource(selected.id, values, file);
       } else {
-        this.boundActionCreators.createDatasource(containerId, values, file)
+        this.boundActionCreators.createDatasource(containerId, values, file);
       }
     });
   }
@@ -89,7 +88,6 @@ class DatasourceModal extends React.Component {
   
   copyToClipboard(){
     const AWSCredentials = `AWS_ACCESS_KEY_ID = ${process.env.REACT_APP_AWS_ACCESS_KEY_ID}\nAWS_SECRET_ACCESS_KEY = ${process.env.REACT_APP_AWS_SECRET_ACCESS_KEY}`;
-    console.log(AWSCredentials);
     var textField = document.createElement('textarea');
     textField.innerText = AWSCredentials;
     document.body.appendChild(textField);
@@ -274,6 +272,13 @@ class DatasourceModal extends React.Component {
               </FormItem>
             </div>
           }
+          <FormItem>
+                {form.getFieldDecorator('isScheduled', {
+                  initialValue: selected ? selected.connection.scheduler : null
+                })(
+                  <Checkbox >Schedule auto updating for this datasource?</Checkbox>
+                )}
+          </FormItem>
           { error && <Alert style={{ marginTop: 10 }} message={error} type="error"/>}
         </Form>
       </Modal>

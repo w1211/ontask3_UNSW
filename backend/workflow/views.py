@@ -516,7 +516,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         workflow = Workflow.objects.get(id=id)
         request.data['container'] = workflow.container.id
         self.check_object_permissions(self.request, workflow)
-
         headers = { 'Content-type': 'application/json' }
         field = request.data['field']
         subject = request.data['subject']

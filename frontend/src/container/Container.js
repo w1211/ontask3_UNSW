@@ -11,6 +11,7 @@ import ContainerList from './ContainerList';
 import DatasourceModal from '../datasource/DatasourceModal';
 import ViewModal from '../view/ViewModal';
 import WorkflowModal from '../workflow/WorkflowModal';
+import Scheduler from '../scheduler/SchedulerModal';
 
 const { Content } = Layout;
 
@@ -56,6 +57,7 @@ class Container extends React.Component {
                 <div>
                   <WorkflowModal/>
                   <DatasourceModal/>
+                  <Scheduler/>
                   <ViewModal history={history}/>
 
                   <ContainerList/>
