@@ -10,7 +10,7 @@ from django_celery_beat.models import CrontabSchedule, PeriodicTask
 from uuid import uuid4
 
 from .forms import GenerateRandomUserForm
-from .tasks import update_data_in_data_container
+from .tasks import update_datasource
 from .utils import send_email
 
 from rest_framework.response import Response
@@ -26,7 +26,7 @@ class DataSourceUpdateTaskView(APIView):
     def post(self, request, format=None):
         '''Post handle to create a schedule'''
         task_name = "data_source_update_task_" + str(uuid4())
-        arguments= '{"data_source_container_id":"' + request.data['data_source_container_id'] + '"}'
+        arguments= '{"data_source_id":"' + request.data['data_source_id'] + '"}'
         
         schedule, _ = CrontabSchedule.objects.get_or_create(
             minute = request.data['schedule']['minute'],
@@ -39,7 +39,7 @@ class DataSourceUpdateTaskView(APIView):
         periodic_task = PeriodicTask.objects.create(
            crontab=schedule,
            name=task_name,
-           task='ontask.tasks.update_data_in_data_container',
+           task='ontask.tasks.update_datasource',
            kwargs=arguments
         )
 
@@ -54,7 +54,6 @@ class DataSourceUpdateTaskView(APIView):
         task.delete()
 
         return Response({'task_name':task.name,'message':'Periodic task deleted'})
-
 
 class SendEmailTaskView(APIView):
     # Assigns the authentication permissions
