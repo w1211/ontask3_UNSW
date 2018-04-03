@@ -64,7 +64,6 @@ class ValidateOneTimeToken(APIView):
         try:
             decrypted_token = jwt.decode(one_time_token, SECRET_KEY, algorithms=['HS256'])
         except jwt.ExpiredSignatureError as e:
-            print(str(e))
             return Response({ "error": "Token expired" }, status=HTTP_401_UNAUTHORIZED)
 
         # Ensure that the token exists in the one time token document
@@ -72,7 +71,6 @@ class ValidateOneTimeToken(APIView):
         try:
             token = OneTimeToken.objects.get(token=one_time_token)
         except Exception as e:
-            print(str(e))
             return Response({ "error": "Token does not exist" }, status=HTTP_401_UNAUTHORIZED)
 
         if token:
@@ -85,4 +83,4 @@ class ValidateOneTimeToken(APIView):
             long_term_token, _ = Token.objects.get_or_create(user=user)
             # Convert the token into string format, to be sent as a JSON object in the response body
             long_term_token = str(long_term_token)
-            return Response({ "token": long_term_token })
+            return Response({ "token": long_term_token, "email": user.email })

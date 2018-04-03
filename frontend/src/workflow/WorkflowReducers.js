@@ -33,12 +33,6 @@ import {
 
   // FAILURE_CREATE_SCHEDULE,
   // SUCCESS_CREATE_SCHEDULE,
-
-  // BEGIN_SEND_EMAIL,
-  // SUCCESS_SEND_EMAIL,
-  // FAILURE_SEND_EMAIL,
-  // CLEAR_SEND_EMAIL
-
 } from './WorkflowActions';
 
 import _ from 'lodash';
@@ -194,7 +188,7 @@ function workflow(state = {}, action) {
       return Object.assign({}, state, {
         previewLoading: false,
         error: null,
-        previewModalVisible: true,
+        previewModalVisible: action.showModal,
         previewContent: action.preview
       });
     case CLOSE_PREVIEW_CONTENT:
@@ -202,28 +196,7 @@ function workflow(state = {}, action) {
         previewModalVisible: false,
         previewContent: null
       });
-    
-    // // Action actions
-    // case BEGIN_SEND_EMAIL:
-    //   return Object.assign({}, state, {
-    //     emailLoading: true,
-    //     emailError: null
-    //   });
-    // case FAILURE_SEND_EMAIL:
-    //   return Object.assign({}, state, {
-    //     emailLoading: false,
-    //     emailError: action.error
-    //   });
-    // case SUCCESS_SEND_EMAIL:
-    //   return Object.assign({}, state, {
-    //     emailLoading: false,
-    //     emailError: null,
-    //     emailSuccess: true
-    //   });
-    // case CLEAR_SEND_EMAIL:
-    //   return Object.assign({}, state, {
-    //     emailSuccess: false
-    //   });
+
     default:
       return state;
   }

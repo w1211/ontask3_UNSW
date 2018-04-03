@@ -23,3 +23,9 @@
 .workflow .isInside {
   border-color: #9E9E9E;
 }
+
+.workflow .previewLoading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}

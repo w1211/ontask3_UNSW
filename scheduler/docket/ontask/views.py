@@ -67,7 +67,7 @@ class SendEmailTaskView(APIView):
     def post(self, request, format=None):
         '''Post handle to send an email once-off'''
         result = send_email(
-            'zLNTLada@ad.unsw.edu.au', # TODO: Provide a config variable for specifying this, and the SMTP credentials
+            request.data['sender_address'],
             request.data['recipient_address'],
             request.data['email_subject'],
             request.data['text_content'],

@@ -34,7 +34,7 @@ class AuthRouter(object):
                 long_term_token, _ = Token.objects.get_or_create(user=user)
                 # Convert the token into string format, to be sent as a JSON object in the response body
                 long_term_token = str(long_term_token)
-                return Response({ "token": long_term_token })
+                return Response({ "token": long_term_token, "email": user.email })
                 
             elif user:
                 # Create a one-time, short expiry token to be sent as a querystring to the frontend

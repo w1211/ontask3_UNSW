@@ -122,7 +122,6 @@ class DatasourceModal extends React.Component {
     const isCSV = fileType === 'csvTextFile';
     const isLocalFile = ['xlsXlsxFile', 'csvTextFile'].includes(fileType);
     const isS3Bucket = fileType === 's3BucketFile';
-    const text = "Informational text"; // TODO: add text here
     
     return (
       <Modal

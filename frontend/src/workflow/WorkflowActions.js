@@ -538,23 +538,24 @@ const failureRequestPreviewContent = (error) => ({
   error
 });
 
-const successPreviewContent = (preview) => ({
+const successPreviewContent = (preview, showModal) => ({
   type: SUCCESS_PREVIEW_CONTENT,
-  preview
+  preview,
+  showModal
 });
 
 export const closePreviewContent = () => ({
   type: CLOSE_PREVIEW_CONTENT
 });
 
-export const previewContent = (workflowId, payload) => dispatch => {
+export const previewContent = (workflowId, payload, showModal) => dispatch => {
   const parameters = {
     initialFn: () => { dispatch(beginRequestPreviewContent()); },
     url: `/workflow/${workflowId}/preview_content/`,
     method: 'PUT',
     errorFn: (error) => { dispatch(failureRequestPreviewContent(error)); },
     successFn: (preview) => {
-      dispatch(successPreviewContent(preview));
+      dispatch(successPreviewContent(preview, showModal));
     },
     payload: payload
   }
@@ -562,36 +563,23 @@ export const previewContent = (workflowId, payload) => dispatch => {
   requestWrapper(parameters);
 };
 
-// const beginSendEmail = () => ({
-//   type: BEGIN_SEND_EMAIL
-// });
+export const sendEmail = (workflowId, payload) => dispatch => {
+  console.log(payload);
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestWorkflow()); },
+    url: `/workflow/${workflowId}/send_email/`,
+    method: 'PUT',
+    errorFn: (error) => { dispatch(failureRequestWorkflow(error)); },
+    successFn: (response) => {
+      dispatch(successRequestWorkflow());
+      dispatch(fetchWorkflow(workflowId));
+      notification['success']({
+        message: 'Emails sent',
+        description: 'The emails were successfully sent.'
+      });
+    },
+    payload: payload
+  }
 
-// const failureSendEmail = (error) => ({
-//   type: FAILURE_SEND_EMAIL,
-//   error
-// });
-
-// const successSendEmail = () => ({
-//   type: SUCCESS_SEND_EMAIL
-// });
-
-// const clearSendEmail = () => ({
-//   type: CLEAR_SEND_EMAIL
-// });
-
-
-// export const sendEmail = (workflowId, payload) => dispatch => {
-//   const parameters = {
-//     initialFn: () => { dispatch(beginSendEmail()); },
-//     url: `/workflow/${workflowId}/send_email/`,
-//     method: 'POST',
-//     errorFn: (error) => { dispatch(failureSendEmail(error)); },
-//     successFn: (response) => {
-//       dispatch(successSendEmail());
-//       dispatch(clearSendEmail());
-//     },
-//     payload: payload
-//   }
-
-//   requestWrapper(parameters);
-// };
+  requestWrapper(parameters);
+};

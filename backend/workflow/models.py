@@ -25,14 +25,16 @@ class Content(EmbeddedDocument):
     plain = fields.StringField(null=True)
 
 class Schedule(EmbeddedDocument):
+    enabled = fields.BooleanField()
     startDate = fields.DateTimeField(required=True)
     endDate = fields.DateTimeField(required=True)
     time = fields.DateTimeField(required=True) #hour and minutes
     frequency = fields.IntField(min_value=1, required=True) #day
 
 class EmailSettings(EmbeddedDocument):
-    subject = fields.StringField(null=True)
+    subject = fields.StringField(required=True)
     field = fields.StringField(required=True)
+    replyTo = fields.StringField(required=True)
 
 # Workflow
 class Workflow(Document):

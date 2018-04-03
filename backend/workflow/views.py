@@ -434,25 +434,25 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         serializer = WorkflowSerializer(instance=workflow)
         return JsonResponse(serializer.data, safe=False)
 
-    @detail_route(methods=['post'])
+    @detail_route(methods=['put'])
     def send_email(self, request, id=None):
         workflow = Workflow.objects.get(id=id)
-        request.data['container'] = workflow.container.id
         self.check_object_permissions(self.request, workflow)
 
         headers = { 'Content-type': 'application/json' }
-        field = request.data['field']
-        subject = request.data['subject']
+        field = request.data['emailSettings']['field']
+        subject = request.data['emailSettings']['subject']
+        reply_to = request.data['emailSettings']['replyTo']
         
         html = list(value for key, value in self.populate_content(workflow, workflow['content']['html']).items())
         plain = list(value for key, value in self.populate_content(workflow, workflow['content']['plain']).items())
 
-        data = self.combine_data(workflow.details, workflow.filter)['data']
+        data = self.evaluate_filter(workflow.view, workflow.filter)
         failed_emails = list()
 
         for index, item in enumerate(data):
             payload = {}
-            payload['sender_address'] = self.request.user.email
+            payload['sender_address'] = reply_to
             payload['recipient_address'] = item[field]
             payload['email_subject'] = subject
             payload['text_content'] = plain[index]
@@ -473,9 +473,16 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                             })
                 serializer.is_valid()
                 serializer.save()
+
+                serializer = WorkflowSerializer(instance=workflow, data={
+                    'emailSettings': request.data['emailSettings']
+                }, partial=True)
+                serializer.is_valid()
+                serializer.save()
                 
         if len(failed_emails) > 0:
             raise ValidationError('Emails to the following records failed to send: ' + str(failed_emails).strip('[]').strip("'"))
+        
         return JsonResponse({ 'success': 'true' }, safe=False)
     
     #retrive email sending history and generate static page.

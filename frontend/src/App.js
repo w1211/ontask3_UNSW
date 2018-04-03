@@ -53,6 +53,7 @@ class App extends React.Component {
         },
         successFn: (response) => {
           localStorage.setItem('token', response.token);
+          localStorage.setItem('email', response.email);
           this.forceUpdate();
         },
         payload: payload,

@@ -11,8 +11,9 @@ def send_email(sender_address, recipient_address, email_subject, text_content, h
         # Create message container - the correct MIME type is multipart/alternative.
         msg = MIMEMultipart('alternative')
         msg['Subject'] = email_subject
-        msg['From'] = sender_address
+        msg['From'] = "zLNTLada@ad.unsw.edu.au"
         msg['To'] = recipient_address
+        msg.add_header('reply-to', sender_address)
 
         # Create the body of the message (a plain-text and an HTML version).
         # text = "Hi!\nHow are you?\nHere is the link you wanted:\nhttps://www.python.org"
@@ -46,7 +47,7 @@ def send_email(sender_address, recipient_address, email_subject, text_content, h
         s.login("zLNTLada@ad.unsw.edu.au", "Dataj3f3!")
         # sendmail function takes 3 arguments: sender's address, recipient's address
         # and message to send - here it is sent as one string.
-        s.sendmail(sender_address, recipient_address, msg.as_string())
+        s.sendmail("zLNTLada@ad.unsw.edu.au", recipient_address, msg.as_string())
         s.quit()
         print("Email sent successfully")
         return True
