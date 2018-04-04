@@ -6,23 +6,12 @@ from datetime import datetime
 
 from django.http import JsonResponse
 
-from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from mongoengine.queryset.visitor import Q
-
-# Imports to connect to data sources
-import mysql.connector
-import psycopg2
-
 import json
-import csv
-import io
+import boto3
 from xlrd import open_workbook
 
-import boto3
-
-# Imports for encrypting the datasource db password
 from cryptography.fernet import Fernet
-from ontask.settings import SECRET_KEY, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+from ontask.settings import SECRET_KEY, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION
 
 from .serializers import DataSourceSerializer
 from .models import DataSource
@@ -32,11 +21,12 @@ from container.models import Container
 from workflow.models import Workflow
 from view.models import View
 
+from scheduler.utils import retrieve_csv_data, retrieve_excel_data, retrieve_file_from_s3, retrieve_sql_data
+
 
 class DataSourceViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
     serializer_class = DataSourceSerializer
-    parser_classes = (MultiPartParser, FormParser, JSONParser)
     permission_classes = [IsAuthenticated, DataSourcePermissions]
 
     def get_queryset(self):
@@ -59,136 +49,40 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         datasources = list(DataSource.objects.aggregate(*pipeline))
         return DataSource.objects.filter(id__in = [datasource['_id'] for datasource in datasources])
 
-    def get_datasource_data(self, connection):
-        cipher = Fernet(SECRET_KEY)
-        decrypted_password = cipher.decrypt(connection['password'])
-
-        if connection['dbType'] == 'mysql':
-            try:
-                dbConnection = mysql.connector.connect(
-                    host = connection['host'],
-                    database = connection['database'],
-                    user = connection['user'],
-                    password = decrypted_password
-                )
-                cursor = dbConnection.cursor(dictionary=True)
-                cursor.execute(connection['query'])
-                data = list(cursor)
-                cursor.close()
-                dbConnection.close()
-            except:
-                raise ValidationError('Error connecting to database')
-
-        elif connection['dbType'] == 'postgresql':
-            try:
-                dbConnection = psycopg2.connect(
-                    host = connection['host'],
-                    dbname = connection['database'],
-                    user = connection['user'],
-                    password = decrypted_password
-                )
-                cursor = dbConnection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-                cursor.execute(connection['query'])
-                data = list(cursor)
-                cursor.close()
-                dbConnection.close()
-            except:
-                raise ValidationError('Error connecting to database')
-
-        # TO DO: implement MS SQL and SQLite imports
-        elif connection['dbType'] == 'sqlite':
-            pass
-
-        elif connection['dbType'] == 'mssql':
-            pass
-
-        if not len(data):
-            raise ValidationError('The query returned no data')
-
-        # Assuming that every record in the returned queryset has the same columns,
-        # We can map the column names to know what fields are available from the data source
-        # Field names consumed by workflow details definition
-        fields = list(data[0].keys())
-
-        return (data, fields)
-
-    #get data from csv file with default separator "," or user specified
-    def get_csv_data(self, csv_file, separator_char=','):
-        #checking file format
-        reader = csv.DictReader(io.StringIO(csv_file.read().decode('utf-8')), delimiter=separator_char)
-        data = list(reader)
-        fields = list(data[0].keys())
-        return (data, fields)
-
-    #get excel data with user specified sheetname
-    def get_xls_data(self, xls_file, sheetname):
-        book = open_workbook(file_contents=xls_file.read())
-        sheet = book.sheet_by_name(sheetname)
-        print("get sheet from book")
-        # read header values into the list
-        keys = [sheet.cell(0, col_index).value for col_index in range(sheet.ncols)]
-        dict_list = []
-        for row_index in range(1, sheet.nrows):
-            d = {keys[col_index]: sheet.cell(row_index, col_index).value
-                 for col_index in range(sheet.ncols)}
-            dict_list.append(d)
-        return (dict_list, keys)
-
     #aske user for sheetname if uploading file is excel 
     @list_route(methods=['post'])
     def get_sheetnames(self, request):
-        try:
-            xls_file = request.data["file"]
-            workbook = open_workbook(file_contents=xls_file.read())
-            sheetnames = workbook.sheet_names()
-            data = {}
-            data["sheetnames"] = sheetnames
-            return JsonResponse(data, safe=False)
-        except:
-            raise ValidationError('Error reading file from s3 bucket')
+        # If the payload includes a file, then simply read the sheetnames of the file
+        # Otherwise, this must be an s3 bucket, in which we must first retrieve the file
+        # After retrieving the file, then we can finally read the sheetnames
+        if 'file' in self.request.data:
+            file = self.request.data['file']
 
-    #ask user for sheetname if s3 file is excel
-    @list_route(methods=['post'])
-    def get_s3_sheetnames(self, request):
-        try:
-            session = boto3.Session(
-                aws_access_key_id = AWS_ACCESS_KEY_ID,
-                aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-                region_name='ap-southeast-2'
-            )
-            s3 = session.resource('s3')
-            print(request.data)
-            obj = s3.Object(request.data["bucket"], request.data["fileName"])
-            xls_file = obj.get()['Body']
-            workbook = open_workbook(file_contents=xls_file.read())
-            sheetnames = workbook.sheet_names()
-            data = {}
-            data["sheetnames"] = sheetnames
-            return JsonResponse(data, safe=False)
-        except:
-            raise ValidationError('Error reading file from s3 bucket')
-
-    def get_s3bucket_file_data(self, bucket, file_name, delimiter=None, sheetname=None):
-        try:
-            session = boto3.Session(
-                aws_access_key_id = AWS_ACCESS_KEY_ID,
-                aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-                region_name='ap-southeast-2'
-            )
-            s3 = session.resource('s3')
-            obj = s3.Object(bucket, file_name)
-            file = obj.get()['Body']
-            if file_name.lower().endswith('.csv'):
-                return self.get_csv_data(file, delimiter)
-            elif file_name.lower().endswith(('.xls', '.xlsx')):
-                return self.get_xls_data(file, sheetname)
-            else:
-                raise ValidationError('File type is not supported')
-        except:
-            raise ValidationError('Error reading file from s3 bucket')
+        else:
+            try:
+                session = boto3.Session(
+                    aws_access_key_id = AWS_ACCESS_KEY_ID,
+                    aws_secret_access_key = AWS_SECRET_ACCESS_KEY,
+                    region_name = AWS_REGION
+                )
+                s3 = session.resource('s3')
+                obj = s3.Object(request.data["bucket"], request.data["fileName"])
+                file = obj.get()['Body']
+            except:
+                raise ValidationError('Error reading file from s3 bucket')
         
+        try:
+            workbook = open_workbook(file_contents=file.read())
+            sheetnames = workbook.sheet_names()
+            data = { 'sheetnames': sheetnames }
+            return JsonResponse(data)
+        except:
+            raise ValidationError('Error reading Excel file')
+
+
     def perform_create(self, serializer):
         self.check_object_permissions(self.request, None)
+
         queryset = DataSource.objects.filter(
             name = self.request.data['name'],
             container = self.request.data['container']
@@ -196,38 +90,32 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         if queryset.count():
             raise ValidationError('A datasource with this name already exists')
 
-        # Connect to specified database and get the data from the query
-        # Data passed in to the DataSource model must be a list of dicts of the form {column_name: value}
-        # TO DO: if isDynamic, then store values into lists as objects with timestamps
-        if 'dbType' in self.request.data:
-            if self.request.data['dbType']=='csvTextFile':
-                connection = {}
-                connection['dbType'] = 'csvTextFile'
-                external_file = self.request.data['file']
-                delimiter = self.request.data['delimiter']
-                (data, fields) = self.get_csv_data(external_file, delimiter)
+        # If the datasource includes a file, then the payload will be a flat FormData object
+        # In this case, the JSON payload was stringified, and must be parsed into a JSON object
+        if 'file' in self.request.data:
+            connection = json.loads(self.request.data['payload'])['connection']
+            file = self.request.data['file']
 
-            elif self.request.data['dbType']=='xlsXlsxFile':
-                connection = {}
-                connection['dbType'] = 'xlsXlsxFile'
-                external_file = self.request.data['file']
-                sheetname = self.request.data['sheetname']
-                (data, fields) = self.get_xls_data(external_file, sheetname)
+            if connection['dbType'] == 'csvTextFile':
+                data = retrieve_csv_data(file, connection['delimiter'])
 
-        # connect to s3 bucket and get the file
-        elif self.request.data['connection']['dbType'] == 's3BucketFile':
-            connection = self.request.data['connection']
-            bucket = self.request.data['bucket']
-            file_name = self.request.data['fileName']
-            delimiter = self.request.data['delimiter'] if ('delimiter' in self.request.data) else None
-            sheetname = self.request.data['sheetname'] if ('sheetname' in self.request.data) else None
-            (data, fields) = self.get_s3bucket_file_data(bucket, file_name, delimiter, sheetname)
+            elif connection['dbType'] == 'xlsXlsxFile':
+                data = retrieve_excel_data(file, connection['sheetname'])
+
         else:
             connection = self.request.data['connection']
-            # Encrypt the db password of the data source
-            cipher = Fernet(SECRET_KEY)
-            connection['password'] = cipher.encrypt(bytes(connection['password'], encoding="UTF-8"))
-            (data, fields) = self.get_datasource_data(connection)
+
+            if connection['dbType'] == 's3BucketFile':
+                data = retrieve_file_from_s3(connection)
+            
+            else:
+                cipher = Fernet(SECRET_KEY)
+                connection['password'] = cipher.encrypt(bytes(connection['password'], encoding="UTF-8"))
+                data = retrieve_sql_data(connection)
+
+        # Identify the field names from the keys of the first row of the data
+        # This is sufficient, as we can assume that all rows have the same keys
+        fields = list(data[0].keys())
 
         serializer.save(
             connection = connection,
@@ -235,8 +123,10 @@ class DataSourceViewSet(viewsets.ModelViewSet):
             fields = fields
         )
 
+
     def perform_update(self, serializer):
-        self.check_object_permissions(self.request, self.get_object())
+        datasource = self.get_object()
+        self.check_object_permissions(self.request, datasource)
 
         queryset = DataSource.objects.filter(
             name = self.request.data['name'],
@@ -248,52 +138,56 @@ class DataSourceViewSet(viewsets.ModelViewSet):
 
         data = None
 
-        if 'dbType' in self.request.data:
-            if self.request.data['dbType']=='csvTextFile':
-                connection = {}
-                connection['dbType'] = 'csvTextFile'
-                delimiter = self.request.data['delimiter']
-                if 'file' in self.request.data:
-                    external_file = self.request.data['file']
-                    (data, fields) = self.get_csv_data(external_file, delimiter)
-            
-            elif self.request.data['dbType']=='xlsXlsxFile':
-                connection = {}
-                connection['dbType'] = 'xlsXlsxFile'
-                if 'file' in self.request.data:
-                    external_file = self.request.data['file']
-                    sheetname = self.request.data['sheetname']
-                    (data, fields) = self.get_xls_data(external_file, sheetname)
-        
-        elif self.request.data['connection']['dbType'] == 's3BucketFile':
-            connection = self.request.data['connection']
-            bucket = self.request.data['bucket']
-            file_name = self.request.data['fileName']
-            delimiter = self.request.data['delimiter'] if 'delimiter' in self.request.data else None
-            sheetname = self.request.data['sheetname'] if ('sheetname' in self.request.data) else None
-            (data, fields) = self.get_s3bucket_file_data(bucket, file_name, delimiter, sheetname)
+        # If the datasource includes a file, then the payload will be a flat FormData object
+        # In this case, the JSON payload was stringified, and must be parsed into a JSON object
+        if 'file' in self.request.data:
+            connection = json.loads(self.request.data['payload'])['connection']
+            file = self.request.data['file']
+
+            if connection['dbType'] == 'csvTextFile':
+                data = retrieve_csv_data(file, connection['delimiter'])
+
+            elif connection['dbType'] == 'xlsXlsxFile':
+                data = retrieve_excel_data(file, connection['sheetname'])
 
         else:
             connection = self.request.data['connection']
-            if 'password' in connection:
-                # Encrypt the db password of the data source
-                cipher = Fernet(SECRET_KEY)
-                # If a new password is provided then encrypt it and overwrite the old one
-                connection['password'] = cipher.encrypt(bytes(connection['password'], encoding="UTF-8"))
-            else:
-                # Otherwise simply keep the old password (which is already encrypted)
-                connection['password'] = bytes(self.get_object()['connection']['password'], encoding="UTF-8")
 
-            (data, fields) = self.get_datasource_data(connection)
+            if connection['dbType'] == 's3BucketFile':
+                if not 'sheetname' in connection and 'sheetname' in datasource['connection']:
+                    connection['sheetname'] = datasource['connection']['sheetname']
+
+                if not 'delimiter' in connection and 'delimiter' in datasource['connection']:
+                    connection['delimiter'] = datasource['connection']['delimiter']
+
+                data = retrieve_file_from_s3(connection)
+            
+            elif connection['dbType'] in ['mysql', 'postgresql']:
+                if 'password' in connection:
+                    # Encrypt the db password of the data source
+                    cipher = Fernet(SECRET_KEY)
+                    # If a new password is provided then encrypt it and overwrite the old one
+                    connection['password'] = cipher.encrypt(bytes(connection['password'], encoding="UTF-8"))
+                else:
+                    # Otherwise simply keep the old password (which is already encrypted)
+                    connection['password'] = bytes(datasource['connection']['password'], encoding="UTF-8")
+
+                data = retrieve_sql_data(connection)
 
         if data:
+            # Identify the field names from the keys of the first row of the data
+            # This is sufficient, as we can assume that all rows have the same keys
+            fields = list(data[0].keys())
+
             serializer.save(
                 connection = connection,
                 data = data,
-                fields = fields
+                fields = fields,
+                lastUpdated = datetime.now()
             )
         else:
             serializer.save(connection = connection)
+
 
     def perform_destroy(self, obj):
          # Ensure that the request.user is the owner of the object
@@ -306,15 +200,9 @@ class DataSourceViewSet(viewsets.ModelViewSet):
             
         obj.delete()
 
+
     @list_route(methods=['post'])
     def compare_matched_fields(self, request):
-
-        def json_serial(obj):
-            if isinstance(obj, (datetime, date)):
-                return obj.isoformat()
-            if isinstance(obj, ObjectId):
-                return str(obj)
-
         matching_field = self.request.data['matchingField']
         matching_datasource = DataSource.objects.get(id=matching_field['datasource'])
         matching_fields = set([record[matching_field['field']] for record in matching_datasource['data']])

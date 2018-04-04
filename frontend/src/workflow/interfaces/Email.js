@@ -20,6 +20,8 @@ class Email extends React.Component {
 
     this.boundActionCreators = bindActionCreators(WorkflowActionCreators, dispatch);
 
+    this.state = { index: 0 };
+
     if (workflow) {
       const currentContent = editorState.getCurrentContent();
       if (!currentContent.hasText()) return;
@@ -31,8 +33,6 @@ class Email extends React.Component {
 
       this.boundActionCreators.previewContent(workflow.id, payload, false);
     }
-
-    this.state = { index: 0 };
   };
 
   handleSubmit = () => {

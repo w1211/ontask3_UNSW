@@ -1,50 +1,45 @@
-import datetime
-import string
+import sys 
+sys.path.append('..')
 
-from bson.objectid import ObjectId
 from celery import shared_task
-from cryptography.fernet import Fernet
-from django.contrib.auth.models import User
-from django.utils.crypto import get_random_string
+
 from pymongo import MongoClient
-from sqlalchemy import create_engine
-from sqlalchemy.engine.url import URL
+
+import datetime
+from bson.objectid import ObjectId
 
 from .rules_engine.matrix import Matrix
 from .rules_engine.rules import Rules
 
-from .settings import DB_DRIVER_MAPPING
+from .utils import retrieve_sql_data
+from ontask.settings import NOSQL_DATABASE
 
 
 @shared_task
-def import_data_to_data_container(connection, query, owner):
-    ''' Reads the query data from the external database and
-        inserts the data to the application database as a 
-        new data source container '''
-    # Initialize the DB connection parameters dictionary
-    db_connection_parameters = {'drivername': connection['driver'],\
-                             'username': connection['username'],\
-                             'password': connection['password'],\
-                             'host': connection['host'],\
-                             'port': connection['port']}
-    # SQL alchemy code to add connect to the external
-    # DB generically to access the query data
-    engine = create_engine(URL(**db_connection_parameters))
-    connection = engine.connect()
-    # Stream the results from the user query
-    # The stream_results=True argument here will  eliminate the buffering of the query results
-    # The result rows are not buffered, but fetched as they're needed.
-    # Ref - http://dev.mobify.com/blog/sqlalchemy-memory-magic/
-    results = connection.execution_options(stream_results=True).execute(query)
+def refresh_datasource_data(datasource_id):
+    ''' Reads the query data from the external source and
+        inserts the data into the datasource '''
 
-    data = [dict(zip(row.keys(),row)) for row in results]
-    # Build the data source object
-    data_source = {'owner' : owner,\
-                   'connection': connection,\
-                   'data': data}
+    # Retrieve the datasource object from the application database
+    client = MongoClient(NOSQL_DATABASE['HOST'])
+    db = client[NOSQL_DATABASE['DB']]
     
-    connection.close()
-    return 'Data imported successfully '
+    # Project only the connection details of the datasource, and exclude all other fields
+    datasource = db.data_source.find_one({ '_id': ObjectId(datasource_id) }, { 'connection': 1 })
+
+    connection = datasource['connection']
+
+    # Retrieve the query data based on the datasource type
+    datasource_type = connection['dbType']
+    if datasource_type in ['mysql', 'postgresql']:
+        data = retrieve_sql_data(connection)
+    elif datasource_type == 's3BucketFile':
+        data = retrieve_file_from_s3(connection)
+
+    print(data)
+    # TODO: Update the data, lastUpdated and fields of the datasource
+
+    return 'Data imported successfully'
 
 @shared_task
 def update_data_in_data_container(data_source_container_id):
@@ -187,3 +182,10 @@ def execute_rules(workflow_id):
         response_message = exception
 
     return response_message
+
+
+def main():
+    refresh_datasource_data('5ac42e5aa68c71012939b75e')
+
+if __name__ == '__main__':
+    main()

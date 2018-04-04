@@ -25,6 +25,8 @@ from collections import defaultdict
 
 from django.conf import settings
 
+from scheduler.utils import send_email
+
 
 class WorkflowViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
@@ -439,50 +441,41 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         workflow = Workflow.objects.get(id=id)
         self.check_object_permissions(self.request, workflow)
 
-        headers = { 'Content-type': 'application/json' }
         field = request.data['emailSettings']['field']
         subject = request.data['emailSettings']['subject']
         reply_to = request.data['emailSettings']['replyTo']
         
         html = list(value for key, value in self.populate_content(workflow, workflow['content']['html']).items())
-        plain = list(value for key, value in self.populate_content(workflow, workflow['content']['plain']).items())
 
         data = self.evaluate_filter(workflow.view, workflow.filter)
+        primary_key = workflow.view.columns[0]['field']
         failed_emails = list()
 
         for index, item in enumerate(data):
-            payload = {}
-            payload['sender_address'] = reply_to
-            payload['recipient_address'] = item[field]
-            payload['email_subject'] = subject
-            payload['text_content'] = plain[index]
-            payload['html_content'] = html[index]
-            r = requests.post(settings.SCHEDULER_DOMAIN+'/ontask/send_email/', json=payload)
-            r = json.loads(r.text)
-            if not (r['success']):
-                failed_emails.append(item[workflow['details']['primaryColumn']['field']])
+            email_sent = send_email(item[field], subject, html[index], reply_to)
+            if not email_sent:
+                failed_emails.append(item[primary_key])
             else:
-                #store email content as one field
-                email_content = "<h3>"+ payload['email_subject'] + "</h3>" + payload['html_content']
-                serializer = AuditSerializer(
-                    data = {'workflowId':id, 
-                            'creator':payload['sender_address'], 
-                            'receiver':payload['recipient_address'], 
-                            'emailBody':payload['text_content'],
-                            'emailSubject':payload['email_subject']
-                            })
-                serializer.is_valid()
-                serializer.save()
-
-                serializer = WorkflowSerializer(instance=workflow, data={
-                    'emailSettings': request.data['emailSettings']
-                }, partial=True)
+                serializer = AuditSerializer(data = {
+                    'workflowId': id, 
+                    'creator': self.request.user.email,
+                    # TODO: add reply-to
+                    'receiver': item[field], 
+                    'emailBody': html[index],
+                    'emailSubject': subject
+                })
                 serializer.is_valid()
                 serializer.save()
                 
         if len(failed_emails) > 0:
             raise ValidationError('Emails to the following records failed to send: ' + str(failed_emails).strip('[]').strip("'"))
         
+        serializer = WorkflowSerializer(instance=workflow, data={
+            'emailSettings': request.data['emailSettings']
+        }, partial=True)
+        serializer.is_valid()
+        serializer.save()
+
         return JsonResponse({ 'success': 'true' }, safe=False)
     
     #retrive email sending history and generate static page.

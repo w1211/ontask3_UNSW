@@ -35,3 +35,6 @@ xlrd==1.1.0
 requests==2.18.4
 uWSGI==2.0.15
 boto3==1.6.12
+celery==4.1.0
+django-celery-beat==1.1.1
+sqlalchemy==1.2.6

@@ -9,7 +9,6 @@ from django.views.generic.list import ListView
 from django_celery_beat.models import CrontabSchedule, PeriodicTask
 from uuid import uuid4
 
-from .forms import GenerateRandomUserForm
 from .tasks import update_data_in_data_container
 from .utils import send_email
 

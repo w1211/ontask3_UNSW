@@ -5,11 +5,6 @@ pip3 install -r backend/requirements.txt
 uwsgi --ini backend/uwsgi.ini
 deactivate
 
-source virtualenvs/scheduler/bin/activate
-pip3 install -r scheduler/docket/requirements.txt
-uwsgi --ini scheduler/docket/uwsgi.ini
-deactivate
-
 if [ "$ONTASK_DEVELOPMENT" = "true" ]
 then
     npm start --prefix frontend

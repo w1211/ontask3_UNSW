@@ -47,33 +47,16 @@ const receiveSheetnames = (sheetnames) => ({
   sheetnames
 });
 
-export const fetchS3Sheetnames = (bucket, fileName) => dispatch => {
-  const data = {
-    bucket: bucket,
-    fileName: fileName
-  }
-  const parameters = {
-    initialFn: () => {
-      dispatch(beginRequestDatasource());
-    },
-    url: `/datasource/get_s3_sheetnames/`,
-    method: 'POST',
-    errorFn: (error) => {
-      dispatch(failureRequestDatasource(error));
-    },
-    successFn: (response) => {
-      dispatch(successRequestDatasourceWithoutClose());
-      dispatch(receiveSheetnames(response["sheetnames"]));
-    },
-    payload: data,
-    isNotJSON: false
-  }
-  requestWrapper(parameters);
-}
+export const fetchSheetnames = (file, payload) => dispatch => {
 
-export const fetchSheetnames = (file) => dispatch => {
-  let data = new FormData();
-  data.append('file', file);
+  let data;
+  if (file) {
+    data = new FormData();
+    data.append('file', file);
+  } else {
+    data = payload;
+  }
+  
   const parameters = {
     initialFn: () => {
       dispatch(beginRequestDatasource());
@@ -88,7 +71,7 @@ export const fetchSheetnames = (file) => dispatch => {
       dispatch(receiveSheetnames(response["sheetnames"]));
     },
     payload: data,
-    isNotJSON: true
+    isNotJSON: file ? true : false
   }
   requestWrapper(parameters);
 }
@@ -96,20 +79,17 @@ export const fetchSheetnames = (file) => dispatch => {
 export const createDatasource = (containerId, payload, file) => dispatch => {
   payload.container = containerId;
 
-  const isFile = ['xlsXlsxFile', 'csvTextFile'].includes(payload.connection.dbType);
   let data;
-  if (isFile) {
+  if (file) {
     data = new FormData();
     data.append('file', file);
-    data.append('delimiter', payload.delimiter)
-    data.append('container', containerId);
     data.append('name', payload.name);
-    data.append('dbType', payload.connection.dbType);
-    data.append('sheetname', payload.sheetname);
+    data.append('container', payload.container);
+    data.append('payload', JSON.stringify(payload));
   } else {
     data = payload;
   }
-
+  
   const parameters = {
     initialFn: () => {
       dispatch(beginRequestDatasource());
@@ -128,7 +108,7 @@ export const createDatasource = (containerId, payload, file) => dispatch => {
       });
     },
     payload: data,
-    isNotJSON: isFile
+    isNotJSON: file ? true : false
   }
 
   requestWrapper(parameters);
@@ -137,17 +117,17 @@ export const createDatasource = (containerId, payload, file) => dispatch => {
 export const updateDatasource = (datasourceId, payload, file) => dispatch => {
   dispatch(beginRequestDatasource());
 
-  const isFile = ['xlsXlsxFile', 'csvTextFile'].includes(payload.connection.dbType);
   let data;
-  if (isFile) {
+  if (file) {
     data = new FormData();
-    if (file) data.append('file', file);
-    data.append('delimiter', payload.delimiter)
+    data.append('file', file);
     data.append('name', payload.name);
-    data.append('dbType', payload.connection.dbType);
+    data.append('container', payload.container);
+    data.append('payload', JSON.stringify(payload));
   } else {
     data = payload;
   }
+
   const parameters = {
     initialFn: () => {
       dispatch(beginRequestDatasource());
@@ -166,7 +146,7 @@ export const updateDatasource = (datasourceId, payload, file) => dispatch => {
       });
     },
     payload: data,
-    isNotJSON: isFile
+    isNotJSON: file ? true : false
   }
 
   requestWrapper(parameters);

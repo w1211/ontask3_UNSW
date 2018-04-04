@@ -32,11 +32,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_celery_beat',
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_mongoengine',
     'authtools',
     'accounts',
+    'scheduler',
     'corsheaders'
 ]
 
@@ -83,7 +85,7 @@ DATABASES = {
     'default': SQL_DATABASE
 }
 
-mongoengine.connect(host=NOSQL_URI)
+mongoengine.connect(NOSQL_DATABASE['DB'], host=NOSQL_DATABASE['HOST'])
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
@@ -134,3 +136,13 @@ REST_FRAMEWORK = {
 }
 
 AUTH_USER_MODEL = 'authtools.User'
+
+# Default celery broker 
+# http://docs.celeryproject.org/en/latest/getting-started/brokers/rabbitmq.html
+
+CELERY_BROKER_URL = 'amqp://localhost'
+
+DB_DRIVER_MAPPING = {
+    "postgresql": "postgresql",
+    "mysql":"mysql+pymysql"
+}

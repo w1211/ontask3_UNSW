@@ -97,15 +97,18 @@ class DatasourceModal extends React.Component {
   checkS3FileType = () => {
     const { form } = this.props;
 
-    let fileName = form.getFieldValue('fileName');
+    let fileName = form.getFieldValue('connection.fileName');
     if (!fileName) return;
 
     fileName = fileName.split('.');
     const extension = fileName[fileName.length - 1].toLowerCase();
 
     if(['xlsx', 'xls'].includes(extension)){
-      this.boundActionCreators.fetchS3Sheetnames(form.getFieldValue('bucket'), form.getFieldValue('fileName'));
-      this.setState({isS3Csv:false})
+      this.boundActionCreators.fetchSheetnames(null, {
+        'bucket': form.getFieldValue('connection.bucket'), 
+        'fileName': form.getFieldValue('connection.fileName')
+      });
+      this.setState({isS3Csv:false});
     }
     else if(['csv', 'txt'].includes(extension)){
       this.setState({isS3Csv:true});
@@ -159,11 +162,11 @@ class DatasourceModal extends React.Component {
             )}
           </FormItem>
 
-          { isS3Bucket && <S3Bucket form={form} checkS3FileType={this.checkS3FileType}/> }
+          { isS3Bucket && <S3Bucket form={form} checkS3FileType={this.checkS3FileType} selected={selected}/> }
 
-          { (isCSV || isS3Csv) && <Delimiter form={form} /> }
+          { (isCSV || isS3Csv) && <Delimiter form={form} selected={selected}/> }
 
-          { isLocalFile && <LocalFile form={form} onChange={this.handleFileDrop} /> }
+          { isLocalFile && <LocalFile form={form} onChange={this.handleFileDrop} selected={selected}/> }
           
           { file && 
             <div>
@@ -171,7 +174,7 @@ class DatasourceModal extends React.Component {
             </div>
           }
 
-          { sheetnames && <SheetNames form={form} sheetnames={sheetnames}/> }
+          { sheetnames && <SheetNames form={form} sheetnames={sheetnames} selected={selected}/> }
           
           { !isFile && <ConnectionSettings form={form} selected={selected} isFile={isFile}/> }
 
@@ -184,7 +187,10 @@ class DatasourceModal extends React.Component {
 
 };
 
-const S3Bucket = ({ form, checkS3FileType }) => {
+const S3Bucket = ({ form, checkS3FileType, selected }) => {
+  const bucketName = form.getFieldValue('connection.bucket') ? form.getFieldValue('connection.bucket') : (selected && selected.connection.bucket) ? selected.connection.bucket : 'YOUR_BUCKET_NAME'; 
+  const fileName =  form.getFieldValue('connection.fileName') ? form.getFieldValue('connection.fileName') : (selected && selected.connection.fileName) ? selected.connection.fileName : 'YOUR_FILE_NAME'; 
+
   const permission = {
     'Version': '2012-10-17',
     'Statement': [{
@@ -197,7 +203,7 @@ const S3Bucket = ({ form, checkS3FileType }) => {
         's3:GetObject'
       ],
       'Resource': [
-        `arn:aws:s3:::${form.getFieldValue('bucket') ? form.getFieldValue('bucket') : 'YOUR_BUCKET_NAME'}/${form.getFieldValue('fileName') ? form.getFieldValue('fileName') : 'YOUR_FILE_NAME'}`
+        `arn:aws:s3:::${bucketName}/${fileName}`
       ]
     }]
   };
@@ -215,8 +221,8 @@ const S3Bucket = ({ form, checkS3FileType }) => {
   return (
     <div>
       <FormItem {...formItemLayout} label="Bucket name">
-        {form.getFieldDecorator('bucket', {
-          initialValue: null,
+        {form.getFieldDecorator('connection.bucket', {
+          initialValue: selected ? selected.connection.bucket : null,
           rules: [{ required: true, message: 'Bucket name is required' }]
         })(
           <Input/>
@@ -224,8 +230,8 @@ const S3Bucket = ({ form, checkS3FileType }) => {
       </FormItem>
                   
       <FormItem {...formItemLayout} label="File name">
-        {form.getFieldDecorator('fileName', {
-          initialValue: null,
+        {form.getFieldDecorator('connection.fileName', {
+          initialValue: selected ? selected.connection.fileName : null,
           rules: [{ required: true, message: 'File name is required' }]
         })(
           <Input onBlur={checkS3FileType}/>
@@ -248,10 +254,10 @@ const S3Bucket = ({ form, checkS3FileType }) => {
   )
 };
 
-const Delimiter = ({ form }) => (
+const Delimiter = ({ form, selected }) => (
   <FormItem {...formItemLayout} label="Delimiter">
-    { form.getFieldDecorator('delimiter', {
-      initialValue: ',',
+    { form.getFieldDecorator('connection.delimiter', {
+      initialValue: selected ? selected.connection.delimiter : ',',
     })(
       <Select>
         <Option value=",">Comma ,</Option>
@@ -281,10 +287,11 @@ const LocalFile = ({ form, onChange }) => (
   </Dragger>
 );
 
-const SheetNames = ({ form, sheetnames }) => (
+const SheetNames = ({ form, sheetnames, selected }) => (
   <FormItem {...formItemLayout} label="Sheet name">
-    { form.getFieldDecorator('sheetname',{
-      rules: [{ required: true, message: 'Sheet name is required' }]
+    { form.getFieldDecorator('connection.sheetname',{
+      rules: [{ required: true, message: 'Sheet name is required' }],
+      initialValue: selected ? selected.connection.sheetname : null,
     })(
       <Select>
         { sheetnames.map((option, i) => (<Option key={i} value={option}>{option}</Option>)) }

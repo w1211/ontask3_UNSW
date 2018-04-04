@@ -2,7 +2,7 @@ from django.conf.urls import url
 
 from . import views
 
-app_name = 'ontask'
+app_name = 'scheduler'
 
 urlpatterns = [
     url(r'^datasource', views.DataSourceUpdateTaskView.as_view()),
