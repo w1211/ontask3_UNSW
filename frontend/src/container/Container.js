@@ -5,12 +5,14 @@ import { Link } from 'react-router-dom';
 import { Layout, Breadcrumb, Icon, Button, Spin } from 'antd';
 
 import * as ContainerActionCreators from './ContainerActions';
+import { updateSchedule } from '../datasource/DatasourceActions';
 
 import ContainerModal from './ContainerModal';
 import ContainerList from './ContainerList';
 import DatasourceModal from '../datasource/DatasourceModal';
 import ViewModal from '../view/ViewModal';
 import WorkflowModal from '../workflow/WorkflowModal';
+import SchedulerModal from '../scheduler/SchedulerModal';
 
 const { Content } = Layout;
 
@@ -20,8 +22,12 @@ class Container extends React.Component {
     super(props);
     const { dispatch } = props;
 
-    this.boundActionCreators = bindActionCreators(ContainerActionCreators, dispatch);
-  }
+    this.boundActionCreators = bindActionCreators({
+      ...ContainerActionCreators, 
+      updateSchedule,
+    }, dispatch);
+
+  };
 
   componentDidMount() {
     this.boundActionCreators.fetchContainers();
@@ -55,7 +61,14 @@ class Container extends React.Component {
               { containers && containers.length > 0 ?
                 <div>
                   <WorkflowModal/>
+
                   <DatasourceModal/>
+                  <SchedulerModal
+                    onUpdate={this.boundActionCreators.updateSchedule}
+                    onDelete={() => console.log('delete')}
+                    allowFutureStart={false}
+                  />
+
                   <ViewModal history={history}/>
 
                   <ContainerList/>

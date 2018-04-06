@@ -1,6 +1,7 @@
 import { notification, Modal } from 'antd';
 import requestWrapper from '../shared/requestWrapper';
 import { fetchContainers } from '../container/ContainerActions';
+import * as SchedulerActions from '../scheduler/SchedulerActions';
 
 const confirm = Modal.confirm;
 
@@ -184,4 +185,26 @@ export const deleteDatasource = (datasourceId) => dispatch => {
       requestWrapper(parameters);
     }
   });
+};
+
+export const updateSchedule = (datasourceId, payload, isCreate) => dispatch => {
+  const parameters = {
+    initialFn: () => { dispatch(SchedulerActions.beginRequestScheduler()); },
+    url: `/datasource/${datasourceId}/update_schedule/`,
+    method: 'PATCH',
+    errorFn: (error) => {
+      dispatch(SchedulerActions.failureRequestScheduler(error));
+    },
+    successFn: () => {
+      dispatch(SchedulerActions.successRequestScheduler());
+      dispatch(fetchContainers());
+      notification['success']({
+        message: `Schedule ${isCreate ? 'created' : 'updated'}`,
+        description: `The schedule was successfully ${isCreate ? 'created' : 'updated'}.`
+      });
+    },
+    payload: payload,
+    isNotJSON: false
+  }
+  requestWrapper(parameters);
 };
