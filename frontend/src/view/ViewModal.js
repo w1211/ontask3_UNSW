@@ -181,7 +181,7 @@ class ViewModal extends React.Component {
         title: 'Discard changes',
         content: 'You have not saved your work. If you continue, any changes made will be discarded.',
         okText: 'Discard',
-        onOk() {
+        onOk: () => {
           this.performClose();
         }
       });

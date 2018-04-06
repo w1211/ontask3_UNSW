@@ -1,4 +1,7 @@
-from django.core.mail import EmailMultiAlternatives, get_connection
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import URL
 from cryptography.fernet import Fernet
@@ -7,7 +10,7 @@ import csv
 import boto3
 import io
 
-from ontask.settings import SECRET_KEY, DB_DRIVER_MAPPING, EMAIL_HOST_USER,\
+from ontask.settings import SECRET_KEY, DB_DRIVER_MAPPING, SMTP,\
                             AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION
 
 
@@ -116,18 +119,24 @@ def retrieve_file_from_s3(connection):
 
 def send_email(recipient, subject, content, reply_to=None):
     '''Generic service to send email from the application'''
-
+    
     try:
-        # If a reply-to address is specified then use it
-        # Otherwise simply use the user from the smtp credentials
-        reply_to = reply_to if reply_to else EMAIL_HOST_USER
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = SMTP['USER']
+        msg['To'] = recipient
+        if reply_to:
+            msg['Reply-To'] = reply_to
 
-        # Create the email object via django.core.mail
-        # By default, this uses the connection settings defined by the following settings attributes:
-        # EMAIL_USE_TLS, EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_USER, and EMAIL_HOST_PASSWORD
-        email = EmailMultiAlternatives(subject=subject, from_email=EMAIL_HOST_USER, to=[recipient], reply_to=[reply_to])
-        email.attach_alternative(content, 'text/html')
-        email.send()
+        msg.attach(MIMEText(content, 'html'))
+
+        s = smtplib.SMTP(host=SMTP['HOST'], port=SMTP['PORT'])
+        if SMTP['USE_TLS']:
+            s.starttls()
+
+        s.login(SMTP['USER'], SMTP['PASSWORD'])
+        s.sendmail(SMTP['USER'], recipient, msg.as_string())
+        s.quit()
         return True
 
     except:
