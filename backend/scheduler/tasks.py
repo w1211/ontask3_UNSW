@@ -1,17 +1,13 @@
-import sys 
-sys.path.append('..')
-
 from celery import shared_task
-
 from pymongo import MongoClient
 
-import datetime
+from datetime import datetime
 from bson.objectid import ObjectId
 
-from .rules_engine.matrix import Matrix
-from .rules_engine.rules import Rules
+# from .rules_engine.matrix import Matrix
+# from .rules_engine.rules import Rules
 
-from .utils import retrieve_sql_data
+from .utils import retrieve_sql_data, retrieve_file_from_s3
 from ontask.settings import NOSQL_DATABASE
 
 
@@ -36,10 +32,18 @@ def refresh_datasource_data(datasource_id):
     elif datasource_type == 's3BucketFile':
         data = retrieve_file_from_s3(connection)
 
-    print(data)
-    # TODO: Update the data, lastUpdated and fields of the datasource
-
+    fields = list(data[0].keys())
+    
+    db.data_source.update({ '_id': ObjectId(datasource_id) }, {
+        '$set': {
+            'data': data,
+            'fields': fields,
+            'lastUpdated': datetime.now()
+        }
+    })
+    
     return 'Data imported successfully'
+
 
 @shared_task
 def update_data_in_data_container(data_source_container_id):
@@ -182,10 +186,3 @@ def execute_rules(workflow_id):
         response_message = exception
 
     return response_message
-
-
-def main():
-    refresh_datasource_data('5ac42e5aa68c71012939b75e')
-
-if __name__ == '__main__':
-    main()
