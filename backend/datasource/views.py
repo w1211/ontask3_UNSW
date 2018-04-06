@@ -1,6 +1,6 @@
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
-from rest_framework.decorators import list_route
+from rest_framework.decorators import list_route, detail_route
 from rest_framework.permissions import IsAuthenticated
 from datetime import datetime
 
@@ -22,6 +22,7 @@ from workflow.models import Workflow
 from view.models import View
 
 from scheduler.utils import retrieve_csv_data, retrieve_excel_data, retrieve_file_from_s3, retrieve_sql_data
+from scheduler.tasks import create_scheduled_task
 
 
 class DataSourceViewSet(viewsets.ModelViewSet):
@@ -48,6 +49,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         ]
         datasources = list(DataSource.objects.aggregate(*pipeline))
         return DataSource.objects.filter(id__in = [datasource['_id'] for datasource in datasources])
+
 
     #aske user for sheetname if uploading file is excel 
     @list_route(methods=['post'])
@@ -227,3 +229,34 @@ class DataSourceViewSet(viewsets.ModelViewSet):
             response['primary'] = [value for value in unique_in_primary]
 
         return JsonResponse(response, safe=False)
+
+    #schedule realted
+    @detail_route(methods=['patch'])
+    def delete_schedule(self, request, id=None):
+        datasource = DataSource.objects.get(id=id)
+        if end_schedule(datasource.task_name):
+            schedule={}
+            serializer = DataSourceSerializer(datasource, schedule, partial=True)
+            serializer.is_valid()
+            serializer.save()
+            return JsonResponse({"success":True})
+        else:
+            return JsonResponse({"success":False})
+
+    @detail_route(methods=['patch'])
+    def update_schedule(self, request, id=None):
+        datasource = DataSource.objects.get(id=id)
+        arguments = { "datasource_id": id }
+        task_name = create_scheduled_task('refresh_datasource_data', request.data, arguments)
+        
+        return JsonResponse({'success': 1})
+        # if task_name:
+        #     #store task_name and schedule details in datasource model
+        #     request.data.taskName = task_name
+        #     schedule = {'schedule': request.data}
+        #     serializer = DataSourceSerializer(datasource, schedule, partial=True)
+        #     serializer.is_valid()
+        #     serializer.save()
+        #     return JsonResponse({"success":True}, safe=False)
+        # else:
+        #     return JsonResponse({"success":False}, safe=False)

@@ -1,14 +1,89 @@
 from celery import shared_task
 from pymongo import MongoClient
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from bson.objectid import ObjectId
+from dateutil import parser
+from uuid import uuid4
+from django_celery_beat.models import CrontabSchedule, PeriodicTask
 
 # from .rules_engine.matrix import Matrix
 # from .rules_engine.rules import Rules
 
 from .utils import retrieve_sql_data, retrieve_file_from_s3
 from ontask.settings import NOSQL_DATABASE
+
+
+# @shared_task
+def start_scheduled_task(task, task_name, schedule, arguments):
+    try:
+        periodic_task = PeriodicTask.objects.create(
+            crontab=schedule,
+            name=task_name,
+            task=task,
+            # kwargs=arguments
+            kwargs='{"datasource_id": "5ac6cc8fa68c7158b7f05912"}'
+        )
+        response_message = "Started periodic task  - %s" % task_name
+    except Exception as exception:
+        response_message = exception
+    return response_message
+
+
+@shared_task
+def end_scheduled_task(task_name):
+    try:
+        task = PeriodicTask.objects.get(name=task_name)
+        task.delete()
+        response_message = "Removed task  - %s" % task_name
+    except Exception as exception:
+        response_message = exception
+    return response_message
+
+
+@shared_task
+def create_scheduled_task(task, schedule, arguments):
+    hour = parser.parse(schedule['time']).hour
+    minute = parser.parse(schedule['time']).minute
+
+    #start task and end task
+    if 'startTime' in schedule and 'endTime' in schedule:
+        start_time = parser.parse(schedule['startTime'])
+        end_time = parser.parse(schedule['endTime'])
+    else:
+        start_time = datetime.now().replace(hour=hour, minute=minute)
+
+    if start_time < datetime.now():
+        start_time += timedelta(days=1)
+    
+    if schedule['frequency'] == "daily":
+        periodic_schedule = timedelta(days=int(schedule['dayFrequency']))
+
+    elif schedule['frequency'] == 'weekly':
+        periodic_schedule, _ = CrontabSchedule.objects.get_or_create(
+            minute = minute,
+            hour = hour,
+            day_of_week = (',').join(schedule['dayOfWeek'])
+        )
+    
+    elif schedule['frequency'] == 'monthly':
+        periodic_schedule, _ = CrontabSchedule.objects.get_or_create(
+            minute = minute,
+            hour = hour,
+            day_of_month = parser.parse(schedule['dayOfMonth']).day
+        )
+
+    task_name = task + '_' + str(uuid4())
+    task = 'scheduler.tasks.' + task 
+
+    start_scheduled_task(task, task_name, periodic_schedule, arguments)
+
+    # start_scheduled_task.apply_async((task, task_name, periodic_schedule, arguments), eta=start_time)
+    
+    # if end_time:
+    #     end_scheduled_task.apply_async((task_name), eta=end_time)
+    
+    return task_name
 
 
 @shared_task
@@ -43,6 +118,9 @@ def refresh_datasource_data(datasource_id):
     })
     
     return 'Data imported successfully'
+
+
+
 
 
 @shared_task
