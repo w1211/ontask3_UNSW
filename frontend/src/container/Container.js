@@ -11,7 +11,7 @@ import ContainerList from './ContainerList';
 import DatasourceModal from '../datasource/DatasourceModal';
 import ViewModal from '../view/ViewModal';
 import WorkflowModal from '../workflow/WorkflowModal';
-import Scheduler from '../scheduler/SchedulerModal';
+import SchedulerModal from '../scheduler/SchedulerModal';
 
 const { Content } = Layout;
 
@@ -29,7 +29,7 @@ class Container extends React.Component {
   };
 
   render() {
-    const { dispatch, isFetching, containers, history } = this.props;
+    const { dispatch, isFetching, containers, history} = this.props;
 
     return (
       <Content style={{ padding: '0 50px' }}>
@@ -57,9 +57,8 @@ class Container extends React.Component {
                 <div>
                   <WorkflowModal/>
                   <DatasourceModal/>
-                  <Scheduler/>
+                  <SchedulerModal/>
                   <ViewModal history={history}/>
-
                   <ContainerList/>
                 </div>
               :

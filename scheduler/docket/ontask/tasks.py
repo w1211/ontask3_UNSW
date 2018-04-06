@@ -241,4 +241,3 @@ def update_remote_file(datasource_id, bucket, file_name, delimiter, sheetname):
     except Exception as exception:
         response_message = exception
     return response_message
-

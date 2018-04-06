@@ -136,8 +136,8 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         datasources = DataSource.objects(container=workflow.container.id).only('id', 'name', 'fields')
         serializer.instance.datasources = datasources
         if serializer.data['schedule']:
-            serializer.data['schedule']['startDate'] = dateutil.parser.parse(serializer.data['schedule']['startDate']).strftime('%Y-%m-%d')
-            serializer.data['schedule']['endDate'] = dateutil.parser.parse(serializer.data['schedule']['endDate']).strftime('%Y-%m-%d')
+            serializer.data['schedule']['startTime'] = dateutil.parser.parse(serializer.data['schedule']['startTime']).strftime('%Y-%m-%d')
+            serializer.data['schedule']['endTime'] = dateutil.parser.parse(serializer.data['schedule']['endTime']).strftime('%Y-%m-%d')
             serializer.data['schedule']['time'] = dateutil.parser.parse(serializer.data['schedule']['time']).strftime('%H:%M')
         return JsonResponse(serializer.data, safe=False)
 
@@ -494,8 +494,8 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         workflow = Workflow.objects.get(id=id)
         self.check_object_permissions(self.request, workflow)
         updated_schedule = defaultdict(str)
-        updated_schedule['startDate'] = dateutil.parser.parse(request.data['RangePicker'][0])
-        updated_schedule['endDate'] = dateutil.parser.parse(request.data['RangePicker'][1])
+        updated_schedule['startTime'] = dateutil.parser.parse(request.data['RangePicker'][0])
+        updated_schedule['endTime'] = dateutil.parser.parse(request.data['RangePicker'][1])
         updated_schedule['time'] = dateutil.parser.parse(request.data['TimePicker'])
         updated_schedule['frequency'] = int(request.data['Frequency'])
         serializer = WorkflowSerializer(instance=workflow, data={'schedule': updated_schedule}, partial=True)

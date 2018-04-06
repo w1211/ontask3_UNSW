@@ -46,14 +46,14 @@ class DataSourceUpdateTaskView(APIView):
         print("################ {Periodic Task} ###################")
         print(periodic_task)
 
-        return Response({'task_name': task_name})
+        return Response({'task_name': task_name, "success": True})
     
     def delete(self, request, format=None):
         '''DELETE handle to remove a scheduler from the beat schedule'''
         task = PeriodicTask.objects.get(name=request.data['name'])
         task.delete()
 
-        return Response({'task_name':task.name,'message':'Periodic task deleted'})
+        return Response({'task_name':task.name, "success": True, 'message':'Periodic task deleted'})
 
 class SendEmailTaskView(APIView):
     # Assigns the authentication permissions
@@ -62,26 +62,35 @@ class SendEmailTaskView(APIView):
 
     def post(self, request, format=None):
         '''Post handle to create sending email schedule'''
-        task_name = "send_email_task_" + str(uuid4())
+        task_name = "start_send_email_task_" + str(uuid4())
         arguments= '{"workflow_id":"' + self.request.data['workflow_id'] + '"}'
-        schedule, _ = CrontabSchedule.objects.get_or_create(
-            minute = request.data['schedule']['minute'],
-            hour = request.data['schedule']['hour'],
-            day_of_week = request.data['schedule']['day_of_week'],
-            day_of_month = request.data['schedule']['day_of_month'],
-            month_of_year = request.data['schedule']['month_of_year'],
+        #the starting point
+        start_schedule, _ = CrontabSchedule.objects.get_or_create(
+            minute = request.data['schedule']['startTime']['minute'],
+            hour = request.data['schedule']['startTime']['minute'],
+            day_of_week = request.data['schedule']['startTime']['day_of_week'],
+            day_of_month = request.data['schedule']['startTime']['day_of_month'],
+            month_of_year = request.data['schedule']['startTime']['month_of_year'],
+        )
+        #the end point
+        end_schedule, _ = CrontabSchedule.objects.get_or_create(
+            minute = request.data['schedule']['endTime']['minute'],
+            hour = request.data['schedule']['endTime']['minute'],
+            day_of_week = request.data['schedule']['endTime']['day_of_week'],
+            day_of_month = request.data['schedule']['endTime']['day_of_month'],
+            month_of_year = request.data['schedule']['endTime']['month_of_year'],
         )
 
         periodic_task = PeriodicTask.objects.create(
            crontab=schedule,
            name=task_name,
-           task='ontask.tasks.send_email_schedule',
+           task='ontask.tasks.start_schedule',
            kwargs=arguments
         )
         print("################ {Periodic Task} ###################")
         print(periodic_task)
         print(task_name)
-        return Response({'task_name': task_name})
+        return Response({'task_name': task_name, "success": True})
 
     def delete(self, request, format=None):
         '''DELETE handle to remove a scheduler from the beat schedule'''
@@ -89,7 +98,7 @@ class SendEmailTaskView(APIView):
         task = PeriodicTask.objects.get(name=request.data['name'])
         print(task)
         task.delete()
-        return Response({'task_name':task.name,'message':'Periodic task deleted'})
+        return Response({'task_name':task.name, "success": True, 'message':'Periodic task deleted'})
 
 class FileUpdateView(APIView):
     '''Container for s3 bucket file update'''
@@ -122,13 +131,13 @@ class FileUpdateView(APIView):
         print("################ {Periodic Task} ###################")
         print(periodic_task)
 
-        return Response({'task_name': task_name})
+        return Response({'task_name': task_name, "success": True})
 
     def delete(self, request, format=None):
         '''DELETE handle to remove a scheduler from the beat schedule'''
         task = PeriodicTask.objects.get(name=request.data['name'])
         task.delete()
-        return Response({'task_name':task.name,'message':'Periodic task deleted'})
+        return Response({'task_name':task.name, "success": True, 'message':'Periodic task deleted'})
 
 class WorkflowTaskView(APIView):
     ''' Container for the Rules execution task scheduler '''
@@ -159,11 +168,11 @@ class WorkflowTaskView(APIView):
         print("################ {Periodic Task} ###################")
         print(periodic_task)
 
-        return Response({'task_name': task_name})
+        return Response({'task_name': task_name, "success": True})
     
     def delete(self, request, format=None):
         '''DELETE handle to remove a scheduler from the beat schedule'''
         task = PeriodicTask.objects.get(name=request.data['name'])
         task.delete()
 
-        return Response({'task_name':task.name,'message':'Periodic task deleted'})
+        return Response({'task_name':task.name, "success": True, 'message':'Periodic task deleted'})

@@ -24,8 +24,8 @@ class ConditionGroup(EmbeddedDocument):
     conditions = fields.EmbeddedDocumentListField(Condition)
 
 class Schedule(EmbeddedDocument):
-    startDate = fields.DateTimeField(required=True)
-    endDate = fields.DateTimeField(required=True)
+    startTime = fields.DateTimeField(required=True)
+    endTime = fields.DateTimeField(required=True)
     time = fields.DateTimeField(required=True) #hour and minutes
     frequency = fields.IntField(min_value=1, required=True) #day
 

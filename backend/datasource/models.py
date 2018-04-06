@@ -13,13 +13,9 @@ class Connection(EmbeddedDocument):
     query = fields.StringField()
 
 class Schedule(EmbeddedDocument):
-    startDate = fields.DateTimeField(required=True)
-    endDate = fields.DateTimeField(required=True)
     time = fields.DateTimeField(required=True) #hour and minutes
     frequency = fields.IntField(min_value=1, required=True) #day
-    frequencyUnit = fields.StringField(required=True)
-    dayOfWeek = fields.StringField()
-    dayOfMonth = fields.DateTimeField()
+    taskName = fields.StringField()
 
 class DataSource(Document):
     # Owner of the datasource can be determined from container.owner

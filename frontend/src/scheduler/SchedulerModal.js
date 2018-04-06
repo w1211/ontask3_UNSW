@@ -18,21 +18,27 @@ class SchedulerModal extends React.Component {
       super(props);
       const { dispatch } = props;
       this.boundActionCreators = bindActionCreators(SchedulerActionCreators, dispatch);
-      this.state = {
-        frequencyUnit: "day",
-        update: false
-      };
     }
 
-    handleOk = () =>{
-        const { form } = this.props;
+    checkFields = (rule, value, callback) => {
+        // If the provided value is already in the list of fields for this view, then show an error
+        if (value!=parseInt(value,10)) {
+          callback('Input must be integer');
+        }
+        // Otherwise return no errors
+        callback();
+        return;
+    };
+
+    handleOk = (form) =>{
         form.validateFields((err, values) => {
+            if (err) return;
             let data = {
                 frequency: this.state.frequency,
                 frequencyUnit: this.state.frequencyUnit,
                 time: values.timePicker.format(),
-                startDate: values.dateRange[0].format(),
-                endDate:values.dateRange[1].format(),
+                startTime: values.dateRange[0].format(),
+                endTime:values.dateRange[1].format(),
             };
             if(this.state.frequencyUnit=='week'){
                 data.dayOfWeek = values.dayOfWeek;
@@ -44,133 +50,129 @@ class SchedulerModal extends React.Component {
         })
     }
 
-    onUpdate = () => {
-        this.setState({update: !this.state.update});
-    }
 
     onDelete = () => {
         this.boundActionCreators.deleteSchedule(this.props.datasourceId);
     }
 
-
     optionOnChange = (name, value) => {
         this.setState({[name]: value});
     }
+
+    // User can not select days before today, today and one year after
+    disabledDate = (current) => {
+        if (current < moment().endOf('day') || current > moment().add(1,'y')){
+            return true;
+        }
+        return false;
+    }
+
+    onCancel= (form) => { form.resetFields(); this.boundActionCreators.closeSchedulerModal(); }
+
     //TODO: format the schedule display
     render() {
-        const {form, visible, datasourceId, schedule} = this.props;
-        const {frequencyUnit, update} = this.state;
+        const {form, visible, datasourceId, schedule, scheduleType} = this.props;
         const {getFieldDecorator} = form;
+        const suffix = scheduleType=="email" ? null : form.getFieldValue('frequency') == "1"? "day" : "days";
+        
         return(
     <Modal
         title='Scheduler'
         visible={visible}
-        onCancel={() => { form.resetFields(); this.boundActionCreators.closeSchedulerModal(); }}
-        onOk={this.handleOk}
+        onCancel={()=>this.onCancel(form)}
+        footer = {schedule ? [
+            <Button onClick={()=>this.onCancel(form)}>Cancel</Button>, 
+            <Button type="danger" onClick={this.onDelete}>Delete</Button>, 
+            <Button type="primary" onClick={()=>this.handleOk(form)}>Update</Button>]
+        :
+            [<Button onClick={()=>this.onCancel(form)}>Cancel</Button>, 
+            <Button type="primary" onClick={()=>this.handleOk(form)}>Create</Button>]}        
     >
-        { schedule &&
-            <div>
-            <h3 style={{marginBottom:"1em"}}>Current schedule</h3>
-            <div style={{ background: '#eeeeee', padding: '1em', margin: '0.5em 0', border: '1px dashed #cccccc', borderRadius: '5px', display: 'block' }}>
-                <span style={{position: "relative", float: "right", zIndex: "2"}}>
-                <Tooltip title="Update current schedule">
-                <Button shape="circle" icon="edit" size="small" style={{marginRight: '0.5em'}} onClick={this.onUpdate}/>
-                </Tooltip>
-                <Tooltip title="Delete current schedule">
-                <Button type="danger" icon="delete" shape="circle" size="small" onClick={this.onDelete}/>
-                </Tooltip>
-                </span>
-                <Row gutter={8}>
-                    <Col span={5} ><h4>Start Date: </h4></Col>
-                    <Col span={10} >{moment(schedule.startDate).format("YYYY-MM-DD")}</Col>
-                </Row>
-                <Row gutter={8}>
-                    <Col span={5} ><h4>End Date: </h4></Col>
-                    <Col span={10} >{moment(schedule.endDate).format("YYYY-MM-DD")}</Col>
-                </Row>
-                <Row gutter={8}>
-                    <Col span={5} ><h4>Time: </h4></Col>
-                    <Col span={10} >{moment(schedule.time).format("HH:mm")}</Col>
-                </Row>
-                <Row gutter={8}>
-                    <Col span={5} ><h4>Frequency: </h4></Col>
-                    <Col span={10} >Every {schedule.frequency} {schedule.frequencyUnit}</Col>
-                </Row>
-                {schedule.frequencyUnit == "week" && 
-                <Row gutter={8}>
-                    <Col span={5} ><h4>DayOfWeek: </h4></Col>
-                    <Col span={10} >{schedule.dayOfWeek}</Col>
-                </Row>
+        <Form layout="horizontal">
+        <h3 style={{marginBottom:"1em"}}>Create schedule</h3>
+        <FormItem {...formItemLayout} label="Time">
+            {getFieldDecorator('timePicker', {
+                initialValue: schedule ? moment(schedule.time) : null,
+                rules: [{ required: true, message: 'Time is required' }]
+            })(
+            <TimePicker style = {{ width: '50%'}} format={'HH:mm'}/>
+            )}
+        </FormItem>
+        <FormItem {...formItemLayout} label="Frequency">
+            {getFieldDecorator('frequency', {
+                initialValue: schedule ? schedule.frequency : null,
+                rules: [{ required: true, message: 'Frequency is required' },
+                        { validator: this.checkFields } ]
+            })(
+            <Input style = {{ width:'50%'}} suffix={suffix}/>
+            )}
+        </FormItem>
+        {scheduleType=="email" &&
+        <div>
+        <FormItem {...formItemLayout} label="Frequency unit">
+            {getFieldDecorator('frequencyUnit', {
+                initialValue: schedule ? schedule.frequencyUnit : null,
+                rules: [{ required: true, message: 'Frequency unit is required' }]
+            })(
+            <Select defaultValue="day" style = {{ width: '50%'}} onChange={(value) => {this.optionOnChange("frequencyUnit", value)}}>
+                <Option value="day">
+                {form.getFieldValue('frequency') == "1"? "day" : "days"}</Option>
+                {scheduleType=="email" &&
+                    <div>
+                    <Option value="week">week</Option>
+                    <Option value="month">month</Option>
+                    </div>
                 }
-                {schedule.frequencyUnit == "month" && 
-                <Row gutter={8}>
-                    <Col span={5} ><h4>DayOfMonth: </h4></Col>
-                    <Col span={10} >{moment(schedule.dayOfMonth).format("DD")}</Col>
-                </Row>
-                }
-            </div>
+            </Select>
+            )}
+        </FormItem>
+        
+        { form.getFieldValue('frequencyUnit') == "week" &&
+            <FormItem {...formItemLayout} label="DayOfWeek">
+            {getFieldDecorator('dayOfWeek', {
+                initialValue: schedule ? schedule.dayOfWeek : null,
+                rules: [{ required: true, message: 'Day is required' }]
+                })(
+                <Select mode="multiple">
+                    <Option value="mon">Monday</Option>
+                    <Option value="tue">Tuesday</Option>
+                    <Option value="wed">Wednesday</Option>
+                    <Option value="thu">Thursday</Option>
+                    <Option value="fri">Friday</Option>
+                    <Option value="sat">Saturday</Option>
+                    <Option value="sun">Sunday</Option>
+                </Select>
+            )}
+            </FormItem>
+        }
+        { form.getFieldValue('frequencyUnit') == "month" &&
+            <FormItem {...formItemLayout} label="DayOfMonth">
+            {getFieldDecorator('dayOfMonth', {
+                initialValue: schedule ? moment(schedule.dayOfMonth).format('DD') : null,
+                rules: [{ required: true, message: 'Day is required' }]
+                })(
+                    <DatePicker format={'DD'} disabledDate={this.disabledDate}/>
+            )}
+            </FormItem>
+        }
+        
+            <FormItem {...formItemLayout} label="DateRange">
+                {form.getFieldDecorator('dateRange', {
+                    initialValue: schedule ? [moment(schedule.startTime),moment(schedule.endTime)] : null,
+                    rules: [{ required: true, message: 'Date range is required' }]
+                })(
+                    <RangePicker 
+                        showTime 
+                        style={{minWidth:"100%"}} 
+                        disabledDate={this.disabledDate}
+                        format="YYYY/MM/DD HH:mm:ss"
+                    />
+                )}
+            </FormItem>
             </div>
         }
-        { (update && schedule) && <Divider/>}
-        { (update || !schedule) &&
-            <Form layout="horizontal">
-            <h3 style={{marginBottom:"1em"}}>Update schedule</h3>
-                <FormItem {...formItemLayout} label="Time">
-                    {getFieldDecorator('timePicker', {
-                        rules: [{ required: true, message: 'Time is required' }]
-                    })(
-                    <TimePicker style = {{ width: '50%'}} format={'HH:mm'}/>
-                    )}
-                </FormItem>
-                <FormItem {...formItemLayout} label="Frequency">
-                    {getFieldDecorator('Frequency', {
-                    rules: [{ required: true, message: 'Frequency is required' }]
-                    })(
-                    <span>
-                    Every
-                    <InputNumber min={1} max={100} style = {{ width:'25%', marginRight:'2%', marginLeft:'2%'}} onChange={(value) => {this.optionOnChange("frequency", value)}}/>
-                    <Select defaultValue="day" style = {{ width: '30%'}} onChange={(value) => {this.optionOnChange("frequencyUnit", value)}}>
-                        <Option value="day">day</Option>
-                        <Option value="week">week</Option>
-                        <Option value="month">month</Option>
-                    </Select>
-                    </span>
-                    )}
-                </FormItem>
-                { frequencyUnit == "week" &&
-                    <FormItem {...formItemLayout} label="DayOfWeek">
-                    {getFieldDecorator('dayOfWeek', {
-                        rules: [{ required: true, message: 'Day is required' }]
-                        })(
-                        <Select defaultValue="Monday">
-                            <Option value="Monday">Monday</Option>
-                            <Option value="Tuesday">Tuesday</Option>
-                            <Option value="Wednesday">Wednesday</Option>
-                            <Option value="Thursday">Thursday</Option>
-                            <Option value="Friday">Friday</Option>
-                        </Select>
-                    )}
-                    </FormItem>
-                }
-                { frequencyUnit == "month" &&
-                    <FormItem {...formItemLayout} label="DayOfMonth">
-                    {getFieldDecorator('dayOfMonth', {
-                        rules: [{ required: true, message: 'Day is required' }]
-                        })(
-                            <DatePicker format={'DD'}/>
-                    )}
-                    </FormItem>
-                }
-                <FormItem {...formItemLayout} label="DateRange">
-                    {form.getFieldDecorator('dateRange', {
-                        rules: [{ required: true, message: 'Date range is required' }]
-                    })(
-                        <RangePicker style={{minWidth:"100%"}}/>
-                    )}
-                </FormItem>
-            </Form>
-        }
-        </Modal>
+    </Form>
+</Modal>
         )
     }
 }

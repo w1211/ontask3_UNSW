@@ -3,6 +3,7 @@ from rest_framework_mongoengine.validators import ValidationError
 from rest_framework.decorators import list_route, detail_route
 from rest_framework.permissions import IsAuthenticated
 from datetime import datetime
+from dateutil import parser
 
 from django.http import JsonResponse
 
@@ -334,15 +335,106 @@ class DataSourceViewSet(viewsets.ModelViewSet):
     @detail_route(methods=['patch'])
     def delete_schedule(self, request, id=None):
         datasource = DataSource.objects.get(id=id)
-        datasource.update(unset__schedule=1)
-        serializer = DataSourceSerializer(instance=datasource)
-        return JsonResponse({"success":True}, safe=False)
+        if end_schedule(datasource.task_name):
+            schedule={}
+            serializer = DataSourceSerializer(datasource, schedule, partial=True)
+            serializer.is_valid()
+            serializer.save()
+            return JsonResponse({"success":True})
+        else:
+            return JsonResponse({"success":False})
 
     @detail_route(methods=['patch'])
     def create_schedule(self, request, id=None):
         datasource = DataSource.objects.get(id=id)
-        schedule = {'schedule': request.data}
-        serializer = DataSourceSerializer(datasource, schedule, partial=True)
-        serializer.is_valid()
-        serializer.save()
-        return JsonResponse({"success":True}, safe=False)
+        task_name = convert_datasource_update_schedule(request.data, id)
+            
+        if task_name:
+            #store task_name and schedule details in datasource model
+            request.data.taskName = task_name
+            schedule = {'schedule': request.data}
+            serializer = DataSourceSerializer(datasource, schedule, partial=True)
+            serializer.is_valid()
+            serializer.save()
+            return JsonResponse({"success":True}, safe=False)
+        else:
+            return JsonResponse({"success":False}, safe=False)
+    
+
+    def convert_datasource_update_schedule(self, schedule, id):
+        #used for tracking the periodic task
+        task_name = "datasource_update_task_"+str(uuid4())
+        #start time is current time with user specified updating time
+        [hour, minute] = schedule['time'].split(':')
+        startTime = datetime.now().replace(hour=hour, minute=minute)
+        if sratTime < datetime.now():
+            startTime += timedelta(days=1)
+        #use timedealta as crontab
+        periodic_schedule = timedelta(days=schedule.frequency)
+        arguments={"datasourceId": id}
+        start_schedule.apply_async(('tasks.datasource_update_task', task_name, periodic_schedule, arguments), eta=start_time)
+        return task_name
+
+    #task: data_source_update_task
+    def convert_email_sending_schedule(self, schedule, id):
+        #start task and end task
+        start_time = parser.parse(schedule.startTime)
+        end_time = parser.parse(schedule.endTime)
+
+        #set hour and minute
+        [hour, minute] = schedule['time'].split(':')
+        
+        #use timedealta as crontab
+        if schedule.frequentUnit=="day":
+            start_time.hour = periodic_schedule.hour
+            start_time_minute = periodic_schedule.minute
+            periodic_schedule = timedelta(days=schedule.frequency)
+
+        #use exact minute etc.
+        elif schedule.frequentUnit=='week':
+            #get a list of week days
+            periodic_schedule, _ = CrontabSchedule.objects.get_or_create(
+                minute = minute,
+                hour = hour,
+                day_of_week = schedule.dayOfweek.join(',')
+            )
+        
+        #get the months in date range
+        elif schedule.frequentUnit=='month' :
+            periodic_schedule, _ = CrontabSchedule.objects.get_or_create(
+                minute = minute,
+                hour = hour,
+                day_of_month = parser.parse(schedule.dayOfMonth).day,
+            )
+
+        #used for tracking the periodic task
+        task_name = "send_email_task_"+str(uuid4())
+
+        arguments = {"workflowId": id}
+        start_schedule.apply_async(('tasks.send_email_task', task_name, periodic_schedule, arguments), eta=start_time)
+        end_schedule.apply_async((task_name), eta=end_time)
+        return task_name
+
+    #@shared_task
+    def start_schedule(task, task_name, schedule, arguments):
+        try:
+            periodic_task = PeriodicTask.objects.create(
+                crontab=schedule,
+                name=task_name,
+                task=task,
+                kwargs=arguments
+            )
+            response_message = "Started periodic task  - %s" % task_name
+        except Exception as exception:
+            response_message = exception
+        return response_message
+
+    #@shared_task
+    def end_schedule(task_name):
+        try:
+            task = PeriodicTask.objects.get(name=task_name)
+            task.delete()
+            response_message = "Removed task  - %s" % task_name
+        except Exception as exception:
+            response_message = exception
+        return response_message
