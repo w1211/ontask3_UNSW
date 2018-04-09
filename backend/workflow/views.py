@@ -539,3 +539,44 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         else:
             return JsonResponse({'mismatch': True})
 
+    #schedule realted
+    @detail_route(methods=['patch'])
+    def delete_schedule(self, request, id=None):
+        workflow = Workflow.objects.get(id=id)
+
+        # if workflow['schedule']['taskName']:
+        #     remove_periodic_task(datasource['schedule']['taskName'])
+
+        workflow.update(unset__schedule=1)
+
+        return JsonResponse({ "success": True })
+
+    @detail_route(methods=['patch'])
+    def update_schedule(self, request, id=None):
+        workflow = Workflow.objects.get(id=id)
+        # arguments = json.dumps({ "workflow_id": id })
+
+        # If a schedule already exists for this datasource, then delete it
+        # if 'schedule' in datasource and 'taskName' in datasource['schedule']:
+        #     remove_periodic_task(datasource['schedule']['taskName'])
+        
+        # task_name = create_scheduled_task('refresh_datasource_data', request.data, arguments)
+        
+        # if task_name:
+        schedule = request.data
+        print(schedule)
+        schedule['startTime'] = request.data['dateRange'][0]
+        schedule['endTime'] = request.data['dateRange'][1]
+        # schedule['taskName'] = task_name
+
+        serializer = WorkflowSerializer(workflow, data={
+            'schedule': schedule
+        }, partial=True)
+        print("here storing schedule")
+        print(schedule)
+        serializer.is_valid()
+        serializer.save()
+        return JsonResponse({ "success":True }, safe=False)
+        # else:
+            # return JsonResponse({ "success": False }, safe=False)
+        

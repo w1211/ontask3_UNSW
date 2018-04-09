@@ -175,11 +175,11 @@ class SchedulerModal extends React.Component {
 
 const mapStateToProps = (state) => {
     const {
-      visible, selectedId, schedule, allowFutureStart, error
+      visible, selectedId, schedule, error
     } = state.scheduler;
     
     return {
-      visible, selectedId, schedule, allowFutureStart, error
+      visible, selectedId, schedule, error
     };
 }
 

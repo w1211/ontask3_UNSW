@@ -26,10 +26,14 @@ class Content(EmbeddedDocument):
 
 class Schedule(EmbeddedDocument):
     enabled = fields.BooleanField()
-    startDate = fields.DateTimeField(required=True)
-    endDate = fields.DateTimeField(required=True)
-    time = fields.DateTimeField(required=True) #hour and minutes
-    frequency = fields.IntField(min_value=1, required=True) #day
+    startTime = fields.DateTimeField(required=True)
+    endTime = fields.DateTimeField(required=True)    
+    time = fields.DateTimeField(required=True)
+    frequency = fields.StringField(required=True, choices=('daily', 'weekly', 'monthly'))
+    dayFrequency = fields.IntField(min_value=1) # I.e. every n days
+    dayOfWeek = fields.ListField(fields.StringField()) # List of shorthand day names, e.g. ['mon', 'wed', 'fri']
+    dayOfMonth = fields.DateTimeField() # Number representing the date in the month, e.g. 1 is the 1st
+    taskName = fields.StringField() # The name of the celery task
 
 class EmailSettings(EmbeddedDocument):
     subject = fields.StringField(required=True)

@@ -1,13 +1,17 @@
 import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
-import { Form, Input, Select, Button, Alert, Spin, Icon, Checkbox } from 'antd';
+import { Form, Input, Select, Button, Alert, Spin, Icon, Checkbox, Tooltip, Row, Col} from 'antd';
 import { convertToRaw } from 'draft-js';
 import draftToHtml from 'draftjs-to-html';
+import moment from 'moment';
 
 import * as WorkflowActionCreators from '../WorkflowActions';
+import { openSchedulerModal } from 'scheduler/SchedulerActions';
 
 import formItemLayout from '../../shared/FormItemLayout';
+
+import SchedulerModal from 'scheduler/SchedulerModal';
 
 const FormItem = Form.Item;
 const Option = Select.Option;
@@ -18,7 +22,8 @@ class Email extends React.Component {
     super(props);
     const { dispatch, workflow, editorState } = props;
 
-    this.boundActionCreators = bindActionCreators(WorkflowActionCreators, dispatch);
+    this.boundActionCreators = bindActionCreators({
+      ...WorkflowActionCreators, openSchedulerModal}, dispatch);
 
     this.state = { index: 0 };
 
@@ -40,10 +45,26 @@ class Email extends React.Component {
 
     form.validateFields((err, values) => {
       if (err) return;
-
       this.boundActionCreators.sendEmail(workflow.id, values);
     });
   };
+
+  onChange = (checkValue) => {
+    const { workflow} = this.props;
+    if(checkValue.target.checked){
+      this.boundActionCreators.openSchedulerModal(workflow.id, workflow.schedule);
+    }
+  }
+
+  onDelete = () => {
+    const {workflow} = this.props;
+    this.boundActionCreators.deleteSchedule(workflow.id);
+  }
+
+  onUpdate =() => {
+    const {workflow} = this.props;
+    this.boundActionCreators.openSchedulerModal(workflow.id, workflow.schedule);
+  }
 
   render() {
     const { workflow, loading, error, form, previewLoading, previewContent } = this.props;
@@ -57,6 +78,11 @@ class Email extends React.Component {
 
     return (
       <div>
+        <SchedulerModal
+          onUpdate={this.boundActionCreators.updateSchedule}
+          onDelete={this.boundActionCreators.deleteSchedule}
+          allowFutureStart={true}
+        />
         <Form layout="horizontal">
           <div>
             <div style={{ maxWidth: 700 }}>
@@ -91,16 +117,59 @@ class Email extends React.Component {
                 )}
               </FormItem>
 
-              <FormItem {...formItemLayout} label="Scheduled task">
-                {form.getFieldDecorator('schedule.enabled', {
-                  initialValue: workflow && workflow.schedule && workflow.schedule.enabled
-                })(
-                  <Checkbox/>
-                )}
-              </FormItem>  
-
+              { workflow && workflow.schedule ?
+                <div>
+                  <h3 style={{marginBottom:"1em"}}>Current schedule</h3>
+                  <div style={{ background: '#eeeeee', padding: '1em', margin: '0.5em 0', border: '1px dashed #cccccc', borderRadius: '5px', display: 'block' }}>
+                    <span style={{position: "relative", float: "right", zIndex: "2"}}>
+                      <Tooltip title="Update current schedule">
+                      <Button shape="circle" icon="edit" size="small" style={{marginRight: '0.5em'}} onClick={this.onUpdate}/>
+                      </Tooltip>
+                    </span>
+                    <Row gutter={8}>
+                        <Col span={5} ><h4>Start Time: </h4></Col>
+                        <Col span={10} >{moment(workflow.schedule.startTime).format("YYYY/MM/DD HH:mm:ss")}</Col>
+                    </Row>
+                    <Row gutter={8}>
+                        <Col span={5} ><h4>End Time: </h4></Col>
+                        <Col span={10} >{moment(workflow.schedule.endTime).format("YYYY/MM/DD HH:mm:ss")}</Col>
+                    </Row>
+                    <Row gutter={8}>
+                        <Col span={5} ><h4>Time: </h4></Col>
+                        <Col span={10} >{moment(workflow.schedule.time).format("HH:mm")}</Col>
+                    </Row>
+                    <Row gutter={8}>
+                        <Col span={5} ><h4>Frequency: </h4></Col>
+                        {workflow.schedule.frequency == "daily"?
+                          <Col span={10} >Every {workflow.schedule.dayFrequency} {workflow.schedule.dayFrequency=="1"?"day":"days"}</Col>
+                        :
+                          <Col span={10} >{workflow.schedule.frequency}</Col>
+                        }
+                    </Row>
+                    { workflow.schedule.frequency == "weekly" && 
+                    <Row gutter={8}>
+                        <Col span={5} ><h4>DayOfWeek: </h4></Col>
+                        <Col span={10}>{workflow.schedule.dayOfWeek.map((day,i)=><span>{day} </span>)}</Col>
+                    </Row>
+                    }
+                    { workflow.schedule.frequency == "monthly" && 
+                    <Row gutter={8}>
+                        <Col span={5} ><h4>DayOfMonth: </h4></Col>
+                        <Col span={10} >{moment(workflow.schedule.dayOfMonth).format("DD")}</Col>
+                    </Row>
+                    }
+                  </div>
+                </div>
+              :
+                <FormItem {...formItemLayout} label="Scheduled task">
+                  {form.getFieldDecorator('schedule.enabled', {
+                    initialValue: workflow && workflow.schedule
+                  })(
+                    <Checkbox onChange={this.onChange} checked={workflow && workflow.schedule ? true : false}/>
+                  )}
+                </FormItem>  
+              }
             </div>
-
 
             <div className="ant-form-item-label" style={{ display: 'flex' }}>
               <label>Content preview</label> ({this.state.index + 1})

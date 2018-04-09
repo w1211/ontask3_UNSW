@@ -2,7 +2,9 @@ import { EditorState, ContentState } from 'draft-js';
 import htmlToDraft from 'html-to-draftjs';
 import { notification, Modal } from 'antd';
 import requestWrapper from '../shared/requestWrapper';
-import { fetchContainers } from '../container/ContainerActions';
+
+import { fetchContainers } from 'container/ContainerActions';
+import * as SchedulerActions from 'scheduler/SchedulerActions';
 
 const confirm = Modal.confirm;
 
@@ -564,7 +566,6 @@ export const previewContent = (workflowId, payload, showModal) => dispatch => {
 };
 
 export const sendEmail = (workflowId, payload) => dispatch => {
-  console.log(payload);
   const parameters = {
     initialFn: () => { dispatch(beginRequestWorkflow()); },
     url: `/workflow/${workflowId}/send_email/`,
@@ -581,5 +582,48 @@ export const sendEmail = (workflowId, payload) => dispatch => {
     payload: payload
   }
 
+  requestWrapper(parameters);
+};
+
+export const updateSchedule = (workflowId, payload, isCreate) => dispatch => {
+  const parameters = {
+    initialFn: () => { dispatch(SchedulerActions.beginRequestScheduler()); },
+    url: `/workflow/${workflowId}/update_schedule/`,
+    method: 'PATCH',
+    errorFn: (error) => {
+      dispatch(SchedulerActions.failureRequestScheduler(error));
+    },
+    successFn: () => {
+      dispatch(SchedulerActions.successRequestScheduler());
+      dispatch(fetchContainers());
+      notification['success']({
+        message: `Schedule ${isCreate ? 'created' : 'updated'}`,
+        description: `The schedule was successfully ${isCreate ? 'created' : 'updated'}.`
+      });
+    },
+    payload: payload,
+    isNotJSON: false
+  }
+  requestWrapper(parameters);
+};
+
+export const deleteSchedule = (workflowId) => dispatch => {
+  const parameters = {
+    initialFn: () => { dispatch(SchedulerActions.beginRequestScheduler()); },
+    url: `/workflow/${workflowId}/delete_schedule/`,
+    method: 'PATCH',
+    errorFn: (error) => {
+      dispatch(SchedulerActions.failureRequestScheduler(error));
+    },
+    successFn: () => {
+      dispatch(SchedulerActions.successRequestScheduler());
+      dispatch(fetchContainers());
+      notification['success']({
+        message: 'Schedule deleted',
+        description: 'The schedule was successfully deleted.'
+      });
+    },
+    isNotJSON: false
+  }
   requestWrapper(parameters);
 };
