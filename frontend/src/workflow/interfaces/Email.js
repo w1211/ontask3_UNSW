@@ -7,11 +7,11 @@ import draftToHtml from 'draftjs-to-html';
 import moment from 'moment';
 
 import * as WorkflowActionCreators from '../WorkflowActions';
-import { openSchedulerModal } from 'scheduler/SchedulerActions';
+import { openSchedulerModal } from '../../scheduler/SchedulerActions';
 
 import formItemLayout from '../../shared/FormItemLayout';
 
-import SchedulerModal from 'scheduler/SchedulerModal';
+import SchedulerModal from '../../scheduler/SchedulerModal';
 
 const FormItem = Form.Item;
 const Option = Select.Option;

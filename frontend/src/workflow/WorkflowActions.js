@@ -3,8 +3,8 @@ import htmlToDraft from 'html-to-draftjs';
 import { notification, Modal } from 'antd';
 import requestWrapper from '../shared/requestWrapper';
 
-import { fetchContainers } from 'container/ContainerActions';
-import * as SchedulerActions from 'scheduler/SchedulerActions';
+import { fetchContainers } from '../container/ContainerActions';
+import * as SchedulerActions from '../scheduler/SchedulerActions';
 
 const confirm = Modal.confirm;
 
@@ -595,7 +595,7 @@ export const updateSchedule = (workflowId, payload, isCreate) => dispatch => {
     },
     successFn: () => {
       dispatch(SchedulerActions.successRequestScheduler());
-      dispatch(fetchContainers());
+      dispatch(fetchWorkflow(workflowId));
       notification['success']({
         message: `Schedule ${isCreate ? 'created' : 'updated'}`,
         description: `The schedule was successfully ${isCreate ? 'created' : 'updated'}.`
@@ -617,7 +617,7 @@ export const deleteSchedule = (workflowId) => dispatch => {
     },
     successFn: () => {
       dispatch(SchedulerActions.successRequestScheduler());
-      dispatch(fetchContainers());
+      dispatch(fetchWorkflow(workflowId));
       notification['success']({
         message: 'Schedule deleted',
         description: 'The schedule was successfully deleted.'
