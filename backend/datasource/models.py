@@ -20,7 +20,7 @@ class Connection(EmbeddedDocument):
 class Schedule(EmbeddedDocument):
     time = fields.DateTimeField(required=True)
     frequency = fields.StringField(required=True, choices=('daily', 'weekly', 'monthly'))
-    dayFrequency = fields.IntField(min_value=1, required=True) # I.e. every n days
+    dayFrequency = fields.IntField(min_value=1) # I.e. every n days
     dayOfWeek = fields.ListField(fields.StringField()) # List of shorthand day names, e.g. ['mon', 'wed', 'fri']
     dayOfMonth = fields.DateTimeField() # Number representing the date in the month, e.g. 1 is the 1st
     taskName = fields.StringField() # The name of the celery task

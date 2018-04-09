@@ -22,7 +22,7 @@ from workflow.models import Workflow
 from view.models import View
 
 from scheduler.utils import retrieve_csv_data, retrieve_excel_data, retrieve_file_from_s3, retrieve_sql_data
-from scheduler.tasks import create_scheduled_task
+from scheduler.tasks import create_scheduled_task, remove_periodic_task
 
 
 class DataSourceViewSet(viewsets.ModelViewSet):
@@ -230,33 +230,38 @@ class DataSourceViewSet(viewsets.ModelViewSet):
 
         return JsonResponse(response, safe=False)
 
-    #schedule realted
     @detail_route(methods=['patch'])
     def delete_schedule(self, request, id=None):
         datasource = DataSource.objects.get(id=id)
-        if end_schedule(datasource.task_name):
-            schedule={}
-            serializer = DataSourceSerializer(datasource, schedule, partial=True)
-            serializer.is_valid()
-            serializer.save()
-            return JsonResponse({"success":True})
-        else:
-            return JsonResponse({"success":False})
+
+        if datasource['schedule']['taskName']:
+            remove_periodic_task(datasource['schedule']['taskName'])
+
+        datasource.update(unset__schedule=1)
+
+        return JsonResponse({ "success": True })
+
 
     @detail_route(methods=['patch'])
     def update_schedule(self, request, id=None):
         datasource = DataSource.objects.get(id=id)
-        arguments = { "datasource_id": id }
+        arguments = json.dumps({ "datasource_id": id })
+
+        # If a schedule already exists for this datasource, then delete it
+        if 'schedule' in datasource and 'taskName' in datasource['schedule']:
+            remove_periodic_task(datasource['schedule']['taskName'])
+
         task_name = create_scheduled_task('refresh_datasource_data', request.data, arguments)
         
-        return JsonResponse({'success': 1})
-        # if task_name:
-        #     #store task_name and schedule details in datasource model
-        #     request.data.taskName = task_name
-        #     schedule = {'schedule': request.data}
-        #     serializer = DataSourceSerializer(datasource, schedule, partial=True)
-        #     serializer.is_valid()
-        #     serializer.save()
-        #     return JsonResponse({"success":True}, safe=False)
-        # else:
-        #     return JsonResponse({"success":False}, safe=False)
+        if task_name:
+            schedule = request.data
+            schedule['taskName'] = task_name
+
+            serializer = DataSourceSerializer(datasource, data={
+                'schedule': schedule
+            }, partial=True)
+            serializer.is_valid()
+            serializer.save()
+            return JsonResponse({ "success":True }, safe=False)
+        else:
+            return JsonResponse({ "success": False }, safe=False)

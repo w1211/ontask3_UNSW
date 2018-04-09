@@ -26,7 +26,6 @@ from workflow.views import WorkflowViewSet
 from audit.views import AuditViewSet
 
 import accounts.urls
-import scheduler.urls
 
 # this is DRF router for REST API viewsets
 router = routers.DefaultRouter()
@@ -43,5 +42,4 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^token/', views.obtain_auth_token),
     url(r'^api/', include(accounts.urls, namespace='accounts')),
-    url(r'^api/scheduler/', include(scheduler.urls, namespace='scheduler'))
 ]

@@ -208,3 +208,24 @@ export const updateSchedule = (datasourceId, payload, isCreate) => dispatch => {
   }
   requestWrapper(parameters);
 };
+
+export const deleteSchedule = (datasourceId) => dispatch => {
+  const parameters = {
+    initialFn: () => { dispatch(SchedulerActions.beginRequestScheduler()); },
+    url: `/datasource/${datasourceId}/delete_schedule/`,
+    method: 'PATCH',
+    errorFn: (error) => {
+      dispatch(SchedulerActions.failureRequestScheduler(error));
+    },
+    successFn: () => {
+      dispatch(SchedulerActions.successRequestScheduler());
+      dispatch(fetchContainers());
+      notification['success']({
+        message: 'Schedule deleted',
+        description: 'The schedule was successfully deleted.'
+      });
+    },
+    isNotJSON: false
+  }
+  requestWrapper(parameters);
+};

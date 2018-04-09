@@ -9,6 +9,10 @@ from xlrd import open_workbook
 import csv
 import boto3
 import io
+from dateutil import parser
+from datetime import datetime
+from django_celery_beat.models import CrontabSchedule, IntervalSchedule
+from uuid import uuid4
 
 from ontask.settings import SECRET_KEY, DB_DRIVER_MAPPING, SMTP,\
                             AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION
@@ -141,3 +145,36 @@ def send_email(recipient, subject, content, reply_to=None):
 
     except:
         raise Exception("Error sending email")
+
+
+def create_crontab(schedule):
+    time = datetime.strptime(schedule['time'], "%Y-%m-%dT%H:%M:%SZ")
+
+    if schedule['frequency'] == "daily":
+        periodic_schedule, _ = IntervalSchedule.objects.get_or_create(
+            every = int(schedule['dayFrequency']),
+            period = IntervalSchedule.DAYS
+        )
+
+    elif schedule['frequency'] == 'weekly':
+        periodic_schedule, _ = CrontabSchedule.objects.get_or_create(
+            minute = time.minute,
+            hour = time.hour,
+            day_of_week = (',').join(schedule['dayOfWeek'])
+        )
+    
+    elif schedule['frequency'] == 'monthly':
+        periodic_schedule, _ = CrontabSchedule.objects.get_or_create(
+            minute = time.minute,
+            hour = time.hour,
+            day_of_month = parser.parse(schedule['dayOfMonth']).day #TODO: use datetime for this instead?
+        )
+    
+    return periodic_schedule
+
+
+def generate_task_name(task):
+    task_name = task + '_' + str(uuid4())
+    task = 'scheduler.tasks.' + task 
+
+    return (task_name, task)

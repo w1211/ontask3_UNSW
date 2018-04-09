@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { Layout, Breadcrumb, Icon, Button, Spin } from 'antd';
 
 import * as ContainerActionCreators from './ContainerActions';
-import { updateSchedule } from '../datasource/DatasourceActions';
+import { updateSchedule, deleteSchedule } from '../datasource/DatasourceActions';
 
 import ContainerModal from './ContainerModal';
 import ContainerList from './ContainerList';
@@ -24,7 +24,7 @@ class Container extends React.Component {
 
     this.boundActionCreators = bindActionCreators({
       ...ContainerActionCreators, 
-      updateSchedule,
+      updateSchedule, deleteSchedule
     }, dispatch);
 
   };
@@ -65,7 +65,7 @@ class Container extends React.Component {
                   <DatasourceModal/>
                   <SchedulerModal
                     onUpdate={this.boundActionCreators.updateSchedule}
-                    onDelete={() => console.log('delete')}
+                    onDelete={this.boundActionCreators.deleteSchedule}
                     allowFutureStart={false}
                   />
 

@@ -27,7 +27,7 @@ class SchedulerModal extends React.Component {
     form.validateFields((err, values) => {
       if (err) return;
 
-      values.time = values.time.format();
+      values.time = values.time.utc().format();
       if ('dayOfMonth' in values) values.dayOfMonth = values.dayOfMonth.format();
       const isCreate = schedule ? true : false;
       onUpdate(selectedId, values, isCreate);
@@ -87,7 +87,7 @@ class SchedulerModal extends React.Component {
         <Form layout="horizontal">
           <FormItem {...formItemLayout} label="Time">
             { getFieldDecorator('time', {
-                initialValue: schedule ? moment(schedule.time) : null,
+                initialValue: schedule ? moment.utc(schedule.time).local() : null,
                 rules: [{ required: true, message: 'Time is required' }]
             })(
               <TimePicker format={'HH:mm'}/>
@@ -143,10 +143,10 @@ class SchedulerModal extends React.Component {
           { form.getFieldValue('frequency') === "monthly" &&
             <FormItem {...formItemLayout} label="When">
               { getFieldDecorator('dayOfMonth', {
-                initialValue: schedule ? moment(schedule.dayOfMonth).format('DD') : null,
+                initialValue: schedule && schedule.dayOfMonth ? moment(schedule.dayOfMonth) : null,
                 rules: [{ required: true, message: 'When is required' }]
               })(
-                <DatePicker style={{ maxWidth: 250 }} format={'DD'} disabledDate={this.disabledDate}/>
+                <DatePicker style={{ maxWidth: 250 }} format={'DD'}/>
               )}
             </FormItem>
           }

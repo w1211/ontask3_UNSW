@@ -111,14 +111,11 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
-
 USE_I18N = True
 
 USE_L10N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
@@ -141,6 +138,9 @@ AUTH_USER_MODEL = 'authtools.User'
 # http://docs.celeryproject.org/en/latest/getting-started/brokers/rabbitmq.html
 
 CELERY_BROKER_URL = 'amqp://localhost'
+CELERY_TIMEZONE = 'UTC'
+CELERY_ENABLE_UTC = True
+TIME_ZONE = 'UTC'
 
 DB_DRIVER_MAPPING = {
     "postgresql": "postgresql",
