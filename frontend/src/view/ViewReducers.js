@@ -128,7 +128,8 @@ function view(state = {}, action) {
       return Object.assign({}, state, {
         visible: false,
         column: null,
-        index: null
+        index: null,
+        error: null
       });
 
     default:

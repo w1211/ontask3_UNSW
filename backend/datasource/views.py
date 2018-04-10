@@ -185,7 +185,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
                 connection = connection,
                 data = data,
                 fields = fields,
-                lastUpdated = datetime.now()
+                lastUpdated = datetime.utcnow()
             )
         else:
             serializer.save(connection = connection)

@@ -29,13 +29,15 @@ class DatasourceModal extends React.Component {
   componentWillReceiveProps(nextProps) {
     if (!nextProps.visible) this.setState({
       file: null,
-      error: null
+      error: null,
+      fileType: null,
+      isS3Csv: null
     });
 
     // If we are opening the modal
     if (!this.props.visible && nextProps.visible && nextProps.selected) {
       // Set the state that indicates the file type, so that the view renders correctly
-      // This is only relevant whenn editing an existing datasource
+      // This is only relevant when editing an existing datasource
       this.setState({ fileType: nextProps.selected.connection.dbType });
     }
   }
@@ -103,28 +105,24 @@ class DatasourceModal extends React.Component {
     fileName = fileName.split('.');
     const extension = fileName[fileName.length - 1].toLowerCase();
 
-    if(['xlsx', 'xls'].includes(extension)){
+    if (['xlsx', 'xls'].includes(extension)) {
       this.boundActionCreators.fetchSheetnames(null, {
         'bucket': form.getFieldValue('connection.bucket'), 
         'fileName': form.getFieldValue('connection.fileName')
       });
-      this.setState({isS3Csv:false});
+      this.setState({ isS3Csv: false });
     }
     else if(['csv', 'txt'].includes(extension)){
-      this.setState({isS3Csv:true});
+      this.setState({ isS3Csv: true });
     }
     else {
-      this.setState({isS3Csv:false});
+      this.setState({ isS3Csv: false });
     }
   }
 
   render() {
     const { selected, visible, loading, error, form, sheetnames } = this.props;
-    const { fileType, file, isS3Csv} = this.state
-    const isFile = ['xlsXlsxFile', 'csvTextFile', 's3BucketFile'].includes(fileType);
-    const isCSV = fileType === 'csvTextFile';
-    const isLocalFile = ['xlsXlsxFile', 'csvTextFile'].includes(fileType);
-    const isS3Bucket = fileType === 's3BucketFile';
+    const { fileType, file, isS3Csv } = this.state
     
     return (
       <Modal
@@ -136,14 +134,6 @@ class DatasourceModal extends React.Component {
         confirmLoading={loading}
       >
         <Form layout="horizontal">
-          <FormItem {...formItemLayout} label="Name">
-            {form.getFieldDecorator('name', {
-              initialValue: selected ? selected.name : null,
-              rules: [{ required: true, message: 'Name is required' }]
-            })(
-              <Input/>
-            )}
-          </FormItem>
           
           <FormItem {...formItemLayout} label="Type">
             {form.getFieldDecorator('connection.dbType', {
@@ -162,11 +152,26 @@ class DatasourceModal extends React.Component {
             )}
           </FormItem>
 
-          { isS3Bucket && <S3Bucket form={form} checkS3FileType={this.checkS3FileType} selected={selected}/> }
+          <FormItem {...formItemLayout} label="Datasource name">
+            {form.getFieldDecorator('name', {
+              initialValue: selected ? selected.name : null,
+              rules: [{ required: true, message: 'Name is required' }]
+            })(
+              <Input/>
+            )}
+          </FormItem>
+          
+          { fileType === 's3BucketFile' && 
+            <S3Bucket form={form} checkS3FileType={this.checkS3FileType} selected={selected}/> 
+          }
 
-          { (isCSV || isS3Csv) && <Delimiter form={form} selected={selected}/> }
+          { (fileType === 'csvTextFile' || isS3Csv) && 
+            <Delimiter form={form} selected={selected}/> 
+          }
 
-          { isLocalFile && <LocalFile form={form} onChange={this.handleFileDrop} selected={selected}/> }
+          { ['xlsXlsxFile', 'csvTextFile'].includes(fileType) && 
+            <LocalFile form={form} onChange={this.handleFileDrop} selected={selected}/> 
+          }
           
           { file && 
             <div>
@@ -174,9 +179,13 @@ class DatasourceModal extends React.Component {
             </div>
           }
 
-          { sheetnames && <SheetNames form={form} sheetnames={sheetnames} selected={selected}/> }
+          { sheetnames && 
+            <SheetNames form={form} sheetnames={sheetnames} selected={selected}/> 
+          }
           
-          { !isFile && <ConnectionSettings form={form} selected={selected} isFile={isFile}/> }
+          { ['mysql', 'postgresql', 'sqlite', 'mssql'].includes(fileType) && 
+            <ConnectionSettings form={form} selected={selected}/> 
+          }
 
           { this.state.error && <Alert style={{ marginTop: 10 }} message={this.state.error} type="error"/> }
           { error && <Alert style={{ marginTop: 10 }} message={error} type="error"/>}

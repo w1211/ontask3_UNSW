@@ -33,5 +33,5 @@ class DataSource(Document):
     data = fields.ListField(fields.DictField())
     schedule = fields.EmbeddedDocumentField(Schedule, null=True)
     # Last time the data was updated
-    lastUpdated = fields.DateTimeField(default=datetime.now)
+    lastUpdated = fields.DateTimeField(default=datetime.utcnow)
     fields = fields.ListField(fields.StringField())
