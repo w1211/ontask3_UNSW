@@ -68,6 +68,14 @@ class ColumnModal extends React.Component {
     });
   };
 
+  generateLabel = (fields, field) => {
+    let suffix = 1;
+    while (fields.includes(`${field}_${suffix}`)) {
+      suffix += 1;
+    }
+    return `${field}_${suffix}`;
+  };
+
   handleChangeField = (e) => {
     const { form, view } = this.props;
 
@@ -92,6 +100,12 @@ class ColumnModal extends React.Component {
     // If the field chosen has a duplicate name, then require that the user enters a label
     const fields = view.columns.map(column => column.label ? column.label : column.field);
     const labelRequired = fields.includes(field);
+
+    if (labelRequired) {
+      form.setFieldsValue({ label: this.generateLabel(fields, field) });
+    } else {
+      form.setFieldsValue({ label: field });
+    }
 
     this.setState({ datasource, field, labelRequired });
   };

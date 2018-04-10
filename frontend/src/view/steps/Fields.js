@@ -69,7 +69,7 @@ const Fields = ({ error, form, formState, datasources, options, onChangeFields, 
       const newField = datasources[datasourceIndex].fields[fieldIndex];
   
       if (fields.includes(newField)) {
-        onDuplicateField(e);
+        onDuplicateField(e, newField);
         return e.slice(0, -1);
       } else {
         onChangeFields(e);
@@ -103,7 +103,9 @@ const Fields = ({ error, form, formState, datasources, options, onChangeFields, 
         chosenDatasources.length > 0 &&
         <div>
           <h4 style={{ display: 'inline-block' }}>Matching fields</h4>
-          <Tooltip title="prompt text">
+          <Tooltip 
+            title="You are using fields from more than one datasource. For each datasource below, please specify which field should be used to match against the primary key."
+          >
             <Icon style={{ marginLeft: 5, cursor: 'help' }} type="question-circle-o" />
           </Tooltip>
           
@@ -127,7 +129,9 @@ const Fields = ({ error, form, formState, datasources, options, onChangeFields, 
 
         </div>
       }
-      { !error && <Alert style={{ marginTop: 10 }} message="Informational Notes" type="info" showIcon/> }
+      { !error && <Alert style={{ marginTop: 10 }} type="info" showIcon
+        message="You may add fields from any datasources attached to the DataLab's container. The fields will then be matched against the primary key to join the data together." 
+      /> }
     </div>
   )
 };

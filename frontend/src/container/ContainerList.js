@@ -147,11 +147,11 @@ class ContainerList extends React.Component {
                   </div>
                 </TabPane>
               
-                <TabPane tab={`Views (${container.views.length})`}  key="2">
+                <TabPane tab={`DataLabs (${container.views.length})`}  key="2">
                   <div className="tab">
                     {container.views.length > 0 && 
                       <div style={{ width: '100%' }}>
-                        <Input style={{ marginBottom: 10, maxWidth: 500 }} placeholder="Filter views by name"
+                        <Input style={{ marginBottom: 10, maxWidth: 500 }} placeholder="Filter DataLabs by name"
                           value={this.state.viewFilter} 
                           addonAfter={
                             <Tooltip title="Clear filter">
@@ -176,10 +176,10 @@ class ContainerList extends React.Component {
                                 <Button icon="table"/>
                               </Link>
                             </Tooltip>,
-                            <Tooltip title="Edit view">
+                            <Tooltip title="Edit DataLab">
                               <Button icon="edit" onClick={() => { dispatch(this.boundActionCreators.openViewModal(container.id, container.datasources, view)); }}/>
                             </Tooltip>,
-                            <Tooltip title="Delete view">
+                            <Tooltip title="Delete DataLab">
                               <Button type="danger" icon="delete" onClick={() => { this.boundActionCreators.deleteView(view.id); }}/>
                             </Tooltip>
                           ]}
@@ -195,7 +195,7 @@ class ContainerList extends React.Component {
                     })}
                     <div className="add item" onClick={() => { dispatch(this.boundActionCreators.openViewModal(container.id, container.datasources)); }}>
                       <Icon type="plus"/>
-                      <span>Create view</span>
+                      <span>Create DataLab</span>
                     </div>
                   </div>
                 </TabPane>

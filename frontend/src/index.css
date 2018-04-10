@@ -19,3 +19,8 @@ body, #root {
 .ant-layout-sider-children {
   margin-top: 0;
 }
+
+/* Capitalize drop-down menu headers */
+.ant-select-dropdown-menu-item-group-title {
+  color: #1890ff;
+}

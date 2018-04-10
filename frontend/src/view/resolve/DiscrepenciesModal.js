@@ -30,6 +30,8 @@ const DiscrepenciesModal = ({ form, visible, onCancel, onOk, view }) => {
     })
   }
 
+  const primary = view.datasources.find(datasource => datasource.id === view.columns[0].datasource);
+
   return (
     <Modal
       visible={visible}
@@ -44,7 +46,7 @@ const DiscrepenciesModal = ({ form, visible, onCancel, onOk, view }) => {
           return (
             <div key={i}>
               <h4 style={{ marginBottom: 0}}>
-                {discrepency.matching} ({datasource.name}) <Icon type="arrow-right" /> {view.columns[0].field}
+                {discrepency.matching} ({datasource.name}) <Icon type="arrow-right" /> {view.columns[0].field} ({primary.name})
               </h4>
 
               { 'dropPrimary' in discrepency &&

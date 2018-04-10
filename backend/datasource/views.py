@@ -222,11 +222,13 @@ class DataSourceViewSet(viewsets.ModelViewSet):
 
         if len(unique_in_matching) > 0:
             response['matching'] = [value for value in unique_in_matching]
+            response['matching_datasource_name'] = matching_datasource.name
 
         unique_in_primary = primary_keys - matching_fields # Values which are in the primary datasource but not the matching
 
         if len(unique_in_primary) > 0:
             response['primary'] = [value for value in unique_in_primary]
+            response['primary_datasource_name'] = primary_datasource.name
 
         return JsonResponse(response, safe=False)
 

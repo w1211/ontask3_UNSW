@@ -6,7 +6,7 @@ import formItemLayout from '../../shared/FormItemLayout';
 const FormItem = Form.Item;
 
 
-const ResolveFieldNameModal = ({ form, formState, visible, onCancel, onOk }) => {
+const ResolveFieldNameModal = ({ form, formState, visible, onCancel, onOk, duplicateField }) => {
   // Don't render anything if visible is false, 
   // So that the form does not try to validate against the fields in this component
   if (!formState || !visible) return null;
@@ -21,6 +21,14 @@ const ResolveFieldNameModal = ({ form, formState, visible, onCancel, onOk }) => 
     // Otherwise return no errors
     callback();
     return;
+  };
+
+  const generateLabel = (field) => {
+    let suffix = 1;
+    while (fields.includes(`${field}_${suffix}`)) {
+      suffix += 1;
+    }
+    return `${field}_${suffix}`;
   };
   
   return (
@@ -39,6 +47,7 @@ const ResolveFieldNameModal = ({ form, formState, visible, onCancel, onOk }) => 
       <p>A field is already being used with this name. Provide a new name (label) for this field:</p>
       <FormItem {...formItemLayout} label="Label">
           {form.getFieldDecorator('label', {
+            initialValue: generateLabel(duplicateField),
             rules: [
               { required: true, message: 'Label is required' },
               { validator: checkFields } // Custom validator to ensure that the new field name is not another duplicate

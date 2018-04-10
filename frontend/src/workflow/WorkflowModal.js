@@ -56,9 +56,9 @@ class WorkflowModal extends React.Component {
               <TextArea rows={4}/>
             )}
           </FormItem>
-          <FormItem {...formItemLayout} label="View">
+          <FormItem {...formItemLayout} label="DataLab">
             {form.getFieldDecorator('view', {
-              rules: [{ required: true, message: 'View is required' }]
+              rules: [{ required: true, message: 'DataLab is required' }]
             })(
               <Select>
                 { views && views.map((view, i) => {

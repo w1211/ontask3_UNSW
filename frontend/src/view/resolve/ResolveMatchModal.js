@@ -28,7 +28,10 @@ const ResolveMatchModal = ({ form, visible, fieldMatchResult, matchingField, onC
       <p>Record mismatches have been detected between the primary key and the matching field. How should these discrepencies be handled?</p>
       { mismatchedPrimaryRecords && 
         <div style={{ position: 'relative' }}>
-          <p>The following records occur in the primary key but not in the matching field:</p>
+          <p>
+            The following records occur in the primary key ({fieldMatchResult.primary_datasource_name}) 
+            but not in the matching field ({fieldMatchResult.matching_datasource_name}):
+          </p>
           <Table 
             size="small"
             pagination={{ size: 'small', pageSize: 5 }}
@@ -47,7 +50,10 @@ const ResolveMatchModal = ({ form, visible, fieldMatchResult, matchingField, onC
       }
       { mismatchedMatchingFieldRecords &&
         <div style={{ position: 'relative' }}>
-          <p>The following records occur in the matching field but not in the primary key:</p>
+          <p>
+            The following records occur in the matching field ({fieldMatchResult.matching_datasource_name})
+            but not in the primary key ({fieldMatchResult.primary_datasource_name}):
+          </p>
           <Table 
             size="small"
             pagination={{ size: 'small', pageSize: 5 }}

@@ -33,7 +33,8 @@ class ViewModal extends React.Component {
       viewMode: 'details',
       resolveMatchVisible: false,
       resolveFieldNameVisible: false,
-      newFields: null
+      newFields: null,
+      duplicateField: null
     };
   }
   
@@ -97,7 +98,7 @@ class ViewModal extends React.Component {
         onChangeDefaultMatchingField={ (matchingField, primaryKey) => { this.boundActionCreators.changeDefaultMatchingField(matchingField, primaryKey) }}
       />,
     }, {
-      title: 'Preview',
+      title: 'Checks',
       content: <Preview
         form={form}
         formState={formState}
@@ -191,13 +192,13 @@ class ViewModal extends React.Component {
   }
 
   render() {
-    const { current, resolveMatchVisible, resolveFieldNameVisible, newFields } = this.state;
+    const { current, resolveMatchVisible, resolveFieldNameVisible, newFields, duplicateField } = this.state;
     const { form, formState, visible, loading, error, selectedId, fieldMatchResult, matchingField } = this.props;
 
     return (
       <Modal
         visible={visible}
-        title='Views'
+        title='DataLab'
         onCancel={this.handleClose}
         footer={
           <div>
@@ -241,6 +242,7 @@ class ViewModal extends React.Component {
             formState={formState}
             visible={resolveFieldNameVisible}
             newFields={newFields}
+            duplicateField={duplicateField}
 
             onCancel={() => { this.setState({ resolveFieldNameVisible: false, newFields: null }); }}
             onOk={this.resolveDuplicateField}
@@ -305,10 +307,11 @@ class ViewModal extends React.Component {
     });
   }
 
-  onDuplicateField = (newFields) => {
+  onDuplicateField = (newFields, duplicateField) => {
     this.setState({
       resolveFieldNameVisible: true,
-      newFields
+      newFields,
+      duplicateField
     })
   }
 
@@ -322,7 +325,8 @@ class ViewModal extends React.Component {
       this.boundActionCreators.changeFields(newFields, result.label);
       this.setState({
         resolveFieldNameVisible: false,
-        newFields: null
+        newFields: null,
+        duplicateField: null
       });
     });
   }

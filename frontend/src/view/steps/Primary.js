@@ -36,7 +36,7 @@ const Primary = ({ form, formState, options, view, onChange }) => {
 
   return (
     <div>
-      <FormItem {...formItemLayout} label="Name">
+      <FormItem {...formItemLayout} label="DataLab Name">
         {form.getFieldDecorator('name', {
           initialValue: formState && formState.name ? formState.name.value : undefined,
           rules: [{ required: true, message: 'Name is required' }]
@@ -56,7 +56,9 @@ const Primary = ({ form, formState, options, view, onChange }) => {
           </Select>
         )}
       </FormItem>
-      <Alert style={{ marginTop: 10 }} message="Informational Notes" type="info" showIcon/>
+      <Alert style={{ marginTop: 10 }} type="info" showIcon
+         message="The primary key should be a field that uniquely identifies the records of your intended data set, e.g. zID or email." 
+      />
     </div>
   );
 };
