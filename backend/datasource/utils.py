@@ -1,30 +1,22 @@
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-
+from cryptography.fernet import Fernet
+from ontask.settings import SECRET_KEY, DB_DRIVER_MAPPING, SMTP,\
+                            AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import URL
-from cryptography.fernet import Fernet
 from xlrd import open_workbook
 import csv
 import boto3
 import io
-from dateutil import parser
-from datetime import datetime
-from django_celery_beat.models import CrontabSchedule, IntervalSchedule
-from uuid import uuid4
-
-from ontask.settings import SECRET_KEY, DB_DRIVER_MAPPING, SMTP,\
-                            AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION
-
 
 def retrieve_sql_data(connection):
     '''Generic service to retrieve data from an sql server with a provided query'''
 
     # Decrypt the password provided by the user to connect to the remote database
     cipher = Fernet(SECRET_KEY)
-    decrypted_password = cipher.decrypt(bytes(connection['password'], encoding="UTF-8"))
-
+    try:
+      decrypted_password = cipher.decrypt(bytes(connection['password'], encoding="UTF-8"))
+    except:
+      decrypted_password = cipher.decrypt(connection['password'])
     # Initialize the DB connection parameters
     connection_parameters = {
         'drivername': DB_DRIVER_MAPPING[connection['dbType']],
@@ -119,62 +111,3 @@ def retrieve_file_from_s3(connection):
             raise Exception('File type is not supported')
     except:
         raise Exception('Error reading file from s3 bucket')
-
-
-def send_email(recipient, subject, content, reply_to=None):
-    '''Generic service to send email from the application'''
-    
-    try:
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = subject
-        msg['From'] = SMTP['USER']
-        msg['To'] = recipient
-        if reply_to:
-            msg['Reply-To'] = reply_to
-
-        msg.attach(MIMEText(content, 'html'))
-
-        s = smtplib.SMTP(host=SMTP['HOST'], port=SMTP['PORT'])
-        if SMTP['USE_TLS']:
-            s.starttls()
-
-        s.login(SMTP['USER'], SMTP['PASSWORD'])
-        s.sendmail(SMTP['USER'], recipient, msg.as_string())
-        s.quit()
-        return True
-
-    except:
-        raise Exception("Error sending email")
-
-
-def create_crontab(schedule):
-    time = datetime.strptime(schedule['time'], "%Y-%m-%dT%H:%M:%SZ")
-
-    if schedule['frequency'] == "daily":
-        periodic_schedule, _ = IntervalSchedule.objects.get_or_create(
-            every = int(schedule['dayFrequency']),
-            period = IntervalSchedule.DAYS
-        )
-
-    elif schedule['frequency'] == 'weekly':
-        periodic_schedule, _ = CrontabSchedule.objects.get_or_create(
-            minute = time.minute,
-            hour = time.hour,
-            day_of_week = (',').join(schedule['dayOfWeek'])
-        )
-    
-    elif schedule['frequency'] == 'monthly':
-        periodic_schedule, _ = CrontabSchedule.objects.get_or_create(
-            minute = time.minute,
-            hour = time.hour,
-            day_of_month = parser.parse(schedule['dayOfMonth']).day #TODO: use datetime for this instead?
-        )
-    
-    return periodic_schedule
-
-
-def generate_task_name(task):
-    task_name = task + '_' + str(uuid4())
-    task = 'scheduler.tasks.' + task 
-
-    return (task_name, task)

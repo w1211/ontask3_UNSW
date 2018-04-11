@@ -11,9 +11,11 @@ import json
 # from .rules_engine.matrix import Matrix
 # from .rules_engine.rules import Rules
 
-from .utils import retrieve_sql_data, retrieve_file_from_s3, create_crontab, generate_task_name, send_email
-from ontask.settings import NOSQL_DATABASE
+from datasource.utils import retrieve_sql_data, retrieve_file_from_s3
+from workflow.utils import evaluate_filter, populate_content
+from .task_utils import *
 
+from ontask.settings import NOSQL_DATABASE
 
 @shared_task
 def instantiate_periodic_task(task, task_type, task_name, schedule, arguments):
@@ -52,28 +54,6 @@ def remove_periodic_task(task_name):
     except Exception as exception:
         response_message = exception
     return response_message
-    
-def create_scheduled_task(task, schedule, arguments):
-    (task_name, task) = generate_task_name(task)
-    
-    if 'startTime' in schedule:
-        start_time = datetime.strptime(schedule['startTime'], "%Y-%m-%dT%H:%M:%SZ")
-        instantiate_periodic_task.apply_async(args=(task, 'crontab', task_name, schedule, arguments), eta=start_time)
-    else:
-        if schedule['frequency'] == 'daily':
-            start_time = datetime.strptime(schedule['time'], "%Y-%m-%dT%H:%M:%SZ")
-            if start_time < datetime.utcnow():
-                start_time += timedelta(days=1)
-            instantiate_periodic_task.apply_async(args=(task, 'interval', task_name, schedule, arguments), eta=start_time)
-
-        else:
-            instantiate_periodic_task.apply_async(args=(task, 'crontab', task_name, schedule, arguments))
-
-    if 'endTime' in schedule:
-        end_time = datetime.strptime(schedule['endTime'], "%Y-%m-%dT%H:%M:%SZ")
-        remove_periodic_task.apply_async(args=(task_name), eta=end_time)
-
-    return task_name
 
 @shared_task
 def refresh_datasource_data(datasource_id):
@@ -122,9 +102,9 @@ def workflow_send_email(workflow_id):
     subject = workflow.emailSettings.subject
     reply_to = workflow.emailSettings.reply_to
     
-    html = list(value for key, value in WorkflowViewSet.populate_content(workflow, workflow.content.html).items())
+    html = list(value for key, value in populate_content(workflow, workflow.content.html).items())
 
-    data = WorkflowViewSet.evaluate_filter(workflow.view, workflow.filter)
+    data = evaluate_filter(workflow.view, workflow.filter)
     primary_key = workflow.view.columns[0]['field']
     failed_emails = list()
 

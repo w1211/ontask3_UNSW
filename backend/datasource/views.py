@@ -21,8 +21,8 @@ from container.models import Container
 from workflow.models import Workflow
 from view.models import View
 
-from scheduler.utils import retrieve_csv_data, retrieve_excel_data, retrieve_file_from_s3, retrieve_sql_data
-from scheduler.tasks import create_scheduled_task, remove_periodic_task
+from .utils import retrieve_csv_data, retrieve_excel_data, retrieve_file_from_s3, retrieve_sql_data
+from scheduler.backend_utils import create_scheduled_task, remove_scheduled_task
 
 
 class DataSourceViewSet(viewsets.ModelViewSet):
@@ -235,7 +235,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         datasource = DataSource.objects.get(id=id)
 
         if datasource['schedule']['taskName']:
-            remove_periodic_task(datasource['schedule']['taskName'])
+            remove_scheduled_task(datasource['schedule']['taskName'])
 
         datasource.update(unset__schedule=1)
 
@@ -249,7 +249,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
 
         # If a schedule already exists for this datasource, then delete it
         if 'schedule' in datasource and 'taskName' in datasource['schedule']:
-            remove_periodic_task(datasource['schedule']['taskName'])
+            remove_scheduled_task(datasource['schedule']['taskName'])
 
         task_name = create_scheduled_task('refresh_datasource_data', request.data, arguments)
         
