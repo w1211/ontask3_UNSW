@@ -1,8 +1,10 @@
 #!/bin/bash
 
-source virtualenvs/backend/bin/activate
+source backend/virtualenv/bin/activate
+
 uwsgi --stop tmp/ontask.pid
-uwsgi --stop tmp/scheduler.pid
+circusctl quit --waiting
+
 deactivate
 
 echo "---------------------------------"

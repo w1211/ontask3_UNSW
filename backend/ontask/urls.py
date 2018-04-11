@@ -38,8 +38,8 @@ router.register(r'workflow', WorkflowViewSet, r"workflow")
 router.register(r'audit', AuditViewSet, r"audit")
 
 urlpatterns = [
-    url(r'^api/', include(router.urls, namespace='api')),
+    url(r'^api/', include((router.urls, 'api'), namespace='api')),
     url(r'^admin/', admin.site.urls),
     url(r'^token/', views.obtain_auth_token),
-    url(r'^api/', include(accounts.urls, namespace='accounts')),
+    url(r'^api/', include((accounts.urls, 'accounts'), namespace='accounts')),
 ]

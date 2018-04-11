@@ -24,13 +24,13 @@ backend/config/dev.*
 backend/config/prod.*
 backend/db.sqlite3
 
+# Backend virtual environment
+backend/virtualenv
+
 # Frontend files
 frontend/node_modules
 frontend/build
 frontend/.env.*
-
-# Virtual environments
-virtualenvs/*
 
 # Logs and temporary files
 logs/*
