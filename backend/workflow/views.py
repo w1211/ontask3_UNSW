@@ -451,33 +451,44 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         primary_key = workflow.view.columns[0]['field']
         failed_emails = list()
 
-        for index, item in enumerate(data):
-            email_sent = send_email(item[field], subject, html[index], reply_to)
-            if not email_sent:
-                failed_emails.append(item[primary_key])
-            else:
-                serializer = AuditSerializer(data = {
-                    'workflowId': id, 
-                    'creator': self.request.user.email,
-                    # TODO: add reply-to
-                    'receiver': item[field], 
-                    'emailBody': html[index],
-                    'emailSubject': subject
-                })
-                serializer.is_valid()
-                serializer.save()
-                
-        if len(failed_emails) > 0:
-            raise ValidationError('Emails to the following records failed to send: ' + str(failed_emails).strip('[]').strip("'"))
-        
+        task_name = workflow.schedule.taskName if workflow.schedule else None
+
+        #if schedule exists
+        if workflow.schedule and not workflow.schedule.taskName:
+            #if send email with schedule
+            arguments = json.dumps({ "workflow_id": id })
+            task_name = create_scheduled_task('workflow_send_email', workflow.schedule, arguments)
+        else:
+            #if only send email once-off
+            for index, item in enumerate(data):
+                email_sent = send_email(item[field], subject, html[index], reply_to)
+                if not email_sent:
+                    failed_emails.append(item[primary_key])
+                else:
+                    serializer = AuditSerializer(data = {
+                        'workflowId': id, 
+                        'creator': self.request.user.email,
+                        # TODO: add reply-to
+                        'receiver': item[field], 
+                        'emailBody': html[index],
+                        'emailSubject': subject
+                    })
+                    serializer.is_valid()
+                    serializer.save() 
+            if len(failed_emails) > 0:
+                raise ValidationError('Emails to the following records failed to send: ' + str(failed_emails).strip('[]').strip("'"))
+       
+       #saving email settings
         serializer = WorkflowSerializer(instance=workflow, data={
-            'emailSettings': request.data['emailSettings']
+            'emailSettings': request.data['emailSettings'],
+            'schedule.taskName': task_name
         }, partial=True)
         serializer.is_valid()
         serializer.save()
-
         return JsonResponse({ 'success': 'true' }, safe=False)
-    
+
+        
+
     #retrive email sending history and generate static page.
     @detail_route(methods=['get'])
     def retrieve_history(self, request, id=None):
@@ -543,10 +554,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     @detail_route(methods=['patch'])
     def delete_schedule(self, request, id=None):
         workflow = Workflow.objects.get(id=id)
-
-        # if workflow['schedule']['taskName']:
-        #     remove_periodic_task(datasource['schedule']['taskName'])
-
         workflow.update(unset__schedule=1)
 
         return JsonResponse({ "success": True })
@@ -554,29 +561,13 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     @detail_route(methods=['patch'])
     def update_schedule(self, request, id=None):
         workflow = Workflow.objects.get(id=id)
-        # arguments = json.dumps({ "workflow_id": id })
-
-        # If a schedule already exists for this datasource, then delete it
-        # if 'schedule' in datasource and 'taskName' in datasource['schedule']:
-        #     remove_periodic_task(datasource['schedule']['taskName'])
-        
-        # task_name = create_scheduled_task('refresh_datasource_data', request.data, arguments)
-        
-        # if task_name:
         schedule = request.data
-        print(schedule)
         schedule['startTime'] = request.data['dateRange'][0]
         schedule['endTime'] = request.data['dateRange'][1]
-        # schedule['taskName'] = task_name
 
         serializer = WorkflowSerializer(workflow, data={
             'schedule': schedule
         }, partial=True)
-        print("here storing schedule")
-        print(schedule)
         serializer.is_valid()
         serializer.save()
         return JsonResponse({ "success":True }, safe=False)
-        # else:
-            # return JsonResponse({ "success": False }, safe=False)
-        

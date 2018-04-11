@@ -60,7 +60,7 @@ class SchedulerModal extends React.Component {
 
   // User can not select days before today, today and one year after
   disabledDate = (current) => {
-    if (current < moment().endOf('day') || current > moment().add(1,'y')) {
+    if (current < moment().startOf('day') || current > moment().add(1,'y')) {
       return true;
     };
     return false;

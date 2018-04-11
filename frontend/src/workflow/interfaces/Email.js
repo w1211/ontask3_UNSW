@@ -217,7 +217,7 @@ class Email extends React.Component {
 
         <div style={{ marginTop: '10px' }}>
           <Button loading={loading} type="primary" size="large" onClick={this.handleSubmit}>
-            { form.getFieldValue('schedule.enabled') ? 
+            { workflow && workflow.schedule ? 
               'Save'
             :
               'Send once-off email'
