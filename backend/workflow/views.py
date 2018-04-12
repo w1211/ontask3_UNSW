@@ -25,7 +25,8 @@ from collections import defaultdict
 
 from django.conf import settings
 
-from scheduler.utils import send_email
+from scheduler.backend_utils import send_email, create_scheduled_task, remove_scheduled_task
+from .utils import *
 
 
 class WorkflowViewSet(viewsets.ModelViewSet):
@@ -76,53 +77,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         #     serializer.data['schedule']['endDate'] = dateutil.parser.parse(serializer.data['schedule']['endDate']).strftime('%Y-%m-%d')
         #     serializer.data['schedule']['time'] = dateutil.parser.parse(serializer.data['schedule']['time']).strftime('%H:%M')
         return JsonResponse(serializer.data, safe=False)
-        
-    def did_pass_formula(self, item, formula):
-        operator = formula['operator']
-        comparator = formula['comparator']
-        value = item[formula['field']]
-
-        if operator == '==':
-            return value == comparator
-        elif operator == '!=':
-            return value != comparator
-        elif operator == '<':
-            return value < comparator
-        elif operator == '<=':
-            return value <= comparator
-        elif operator == '>':
-            return value > comparator
-        elif operator == '>=':
-            return value >= comparator
-        
-    def evaluate_filter(self, view, filter):
-        if not filter:
-            return view.data
-
-        filtered_data = list()
-
-        # Iterate over the rows in the data and return any rows which pass true
-        for item in view.data:
-            didPass = False
-
-            if len(filter['formulas']) == 1:
-                if self.did_pass_formula(item, filter['formulas'][0]):
-                    didPass = True
-
-            elif filter['type'] == 'and':
-                pass_counts = [self.did_pass_formula(item, formula) for formula in filter['formulas']]
-                if sum(pass_counts) == len(filter['formulas']):
-                    didPass = True
-
-            elif filter['type'] == 'or':
-                pass_counts = [self.did_pass_formula(item, formula) for formula in filter['formulas']]
-                if sum(pass_counts) > 0:
-                    didPass = True
-
-            if didPass:
-                filtered_data.append(item)
-
-        return filtered_data
 
     @detail_route(methods=['put'])
     def update_filter(self, request, id=None):
@@ -148,7 +102,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                     raise ValidationError(f'Invalid formula: field \'{formula["field"]}\' does not exist in the view')
 
             # Filter the data to store the number of records
-            filtered_data = self.evaluate_filter(workflow.view, updated_filter)
+            filtered_data = evaluate_filter(workflow.view, updated_filter)
             workflow.filtered_count = len(filtered_data)
         else:
             workflow.filtered_count = 0
@@ -159,62 +113,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         serializer.save()
 
         return JsonResponse(serializer.data, safe=False)
-
-    def evaluate_condition_group(self, data, condition_group, primary_field):
-        conditions_passed = defaultdict(list)
-
-        # Iterate over the rows in the data and return any rows which pass true
-        for item in data:
-            # Ensure that each item passes the test for only one condition per condition group
-            matchedCount = 0
-
-            for condition in condition_group['conditions']:
-                didPass = False
-
-                if len(condition['formulas']) == 1:
-                    if self.did_pass_formula(item, condition['formulas'][0]):
-                        didPass = True
-
-                elif condition['type'] == 'and':
-                    pass_counts = [self.did_pass_formula(item, formula) for formula in condition['formulas']]
-                    if sum(pass_counts) == len(condition['formulas']):
-                        didPass = True
-
-                elif condition['type'] == 'or':
-                    pass_counts = [self.did_pass_formula(item, formula) for formula in condition['formulas']]
-                    if sum(pass_counts) > 0:
-                        didPass = True
-
-                if didPass:
-                    conditions_passed[condition['name']].append(item[primary_field])
-                    matchedCount += 1
-
-            if matchedCount > 1:
-                raise ValidationError('An item has matched with more than one condition in the condition group \'{0}\''.format(condition_group['name']))
-        return conditions_passed
-
-    def validate_condition_group(self, workflow, condition_group):
-        data = self.evaluate_filter(workflow.view, workflow.filter)
-
-        # Confirm that all provided fields are defined in the workflow details
-        fields = [column['label'] if column['label'] else column['field'] for column in workflow.view.columns]
-
-        for condition in condition_group['conditions']:
-            for formula in condition['formulas']:
-
-                # Parse the output of the field/operator cascader from the condition group form in the frontend
-                # Only necessary if this is being called after a post from the frontend
-                if 'fieldOperator' in formula:
-                    formula['field'] = formula['fieldOperator'][0]
-                    formula['operator'] = formula['fieldOperator'][1]
-                    del formula['fieldOperator']
-
-                if formula['field'] not in fields:
-                    raise ValidationError('Invalid formula: field \'{0}\' does not exist in the workflow details'.format(formula['field']))
-
-        conditions_passed = self.evaluate_condition_group(data, condition_group, fields[0])
-
-        return conditions_passed
 
     @detail_route(methods=['put'])
     def create_condition_group(self, request, id=None):
@@ -296,84 +194,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         serializer.save()
         return JsonResponse(serializer.data, safe=False)
 
-    def check_condition_match(self, match, all_conditions_passed, item_key):
-        condition = match.group(1)
-        content_value = match.group(2)
-
-        if condition not in all_conditions_passed:
-            raise ValidationError('The condition \'{0}\' does not exist in any condition group for this workflow'.format(condition))
-
-        return content_value if item_key in all_conditions_passed[condition] else None
-
-    def populate_field(self, match, item):
-        field = match.group(1)
-        if field in item:
-            return str(item[field])
-        else:
-            return None
-
-    def populate_content(self, workflow, content=None, zid=None):
-        filtered_data = self.evaluate_filter(workflow.view, workflow.filter)
-
-        condition_groups = workflow['conditionGroups']
-        content = content if content else workflow['content']['plain']
-        primary_key = workflow.view['columns'][0]['field']
-
-        all_conditions_passed = dict()
-        # Combine all conditions from each condition group into a single dict
-        for condition_group in condition_groups:
-            conditions_passed = self.validate_condition_group(workflow, condition_group)
-            for condition in conditions_passed:
-                all_conditions_passed[condition] = conditions_passed[condition]
-
-        result = dict()
-        for item in filtered_data:
-            # Parse the conditional statements
-            item_key = item[primary_key]
-            # Use a positive lookahead to match the expected template syntax without replacing the closing block
-            # E.g. we have a template given by: {% if low_grade %} Low! {% elif high_grade %} High! {% endif %}
-            # We have found a match if the snippet is enclosed between two {% %} blocks
-            # However, when we are replacing/subbing the match, we don't want to replace the closing block
-            # This is because the closing block of the current match could also be the opening block of the next match
-            # I.e. in the example above, {% elif high_grade %} is both the closing block of the first match, and the opening block of the second match
-            # However, if the closing block is {% endif %}, then we can actually replace it instead of using a lookahead
-            # Because we know that in that case, there would be no further matches
-            item_content = re.sub(r'{% .*? (.*?) %}(.*?)({% endif %}|(?={% .*? %}))', lambda match: self.check_condition_match(match, all_conditions_passed, item_key), content)
-            # Populate the field tags
-            item_content = re.sub(r'{{ (.*?) }}', lambda match: self.populate_field(match, item), item_content)
-            result[item_key] = item_content
-
-        # #generate content for specific user
-        # if zid:
-        #     result=''
-        #     for item in data:
-        #         # Parse the conditional statements
-        #         item_key = item[primary_field]
-        #         if item_key == zid:
-        #             item_content = re.sub(r'{% .*? (.*?) %}(.*?)({% endif %}|(?={% .*? %}))', lambda match: self.check_condition_match(match, all_conditions_passed, item_key), content)
-        #             # Populate the field tags
-        #             result = re.sub(r'{{ (.*?) }}', lambda match: self.populate_field(match, item), item_content)
-        #     #return result as a string if found otherwise return empty string
-        #     return result
-        # else:
-        #     result = defaultdict(str)
-        #     for item in data:
-        #         # Parse the conditional statements
-        #         item_key = item[primary_field]
-        #         # Use a positive lookahead to match the expected template syntax without replacing the closing block
-        #         # E.g. we have a template given by: {% if low_grade %} Low! {% elif high_grade %} High! {% endif %}
-        #         # We have found a match if the snippet is enclosed between two {% %} blocks
-        #         # However, when we are replacing/subbing the match, we don't want to replace the closing block
-        #         # This is because the closing block of the current match could also be the opening block of the next match
-        #         # I.e. in the example above, {% elif high_grade %} is both the closing block of the first match, and the opening block of the second match
-        #         # However, if the closing block is {% endif %}, then we can actually replace it instead of using a lookahead
-        #         # Because we know that in that case, there would be no further matches
-        #         item_content = re.sub(r'{% .*? (.*?) %}(.*?)({% endif %}|(?={% .*? %}))', lambda match: self.check_condition_match(match, all_conditions_passed, item_key), content)
-        #         # Populate the field tags
-        #         item_content = re.sub(r'{{ (.*?) }}', lambda match: self.populate_field(match, item), item_content)
-        #         result[item_key] = item_content
-        return result
-
     @detail_route(methods=['put'])
     def preview_content(self, request, id=None):
         workflow = Workflow.objects.get(id=id)
@@ -381,7 +201,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         preview_content = self.request.data['html']
 
-        populated_content = list(value for key, value in self.populate_content(workflow, preview_content).items())
+        populated_content = list(value for key, value in populate_content(workflow, preview_content).items())
 
         return JsonResponse(populated_content, safe=False)
 
@@ -406,7 +226,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         updated_content['html'] = updated_content['html'].replace('"', "'")
 
         # Run the populate content function to validate the provided content before saving it
-        self.populate_content(workflow, updated_content['plain'])
+        populate_content(workflow, updated_content['plain'])
 
         serializer = WorkflowSerializer(instance=workflow, data={'content': updated_content}, partial=True)
         serializer.is_valid()
@@ -445,39 +265,51 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         subject = request.data['emailSettings']['subject']
         reply_to = request.data['emailSettings']['replyTo']
         
-        html = list(value for key, value in self.populate_content(workflow, workflow['content']['html']).items())
+        html = list(value for key, value in populate_content(workflow, workflow['content']['html']).items())
 
-        data = self.evaluate_filter(workflow.view, workflow.filter)
+        data = evaluate_filter(workflow.view, workflow.filter)
         primary_key = workflow.view.columns[0]['field']
         failed_emails = list()
 
-        for index, item in enumerate(data):
-            email_sent = send_email(item[field], subject, html[index], reply_to)
-            if not email_sent:
-                failed_emails.append(item[primary_key])
-            else:
-                serializer = AuditSerializer(data = {
-                    'workflowId': id, 
-                    'creator': self.request.user.email,
-                    # TODO: add reply-to
-                    'receiver': item[field], 
-                    'emailBody': html[index],
-                    'emailSubject': subject
-                })
-                serializer.is_valid()
-                serializer.save()
-                
-        if len(failed_emails) > 0:
-            raise ValidationError('Emails to the following records failed to send: ' + str(failed_emails).strip('[]').strip("'"))
-        
+        task_name = workflow.schedule.taskName if workflow.schedule else None
+
+        #if schedule exists
+        if workflow.schedule and not workflow.schedule.taskName:
+            #if send email with schedule
+            arguments = json.dumps({ "workflow_id": id })
+            schedule = mongo_to_dict(workflow.schedule)
+            print("here in workflow schedule")
+            print(schedule)
+            task_name = create_scheduled_task('workflow_send_email', schedule, arguments)
+        else:
+            #if only send email once-off
+            for index, item in enumerate(data):
+                email_sent = send_email(item[field], subject, html[index], reply_to)
+                if not email_sent:
+                    failed_emails.append(item[primary_key])
+                else:
+                    serializer = AuditSerializer(data = {
+                        'workflowId': id, 
+                        'creator': self.request.user.email,
+                        # TODO: add reply-to
+                        'receiver': item[field], 
+                        'emailBody': html[index],
+                        'emailSubject': subject
+                    })
+                    serializer.is_valid()
+                    serializer.save() 
+            if len(failed_emails) > 0:
+                raise ValidationError('Emails to the following records failed to send: ' + str(failed_emails).strip('[]').strip("'"))
+       
+       #saving email settings
         serializer = WorkflowSerializer(instance=workflow, data={
-            'emailSettings': request.data['emailSettings']
+            'emailSettings': request.data['emailSettings'],
+            'schedule.taskName': task_name
         }, partial=True)
         serializer.is_valid()
         serializer.save()
-
         return JsonResponse({ 'success': 'true' }, safe=False)
-    
+
     #retrive email sending history and generate static page.
     @detail_route(methods=['get'])
     def retrieve_history(self, request, id=None):
@@ -533,7 +365,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             workflow = Workflow.objects.get(linkId=link_id)
         except Workflow.DoesNotExist:
             return JsonResponse({'mismatch': True})
-        content = self.populate_content(workflow, None, zid)
+        content = populate_content(workflow, None, zid)
         if content:
             return JsonResponse({'content': content }, safe=False)
         else:
@@ -543,9 +375,9 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     @detail_route(methods=['patch'])
     def delete_schedule(self, request, id=None):
         workflow = Workflow.objects.get(id=id)
-
-        # if workflow['schedule']['taskName']:
-        #     remove_periodic_task(datasource['schedule']['taskName'])
+        
+        if workflow['schedule']['taskName']:
+            remove_scheduled_task(workflow['schedule']['taskName'])
 
         workflow.update(unset__schedule=1)
 
@@ -554,29 +386,13 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     @detail_route(methods=['patch'])
     def update_schedule(self, request, id=None):
         workflow = Workflow.objects.get(id=id)
-        # arguments = json.dumps({ "workflow_id": id })
-
-        # If a schedule already exists for this datasource, then delete it
-        # if 'schedule' in datasource and 'taskName' in datasource['schedule']:
-        #     remove_periodic_task(datasource['schedule']['taskName'])
-        
-        # task_name = create_scheduled_task('refresh_datasource_data', request.data, arguments)
-        
-        # if task_name:
         schedule = request.data
-        print(schedule)
         schedule['startTime'] = request.data['dateRange'][0]
         schedule['endTime'] = request.data['dateRange'][1]
-        # schedule['taskName'] = task_name
 
         serializer = WorkflowSerializer(workflow, data={
             'schedule': schedule
         }, partial=True)
-        print("here storing schedule")
-        print(schedule)
         serializer.is_valid()
         serializer.save()
         return JsonResponse({ "success":True }, safe=False)
-        # else:
-            # return JsonResponse({ "success": False }, safe=False)
-        

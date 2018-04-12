@@ -25,7 +25,6 @@ class Content(EmbeddedDocument):
     plain = fields.StringField(null=True)
 
 class Schedule(EmbeddedDocument):
-    enabled = fields.BooleanField()
     startTime = fields.DateTimeField(required=True)
     endTime = fields.DateTimeField(required=True)    
     time = fields.DateTimeField(required=True)

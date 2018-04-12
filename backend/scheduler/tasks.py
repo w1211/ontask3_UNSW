@@ -11,9 +11,11 @@ import json
 # from .rules_engine.matrix import Matrix
 # from .rules_engine.rules import Rules
 
-from .utils import retrieve_sql_data, retrieve_file_from_s3, create_crontab, generate_task_name
-from ontask.settings import NOSQL_DATABASE
+from datasource.utils import retrieve_sql_data, retrieve_file_from_s3
+from workflow.utils import evaluate_filter, populate_content
+from .task_utils import *
 
+from ontask.settings import NOSQL_DATABASE
 
 @shared_task
 def instantiate_periodic_task(task, task_type, task_name, schedule, arguments):
@@ -53,31 +55,6 @@ def remove_periodic_task(task_name):
         response_message = exception
     return response_message
 
-
-@shared_task
-def create_scheduled_task(task, schedule, arguments):
-    (task_name, task) = generate_task_name(task)
-    
-    if 'startTime' in schedule:
-        start_time = datetime.strptime(schedule['startTime'], "%Y-%m-%dT%H:%M:%SZ")
-        instantiate_periodic_task.apply_async(args=(task, 'crontab', task_name, schedule, arguments), eta=start_time)
-    else:
-        if schedule['frequency'] == 'daily':
-            start_time = datetime.strptime(schedule['time'], "%Y-%m-%dT%H:%M:%SZ")
-            if start_time < datetime.utcnow():
-                start_time += timedelta(days=1)
-            instantiate_periodic_task.apply_async(args=(task, 'interval', task_name, schedule, arguments), eta=start_time)
-
-        else:
-            instantiate_periodic_task.apply_async(args=(task, 'crontab', task_name, schedule, arguments))
-
-    if 'endTime' in schedule:
-        end_time = datetime.strptime(schedule['endTime'], "%Y-%m-%dT%H:%M:%SZ")
-        remove_periodic_task.apply_async(args=(task_name), eta=end_time)
-
-    return task_name
-
-
 @shared_task
 def refresh_datasource_data(datasource_id):
     ''' Reads the query data from the external source and
@@ -110,3 +87,28 @@ def refresh_datasource_data(datasource_id):
     })
     
     return 'Data imported successfully'
+
+@shared_task
+def workflow_send_email(workflow_id):
+    ''' send email based on the schedule in workflow model '''
+
+    # Retrieve the workflow object from the application database
+    client = MongoClient(NOSQL_DATABASE['HOST'])
+    db = client[NOSQL_DATABASE['DB']]
+    
+    workflow = db.workflow.find_one({ '_id': ObjectId(workflow_id) }, { 'connection': 1 })
+
+    field = workflow.emailSettings.field
+    subject = workflow.emailSettings.subject
+    reply_to = workflow.emailSettings.reply_to
+    
+    html = list(value for key, value in populate_content(workflow, workflow.content.html).items())
+
+    data = evaluate_filter(workflow.view, workflow.filter)
+    primary_key = workflow.view.columns[0]['field']
+    failed_emails = list()
+
+    for index, item in enumerate(data):
+        email_sent = send_email(item[field], subject, html[index], reply_to)
+        print("sending email to %s"%item[field])
+    return 'Email sent successfully'
