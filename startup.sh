@@ -4,7 +4,7 @@ source backend/virtualenv/bin/activate
 pip3 install -r backend/requirements.txt
 
 uwsgi --ini backend/uwsgi.ini
-circusd backend/circus.ini --daemon
+circusd backend/circus.prod.ini --daemon
 
 deactivate
 
