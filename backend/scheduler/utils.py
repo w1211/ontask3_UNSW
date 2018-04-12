@@ -24,10 +24,9 @@ def retrieve_sql_data(connection):
     # Decrypt the password provided by the user to connect to the remote database
     cipher = Fernet(SECRET_KEY)
     try:
-        decrypted_password = cipher.decrypt(connection['password'])
+      decrypted_password = cipher.decrypt(bytes(connection['password'], encoding="UTF-8"))
     except:
-        decrypted_password = cipher.decrypt(bytes(connection['password'], encoding="UTF-8"))
-
+      decrypted_password = cipher.decrypt(connection['password'])
     # Initialize the DB connection parameters
     connection_parameters = {
         'drivername': DB_DRIVER_MAPPING[connection['dbType']],
