@@ -18,6 +18,7 @@ Thumbs.db
 # Python files
 __pycache__/
 *.py[cod]
+migrations/
 
 # Backend files
 backend/config/dev.*
