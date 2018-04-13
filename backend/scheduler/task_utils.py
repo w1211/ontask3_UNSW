@@ -63,5 +63,4 @@ def create_crontab(schedule):
 def generate_task_name(task):
     task_name = task + '_' + str(uuid4())
     task = 'scheduler.tasks.' + task 
-
     return (task_name, task)

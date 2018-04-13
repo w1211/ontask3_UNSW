@@ -22,7 +22,7 @@ from workflow.models import Workflow
 from view.models import View
 
 from .utils import retrieve_csv_data, retrieve_excel_data, retrieve_file_from_s3, retrieve_sql_data
-from scheduler.backend_utils import create_scheduled_task, remove_scheduled_task
+from scheduler.backend_utils import create_scheduled_task, remove_scheduled_task, remove_async_task
 
 
 class DataSourceViewSet(viewsets.ModelViewSet):
@@ -199,7 +199,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         queryset = View.objects.filter(columns__match = { "datasource": obj.id })
         if queryset.count():
             raise ValidationError('This datasource is being used by a view')
-            
+        self.delete_schedule(self.request, obj.id)
         obj.delete()
 
 
@@ -236,8 +236,11 @@ class DataSourceViewSet(viewsets.ModelViewSet):
     def delete_schedule(self, request, id=None):
         datasource = DataSource.objects.get(id=id)
 
-        if datasource['schedule']['taskName']:
+        if 'schedule' in datasource and 'taskName' in datasource['schedule']:
             remove_scheduled_task(datasource['schedule']['taskName'])
+
+        if 'schedule' in datasource and 'asyncTasks' in datasource['schedule']:
+            remove_async_task(datasource['schedule']['asyncTasks'])
 
         datasource.update(unset__schedule=1)
 
@@ -253,12 +256,18 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         if 'schedule' in datasource and 'taskName' in datasource['schedule']:
             remove_scheduled_task(datasource['schedule']['taskName'])
 
-        task_name = create_scheduled_task('refresh_datasource_data', request.data, arguments)
-        
+        if 'schedule' in datasource and 'asyncTasks' in datasource['schedule']:
+            remove_async_task(datasource['schedule']['asyncTasks'])
+
+        datasource.update(unset__schedule=1)
+
+        #create updated schedule tasks
+        task_name, async_tasks = create_scheduled_task('refresh_datasource_data', request.data, arguments)
+
         if task_name:
             schedule = request.data
             schedule['taskName'] = task_name
-
+            schedule['asyncTasks'] = async_tasks
             serializer = DataSourceSerializer(datasource, data={
                 'schedule': schedule
             }, partial=True)

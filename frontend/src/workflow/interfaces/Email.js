@@ -140,19 +140,19 @@ class Email extends React.Component {
                     </Row>
                     <Row gutter={8}>
                         <Col span={5} ><h4>Frequency: </h4></Col>
-                        {workflow.schedule.frequency == "daily"?
-                          <Col span={10} >Every {workflow.schedule.dayFrequency} {workflow.schedule.dayFrequency=="1"?"day":"days"}</Col>
+                        {workflow.schedule.frequency === "daily"?
+                          <Col span={10} >Every {workflow.schedule.dayFrequency} {workflow.schedule.dayFrequency==="1"?"day":"days"}</Col>
                         :
                           <Col span={10} >{workflow.schedule.frequency}</Col>
                         }
                     </Row>
-                    { workflow.schedule.frequency == "weekly" && 
+                    { workflow.schedule.frequency === "weekly" && 
                     <Row gutter={8}>
                         <Col span={5} ><h4>DayOfWeek: </h4></Col>
                         <Col span={10}>{workflow.schedule.dayOfWeek.map((day,i)=><span>{day} </span>)}</Col>
                     </Row>
                     }
-                    { workflow.schedule.frequency == "monthly" && 
+                    { workflow.schedule.frequency === "monthly" && 
                     <Row gutter={8}>
                         <Col span={5} ><h4>DayOfMonth: </h4></Col>
                         <Col span={10} >{moment(workflow.schedule.dayOfMonth).format("DD")}</Col>
@@ -216,7 +216,7 @@ class Email extends React.Component {
         </Form>
 
         <div style={{ marginTop: '10px' }}>
-          <Button loading={loading} type="primary" size="large" onClick={this.handleSubmit}>
+          <Button loading={loading} type="primary" size="large" onClick={this.handleSubmit}  disabled={workflow && workflow.schedule && workflow.schedule.taskName?true:false}> 
             { workflow && workflow.schedule ? 
               'Save'
             :

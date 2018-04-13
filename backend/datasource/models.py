@@ -24,6 +24,7 @@ class Schedule(EmbeddedDocument):
     dayOfWeek = fields.ListField(fields.StringField()) # List of shorthand day names, e.g. ['mon', 'wed', 'fri']
     dayOfMonth = fields.DateTimeField() # Number representing the date in the month, e.g. 1 is the 1st
     taskName = fields.StringField() # The name of the celery task
+    asyncTasks = fields.ListField(fields.StringField()) # Async tasks
 
 class DataSource(Document):
     # Owner of the datasource can be determined from container.owner

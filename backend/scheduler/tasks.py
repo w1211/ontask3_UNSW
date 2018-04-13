@@ -1,5 +1,6 @@
 from celery import shared_task
 from celery.execute import send_task
+from celery.task.control import revoke
 from pymongo import MongoClient
 
 from datetime import datetime, timedelta
