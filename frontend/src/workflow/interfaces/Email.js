@@ -42,10 +42,11 @@ class Email extends React.Component {
 
   handleSubmit = () => {
     const { form, workflow } = this.props;
-
+    let isSchedule = (workflow.schedule) ? true: false;
+    
     form.validateFields((err, values) => {
       if (err) return;
-      this.boundActionCreators.sendEmail(workflow.id, values);
+      this.boundActionCreators.sendEmail(workflow.id, values, isSchedule);
     });
   };
 
@@ -214,16 +215,17 @@ class Email extends React.Component {
 
           </div>
         </Form>
-
-        <div style={{ marginTop: '10px' }}>
-          <Button loading={loading} type="primary" size="large" onClick={this.handleSubmit}  disabled={workflow && workflow.schedule && workflow.schedule.taskName?true:false}> 
-            { workflow && workflow.schedule ? 
-              'Save'
-            :
-              'Send once-off email'
-            }
-          </Button>
-        </div>
+        {!(workflow && workflow.schedule && (workflow.schedule.taskName || workflow.schedule.asyncTasks.length!==0)) &&
+          <div style={{ marginTop: '10px' }}>
+            <Button loading={loading} type="primary" size="large" onClick={this.handleSubmit}> 
+              { workflow && workflow.schedule ? 
+                'Save'
+              :
+                'Send once-off email'
+              }
+            </Button>
+          </div>
+        }
 
         { error && <Alert message={error} type="error" style={{ marginTop: '10px' }}/>}
       </div>

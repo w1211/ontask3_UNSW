@@ -565,7 +565,7 @@ export const previewContent = (workflowId, payload, showModal) => dispatch => {
   requestWrapper(parameters);
 };
 
-export const sendEmail = (workflowId, payload) => dispatch => {
+export const sendEmail = (workflowId, payload, isSchedule) => dispatch => {
   const parameters = {
     initialFn: () => { dispatch(beginRequestWorkflow()); },
     url: `/workflow/${workflowId}/send_email/`,
@@ -575,8 +575,8 @@ export const sendEmail = (workflowId, payload) => dispatch => {
       dispatch(successRequestWorkflow());
       dispatch(fetchWorkflow(workflowId));
       notification['success']({
-        message: 'Emails sent',
-        description: 'The emails were successfully sent.'
+        message: `Emails ${isSchedule ? 'scheduled' : 'sent'}`,
+        description: `The emails were successfully ${isSchedule ? 'scheduled' : 'sent'}.`
       });
     },
     payload: payload
