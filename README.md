@@ -1,7 +1,7 @@
 # onTask v2.5
 
 ## Getting Started
-### Dependencies
+### Essential steps
 1. Install the system packages required to compile dependencies
     - Mac OS
         - `xcode-select --install`
@@ -9,36 +9,53 @@
         - `sudo yum install python36`
         - `sudo yum install python36-setuptools`
         - `sudo yum install python36-devel`
-2. Install MongoDB in which to store application data
-3. Install an RDS such as PostgreSQL or MySQL in which to store user data
-4. Install the Python3 [virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtualenv/) module by `python3 -m pip install virtualenv`
-5. Set up & run a Python3 virtual environment
-    - Ensure the virtual environment is active during the next step and whilst attempting to serve the backend server
-6. Run `pip3 install -r backend/requirements.txt`
+2. Install [MongoDB](https://www.mongodb.com/download-center#community) in which to store application data
+3. Install an RDS such as [PostgreSQL](https://www.postgresql.org/download/) or [MySQL](https://dev.mysql.com/downloads/mysql/) in which to store user data
+4. Install [RabbitMQ](https://www.rabbitmq.com/download.html) to ensure that task scheduling operates successfully
+5. Install the Python3 [virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtualenv/) module via `python3 -m pip install virtualenv`
+6. Clone the OnTask repository to your machine
+    - **Note:** all of the below commands should take place within the `ontask/` directory
+7. Create a virtual environment in the backend directory by running `virtualenv backend/virtualenv`
+    - Note that the virtual environment *must* be called 'virtualenv' and be located in the `backend/` directory, as denoted above
 
-### Configurations
-1. Create a django super user by running `python3 backend/manage.py createsuperuser`
-2. Create environment files `dev.py` (for development) and/or `prod.py` (for production) in `backend/config`
-3. In a Python shell, run the following:
+### Configuration
+1. Create a Django super user by running `python3 backend/manage.py createsuperuser`
+2. Create environment files `dev.py` (for development) and/or `prod.py` (for production) in the `backend/config/` directory
+3. Activate the virtual environment previously created by running `source backend/virtualenv/bin/activate`
+4. Install the Python dependencies by running `pip install -r backend/requirements.txt` whilst the virtual environment is active
+5. Whilst the virtual environment is active, in a Python shell run the following:
 ```python
 from cryptography.fernet import Fernet
 # The following generated secret key will be used for encrypting sensitive data
 # Loss or change of the secret key will result in the loss of all datasource passwords
 # This is a breaking issue for dynamic data sources, as update attempts will fail
-Fernet.generate_key()
+Fernet.generate_key().decode("utf-8")
 ```
-4. Configure the environment file(s) created in step 2 as follows:
+6. Configure the environment file(s) created in step 2 as follows:
 ```python
 # Example configurations are provided for each attribute
 FRONTEND_DOMAIN = 'https://YOUR_FRONTEND_DOMAIN_NAME' # For whitelisting CORS and authentication
-SCHEDULER_DOMAIN = 'http://localhost:8001' # For interacting with the scheduler service worker
+ALLOWED_HOSTS = ['localhost', 'YOUR_FRONTEND_DOMAIN_NAME'] # Note that the URL should be without the protocol identifier (i.e. https://)
 
-ALLOWED_HOSTS = ['localhost', 'https://YOUR_DOMAIN_NAME']
+# AWS credentials are used to allow users to import datasources from S3 buckets
+AWS_ACCESS_KEY_ID = 'YOUR_AWS_ACCESS_KEY_ID'
+AWS_SECRET_ACCESS_KEY = 'YOUR_AWS_SECRET_ACCESS_KEY'
+AWS_REGION = 'ap-southeast-2'
 
-SECRET_KEY = 'YOUR_SECRET_KEY' # Generated in step 3
+SECRET_KEY = 'YOUR_SECRET_KEY' # Generated above
 CIPHER_SUITE_KEY = 'YOUR_CIPHER_KEY' # 30 byte secret key for authenticating users from third party IDPs
 
-SQL_DATABASE = { # For storing user data
+# SMTP credentials to enable email sending from OnTask
+SMTP = {
+    'HOST': 'YOUR_SMTP_HOST',
+    'PORT': 587,
+    'USER': 'YOUR_SMTP_USER',
+    'PASSWORD': 'YOUR_SMTP_PASSWORD',
+    'USE_TLS': True
+}
+
+# For storing user data
+SQL_DATABASE = { 
     # PostgreSQL is only provided as an example
     'ENGINE': 'django.db.backends.postgresql',
     'NAME': 'ontask',
@@ -47,7 +64,12 @@ SQL_DATABASE = { # For storing user data
     'HOST': '127.0.0.1',
     'PORT': '5432'
 }
-NOSQL_URI = 'mongodb://localhost/ontask' # For storing application data
+
+# For storing application data
+NOSQL_DATABASE = {
+    'HOST': 'mongodb://localhost/',
+    'DB': 'ontask'
+}
 
 # Configuration for AAF Rapid Connect
 AAF_CONFIG = {
@@ -72,59 +94,37 @@ LTI_CONFIG = {
        }
 }
 ```
-5. Create environment files `.env.development` (for development) and/or `.env.production` (for production) in `frontend`
-6. Configure the environment file(s) created in step 5 as follows:
+7. Create environment files `.env.development` (for development) and/or `.env.production` (for production) in the `frontend/` directory
+8. Configure the environment file(s) created in step 7 as follows:
 ```javascript
 REACT_APP_API_DOMAIN = 'https://YOUR_BACKEND_DOMAIN_NAME'
+REACT_APP_AWS_ID = 'YOUR_AWS_ACCESS_KEY_ID'
 ```
 
 ### Third-party identity providers
 1. To be added
 
-### Development
-1. Download and install [postgresql](https://www.postgresql.org/)
-2. Create a postgresql database with name `ontask_seed` by running `createdb ontask_seed`
-3. Create a postgresql user with name `ontask` by running `createuser ontask --password`
-4. Store the created user's password in the `PASSWORD` variable in `dev/seed.py`
-5. Run `pip3 install -r dev/requirements.txt`
-6. Seed data using by running `python3 dev/seed.py`
-    - The postgresql database created in step 2 has been given seed data
-    - An example csv file has been created at `/dev/students.csv`
-7. Add `export ONTASK_DEVELOPMENT=true` to your `~/.bash_profile` (Mac OS) or `~/.bashrc` (Linux)
-
 ## Running the application
 ### For development
-1. Ensure that the virtual environment in which the backend python dependencies were installed is currently active
-2. Start the backend by running `python3 backend/manage.py runserver`
-3. Ensure that the frontend dependencies are installed by changing the working directory to `frontend` and running `npm install`
-4. Start the frontend by running `npm start` while in the `frontend` working directory
+1. OnTask can be run in development mode by running `export ONTASK_DEVELOPMENT=true` prior to starting the backend application
+    - This has the following effects:
+        - The backend uses the `dev.py` config file instead of `prod.py`
+        - The backend outputs debug information to the terminal (i.e. `DEBUG=True` in Django)
+2. Ensure that the following are running either as a service or as a process:
+    - RabbitMQ
+    - MongoDB
+    - The chosen RDS (e.g. PostgreSQL)
+3. Start the backend by running `python3 backend/manage.py runserver` whilst the virtual environment is active
+4. Start the scheduler by running `circusd backend/circus.dev.ini`  whilst the virtual environment is active
+5. Ensure that frontend dependencies are installed by running `npm install --prefix frontend`
+6. Start the frontend by running `npm start --prefix frontend`
 
 ### For production
-1. Clone the repository to your server and perform the setup steps outlined above
-2. Take note of the absolute path to your backend directory, e.g. `/home/USER/ontask/backend`
-3. Ensure that MongoDB is running as a service
-4. Ensure that the RDS chosen for storing user data is running as a service
-5. Build the frontend into production files by running `npm build` in the `frontend` working directory
-6. Copy the files from the newly created `frontend/build` directory to `/var/www/html/ontask`
-7. Create file `ontask.log` in `/var/log/uwsgi` (directories may need to be created)
-8. Create file `ontask.pid` in `/var/tmp/uwsgi` (directories may need to be created)
-9. Create an environment file `prod.ini` in `backend/config`
-10. Configure the environment file created in step 9 as follows:
-```
-[uwsgi]
-http=127.0.0.1:8000
-chdir=ABSOLUTE_PATH_TO_YOUR_BACKEND_DIRECTORY
-daemonize=/var/log/uwsgi/ontask.log
-pidfile=/var/tmp/uwsgi/ontask.pid
-```
-11. Start the backend server by running `uwsgi --ini uwsgi.ini` while in the `backend` working directory
-    - **WARNING!** Ensure that the Python3 virtual environment is active
-    - Receiving an error `realpath() of config/prod.ini failed: No such file or directory` while attempting to start the server probably indicates that your current working directory is not the `backend` folder
-    - The backend server can be stopped by running `uwsgi --stop /var/tmp/uwsgi/ontask.pid`
-        - Receiving an error `open("/tmp/uwsgi/ontask.pid"): No such file or directory` when attempting to stop the backend server probably indicates that the server is already stopped
-12. Install nginx on your server (e.g. `sudo yum install nginx`)
-13. Ensure that nginx is running as a service
-14. Provide the following configuration file to your nginx by running `sudo vim /etc/nginx/nginx.conf`
+1. Ensure that the following are running as a service:
+    - RabbitMQ
+    - MongoDB
+    - The chosen RDS (e.g. PostgreSQL)
+2. Install nginx and configure the `/etc/nginx/nginx.conf` as follows:
 ```
 http {
     sendfile on;
@@ -181,8 +181,14 @@ http {
 
 }
 ```
-15. Reload nginx after configurating it by running `sudo service nginx restart`
-16. The application should now be accessible from your domain
+3. Reload nginx after updating the configuration file
+4. Launch OnTask by running `. ./startup.sh` whilst in the `ontask` directory
+    - This script will fail if ran from any other directory
+    - The default port used by the backend is `8000`
+    - This port can be changed by running `export ONTASK_PORT=YOUR_DESIRED_PORT` prior to running the startup script
+    - Log files are located in the `ontask/logs/` directory
+5. The application should now be accessible via the domain that was specified in the `nginx` configuration file
+6. OnTask can be stopped by running `. ./terminate.sh` whilst in the `ontask` directory
 
 #### Adjusting workers/threads for backend
-1. To be added 
+1. To be added
