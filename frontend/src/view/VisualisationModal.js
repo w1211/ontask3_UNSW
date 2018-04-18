@@ -28,17 +28,18 @@ class VisualisationModal extends React.Component {
     let cols;
 
     if(view && colName){
-      cols = {
-        "Computer_programming": {tickInterval: 5},
-      };
-
-      dv = new dataView()
+      if(chartType==="barChart"){
+        cols = {
+          colName: {tickInterval: 5},
+        };
+        dv = new dataView()
         .source(view.data)
         .transform({type: 'pick', fields: [colName]})
         .transform({type: 'aggregate', fields: [colName], 
                     operations: 'count', as: 'count',
                     groupBy: [colName]})
         .transform({type: 'sort-by', fields: [colName]});
+      }
 
       if(chartType==="pieChart"){
         cols = {
@@ -46,12 +47,53 @@ class VisualisationModal extends React.Component {
             formatter: val => {
               val = parseInt(val * 100, 10) + '%';
               return val;
-            }
-          }
-        };
-        dv = dv
+        }}};
+
+        dv = new dataView()
+        .source(view.data)
+        .transform({type: 'pick', fields: [colName]})
+        .transform({type: 'aggregate', fields: [colName], 
+                    operations: 'count', as: 'count',
+                    groupBy: [colName]})
+        .transform({type: 'sort-by', fields: [colName]})
         .transform({type: 'percent', field: 'count',
-                    dimension: colName, as: 'percent'})
+                    dimension: colName, as: 'percent'});
+      }
+
+      if(chartType==="boxPlot"){
+        dv = new dataView()
+        .source(view.data)
+        .transform({type: 'pick', fields: [colName]})
+        .transform({
+          type: 'filter',
+          callback(row) {
+              return row[colName]!=="";
+        }})
+        .transform({
+          type: 'map',
+          callback: (obj) => {
+            obj[colName] = Number(obj[colName]);
+            return obj;
+        }})
+        .transform({
+          type: 'bin.quantile',
+          field: colName,
+          as: 'range',
+          fraction: 4
+        })
+        .transform({
+          type: 'map',
+          callback: (obj) => {
+            obj.low = obj.range[0]; obj.q1 = obj.range[1];
+            obj.median = obj.range[2]; obj.q3 = obj.range[3];
+            obj.high =obj.range[4]; obj.na = colName;
+            return obj;
+        }})
+
+        cols ={
+          range: {
+            max: 15
+        }}
       }
     }
 
@@ -71,6 +113,7 @@ class VisualisationModal extends React.Component {
         >
           <Option value="barChart">Barchart</Option>
           <Option value="pieChart">Piechart</Option>
+          <Option value="boxPlot">Boxplot</Option>
         </Select>
       { chartType === "barChart" &&
         <div>
@@ -90,8 +133,11 @@ class VisualisationModal extends React.Component {
             <Legend position='right' offsetY={-window.innerHeight / 2 +330} offsetX={-30} />
             <Tooltip 
               showTitle={false} 
-              itemTpl='<li><span style="background-color:{color};" class="g2-tooltip-marker"></span>{name}: {value}</li>'
-              />
+              itemTpl='<li>
+                        <span style="background-color:{color};" class="g2-tooltip-marker"></span>
+                        {name}: {value}
+                      </li>'
+            />
             <Geom
               type="intervalStack"
               position="percent"
@@ -108,6 +154,30 @@ class VisualisationModal extends React.Component {
               <Label content='percent' formatter={(val, item) => {
                   return item.point[colName] + ': ' + val;}} />
             </Geom>
+          </Chart>
+        </div>
+      }
+      { chartType==="boxPlot" &&
+        <div>
+          <Chart height={450} data={dv} scale={cols} padding={[ 20, 120, 95 ]} forceFit>
+            <Axis name='na' />
+            <Axis name='range' />
+            <Tooltip showTitle={false} crosshairs={{type:'rect',style: {fill: '#E4E8F1',fillOpacity: 0.43}}}     
+            itemTpl='<li style="margin-bottom:4px;">
+                    <span style="background-color:{color};" class="g2-tooltip-marker"></span>
+                    {name}<br/>
+                    <span style="padding-left: 16px">Max: {high}</span><br/>
+                    <span style="padding-left: 16px">Upper quartile: {q3}</span><br/>
+                    <span style="padding-left: 16px">Median: {median}</span><br/>
+                    <span style="padding-left: 16px">Lower quartile: {q1}</span><br/>
+                    <span style="padding-left: 16px">Min: {low}</span><br/></li>'/>
+            <Geom type="schema" position="na*range" shape='box' tooltip={['na*low*q1*median*q3*high', (na, low, q1, median, q3, high) => {
+              return {
+                name: na, low, q1, median, q3, high
+              };
+              }]} 
+              style={{stroke: 'rgba(0, 0, 0, 0.45)',fill: '#1890FF',fillOpacity: 0.3}}  
+            />
           </Chart>
         </div>
       }
