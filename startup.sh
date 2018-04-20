@@ -8,12 +8,14 @@ circusd backend/circus.prod.ini --daemon
 
 deactivate
 
-if [ "$ONTASK_DEVELOPMENT" = "true" ]
+npm install --prefix frontend
+npm run build --prefix frontend
+
+if [ "$ONTASK_DEMO" = "true" ]
 then
-    npm start --prefix frontend
+    sudo rm -rf /var/www/html/ontask_demo
+    sudo mv frontend/build /var/www/html/ontask_demo
 else
-    npm install --prefix frontend
-    npm run build --prefix frontend
     sudo rm -rf /var/www/html/ontask
     sudo mv frontend/build /var/www/html/ontask
 
