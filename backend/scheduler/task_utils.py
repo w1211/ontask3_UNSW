@@ -1,3 +1,4 @@
+import os
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -11,6 +12,9 @@ from ontask.settings import SECRET_KEY, DB_DRIVER_MAPPING, SMTP,\
 def send_email(recipient, subject, content, reply_to=None):
     '''Generic service to send email from the application'''
     
+    if os.environ.get('ONTASK_DEMO') is not None:
+        raise Exception("Email sending is disabled in the demo")
+
     try:
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject

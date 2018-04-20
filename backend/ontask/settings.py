@@ -17,6 +17,8 @@ import mongoengine
 if os.environ.get('ONTASK_DEVELOPMENT') is not None:
     from config.dev import *
     DEBUG = True
+elif os.environ.get('ONTASK_DEMO') is not None:
+    from config.demo import *
 else:
     from config.prod import *
 

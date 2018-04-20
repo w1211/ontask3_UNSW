@@ -4,6 +4,7 @@ from rest_framework.decorators import detail_route, list_route
 from rest_framework.permissions import IsAuthenticated
 
 from django.http import JsonResponse
+import os
 import json
 import re
 import dateutil.parser
@@ -257,6 +258,9 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     def send_email(self, request, id=None):
         workflow = Workflow.objects.get(id=id)
         self.check_object_permissions(self.request, workflow)
+
+        if os.environ.get('ONTASK_DEMO') is not None:
+            raise ValidationError("Email sending is disabled in the demo")
 
         field = request.data['emailSettings']['field']
         subject = request.data['emailSettings']['subject']

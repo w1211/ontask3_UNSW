@@ -22,6 +22,7 @@ migrations/
 
 # Backend files
 backend/config/dev.*
+backend/config/demo.*
 backend/config/prod.*
 backend/db.sqlite3
 backend/scheduler/*.state
