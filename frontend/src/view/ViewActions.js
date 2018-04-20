@@ -589,3 +589,11 @@ export const updateDiscrepencies = (viewId, dropDiscrepencies) => (dispatch, get
 
   requestWrapper(parameters);
 };
+
+export const addModule = (mod) => (dispatch, getState) => {
+  const { view } = getState();
+  let build = Object.assign({ steps: [] }, view.build);
+
+  console.log(mod);
+  console.log(build);
+};

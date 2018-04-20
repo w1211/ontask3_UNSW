@@ -193,10 +193,12 @@ class ContainerList extends React.Component {
                         </Card>
                       )
                     })}
-                    <div className="add item" onClick={() => { dispatch(this.boundActionCreators.openViewModal(container.id, container.datasources)); }}>
-                      <Icon type="plus"/>
-                      <span>Create DataLab</span>
-                    </div>
+                    <Link to={`/datalab`}>
+                      <div className="add item">
+                        <Icon type="plus"/>
+                        <span>Create DataLab</span>
+                      </div>
+                    </Link>
                   </div>
                 </TabPane>
 

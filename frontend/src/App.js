@@ -8,7 +8,7 @@ import requestWrapper from './shared/requestWrapper';
 
 import Login from './login/Login';
 import Container from './container/Container';
-import View from './view/View';
+import DataLab from './view/DataLab';
 import Workflow from './workflow/Workflow';
 import StaticPageStudent from './staticPage/StaticPageStudent';
 import StaticPageStaff from './staticPage/StaticPageStaff';
@@ -86,7 +86,7 @@ class App extends React.Component {
               <Login {...props} onLogin={() => { this.setState({ didLogin: true }) }} />
             )}/>
             <AuthenticatedRoute path="/containers" component={Container}/>
-            <AuthenticatedRoute path="/view/:id" component={View}/>
+            <AuthenticatedRoute path="/datalab/:id?" component={DataLab}/>
             <AuthenticatedRoute path="/workflow/:id" component={Workflow}/>
             <AuthenticatedRoute path="/staticPageHistoryStaff/:id" component={StaticPageHistoryStaff}/>
             <AuthenticatedRoute path="/staticPageHistoryStudent" component={StaticPageHistoryStudent}/>
