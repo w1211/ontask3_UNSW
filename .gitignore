@@ -24,6 +24,7 @@ migrations/
 backend/config/dev.*
 backend/config/prod.*
 backend/db.sqlite3
+backend/scheduler/*.state
 
 # Backend virtual environment
 backend/virtualenv

@@ -25,7 +25,7 @@ from collections import defaultdict
 
 from django.conf import settings
 
-from scheduler.backend_utils import send_email, create_scheduled_task, remove_scheduled_task
+from scheduler.backend_utils import send_email, create_scheduled_task, remove_scheduled_task, remove_async_task
 from .utils import *
 
 
@@ -61,6 +61,12 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         self.check_object_permissions(self.request, self.get_object())
         serializer.save()
+
+    def perform_destroy(self, serializer):
+        self.check_object_permissions(self.request, self.get_object())
+        #TODO: Check if this valid
+        self.delete_schedule(self.request, self.get_object().id)
+        self.get_object().delete()
 
     @detail_route(methods=['get'])
     def retrieve_workflow(self, request, id=None):
@@ -249,14 +255,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         return JsonResponse(serializer.data)
 
     @detail_route(methods=['put'])
-    def delete_schedule(self, request, id=None):
-        workflow = Workflow.objects.get(id=id)
-        self.check_object_permissions(self.request, workflow)
-        workflow.update(unset__schedule=1)
-        serializer = WorkflowSerializer(instance=workflow)
-        return JsonResponse(serializer.data, safe=False)
-
-    @detail_route(methods=['put'])
     def send_email(self, request, id=None):
         workflow = Workflow.objects.get(id=id)
         self.check_object_permissions(self.request, workflow)
@@ -271,16 +269,14 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         primary_key = workflow.view.columns[0]['field']
         failed_emails = list()
 
-        task_name = workflow.schedule.taskName if workflow.schedule else None
+        task_name = None
+        async_tasks = []
 
-        #if schedule exists
+        #if schedule email sending
         if workflow.schedule and not workflow.schedule.taskName:
-            #if send email with schedule
             arguments = json.dumps({ "workflow_id": id })
             schedule = mongo_to_dict(workflow.schedule)
-            print("here in workflow schedule")
-            print(schedule)
-            task_name = create_scheduled_task('workflow_send_email', schedule, arguments)
+            task_name, async_tasks = create_scheduled_task('workflow_send_email', schedule, arguments)
         else:
             #if only send email once-off
             for index, item in enumerate(data):
@@ -300,14 +296,20 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                     serializer.save() 
             if len(failed_emails) > 0:
                 raise ValidationError('Emails to the following records failed to send: ' + str(failed_emails).strip('[]').strip("'"))
-       
-       #saving email settings
+
+        #TODO: Change
+        schedule = mongo_to_dict(workflow.schedule)
+        schedule['taskName'] = task_name
+        schedule['asyncTasks'] = async_tasks
+
+        #saving email settings
         serializer = WorkflowSerializer(instance=workflow, data={
             'emailSettings': request.data['emailSettings'],
-            'schedule.taskName': task_name
+            'schedule': schedule,
         }, partial=True)
         serializer.is_valid()
         serializer.save()
+        workflow = Workflow.objects.get(id=id)
         return JsonResponse({ 'success': 'true' }, safe=False)
 
     #retrive email sending history and generate static page.
@@ -376,8 +378,12 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     def delete_schedule(self, request, id=None):
         workflow = Workflow.objects.get(id=id)
         
-        if workflow['schedule']['taskName']:
+        # if taskName exist remove task with taskName
+        if 'schedule' in workflow and 'taskName' in workflow['schedule']:
             remove_scheduled_task(workflow['schedule']['taskName'])
+        # else remove async starter task
+        if 'schedule' in workflow and 'asyncTasks' in workflow['schedule']:
+            remove_async_task(workflow['schedule']['asyncTasks'])
 
         workflow.update(unset__schedule=1)
 
@@ -386,6 +392,17 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     @detail_route(methods=['patch'])
     def update_schedule(self, request, id=None):
         workflow = Workflow.objects.get(id=id)
+
+        # clean previous schedule related tasks
+        if 'schedule' in workflow and 'taskName' in workflow['schedule']:
+            remove_scheduled_task(workflow['schedule']['taskName'])
+        # else remove async starter task
+        if 'schedule' in workflow and 'asyncTasks' in workflow['schedule']:
+            remove_async_task(workflow['schedule']['asyncTasks'])
+
+        workflow.update(unset__schedule=1)
+
+        #save updated schedule
         schedule = request.data
         schedule['startTime'] = request.data['dateRange'][0]
         schedule['endTime'] = request.data['dateRange'][1]
