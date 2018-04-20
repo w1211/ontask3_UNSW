@@ -79,7 +79,7 @@ class Login extends React.Component {
                   </Form>
                   </TabPane>
                   <TabPane tab="AAF Login" key="2" >
-                    <a href="https://rapid.aaf.edu.au/jwt/authnrequest/research/QGSS9UUcaI6UXa7v6AL3Yg"><img src={aaf} alt="AAF Logo" style={{ width: 200 }}/></a>
+                    <a href={`${process.env.REACT_APP_AAF_URL}`}><img src={aaf} alt="AAF Logo" style={{ width: 200 }}/></a>
                   </TabPane>
               </Tabs>
             </Col>
