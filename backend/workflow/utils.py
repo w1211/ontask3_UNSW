@@ -21,12 +21,12 @@ def did_pass_formula(item, formula):
     
 def evaluate_filter(view, filter):
   if not filter:
-      return view.data
+      return view['data']
 
   filtered_data = list()
 
   # Iterate over the rows in the data and return any rows which pass true
-  for item in view.data:
+  for item in view['data']:
       didPass = False
 
       if len(filter['formulas']) == 1:
@@ -82,10 +82,10 @@ def evaluate_condition_group(data, condition_group, primary_field):
   return conditions_passed
 
 def validate_condition_group(workflow, condition_group):
-  data = evaluate_filter(workflow.view, workflow.filter)
+  data = evaluate_filter(workflow['view'], workflow['filter'])
 
   # Confirm that all provided fields are defined in the workflow details
-  fields = [column['label'] if column['label'] else column['field'] for column in workflow.view.columns]
+  fields = [column['label'] if column['label'] else column['field'] for column in workflow['view']['columns']]
 
   for condition in condition_group['conditions']:
       for formula in condition['formulas']:
@@ -121,11 +121,11 @@ def populate_field(match, item):
       return None
 
 def populate_content(workflow, content=None, zid=None):
-  filtered_data = evaluate_filter(workflow.view, workflow.filter)
+  filtered_data = evaluate_filter(workflow['view'], workflow['filter'])
 
   condition_groups = workflow['conditionGroups']
   content = content if content else workflow['content']['plain']
-  primary_key = workflow.view['columns'][0]['field']
+  primary_key = workflow['view']['columns'][0]['field']
 
   all_conditions_passed = dict()
   # Combine all conditions from each condition group into a single dict

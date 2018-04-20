@@ -21,7 +21,7 @@ def create_scheduled_task(task, schedule, arguments):
     if start_time < datetime.utcnow():
       start_time += timedelta(days=1)
     start_task = instantiate_periodic_task.apply_async(args=(task, 'interval', task_name, schedule, arguments), eta=start_time)
-    async_tasks.append(start_task.id)#TODO: fix the name to have a prefix
+    async_tasks.append(start_task.id)
   else:
     #TODO: if we need to handle this here
     if start_time < datetime.utcnow():

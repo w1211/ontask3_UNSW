@@ -62,11 +62,10 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         self.check_object_permissions(self.request, self.get_object())
         serializer.save()
 
-    def perform_destroy(self, serializer):
-        self.check_object_permissions(self.request, self.get_object())
-        #TODO: Check if this valid
-        self.delete_schedule(self.request, self.get_object().id)
-        self.get_object().delete()
+    def perform_destroy(self, obj):
+        self.check_object_permissions(self.request, obj)
+        self.delete_schedule(self.request, obj.id)
+        obj.delete()
 
     @detail_route(methods=['get'])
     def retrieve_workflow(self, request, id=None):
@@ -108,7 +107,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                     raise ValidationError(f'Invalid formula: field \'{formula["field"]}\' does not exist in the view')
 
             # Filter the data to store the number of records
-            filtered_data = evaluate_filter(workflow.view, updated_filter)
+            filtered_data = evaluate_filter(workflow['view'], updated_filter)
             workflow.filtered_count = len(filtered_data)
         else:
             workflow.filtered_count = 0
@@ -265,18 +264,25 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         
         html = list(value for key, value in populate_content(workflow, workflow['content']['html']).items())
 
-        data = evaluate_filter(workflow.view, workflow.filter)
-        primary_key = workflow.view.columns[0]['field']
+        data = evaluate_filter(workflow['view'], workflow['filter'])
+        primary_key = workflow['view']['columns'][0]['field']
         failed_emails = list()
 
         task_name = None
         async_tasks = []
 
         #if schedule email sending
-        if workflow.schedule and not workflow.schedule.taskName:
+        if workflow['schedule'] and not workflow['schedule']['taskName']:
             arguments = json.dumps({ "workflow_id": id })
-            schedule = mongo_to_dict(workflow.schedule)
+            schedule = mongo_to_dict(workflow['schedule'])
             task_name, async_tasks = create_scheduled_task('workflow_send_email', schedule, arguments)
+            schedule['taskName'] = task_name
+            schedule['asyncTasks'] = async_tasks
+            #saving email settings
+            serializer = WorkflowSerializer(instance=workflow, data={
+                'emailSettings': request.data['emailSettings'],
+                'schedule': schedule,
+            }, partial=True)
         else:
             #if only send email once-off
             for index, item in enumerate(data):
@@ -296,17 +302,10 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                     serializer.save() 
             if len(failed_emails) > 0:
                 raise ValidationError('Emails to the following records failed to send: ' + str(failed_emails).strip('[]').strip("'"))
+            serializer = WorkflowSerializer(instance=workflow, data={
+                'emailSettings': request.data['emailSettings']
+            }, partial=True)
 
-        #TODO: Change
-        schedule = mongo_to_dict(workflow.schedule)
-        schedule['taskName'] = task_name
-        schedule['asyncTasks'] = async_tasks
-
-        #saving email settings
-        serializer = WorkflowSerializer(instance=workflow, data={
-            'emailSettings': request.data['emailSettings'],
-            'schedule': schedule,
-        }, partial=True)
         serializer.is_valid()
         serializer.save()
         workflow = Workflow.objects.get(id=id)

@@ -97,18 +97,21 @@ def workflow_send_email(workflow_id):
     client = MongoClient(NOSQL_DATABASE['HOST'])
     db = client[NOSQL_DATABASE['DB']]
     
-    workflow = db.workflow.find_one({ '_id': ObjectId(workflow_id) }, { 'connection': 1 })
-
-    field = workflow.emailSettings.field
-    subject = workflow.emailSettings.subject
-    reply_to = workflow.emailSettings.reply_to
+    workflow = db.workflow.find_one({ '_id': ObjectId(workflow_id) })
     
-    html = list(value for key, value in populate_content(workflow, workflow.content.html).items())
+    field = workflow['emailSettings']['field']
+    subject = workflow['emailSettings']['subject']
+    reply_to = workflow['emailSettings']['replyTo']
+    
+    workflow['view'] = db.view.find_one({ '_id': ObjectId(workflow['view'] )})
 
-    data = evaluate_filter(workflow.view, workflow.filter)
-    primary_key = workflow.view.columns[0]['field']
-    failed_emails = list()
+    html = list(value for key, value in populate_content(workflow, workflow['content']['html']).items())
+    data = evaluate_filter(workflow['view'], workflow['filter'])
 
+    # primary_key = view['columns'][0]['field']
+    # failed_emails = list()
+
+    
     for index, item in enumerate(data):
         email_sent = send_email(item[field], subject, html[index], reply_to)
         print("sending email to %s"%item[field])
