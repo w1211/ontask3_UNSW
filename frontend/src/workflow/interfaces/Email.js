@@ -9,7 +9,7 @@ import moment from 'moment';
 import * as WorkflowActionCreators from '../WorkflowActions';
 import { openSchedulerModal } from '../../scheduler/SchedulerActions';
 
-import formItemLayout from '../../shared/FormItemLayout';
+import {narrowFormItemLayout} from '../../shared/FormItemLayout';
 
 import SchedulerModal from '../../scheduler/SchedulerModal';
 
@@ -85,39 +85,7 @@ class Email extends React.Component {
         />
         <Form layout="horizontal">
           <div>
-            <div style={{ maxWidth: 700 }}>
-              <FormItem {...formItemLayout} label="Email field">
-                {form.getFieldDecorator('emailSettings.field', {
-                  rules: [{ required: true, message: 'Email field is required' }],
-                  initialValue: workflow && workflow.emailSettings && workflow.emailSettings.field
-                })(
-                  <Select>
-                    { options.map((option, i) => {
-                      return <Option value={option} key={i}>{option}</Option>
-                    })}
-                  </Select>
-                )}
-              </FormItem>
-
-              <FormItem {...formItemLayout} label="Subject">
-                {form.getFieldDecorator('emailSettings.subject', {
-                  rules: [{ required: true, message: 'Subject is required' }],
-                  initialValue: workflow && workflow.emailSettings && workflow.emailSettings.subject
-                })(
-                  <Input/>
-                )}
-              </FormItem>
-
-              <FormItem {...formItemLayout} label="Reply-to">
-                {form.getFieldDecorator('emailSettings.replyTo', {
-                  rules: [{ required: true, message: 'Reply-to is required' }],
-                  initialValue: workflow && workflow.emailSettings && workflow.emailSettings.replyTo ? workflow.emailSettings.replyTo : localStorage.email
-                })(
-                  <Input/>
-                )}
-              </FormItem>
-
-              { workflow && workflow.schedule ?
+          { workflow && workflow.schedule ?
                 <div>
                   <h3 style={{marginBottom:"1em"}}>Current schedule</h3>
                   <div style={{ background: '#eeeeee', padding: '1em', margin: '0.5em 0', border: '1px dashed #cccccc', borderRadius: '5px', display: 'block' }}>
@@ -161,15 +129,49 @@ class Email extends React.Component {
                   </div>
                 </div>
               :
-                <FormItem {...formItemLayout} label="Scheduled task">
-                  {form.getFieldDecorator('schedule.enabled', {
-                    initialValue: workflow && workflow.schedule
-                  })(
-                    <Checkbox onChange={this.onChange} checked={workflow && workflow.schedule ? true : false}/>
-                  )}
-                </FormItem>  
+                <div style={{ maxWidth: 700 }}>
+                  <FormItem {...narrowFormItemLayout} label="Scheduled task">
+                    {form.getFieldDecorator('schedule.enabled', {
+                      initialValue: workflow && workflow.schedule
+                    })(
+                      <Checkbox onChange={this.onChange} checked={workflow && workflow.schedule ? true : false}/>
+                    )}
+                  </FormItem>
+                </div>
               }
             </div>
+
+            <div style={{ maxWidth: 700 }}>
+              <FormItem {...narrowFormItemLayout} label="Email field">
+                {form.getFieldDecorator('emailSettings.field', {
+                  rules: [{ required: true, message: 'Email field is required' }],
+                  initialValue: workflow && workflow.emailSettings && workflow.emailSettings.field
+                })(
+                  <Select>
+                    { options.map((option, i) => {
+                      return <Option value={option} key={i}>{option}</Option>
+                    })}
+                  </Select>
+                )}
+              </FormItem>
+
+              <FormItem {...narrowFormItemLayout} label="Subject">
+                {form.getFieldDecorator('emailSettings.subject', {
+                  rules: [{ required: true, message: 'Subject is required' }],
+                  initialValue: workflow && workflow.emailSettings && workflow.emailSettings.subject
+                })(
+                  <Input/>
+                )}
+              </FormItem>
+
+              <FormItem {...narrowFormItemLayout} label="Reply-to">
+                {form.getFieldDecorator('emailSettings.replyTo', {
+                  rules: [{ required: true, message: 'Reply-to is required' }],
+                  initialValue: workflow && workflow.emailSettings && workflow.emailSettings.replyTo ? workflow.emailSettings.replyTo : localStorage.email
+                })(
+                  <Input/>
+                )}
+              </FormItem>
 
             <div className="ant-form-item-label" style={{ display: 'flex' }}>
               <label>Content preview</label> ({this.state.index + 1})
