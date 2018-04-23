@@ -137,7 +137,8 @@ function view(state = {}, action) {
     case OPEN_VISUALISATION_MODAL:
       return Object.assign({}, state, {
         visualisation_visible: true,
-        colName: action.colName
+        columnIndex: action.columnIndex,
+        userId: action.userId
       });
     case CLOSE_VISUALISATION_MODAL:
       return Object.assign({}, state, {

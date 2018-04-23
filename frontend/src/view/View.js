@@ -62,7 +62,7 @@ class View extends React.Component {
 
     switch (e.key)  {
       case 'visualise':
-        this.boundActionCreators.openVisualisationModal(view.columns[columnIndex]['field']);
+        this.boundActionCreators.openVisualisationModal(columnIndex);
         break;
 
       case 'edit':
@@ -87,6 +87,11 @@ class View extends React.Component {
     };
   };
 
+  handlePrimaryKeyDropdownClick = (text) =>{
+    const {view} = this.props;
+    this.boundActionCreators.openVisualisationModal(1, text);
+  }
+
   render() {
     const { loading, view } = this.props;
     const { filtered, sorted } = this.state;
@@ -108,8 +113,8 @@ class View extends React.Component {
 
     const PrimaryKeyDropdown = ({ text }) => (
       <Dropdown trigger={["click"]} overlay={
-        <Menu>
-          <Menu.Item key="visualise" disabled><Icon type="area-chart" style={{ marginRight: 5 }}/>Visualise</Menu.Item>
+        <Menu onClick={(e) => this.handlePrimaryKeyDropdownClick(e, text)}>
+          <Menu.Item key="visualise"><Icon type="area-chart" style={{ marginRight: 5 }}/>Visualise</Menu.Item>
         </Menu>
       }>
         <a>{text}</a>

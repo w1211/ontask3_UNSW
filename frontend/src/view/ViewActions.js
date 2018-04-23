@@ -509,13 +509,13 @@ export const openColumnModal = (column, index) => ({
   index
 });
 
-export const openVisualisationModal = (colName, index) =>({
+export const openVisualisationModal = (columnIndex, userId) =>({
   type: OPEN_VISUALISATION_MODAL,
-  colName,
-  index
+  columnIndex,
+  userId
 })
 
-export const closeVisualisationModal = (column, index) =>({
+export const closeVisualisationModal = (column) =>({
   type: CLOSE_VISUALISATION_MODAL
 })
 
