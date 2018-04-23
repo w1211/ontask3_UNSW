@@ -163,18 +163,6 @@ function workflow(state = {}, action) {
         error: null
       });
 
-    // // Scheduler Actions
-    // case FAILURE_CREATE_SCHEDULE:
-    //   return Object.assign({}, state, {
-    //     scheduleLoading: false,
-    //     scheduleError: action.error
-    //   });
-    // case SUCCESS_CREATE_SCHEDULE:
-    //   return Object.assign({}, state, {
-    //     scheduleLoading: false,
-    //     scheduleError: null
-    //   });
-
     case BEGIN_REQUEST_PREVIEW_CONTENT:
       return Object.assign({}, state, {
         previewLoading: true

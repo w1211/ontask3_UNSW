@@ -67,7 +67,6 @@ class VisualisationModal extends React.Component {
             if(b[colNameSelected]===""){ return 1; }
           }});
 
-          // TODO: if rows are more than 10 we merge to 5 cols
           if(dv.rows.length>MAX_COL){
             //min and max value for slider
             defaultMin = Number(dv.rows[1][colNameSelected]);
@@ -80,7 +79,7 @@ class VisualisationModal extends React.Component {
             //round up the result so that we always get the number of columns user defined
             const interval = Math.ceil((max-min)/numCols);
 
-            //if user customize range, we filter out values outside of this range
+            //if user customize range, we filter out rows with values outside of this range
             if (rangeMin && rangeMax){
               dv.transform({
                 type: 'filter',
@@ -173,7 +172,7 @@ class VisualisationModal extends React.Component {
           as: 'range',
           fraction: 4
         })
-        //put q1 median q3 high and low to 
+        //restore q1 median q3 high and low for label later 
         .transform({
           type: 'map',
           callback: (row) => {

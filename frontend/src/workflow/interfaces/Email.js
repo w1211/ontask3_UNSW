@@ -16,7 +16,6 @@ import SchedulerModal from '../../scheduler/SchedulerModal';
 const FormItem = Form.Item;
 const Option = Select.Option;
 
-
 class Email extends React.Component {
   constructor(props) {
     super(props);
@@ -66,6 +65,16 @@ class Email extends React.Component {
     this.boundActionCreators.openSchedulerModal(workflow.id, workflow.schedule);
   }
 
+  updateEmailSettings=()=>{
+    const { form, workflow } = this.props;
+
+    form.validateFields((err, values) => {
+      if (err) return;
+      console.log(values);
+      this.boundActionCreators.updateEmailSettings(workflow.id, values);
+    });
+  }
+
   render() {
     const { workflow, loading, error, form, previewLoading, previewContent } = this.props;
 
@@ -88,42 +97,42 @@ class Email extends React.Component {
           { workflow && workflow.schedule ?
                 <div>
                   <h3 style={{marginBottom:"1em"}}>Current schedule</h3>
-                  <div style={{ background: '#eeeeee', padding: '1em', margin: '0.5em 0', border: '1px dashed #cccccc', borderRadius: '5px', display: 'block' }}>
-                    <span style={{position: "relative", float: "right", zIndex: "2"}}>
-                      <Tooltip title="Update current schedule">
-                      <Button shape="circle" icon="edit" size="small" style={{marginRight: '0.5em'}} onClick={this.onUpdate}/>
+                  <div style={{ backgroundColor: "#fafafa", padding: '1em 3em', margin: '1em 0', border: "1px dashed #e9e9e9", borderRadius: '5px', display: 'block' }}>
+                    <div style={{textAlign:"right"}}>
+                    <Tooltip title="Update current schedule">
+                      <Button shape="circle" icon="edit" size="small" onClick={this.onUpdate}/>
                       </Tooltip>
-                    </span>
-                    <Row gutter={8}>
-                        <Col span={5} ><h4>Start Time: </h4></Col>
-                        <Col span={10} >{moment(workflow.schedule.startTime).format("YYYY/MM/DD HH:mm:ss")}</Col>
+                      </div>
+                    <Row>
+                        <Col style={{textAlign:"right", marginBottom:5}} xs={{ span: 24 }} sm={{ span: 5 }} ><h4>Start Time:</h4> </Col>
+                        <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }} >{moment(workflow.schedule.startTime).format("YYYY/MM/DD HH:mm:ss")}</Col>
                     </Row>
-                    <Row gutter={8}>
-                        <Col span={5} ><h4>End Time: </h4></Col>
-                        <Col span={10} >{moment(workflow.schedule.endTime).format("YYYY/MM/DD HH:mm:ss")}</Col>
+                    <Row>
+                        <Col style={{textAlign:"right", marginBottom:5}} xs={{ span: 24 }} sm={{ span: 5 }} ><h4>End Time: </h4></Col>
+                        <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }}>{moment(workflow.schedule.endTime).format("YYYY/MM/DD HH:mm:ss")}</Col>
                     </Row>
-                    <Row gutter={8}>
-                        <Col span={5} ><h4>Time: </h4></Col>
-                        <Col span={10} >{moment(workflow.schedule.time).format("HH:mm")}</Col>
+                    <Row>
+                        <Col style={{textAlign:"right", marginBottom:5}} xs={{ span: 24 }} sm={{ span: 5 }}><h4>Time: </h4></Col>
+                        <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }}>{moment(workflow.schedule.time).format("HH:mm")}</Col>
                     </Row>
-                    <Row gutter={8}>
-                        <Col span={5} ><h4>Frequency: </h4></Col>
+                    <Row>
+                        <Col style={{textAlign:"right", marginBottom:5}} xs={{ span: 24 }} sm={{ span: 5 }}><h4>Frequency: </h4></Col>
                         {workflow.schedule.frequency == "daily"?
-                          <Col span={10} >Every {workflow.schedule.dayFrequency} {workflow.schedule.dayFrequency=="1"?"day":"days"}</Col>
+                          <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }} >Every {workflow.schedule.dayFrequency} {workflow.schedule.dayFrequency=="1"?"day":"days"}</Col>
                         :
-                          <Col span={10} >{workflow.schedule.frequency}</Col>
+                          <Col style={{paddingLeft: 10}}>{workflow.schedule.frequency}</Col>
                         }
                     </Row>
                     { workflow.schedule.frequency == "weekly" && 
                     <Row gutter={8}>
-                        <Col span={5} ><h4>DayOfWeek: </h4></Col>
-                        <Col span={10}>{workflow.schedule.dayOfWeek.map((day,i)=><span>{day} </span>)}</Col>
+                        <Col style={{textAlign:"right", marginBottom:5}} xs={{ span: 24 }} sm={{ span: 5 }} ><h4>DayOfWeek: </h4></Col>
+                        <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }}>{workflow.schedule.dayOfWeek.map((day,i)=><span>{day} </span>)}</Col>
                     </Row>
                     }
                     { workflow.schedule.frequency == "monthly" && 
                     <Row gutter={8}>
-                        <Col span={5} ><h4>DayOfMonth: </h4></Col>
-                        <Col span={10} >{moment(workflow.schedule.dayOfMonth).format("DD")}</Col>
+                        <Col style={{textAlign:"right", marginBottom:5}} xs={{ span: 24 }} sm={{ span: 5 }} ><h4>DayOfMonth: </h4></Col>
+                        <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }}>{moment(workflow.schedule.dayOfMonth).format("DD")}</Col>
                     </Row>
                     }
                   </div>
@@ -141,7 +150,7 @@ class Email extends React.Component {
               }
             </div>
 
-            <div style={{ maxWidth: 700 }}>
+            <div style={{ border: "1px dashed #e9e9e9", borderRadius: "6px", backgroundColor: "#fafafa" , padding: '1em 3em', margin: '1em 0', display: 'block' }}>
               <FormItem {...narrowFormItemLayout} label="Email field">
                 {form.getFieldDecorator('emailSettings.field', {
                   rules: [{ required: true, message: 'Email field is required' }],
@@ -172,6 +181,11 @@ class Email extends React.Component {
                   <Input/>
                 )}
               </FormItem>
+              
+              { workflow && workflow.emailSettings &&
+                <div style={{textAlign: "right"}}><Button loading={loading} onClick={this.updateEmailSettings}>Update</Button></div>
+              }
+            </div>
 
             <div className="ant-form-item-label" style={{ display: 'flex' }}>
               <label>Content preview</label> ({this.state.index + 1})
@@ -212,9 +226,6 @@ class Email extends React.Component {
                 />
               }
             </div>
-            
-
-          </div>
         </Form>
 
         <div style={{ marginTop: '10px' }}>

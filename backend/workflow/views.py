@@ -396,3 +396,13 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         serializer.is_valid()
         serializer.save()
         return JsonResponse({ "success":True }, safe=False)
+
+    @detail_route(methods=['patch'])
+    def update_email_settings(self, request, id=None):
+        workflow = Workflow.objects.get(id=id)
+        serializer = WorkflowSerializer(workflow, data={
+            'emailSettings': request.data["emailSettings"]
+        }, partial=True)
+        serializer.is_valid()
+        serializer.save()
+        return JsonResponse({ "success":True }, safe=False)

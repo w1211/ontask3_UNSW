@@ -41,17 +41,6 @@ export const FAILURE_REQUEST_PREVIEW_CONTENT = 'FAILURE_REQUEST_PREVIEW_CONTENT'
 export const SUCCESS_PREVIEW_CONTENT = 'SUCCESS_PREVIEW_CONTENT';
 export const CLOSE_PREVIEW_CONTENT = 'CLOSE_PREVIEW_CONTENT';
 
-// export const FAILURE_CREATE_SCHEDULE = 'FAILURE_CREATE_SCHEDULE';
-// export const SUCCESS_CREATE_SCHEDULE = 'SUCCESS_CREATE_SCHEDULE';
-
-// export const BEGIN_SEND_EMAIL = 'BEGIN_SEND_EMAIL';
-// export const FAILURE_SEND_EMAIL = 'FAILURE_SEND_EMAIL';
-// export const SUCCESS_SEND_EMAIL = 'SUCCESS_SEND_EMAIL';
-// export const CLEAR_SEND_EMAIL = 'CLEAR_SEND_EMAIL';
-
-
-
-
 
 export const openWorkflowModal = (containerId, views) => ({
   type: OPEN_WORKFLOW_MODAL,
@@ -166,44 +155,6 @@ export const fetchWorkflow = (workflowId) => dispatch => {
   }
   requestWrapper(parameters);
 };
-
-
-// const failureCreateSchedule = (error) => ({
-//   type: FAILURE_CREATE_SCHEDULE,
-//   error
-// })
-
-// const successCreateSchedule = () => ({
-//   type: SUCCESS_CREATE_SCHEDULE
-// });
-
-// export const createSchedule = (workflowId, payload) => dispatch => {
-//   const parameters = {
-//     url: `/workflow/${workflowId}/create_schedule/`,
-//     method: 'PUT',
-//     errorFn: (error) => { dispatch(failureCreateSchedule(error)); },
-//     successFn: (response) => {
-//       dispatch(successCreateSchedule());
-//       dispatch(fetchWorkflow(workflowId));
-//     },
-//     payload: payload
-//   }
-//   requestWrapper(parameters);
-// };
-
-// export const deleteSchedule = (workflowId) => dispatch => {
-//   const parameters = {
-//     url: `/workflow/${workflowId}/delete_schedule/`,
-//     method: 'PUT',
-//     errorFn: (error) => { console.log(error);},
-//     successFn: (response) => {
-//       dispatch(fetchWorkflow(workflowId));
-//     },
-//     payload: {}
-//   }
-//   requestWrapper(parameters);
-// };
-
 
 const beginRequestModal = () => ({
   type: BEGIN_REQUEST_MODAL
@@ -623,6 +574,26 @@ export const deleteSchedule = (workflowId) => dispatch => {
         description: 'The schedule was successfully deleted.'
       });
     },
+    isNotJSON: false
+  }
+  requestWrapper(parameters);
+};
+
+export const updateEmailSettings = (workflowId, payload) =>(dispatch)=> {
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestWorkflow()); },
+    url: `/workflow/${workflowId}/update_email_settings/`,
+    method: 'PATCH',
+    errorFn: (error) => { dispatch(failureRequestWorkflow(error)); },
+    successFn: () => {
+      dispatch(successRequestWorkflow());
+      dispatch(fetchWorkflow(workflowId));
+      notification['success']({
+        message: 'Email settings updated',
+        description: 'The email settings were successfully updated.'
+      });
+    },
+    payload: payload,
     isNotJSON: false
   }
   requestWrapper(parameters);
