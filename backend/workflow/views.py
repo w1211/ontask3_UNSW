@@ -261,6 +261,10 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         workflow = Workflow.objects.get(id=id)
         self.check_object_permissions(self.request, workflow)
 
+        #reject when email content is empty or string with only spaces
+        if not (workflow['content'] and workflow['content']['plain'].strip()):
+            raise ValidationError('Email content can not be empty.')
+
         field = request.data['emailSettings']['field']
         subject = request.data['emailSettings']['subject']
         reply_to = request.data['emailSettings']['replyTo']
