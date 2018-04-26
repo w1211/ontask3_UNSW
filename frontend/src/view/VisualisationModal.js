@@ -53,7 +53,6 @@ class VisualisationModal extends React.Component {
         .transform({type: 'aggregate', fields: [colNameSelected], 
           operations: 'count', as: 'count',
           groupBy: [colNameSelected]});
-          console.log(dv.rows);
 
         //if current column type is number, then we can combine bars with user defined intervals
         if(view.columns[colIndexSelected]['type']==="number"){
@@ -206,7 +205,7 @@ class VisualisationModal extends React.Component {
         >
           <Option value="barChart">Barchart</Option>
           <Option value="pieChart">Piechart</Option>
-          <Option value="boxPlot">Boxplot</Option>
+          { view && colIndexSelected && view.columns[colIndexSelected]['type']==="number" && <Option value="boxPlot">Boxplot</Option> }
         </Select>
 
       { userId &&
