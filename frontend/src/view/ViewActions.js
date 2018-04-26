@@ -617,10 +617,14 @@ export const addModule = (mod) => (dispatch, getState) => {
   let build = Object.assign({}, view.build);
 
   if (!('steps' in build)) build.steps = [];
+  if (!('errors' in build)) build.errors = [];
 
   // Initialize an object that represents this type of module
   // The form will then initialize form fields conditionally based on this type
   build.steps.push({ type: mod.type, fields: [], labels: {} });
+
+  // Initialize an object that will store errors for this module
+  build.errors.push({});
 
   dispatch({
     type: UPDATE_BUILD,
