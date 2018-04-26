@@ -25,6 +25,9 @@ export const RECEIVE_VIEW = 'RECEIVE_VIEW';
 export const OPEN_COLUMN_MODAL = 'OPEN_COLUMN_MODAL';
 export const CLOSE_COLUMN_MODAL = 'CLOSE_COLUMN_MODAL';
 
+export const OPEN_VISUALISATION_MODAL = "OPEN_VISUALISATION_MODAL";
+export const CLOSE_VISUALISATION_MODAL = "CLOSE_VISUALISATION_MODAL";
+
 
 export const openViewModal = (containerId, datasources, selected) => {
   let formState = {};
@@ -505,6 +508,16 @@ export const openColumnModal = (column, index) => ({
   column, 
   index
 });
+
+export const openVisualisationModal = (columnIndex, userId) =>({
+  type: OPEN_VISUALISATION_MODAL,
+  columnIndex,
+  userId
+})
+
+export const closeVisualisationModal = (column) =>({
+  type: CLOSE_VISUALISATION_MODAL
+})
 
 export const closeColumnModal = () => ({
   type: CLOSE_COLUMN_MODAL

@@ -261,6 +261,10 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         if os.environ.get('ONTASK_DEMO') is not None:
             raise ValidationError("Email sending is disabled in the demo")
+            
+        #reject when email content is empty or string with only spaces
+        if not (workflow['content'] and workflow['content']['plain'].strip()):
+            raise ValidationError('Email content can not be empty.')
 
         field = request.data['emailSettings']['field']
         subject = request.data['emailSettings']['subject']
@@ -412,6 +416,16 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         serializer = WorkflowSerializer(workflow, data={
             'schedule': schedule
+        }, partial=True)
+        serializer.is_valid()
+        serializer.save()
+        return JsonResponse({ "success":True }, safe=False)
+
+    @detail_route(methods=['patch'])
+    def update_email_settings(self, request, id=None):
+        workflow = Workflow.objects.get(id=id)
+        serializer = WorkflowSerializer(workflow, data={
+            'emailSettings': request.data["emailSettings"]
         }, partial=True)
         serializer.is_valid()
         serializer.save()

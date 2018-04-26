@@ -3,11 +3,13 @@ import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { Table, Spin, Layout, Breadcrumb, Icon, Menu, Dropdown, Button, Modal } from 'antd';
+import { View as dataView} from '@antv/data-set';
 
 import * as ViewActionCreators from './ViewActions';
 
 import ColumnModal from './ColumnModal';
 import DiscrepenciesModal from './resolve/DiscrepenciesModal';
+import VisualisationModal from './VisualisationModal';
 
 const { Content } = Layout;
 const confirm = Modal.confirm;
@@ -59,6 +61,10 @@ class View extends React.Component {
     const { view } = this.props;
 
     switch (e.key)  {
+      case 'visualise':
+        this.boundActionCreators.openVisualisationModal(columnIndex);
+        break;
+
       case 'edit':
         this.boundActionCreators.openColumnModal(view.columns[columnIndex], columnIndex);
         break;
@@ -81,6 +87,11 @@ class View extends React.Component {
     };
   };
 
+  handlePrimaryKeyDropdownClick = (text) =>{
+    const {view} = this.props;
+    this.boundActionCreators.openVisualisationModal(1, text);
+  }
+
   render() {
     const { loading, view } = this.props;
     const { filtered, sorted } = this.state;
@@ -91,7 +102,7 @@ class View extends React.Component {
     const HeaderDropdown = ({ column, label, index }) => (
       <Dropdown trigger={["click"]} overlay={
         <Menu onClick={(e) => this.handleHeaderDropdownClick(e, index)}>
-          <Menu.Item key="visualise" disabled><Icon type="area-chart" style={{ marginRight: 5 }}/>Visualise</Menu.Item>
+          <Menu.Item key="visualise"><Icon type="area-chart" style={{ marginRight: 5 }}/>Visualise</Menu.Item>
           <Menu.Item key="edit"><Icon type="edit" style={{ marginRight: 5 }}/>Edit</Menu.Item>
           <Menu.Item key="delete"><Icon type="delete" style={{ marginRight: 5 }}/>Delete</Menu.Item>
         </Menu>
@@ -102,8 +113,8 @@ class View extends React.Component {
 
     const PrimaryKeyDropdown = ({ text }) => (
       <Dropdown trigger={["click"]} overlay={
-        <Menu>
-          <Menu.Item key="visualise" disabled><Icon type="area-chart" style={{ marginRight: 5 }}/>Visualise</Menu.Item>
+        <Menu onClick={(e) => this.handlePrimaryKeyDropdownClick(e, text)}>
+          <Menu.Item key="visualise"><Icon type="area-chart" style={{ marginRight: 5 }}/>Visualise</Menu.Item>
         </Menu>
       }>
         <a>{text}</a>
@@ -180,6 +191,8 @@ class View extends React.Component {
 
                   <ColumnModal/>
                   
+                  <VisualisationModal/>
+
                   <DiscrepenciesModal
                     visible={this.state.discrepenciesModalVisible}
                     onCancel={() => { this.setState({ discrepenciesModalVisible: false }) }}

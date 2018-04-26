@@ -170,7 +170,7 @@ class DatasourceModal extends React.Component {
           }
 
           { ['xlsXlsxFile', 'csvTextFile'].includes(fileType) && 
-            <LocalFile form={form} onChange={this.handleFileDrop} selected={selected}/> 
+            <LocalFile form={form} onChange={this.handleFileDrop} selected={selected} fileType={fileType}/> 
           }
           
           { file && 
@@ -280,7 +280,7 @@ const Delimiter = ({ form, selected }) => (
   </FormItem>
 );
 
-const LocalFile = ({ form, onChange }) => (
+const LocalFile = ({ form, onChange, fileType }) => (
   <Dragger
     name='file'
     multiple={false}
@@ -292,7 +292,7 @@ const LocalFile = ({ form, onChange }) => (
       <Icon type="inbox"/>
     </p>
     <p className="ant-upload-text">Click or drag file to this area to upload</p>
-    <p className="ant-upload-hint">Supported file formats: csv/xls/xlsx</p>
+    <p className="ant-upload-hint">Supported file formats: {fileType==="xlsXlsxFile"?"xls/xlsx":"csv/txt"}</p>
   </Dragger>
 );
 

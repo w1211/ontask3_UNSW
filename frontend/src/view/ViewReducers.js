@@ -19,7 +19,10 @@ import {
 
   RECEIVE_VIEW,
   OPEN_COLUMN_MODAL,
-  CLOSE_COLUMN_MODAL
+  CLOSE_COLUMN_MODAL,
+
+  OPEN_VISUALISATION_MODAL,
+  CLOSE_VISUALISATION_MODAL
 } from './ViewActions';
 
 import _ from 'lodash';
@@ -129,6 +132,17 @@ function view(state = {}, action) {
         visible: false,
         column: null,
         index: null,
+        error: null
+      });
+    case OPEN_VISUALISATION_MODAL:
+      return Object.assign({}, state, {
+        visualisation_visible: true,
+        columnIndex: action.columnIndex,
+        userId: action.userId
+      });
+    case CLOSE_VISUALISATION_MODAL:
+      return Object.assign({}, state, {
+        visualisation_visible: false,
         error: null
       });
 

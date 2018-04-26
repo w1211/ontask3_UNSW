@@ -69,7 +69,7 @@ class SchedulerModal extends React.Component {
   render() {
     const { form, visible, schedule, allowFutureStart, error } = this.props;
     const { getFieldDecorator } = form;
-      
+    
     return(
       <Modal
         title={ schedule ? 'Update schedule' : 'Create schedule' }
@@ -110,7 +110,7 @@ class SchedulerModal extends React.Component {
           { form.getFieldValue('frequency') === "daily" &&
             <FormItem {...formItemLayout} label="When">
               { getFieldDecorator('dayFrequency', {
-                initialValue: schedule ? schedule.dayFrequency : null,
+                initialValue: schedule ? schedule.dayFrequency.toString() : null,
                 rules: [
                   { required: true, message: 'When is required' },
                   { pattern: '^[1-9][0-9]*$', message: 'Must be an integer' }
