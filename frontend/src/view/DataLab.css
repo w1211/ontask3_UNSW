@@ -2,7 +2,6 @@
   width: 175px;
   min-height: 175px;
   margin-right: 15px;
-  margin-bottom: 10px;
   display: flex;
   flex-direction: column;
   flex-wrap: wrap;
@@ -61,4 +60,53 @@
   opacity: 0.35;
   border-style: dashed;
   cursor: move;
+}
+
+.dataLab .fields-select i {
+  display: none;
+}
+
+/*  */
+.dataLab .fields-select.ant-select-disabled .ant-select-selection {
+  border-color: #d9d9d9;
+  box-shadow: none;
+}
+
+.dataLab-fields .editing-field:after {
+  content: none !important;
+  display: none !important;
+}
+
+.dataLab-fields .editing-field i {
+  cursor: pointer;
+  margin-left: 5px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.dataLab-fields .editing-field i:hover {
+  color: #1890ff;
+}
+
+.dataLab-fields .editing-field.ant-select-dropdown-menu-item-disabled {
+  cursor: default;
+}
+
+.dataLab-fields .normal-field i {
+  opacity: 0;
+  margin-left: 5px;
+  transition: opacity 0.1s ease-out;
+  font-weight: 300;
+}
+
+.dataLab-fields .normal-field:hover i {
+  opacity: 1;
+}
+
+.dataLab .ant-form-item {
+  margin: 0;
+  width: 100%;
+}
+
+.dataLab .ant-select {
+  width: 100%;
 }

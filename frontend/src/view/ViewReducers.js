@@ -19,7 +19,10 @@ import {
 
   RECEIVE_VIEW,
   OPEN_COLUMN_MODAL,
-  CLOSE_COLUMN_MODAL
+  CLOSE_COLUMN_MODAL,
+
+  UPDATE_BUILD,
+  RECIEVE_DATASOURCES
 } from './ViewActions';
 
 import _ from 'lodash';
@@ -130,6 +133,16 @@ function view(state = {}, action) {
         column: null,
         index: null,
         error: null
+      });
+
+    case UPDATE_BUILD:
+      return Object.assign({}, state, {
+        build: action.build
+      });
+    case RECIEVE_DATASOURCES:
+      return Object.assign({}, state, {
+        datasources: action.datasources,
+        loading: false
       });
 
     default:

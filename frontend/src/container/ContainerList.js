@@ -193,7 +193,7 @@ class ContainerList extends React.Component {
                         </Card>
                       )
                     })}
-                    <Link to={`/datalab`}>
+                    <Link to={{ pathname: `/datalab`, state: { containerId: container.id } }}>
                       <div className="add item">
                         <Icon type="plus"/>
                         <span>Create DataLab</span>

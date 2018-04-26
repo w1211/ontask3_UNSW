@@ -1,4 +1,4 @@
-import { notification, Modal } from 'antd';
+import { notification, Modal, message } from 'antd';
 import requestWrapper from '../shared/requestWrapper';
 import { fetchContainers } from '../container/ContainerActions';
 
@@ -24,6 +24,9 @@ export const SUCCESS_REQUEST_VIEW = 'SUCCESS_REQUEST_VIEW';
 export const RECEIVE_VIEW = 'RECEIVE_VIEW';
 export const OPEN_COLUMN_MODAL = 'OPEN_COLUMN_MODAL';
 export const CLOSE_COLUMN_MODAL = 'CLOSE_COLUMN_MODAL';
+
+export const UPDATE_BUILD = 'UPDATE_BUILD';
+export const RECIEVE_DATASOURCES = 'RECIEVE_DATASOURCES';
 
 
 export const openViewModal = (containerId, datasources, selected) => {
@@ -590,10 +593,118 @@ export const updateDiscrepencies = (viewId, dropDiscrepencies) => (dispatch, get
   requestWrapper(parameters);
 };
 
+export const retrieveDatasources = (containerId) => dispatch => {
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestView()); },
+    url: `/container/${containerId}/retrieve_datasources/`,
+    method: 'GET',
+    errorFn: (error) => {
+      dispatch(failureRequestView(error));
+    },
+    successFn: (datasources) => {
+      dispatch({
+        type: RECIEVE_DATASOURCES,
+        datasources
+      });
+    }
+  }
+
+  requestWrapper(parameters);
+};
+
 export const addModule = (mod) => (dispatch, getState) => {
   const { view } = getState();
-  let build = Object.assign({ steps: [] }, view.build);
+  let build = Object.assign({}, view.build);
 
-  console.log(mod);
-  console.log(build);
+  if (!('steps' in build)) build.steps = [];
+
+  // Initialize an object that represents this type of module
+  // The form will then initialize form fields conditionally based on this type
+  build.steps.push({ type: mod.type, fields: [], labels: {} });
+
+  dispatch({
+    type: UPDATE_BUILD,
+    build
+  });
+};
+
+export const deleteStep = () => (dispatch, getState) => {
+  const { view } = getState();
+  let build = Object.assign({}, view.build);
+
+  // Delete the last step
+  build.steps = build.steps.slice(0, -1);
+
+  dispatch({
+    type: UPDATE_BUILD,
+    build
+  });
+};
+
+export const updateBuild = (stepIndex, field, value, isNotField) => (dispatch, getState) => {
+  const { view } = getState();
+  let build = Object.assign({}, view.build);
+
+  let step = build.steps[stepIndex];
+
+  if (step.type === 'datasource') {
+    if (field === 'id') {
+      // The datasource was changed, so reset the fields
+      delete step.primary;
+      delete step.matching;
+      step.fields = []; // The fields to use from the given datasource
+      step.labels = {}; // Object to hold the labels with (key, value) being (field, label)
+    }  
+    else if (field === 'edit' || field === 'remove') {
+      // Remove the field from the list of fields (if it's there)
+      step.fields = ('fields' in step) ? step.fields.filter(field => field !== value) : [];
+      // Remove this field's label
+      delete step.labels[value];
+    };
+  };
+
+  if (!isNotField) { 
+    step[field] = value;
+    if ('errors' in build) build.errors[stepIndex][field] = false;
+  };
+
+  dispatch({
+    type: UPDATE_BUILD,
+    build
+  });
+};
+
+export const saveBuild = () => (dispatch, getState) => {
+  const { view } = getState();
+  let build = Object.assign({}, view.build);
+  
+  build.errors = [];
+  
+  build.steps.forEach((step, i) => {
+    if (step.type === 'datasource') {
+      build.errors.push({
+        id: !step.id,
+        primary: !step.primary,
+        matching: i > 0 && !step.matching
+      });
+    };
+  });
+
+  const errors = build.errors.filter(step => 
+    // Create an array of booleans that denote whether an error exists in each field
+    Object.keys(step).map(field => step[field]).includes(true)
+  );
+
+  // If errors are detected then prevent saving, and propagate the errors to the component
+  if (errors.length > 0) {
+    message.error('Build cannot be saved until all required fields are provided.');
+    dispatch({
+      type: UPDATE_BUILD,
+      build
+    });
+    return;
+  }
+
+  // Perform save API call
+  
 };
