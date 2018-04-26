@@ -187,7 +187,7 @@ class DatasourceModule extends React.Component {
    
     // If this datasource has discrepencies, show the discrepencies button
 
-
+    
     return (
       <Card style={{ width: 250, minHeight: 250, marginBottom: 15, borderColor: '#BBDEFB' }} extra={build.length === step && 'X'} title={
         <div style={{ display: 'flex', alignItems: 'center', borderColor: '#BBDEFB' }}>
@@ -230,40 +230,44 @@ class DatasourceModule extends React.Component {
             </Select>
           </FormItem>
         }
+
         <div style={{ position: 'relative' }} id={`dropdown_${step}`} ref={(dropdown) => this.dropdown = dropdown}></div>
-        <Select
-          mode="multiple" className="fields-select" placeholder="Fields" value={currentStep.fields} dropdownClassName="dataLab-fields"
-          style={{ width: '100%', marginTop: 10 }} onChange={this.changeFields} disabled={this.state.editMode || !datasource}
-          ref={(select) => { this.select = select; }}
-          getPopupContainer={() => document.getElementById(`dropdown_${step}`)}
-        >
-          { datasource && datasource.fields.map((field, i) => {
-            const isEditing = editing.step === step && editing.field === field;
-            return (
-              <Option disabled={this.state.editMode} value={field} key={i} title={field} className={isEditing && 'editing-field'}>
-                { isEditing ?
-                  <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
-                    <Input 
-                      ref={(input) => { this.labelInput = input; input && input.focus(); }}
-                      size="small" value={editing.label} onFocus={this.onFocusEdit}
-                      onChange={(e) => { this.setState({ editing: { ...editing, label: e.target.value } }); }}
-                      onKeyDown={(e) => { if (e.key === 'Enter') this.confirmEdit(); if (e.key === 'Escape') this.cancelEdit(); }}
-                    />
-                    <div style={{ flex: 1, textAlign: 'right' }}>
-                      <Icon type="close" onClick={this.cancelEdit}/>
-                      <Icon type="save" onClick={this.confirmEdit}/>
+        
+        <FormItem validateStatus={errors && errors.fields ? 'error' : null}>
+          <Select
+            mode="multiple" className="fields-select" placeholder="Fields" value={currentStep.fields} dropdownClassName="dataLab-fields"
+            style={{ width: '100%', marginTop: 10 }} onChange={this.changeFields} disabled={this.state.editMode || !datasource}
+            ref={(select) => { this.select = select; }}
+            getPopupContainer={() => document.getElementById(`dropdown_${step}`)}
+          >
+            { datasource && datasource.fields.map((field, i) => {
+              const isEditing = editing.step === step && editing.field === field;
+              return (
+                <Option disabled={this.state.editMode} value={field} key={i} title={field} className={isEditing && 'editing-field'}>
+                  { isEditing ?
+                    <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
+                      <Input 
+                        ref={(input) => { this.labelInput = input; input && input.focus(); }}
+                        size="small" value={editing.label} onFocus={this.onFocusEdit}
+                        onChange={(e) => { this.setState({ editing: { ...editing, label: e.target.value } }); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') this.confirmEdit(); if (e.key === 'Escape') this.cancelEdit(); }}
+                      />
+                      <div style={{ flex: 1, textAlign: 'right' }}>
+                        <Icon type="close" onClick={this.cancelEdit}/>
+                        <Icon type="save" onClick={this.confirmEdit}/>
+                      </div>
                     </div>
-                  </div>
-                :
-                  <div className="normal-field">
-                    {field in currentStep.labels ? currentStep.labels[field] : field}
-                    {!this.state.editMode && <Icon type="edit" onClick={(e) => this.onEdit(e, field)}/>}
-                  </div>
-                }
-              </Option>
-            )
-          })}
-        </Select>
+                  :
+                    <div className="normal-field">
+                      {field in currentStep.labels ? currentStep.labels[field] : field}
+                      {!this.state.editMode && <Icon type="edit" onClick={(e) => this.onEdit(e, field)}/>}
+                    </div>
+                  }
+                </Option>
+              )
+            })}
+          </Select>
+        </FormItem>
       </Card>
     );
   };

@@ -680,12 +680,13 @@ export const saveBuild = () => (dispatch, getState) => {
   
   build.errors = [];
   
-  build.steps.forEach((step, i) => {
+  'steps' in build && build.steps.forEach((step, i) => {
     if (step.type === 'datasource') {
       build.errors.push({
         id: !step.id,
         primary: !step.primary,
-        matching: i > 0 && !step.matching
+        matching: i > 0 && !step.matching,
+        fields: !(step.fields.length > 0)
       });
     };
   });

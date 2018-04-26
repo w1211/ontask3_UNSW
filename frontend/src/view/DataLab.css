@@ -67,7 +67,7 @@
 }
 
 /*  */
-.dataLab .fields-select.ant-select-disabled .ant-select-selection {
+.dataLab .ant-form-item-control:not(.has-error) .fields-select.ant-select-disabled .ant-select-selection {
   border-color: #d9d9d9;
   box-shadow: none;
 }
