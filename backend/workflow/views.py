@@ -136,7 +136,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                 if condition['name'] in [condition['name'] for condition in new_condition_group['conditions']]:
                     raise ValidationError('\'{0}\' is already being used as a condition name in this workflow'.format(condition['name']))
 
-        self.validate_condition_group(workflow, new_condition_group)
+        validate_condition_group(workflow, new_condition_group)
 
         result = workflow.update(push__conditionGroups=new_condition_group)
 
@@ -166,7 +166,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                 if condition['name'] in [condition['name'] for condition in updated_condition_group['conditions']]:
                     raise ValidationError('\'{0}\' is already being used as a condition name in this workflow'.format(condition['name']))
 
-        self.validate_condition_group(workflow, updated_condition_group)
+        validate_condition_group(workflow, updated_condition_group)
 
         condition_groups = workflow['conditionGroups']
         for i in range(len(condition_groups)):

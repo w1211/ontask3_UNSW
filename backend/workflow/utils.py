@@ -1,5 +1,6 @@
 from mongoengine import Document, fields
 import re
+from collections import defaultdict
 
 def did_pass_formula(item, formula):
   operator = formula['operator']
