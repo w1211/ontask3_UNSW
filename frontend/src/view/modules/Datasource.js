@@ -33,7 +33,7 @@ class DatasourceModule extends React.Component {
     // Identify the fields already used in the build
     let labels = [];
     steps.forEach(step => {
-      if (step.type === 'datasource') labels = [...labels, ...Object.values(step.labels)];
+      if (step.type === 'datasource') labels = [...labels, ...Object.values(step.datasource.labels)];
     });
 
     return labels;
@@ -58,12 +58,15 @@ class DatasourceModule extends React.Component {
   hasDependency = (field) => {
     const { build, step } = this.props;
 
-    const currentStep = build.steps[step];
+    const currentStep = build.steps[step].datasource;
     const label = currentStep.labels[field];
 
     // If this field is used as a matching field for any datasources
     let relatedSteps = build.steps.slice(step + 1);
-    relatedSteps = relatedSteps.filter(step => (step.type === 'datasource' && 'matching' in step && step.matching === label));
+
+    relatedSteps = relatedSteps.filter(step => 
+      step.type === 'datasource' && 'matching' in step.datasource && step.datasource.matching === label
+    );
 
     return (relatedSteps.length > 0);
   };
@@ -71,10 +74,11 @@ class DatasourceModule extends React.Component {
   changeFields = (e) => {
     const { build, step, onChange } = this.props;
   
-    const currentStep = build.steps[step];
+    const currentStep = build.steps[step].datasource;
+
+    const fields = currentStep['fields'];
 
     // If a field was added
-    const fields = currentStep['fields'];
     if (e.length > fields.length) {
       // Identify the field added
       const field = e.filter(field => !fields.includes(field))[0];
@@ -96,7 +100,6 @@ class DatasourceModule extends React.Component {
     } else if (e.length < fields.length) {
       // Identify the field removed
       const field = fields.filter(field => !e.includes(field))[0];
-
       if (this.hasDependency(field)) {
         message.error('This field cannot be removed as it is being used as a matching field.');
       } else {
@@ -115,7 +118,7 @@ class DatasourceModule extends React.Component {
       return;
     };
     
-    const currentStep = build.steps[step];
+    const currentStep = build.steps[step].datasource;
 
     if (currentStep.labels[field]) {
       label = currentStep.labels[field];
@@ -138,7 +141,7 @@ class DatasourceModule extends React.Component {
     const { build, step, onChange } = this.props;
     const { editing } = this.state;
 
-    const currentStep = build.steps[step];
+    const currentStep = build.steps[step].datasource;
   
     if (!editing.label) {
       message.error('Label cannot be empty.');
@@ -170,11 +173,13 @@ class DatasourceModule extends React.Component {
     const { form, datasources, build, step, onChange, deleteStep } = this.props;
     const { editing } = this.state;
 
-    const currentStep = build.steps[step];
-    const errors = 'errors' in build && build.errors[step];
+    if (!datasources) return null;
+
+    const currentStep = build.steps[step].datasource;
+    const errors = 'errors' in build && build.errors.steps[step];
 
     // Identify which datasources have been used in the build
-    const usedDatasources = build.steps.filter(step => step.type === 'datasource').map(datasource => datasource.id);
+    const usedDatasources = build.steps.filter(step => step.type === 'datasource').map(step => step.datasource.id);
     // Find the datasource object representing this datasource (if chosen)
     const datasource = 'id' in currentStep && datasources.find(datasource => datasource.id === currentStep.id);
     // Determine the labels used in all steps up until (and not including) this one

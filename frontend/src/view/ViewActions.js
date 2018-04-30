@@ -26,7 +26,7 @@ export const OPEN_COLUMN_MODAL = 'OPEN_COLUMN_MODAL';
 export const CLOSE_COLUMN_MODAL = 'CLOSE_COLUMN_MODAL';
 
 export const UPDATE_BUILD = 'UPDATE_BUILD';
-export const RECIEVE_DATASOURCES = 'RECIEVE_DATASOURCES';
+export const RECEIVE_DATASOURCES = 'RECIEVE_DATASOURCES';
 
 
 export const openViewModal = (containerId, datasources, selected) => {
@@ -593,6 +593,31 @@ export const updateDiscrepencies = (viewId, dropDiscrepencies) => (dispatch, get
   requestWrapper(parameters);
 };
 
+export const retrieveDataLab = (dataLabId) => dispatch => {
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestView()); },
+    url: `/view/${dataLabId}/retrieve_view/`,
+    method: 'GET',
+    errorFn: (error) => {
+      dispatch(failureRequestView(error));
+    },
+    successFn: (dataLab) => {
+      dispatch({
+        type: RECEIVE_VIEW,
+        selectedId: dataLab.id,
+        build: { 
+          name: dataLab.name, 
+          steps: dataLab.steps, 
+          errors: { steps: [] } 
+        },
+        datasources: dataLab.datasources
+      });
+    }
+  }
+
+  requestWrapper(parameters);
+};
+
 export const retrieveDatasources = (containerId) => dispatch => {
   const parameters = {
     initialFn: () => { dispatch(beginRequestView()); },
@@ -603,7 +628,7 @@ export const retrieveDatasources = (containerId) => dispatch => {
     },
     successFn: (datasources) => {
       dispatch({
-        type: RECIEVE_DATASOURCES,
+        type: RECEIVE_DATASOURCES,
         datasources
       });
     }
@@ -617,14 +642,16 @@ export const addModule = (mod) => (dispatch, getState) => {
   let build = Object.assign({}, view.build);
 
   if (!('steps' in build)) build.steps = [];
-  if (!('errors' in build)) build.errors = [];
+  if (!('errors' in build)) build.errors = { steps: [] };
 
   // Initialize an object that represents this type of module
   // The form will then initialize form fields conditionally based on this type
-  build.steps.push({ type: mod.type, fields: [], labels: {} });
+  build.steps.push({ type: mod.type, datasource: { fields: [], labels: {} } });
 
   // Initialize an object that will store errors for this module
-  build.errors.push({});
+  build.errors.steps.push({});
+
+  console.log(build);
 
   dispatch({
     type: UPDATE_BUILD,
@@ -638,6 +665,9 @@ export const deleteStep = () => (dispatch, getState) => {
 
   // Delete the last step
   build.steps = build.steps.slice(0, -1);
+  
+  // Remove this step's errors
+  build.errors.steps = build.errors.steps.slice(0, -1);
 
   dispatch({
     type: UPDATE_BUILD,
@@ -649,9 +679,13 @@ export const updateBuild = (stepIndex, field, value, isNotField) => (dispatch, g
   const { view } = getState();
   let build = Object.assign({}, view.build);
 
-  let step = build.steps[stepIndex];
+  // Fields that are not part of a module do not have a stepIndex (as they are not in a step)
+  // If no stepIndex is provided, then the step will return false
+  let step = stepIndex !== undefined ? build.steps[stepIndex] : undefined;
 
-  if (step.type === 'datasource') {
+  // If there is a step (i.e. a stepIndex was provided) then perform any module/field specific actions
+  if (step && step.type === 'datasource') {
+    step = step.datasource;
     if (field === 'id') {
       // The datasource was changed, so reset the fields
       delete step.primary;
@@ -667,9 +701,18 @@ export const updateBuild = (stepIndex, field, value, isNotField) => (dispatch, g
     };
   };
 
-  if (!isNotField) { 
-    step[field] = value;
-    if ('errors' in build) build.errors[stepIndex][field] = false;
+  // If isNotField was *not* provided, 
+  // Then automatically merge the field value into the state, by using the given field name
+  if (!isNotField) {
+    // If this is a field inside a module (i.e. a stepIndex was provided)
+    if (step) {
+      step[field] = value;
+      if (build.errors.steps[stepIndex]) build.errors.steps[stepIndex][field] = false;
+    // Otherwise, this must be a field that is not specific to a module/step, such as the DataLab name
+    } else {
+      build[field] = value;
+      build.errors[field] = false;
+    }
   };
 
   dispatch({
@@ -678,15 +721,18 @@ export const updateBuild = (stepIndex, field, value, isNotField) => (dispatch, g
   });
 };
 
-export const saveBuild = () => (dispatch, getState) => {
+export const saveBuild = (containerId, selectedId) => (dispatch, getState) => {
   const { view } = getState();
   let build = Object.assign({}, view.build);
   
-  build.errors = [];
+  build.errors = { steps: [] };
   
+  build.errors.name = !build.name;
+
   'steps' in build && build.steps.forEach((step, i) => {
     if (step.type === 'datasource') {
-      build.errors.push({
+      step = step.datasource;
+      build.errors.steps.push({
         id: !step.id,
         primary: !step.primary,
         matching: i > 0 && !step.matching,
@@ -695,21 +741,43 @@ export const saveBuild = () => (dispatch, getState) => {
     };
   });
 
-  const errors = build.errors.filter(step => 
+  const errors = [build.errors.name, ...build.errors.steps.map(step => 
     // Create an array of booleans that denote whether an error exists in each field
     Object.keys(step).map(field => step[field]).includes(true)
-  );
+  )];
+
+  // If no modules have been added, then show an error
+  if (build.steps.length === 0) {
+    message.error('DataLab cannot be saved unless there is at least one module.');
+    return;
+  };
 
   // If errors are detected then prevent saving, and propagate the errors to the component
-  if (errors.length > 0) {
-    message.error('Build cannot be saved until all required fields are provided.');
+  if (errors.includes(true)) {
+    message.error('DataLab cannot be saved until all required fields are provided.');
     dispatch({
       type: UPDATE_BUILD,
       build
     });
     return;
-  }
+  };
+
+  if (containerId) build.container = containerId;
 
   // Perform save API call
-  
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestView()); },
+    url: selectedId ? `/view/${selectedId}/` : '/view/',
+    method: selectedId ? 'PATCH' : 'POST',
+    errorFn: (error) => {
+      dispatch(failureRequestView(error));
+    },
+    successFn: (response) => {
+      dispatch(successRequestView());
+      console.log(response);
+    },
+    payload: build
+  }
+
+  requestWrapper(parameters);
 };

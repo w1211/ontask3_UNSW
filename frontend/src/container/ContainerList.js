@@ -176,9 +176,11 @@ class ContainerList extends React.Component {
                                 <Button icon="table"/>
                               </Link>
                             </Tooltip>,
-                            <Tooltip title="Edit DataLab">
-                              <Button icon="edit" onClick={() => { dispatch(this.boundActionCreators.openViewModal(container.id, container.datasources, view)); }}/>
-                            </Tooltip>,
+                            <Link to={{ pathname: `/datalab/${view.id}`}}>
+                              <Tooltip title="Edit DataLab">
+                                <Button icon="edit"/>
+                              </Tooltip>
+                            </Link>,
                             <Tooltip title="Delete DataLab">
                               <Button type="danger" icon="delete" onClick={() => { this.boundActionCreators.deleteView(view.id); }}/>
                             </Tooltip>
@@ -187,7 +189,7 @@ class ContainerList extends React.Component {
                         >
                           <Meta description={
                             <div >
-                              {view.columns.length} fields
+                              {`${view.steps.length} ${view.steps.length > 1 ? 'modules' : 'module'}`}
                             </div>
                           }/>
                         </Card>

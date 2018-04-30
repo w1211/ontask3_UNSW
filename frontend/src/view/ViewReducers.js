@@ -22,7 +22,7 @@ import {
   CLOSE_COLUMN_MODAL,
 
   UPDATE_BUILD,
-  RECIEVE_DATASOURCES
+  RECEIVE_DATASOURCES
 } from './ViewActions';
 
 import _ from 'lodash';
@@ -115,12 +115,20 @@ function view(state = {}, action) {
         selectedId: null,
         formState: null
       });
-      
+
+    case RECEIVE_DATASOURCES:
+      return Object.assign({}, state, {
+        loading: false,
+        datasources: action.datasources
+      });
     case RECEIVE_VIEW:
       return Object.assign({}, state, {
         loading: false,
-        view: action.view
+        selectedId: action.selectedId,
+        build: action.build,
+        datasources: action.datasources
       });
+
     case OPEN_COLUMN_MODAL:
       return Object.assign({}, state, {
         visible: true,
@@ -138,11 +146,6 @@ function view(state = {}, action) {
     case UPDATE_BUILD:
       return Object.assign({}, state, {
         build: action.build
-      });
-    case RECIEVE_DATASOURCES:
-      return Object.assign({}, state, {
-        datasources: action.datasources,
-        loading: false
       });
 
     default:

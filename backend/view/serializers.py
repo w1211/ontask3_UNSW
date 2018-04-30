@@ -1,6 +1,6 @@
 from rest_framework_mongoengine import serializers
 
-from .models import View, Column
+from .models import View
 from datasource.serializers import DataSourceSerializer
 
 class ViewSerializer(serializers.DocumentSerializer):
