@@ -162,9 +162,15 @@ class ViewViewSet(viewsets.ModelViewSet):
             if step['type'] == 'datasource':
                 step = step['datasource']
                 datasource = DataSource.objects.get(id=step['id'])
+                # Create a map of the data generated thus far, with the key being the matching field specified for this step
+                # This allows us to efficiently lookup based on the primary key and find which record should be extended,
+                # Instead of having to iterate over the list to find the matching record for every record in this datasource (n*m complexity)
+                data_map = { item[step['matching']]: item for item in data }
+                # For each record in this datasource's data, extend the matching record in the data map
                 for item in datasource.data:
-                    match_index = next((index for index, d in enumerate(data) if d[step['matching']] == item[step['primary']]), None)
-                    if match_index is not None:
-                        data[match_index].update({step['labels'][field]: value for field, value in item.items() if field in step['fields']})
-                        
+                    if item[step['primary']] in data_map:
+                        data_map[item[step['primary']]].update({step['labels'][field]: value for field, value in item.items() if field in step['fields']})
+                # Create the data (list of dicts, with each dict representing a record) based on the updated data map 
+                data = [value for value in data_map.values()]
+                
         return data
