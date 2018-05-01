@@ -43,17 +43,14 @@ class VisualisationModal extends React.Component {
     let colNameSelected;
     let defaultMax=1;
     let defaultMin=100;
+    let isOverMaxCols=false;
 
     if(view && colIndexSelected){
 
       colNameSelected = view.columns[colIndexSelected]['field'];
 
       //Barchar ploting
-      if(chartType==="barChart"){
-
-        cols = {
-          colNameSelected: {tickInterval: 5},
-        };
+      if(chartType==="barChart" || chartType=="pieChart"){
 
         dv = new dataView()
         .source(view.data)
@@ -77,6 +74,7 @@ class VisualisationModal extends React.Component {
           }});
 
           if(dv.rows.length>MAX_COL){
+            isOverMaxCols = true;
             //min and max value for slider
             defaultMin = Number(dv.rows[1][colNameSelected]);
             defaultMax = Number(dv.rows[dv.rows.length-1][colNameSelected]);
@@ -133,27 +131,32 @@ class VisualisationModal extends React.Component {
             if(b[colNameSelected]===""){ return 1; }
           }});
         }
-      }
 
-      //ploting pie chart
-      if(chartType==="pieChart"){
-        //show percentage for each piece of pie chart with two decimal float number
-        cols = {
-          percent: {
-            formatter: val => {
-              val = parseFloat(val * 100).toFixed(2) + '%';
-              return val;
-        }}};
+        //define columns in bar chart
+        if(chartType=="barChart"){
+          cols = {
+            colNameSelected: {tickInterval: 5},
+          };
+        }
 
-        //count the percentage for each value in column selected by user
-        dv = new dataView()
-        .source(view.data)
-        .transform({type: 'pick', fields: [colNameSelected]})
-        .transform({type: 'aggregate', fields: [colNameSelected],
-                    operations: 'count', as: 'count',
-                    groupBy: [colNameSelected]})
-        .transform({type: 'percent', field: 'count',
-                    dimension: colNameSelected, as: 'percent'});
+        if(chartType=="pieChart"){
+          //define columns in pie chart
+          cols = {
+            percent: {
+              formatter: val => {
+                val = parseFloat(val * 100).toFixed(2) + '%';
+                return val;
+          }}};
+          //transform data to percentage form 
+          if(dv.rows[0] && dv.rows[0]["axisLabel"]){
+            dv.transform({type: 'percent', field: 'summation',
+                          dimension: "axisLabel", as: 'percent'});
+          }
+          else{
+            dv.transform({type: 'percent', field: 'count',
+                          dimension: colNameSelected, as: 'percent'});
+          }
+        }
       }
 
       //ploting the box chart
@@ -191,6 +194,7 @@ class VisualisationModal extends React.Component {
             return row;
         }});
 
+        //define columns for boxplot
         cols ={
           range: {
             max: dv.rows[0].high
@@ -245,55 +249,15 @@ class VisualisationModal extends React.Component {
       { chartType === "barChart" && dv &&
         <div>
           <Chart height={450} data={dv} scale={cols} forceFit>
-            <Axis name={dv.rows[0]["axisLabel"]?"axisLabel":colNameSelected} label={{autoRotate: true}} title={colNameSelected} />
+            <Axis name={dv.rows[0] && dv.rows[0]["axisLabel"]?"axisLabel":colNameSelected} label={{autoRotate: true}} title={colNameSelected} />
             <Axis title={"Count"} name= {"count"} />
             <Tooltip crosshairs={{type : "y"}} />
-            <Geom type="interval" position={dv.rows[0]["axisLabel"]? "axisLabel*summation": colNameSelected+"*count"} />
+            <Geom type="interval" position={dv.rows[0] && dv.rows[0]["axisLabel"]? "axisLabel*summation": colNameSelected+"*count"} />
           </Chart>
-
-          { dv && dv.rows[0]["axisLabel"] &&
-          <div>
-            <div style={{display: "flex", justifyContent: "left", marginBottom: 10, alignItems: "center"}}>
-              <h4>Interval: </h4>
-              <InputNumber min={1}
-                style={{display: "flex", marginRight:15, marginLeft:5}}
-                max={defaultMax}
-                value={this.state.numCols}
-                onChange={(value) => {this.setState({numCols: value})}}
-              />
-              <Slider style={{display: "flex", width:"350px", marginRight:10}} defaultValue={5} value={this.state.numCols}  min={1} max={defaultMax} onChange={(value) => {this.setState({numCols: value})} }/>
-            </div>
-
-            <div style={{display: "flex", justifyContent: "left", alignItems: "center"}}>
-              <h4 style={{verticalAlign:"middle"}}>Min: </h4>
-              <InputNumber min={defaultMin}
-                max={defaultMax}
-                style={{display: "flex", marginRight:10, marginLeft:5}}
-                value={rangeMin ? rangeMin : defaultMin}
-                onChange={(value) => {if(value<rangeMax){this.setState({rangeMin: value})}}}
-              />
-
-              <h4>Max: </h4>
-              <InputNumber min={defaultMin}
-                max={defaultMax}
-                style={{display: "flex", marginLeft:5, marginRight:15}}
-                value={rangeMax ? rangeMax : defaultMax}
-                onChange={(value) => { if(value>rangeMin){this.setState({rangeMax: value});}}}
-              />
-              <Slider range 
-                defaultValue={[defaultMin, defaultMax]} 
-                value={rangeMax && rangeMin ? [rangeMin, rangeMax] : [defaultMin, defaultMax]} 
-                style={{display: "flex", width:"350px", marginRight:10}}
-                min={defaultMin} 
-                max={defaultMax}
-                onChange={(value) => {{this.setState({rangeMin: value[0], rangeMax: value[1]});}}}/>
-            </div>
-          </div>
-          }
         </div>
       }
 
-      { chartType==="pieChart" &&
+      { chartType==="pieChart" && dv &&
         <div>
           <Chart height={450} data={dv} scale={cols} padding={[ 80, 100, 80, 80 ]} forceFit>
             <Coord type='theta' radius={0.75} />
@@ -309,23 +273,80 @@ class VisualisationModal extends React.Component {
             <Geom
               type="intervalStack"
               position="percent"
-              color={colNameSelected}
-              tooltip={[colNameSelected+'*percent',(colNameSelected, percent) => {
-                percent = parseInt(percent * 100, 10) + '%';
-                return {
-                  name: colNameSelected,
-                  value: percent
-                };
-              }]}
+              color={dv.rows[0] && dv.rows[0]["axisLabel"] ? "axisLabel" : colNameSelected}
+              tooltip={dv.rows[0] && dv.rows[0]["axisLabel"] ?
+                ['axisLabel*percent',(percent) => {
+                  percent = parseInt(percent * 100, 10) + '%';
+                  return {
+                    name: dv.rows[0]["axisLabel"],
+                    value: percent
+                  };
+                }]
+                :
+                [colNameSelected+'*percent',(colNameSelected, percent) => {
+                  percent = parseInt(percent * 100, 10) + '%';
+                  return {
+                    name: colNameSelected,
+                    value: percent
+                  };
+                }]
+              }
               style={{lineWidth: 1,stroke: '#fff'}}
               >
               <Label 
                 content='percent' 
-                formatter={(val, item) => {return item.point[colNameSelected] + ': ' + val;}} 
+                formatter={(val, item) => {
+                  if (dv.rows[0] && dv.rows[0]["axisLabel"]){ 
+                    return item.point["axisLabel"] + ': ' + val;
+                  }
+                  else{
+                    return item.point[colNameSelected] + ': ' + val;
+                  }
+                }} 
               />
             </Geom>
           </Chart>
         </div>
+      }
+
+      { isOverMaxCols &&
+      <div>
+        <div style={{display: "flex", justifyContent: "left", marginBottom: 10, alignItems: "center"}}>
+          <h4>Interval: </h4>
+          <InputNumber min={1}
+            style={{display: "flex", marginRight:15, marginLeft:5}}
+            max={defaultMax}
+            value={this.state.numCols}
+            onChange={(value) => {this.setState({numCols: value})}}
+          />
+          <Slider style={{display: "flex", width:"350px", marginRight:10}} defaultValue={5} value={this.state.numCols}  min={1} max={defaultMax} onChange={(value) => {this.setState({numCols: value})} }/>
+        </div>
+
+        <div style={{display: "flex", justifyContent: "left", alignItems: "center"}}>
+          <h4 style={{verticalAlign:"middle"}}>Min: </h4>
+          <InputNumber min={defaultMin}
+            max={defaultMax}
+            style={{display: "flex", marginRight:10, marginLeft:5}}
+            value={rangeMin ? rangeMin : defaultMin}
+            onChange={(value) => {if(value<rangeMax){this.setState({rangeMin: value})}}}
+          />
+
+          <h4>Max: </h4>
+          <InputNumber min={defaultMin}
+            max={defaultMax}
+            style={{display: "flex", marginLeft:5, marginRight:15}}
+            value={rangeMax ? rangeMax : defaultMax}
+            onChange={(value) => { if(value>rangeMin){this.setState({rangeMax: value});}}}
+          />
+          <Slider range 
+            defaultValue={[defaultMin, defaultMax]} 
+            value={rangeMax && rangeMin ? [rangeMin, rangeMax] : [defaultMin, defaultMax]} 
+            style={{display: "flex", width:"350px", marginRight:10}}
+            min={defaultMin} 
+            max={defaultMax}
+            onChange={(value) => {{this.setState({rangeMin: value[0], rangeMax: value[1]});}}}/>
+        </div>
+      </div>
       }
 
       { chartType==="boxPlot" &&
