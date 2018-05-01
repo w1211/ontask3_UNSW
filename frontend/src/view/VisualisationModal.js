@@ -16,15 +16,25 @@ class VisualisationModal extends React.Component {
     this.state = {
       chartType: "barChart",
       colIndexSelected: "",
-      numCols: 5,
-      defaultRange:[]
+      numCols: 5
     };
     this.boundActionCreators = bindActionCreators(ViewActionCreators, dispatch);
   };
 
+  handleCancel = () => { 
+    this.boundActionCreators.closeVisualisationModal(); 
+    this.setState({chartType:"barChart", colIndexSelected:"", rangeMin:null, rangeMax:null, numCols: 5}); 
+  };
+
+  handleSubmit = () => {
+    const {view} = this.props;
+    const {chartType, numCols, rangeMin, rangeMax} = this.state;
+    this.boundActionCreators.updateVisualisationChart(view.id, chartType, numCols, rangeMin, rangeMax);
+  };
+
   render() {
     const { dispatch, visualisation_visible, error, view, columnIndex, userId} = this.props;
-    const { chartType, numCols, rangeMin, rangeMax, defaultRange } = this.state;
+    const { chartType, numCols, rangeMin, rangeMax } = this.state;
     const colIndexSelected = this.state.colIndexSelected ? this.state.colIndexSelected : columnIndex;
     const MAX_COL = 15;
 
@@ -193,8 +203,10 @@ class VisualisationModal extends React.Component {
         width={700}
         visible={visualisation_visible}
         title={'Visualisation'}
-        onCancel={() => { this.boundActionCreators.closeVisualisationModal(); 
-                          this.setState({chartType:"barChart", colIndexSelected:""}); }}
+        onCancel={this.handleCancel}
+        onOk={this.handleSubmit}
+        okText="Save"
+        cancelText="Close"
       >
       <div style={{display:"flex", justifyContent:"left", alignItems: "center", marginBottom: 20}}>
         <h4>Chart type: </h4>

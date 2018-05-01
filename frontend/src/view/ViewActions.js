@@ -602,3 +602,23 @@ export const updateDiscrepencies = (viewId, dropDiscrepencies) => (dispatch, get
 
   requestWrapper(parameters);
 };
+
+export const updateVisualisationChart = (viewId, chartType, numCols, rangeMin, rangeMax) => dispatch => {
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestView()); },
+    // The 'retrieve_view' endpoint includes the datasources from the view's container, as 'datasources' in the response object
+    // The datasources are used in the 'add imported column' interface of the view
+    url: `/view/${viewId}/update_chart/`,
+    method: 'PATCH',
+    errorFn: (error) => { 
+      dispatch(failureRequestView(error));
+    },
+    successFn: () => {
+      notification['success']({
+        message: 'Chart successfully saved',
+        description: 'This chart were successfully saved.'
+      });
+    }
+  }
+  requestWrapper(parameters);
+}

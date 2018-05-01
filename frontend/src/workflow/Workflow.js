@@ -9,6 +9,7 @@ import * as WorkflowActionCreators from './WorkflowActions';
 
 import Compose from './interfaces/Compose';
 import Email from './interfaces/Email';
+import StaticPage from './interfaces/StaticPage';
 
 import './Workflow.css';
 
@@ -73,7 +74,7 @@ class Workflow extends React.Component {
                     <Link to={`${match.url}/static`}>
                       <Icon type="link" />
                       <span>Static page</span>
-                      <Tag style={{ marginLeft: 5 }} color="red" size="small">OFF</Tag>
+                      {/* <Tag style={{ marginLeft: 5 }} color="red" size="small">OFF</Tag> */}
                     </Link>
                   </Menu.Item>
                 </Menu>
@@ -92,6 +93,7 @@ class Workflow extends React.Component {
                     <Redirect exact from={match.url} to={`${match.url}/compose`}/>
                     <Route path={`${match.url}/compose`} component={Compose}/>
                     <Route path={`${match.url}/email`} component={Email}/>
+                    <Route path={`${match.url}/static`} component={StaticPage}/>
                   </Switch>
                 }
               
