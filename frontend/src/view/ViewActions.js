@@ -728,7 +728,15 @@ export const saveBuild = (containerId, selectedId) => (dispatch, getState) => {
   build.errors.name = !build.name;
 
   'steps' in build && build.steps.forEach((step, i) => {
-    if ('discrepencies' in step && step.discrepencies === null) delete step.discrepencies;
+    if ('discrepencies' in step) {
+      if (step.discrepencies === null) {
+        delete step.discrepencies;
+      } else {
+        if ('matching' in step.discrepencies && step.discrepencies.matching === null) delete step.discrepencies.matching;
+        if ('primary' in step.discrepencies && step.discrepencies.primary === null) delete step.discrepencies.primary;
+      }
+    };
+
     if (step.type === 'datasource') {
       step = step.datasource;
       build.errors.steps.push({
