@@ -74,7 +74,7 @@ class DataLabCreator extends React.Component {
               { loading ?
                 <Spin size="large" />
               :
-                <div>
+                <div style={{ paddingRight: 160 }}>
                   <h2>Details</h2>
                   <div style={{ marginBottom: 20, maxWidth: 350 }}>
                     <FormItem label="Name" validateStatus={build && build.errors.name ? 'error' : null}>
@@ -85,7 +85,7 @@ class DataLabCreator extends React.Component {
                   <h2 style={{ marginBottom: '1em' }}>Data Model</h2>
                   <div style={{ marginBottom: 20, display: 'flex', flexDirection: 'row', flexWrap: 'wrap' }}>
                     { build && build.steps.map((step, index) => (
-                      <div style={{ marginRight: 25 }} key={index}>
+                      <div style={{ marginRight: 25, marginBottom: 25, position: 'relative' }} key={index}>
                         { 
                           step.type === 'datasource' && 
                           <DatasourceModule
