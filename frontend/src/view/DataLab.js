@@ -82,10 +82,10 @@ class DataLabCreator extends React.Component {
                     </FormItem>
                   </div>
 
-                  <h2>Data Model</h2>
-                  <div style={{ marginBottom: 20, display: 'flex', flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <h2 style={{ marginBottom: '1em' }}>Data Model</h2>
+                  <div style={{ marginBottom: 20, display: 'flex', flexDirection: 'row', flexWrap: 'wrap' }}>
                     { build && build.steps.map((step, index) => (
-                      <div style={{ marginRight: 15 }} key={index}>
+                      <div style={{ marginRight: 25 }} key={index}>
                         { 
                           step.type === 'datasource' && 
                           <DatasourceModule
@@ -104,11 +104,13 @@ class DataLabCreator extends React.Component {
                     <Button size="large" type="primary" onClick={() => this.boundActionCreators.saveBuild(containerId, selectedId)}>Save</Button>
                   </div>
                     
-                  <h2>Modules</h2>
-                  <div style={{ display: 'flex', flexDirection: 'row' }}>
-                    <Module type="datasource" icon="database" label="Datasource"/>
-                    <Module type="computed" icon="calculator" label="Computed Fields"/>
-                    <Module type="form" icon="form" label="Form"/>
+                  <div className="modules">
+                    <div className="wrapper">
+                      <h2>Components</h2>
+                      <Module type="datasource" icon="database" label="Datasource"/>
+                      <Module type="computed" icon="calculator" label="Computed Fields"/>
+                      <Module type="form" icon="form" label="Form"/>
+                    </div>
                   </div>
 
                 </div>

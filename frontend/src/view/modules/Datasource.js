@@ -190,23 +190,29 @@ class DatasourceModule extends React.Component {
 
     
     return (
-      <Card style={{ width: 250, minHeight: 250, marginBottom: 15, borderColor: '#BBDEFB' }} extra={build.length === step && 'X'} title={
-        <div style={{ display: 'flex', alignItems: 'center', borderColor: '#BBDEFB' }}>
-          <Icon type="database" style={{ color: '#BBDEFB', fontSize: '150%', marginRight: 5 }}/>
-          <FormItem validateStatus={errors && errors.id ? 'error' : null}>
-            <Select 
-              placeholder="Choose datasource" value={currentStep.id} style={{ flex: 1 }} 
-              onChange={(e) => { onChange(step, 'id', e); }}
-            >
-              { datasources.map((datasource, i) => (
-                <Option value={datasource.id} key={i} disabled={usedDatasources.includes(datasource.id)}>
-                  {datasource.name}
-                </Option>
-              ))}
-            </Select>
-          </FormItem>
-        </div>}
+      <Card 
+        style={{ width: 250, minHeight: 250, marginBottom: 15, borderColor: '#BBDEFB', position: 'relative' }} 
         actions={actions}
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', borderColor: '#BBDEFB' }}>
+            <div className="stepIcon datasource">
+              {step + 1}
+            </div>
+            <Icon type="database" style={{ color: '#BBDEFB', fontSize: '150%', marginRight: 5 }}/>
+            <FormItem validateStatus={errors && errors.id ? 'error' : null}>
+              <Select 
+                placeholder="Choose datasource" value={currentStep.id} style={{ flex: 1 }} 
+                onChange={(e) => { onChange(step, 'id', e); }}
+              >
+                { datasources.map((datasource, i) => (
+                  <Option value={datasource.id} key={i} disabled={usedDatasources.includes(datasource.id)}>
+                    {datasource.name}
+                  </Option>
+                ))}
+              </Select>
+            </FormItem>
+          </div>
+        }
       >
         <FormItem validateStatus={errors && errors.primary ? 'error' : null}>
           <Tooltip 
