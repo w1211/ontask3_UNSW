@@ -213,65 +213,95 @@ class DatasourceModule extends React.Component {
         actions={actions}
       >
         <FormItem validateStatus={errors && errors.primary ? 'error' : null}>
-          <Select 
-            placeholder="Primary key" value={currentStep.primary} style={{ width: '100%' }} 
-            onChange={(e) => onChange(step, 'primary', e)} disabled={!datasource}
+          <Tooltip 
+            title={
+              !datasource ? 
+                'A datasource must be chosen first' 
+              : 
+                'The field from this datasource which uniquely identifies each of the records'
+              }
+            placement="right"
           >
-            { datasource && datasource.fields.map((field, i) => (
-              <Option value={field} key={i}>{field}</Option>
-            ))}
-          </Select>
+            <Select 
+              placeholder="Primary key" value={currentStep.primary} style={{ width: '100%' }} 
+              onChange={(e) => onChange(step, 'primary', e)} disabled={!datasource}
+            >
+              { datasource && datasource.fields.map((field, i) => (
+                <Option value={field} key={i}>{field}</Option>
+              ))}
+            </Select>
+          </Tooltip>
         </FormItem>
 
         { step > 0 &&
           <FormItem validateStatus={errors && errors.matching ? 'error' : null}>
-            <Select 
-              placeholder="Matching field" value={currentStep.matching} style={{ width: '100%', marginTop: 10 }}
-              onChange={(e) => onChange(step, 'matching', e)} disabled={!datasource}
+            <Tooltip 
+              title={
+                !datasource ? 
+                  'A datasource must be chosen first' 
+                : 
+                  'The field added to the DataLab thus far that should be matched against the uniquely identifying field of this datasource (above), in order to join the data together'
+                }
+              placement="right"
             >
-              { labelsUsed.map((label, i) => (
-                <Option value={label} key={label}>{label}</Option>
-              ))}
-            </Select>
+              <Select 
+                placeholder="Matching field" value={currentStep.matching} style={{ width: '100%', marginTop: 10 }}
+                onChange={(e) => onChange(step, 'matching', e)} disabled={!datasource}
+              >
+                { labelsUsed.map((label, i) => (
+                  <Option value={label} key={label}>{label}</Option>
+                ))}
+              </Select>
+            </Tooltip>
           </FormItem>
         }
 
         <div style={{ position: 'relative' }} id={`dropdown_${step}`} ref={(dropdown) => this.dropdown = dropdown}></div>
         
         <FormItem validateStatus={errors && errors.fields ? 'error' : null}>
-          <Select
-            mode="multiple" className="fields-select" placeholder="Fields" value={currentStep.fields} dropdownClassName="dataLab-fields"
-            style={{ width: '100%', marginTop: 10 }} onChange={this.changeFields} disabled={this.state.editMode || !datasource}
-            ref={(select) => { this.select = select; }}
-            getPopupContainer={() => document.getElementById(`dropdown_${step}`)}
+          <Tooltip 
+            title={
+              !datasource ? 
+                'A datasource must be chosen first' 
+              : 
+                'The fields from this datasource that should be added to the DataLab'
+              }
+            placement="right"
           >
-            { datasource && datasource.fields.map((field, i) => {
-              const isEditing = editing.step === step && editing.field === field;
-              return (
-                <Option disabled={this.state.editMode} value={field} key={i} title={field} className={isEditing && 'editing-field'}>
-                  { isEditing ?
-                    <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
-                      <Input 
-                        ref={(input) => { this.labelInput = input; input && input.focus(); }}
-                        size="small" value={editing.label} onFocus={this.onFocusEdit}
-                        onChange={(e) => { this.setState({ editing: { ...editing, label: e.target.value } }); }}
-                        onKeyDown={(e) => { if (e.key === 'Enter') this.confirmEdit(); if (e.key === 'Escape') this.cancelEdit(); }}
-                      />
-                      <div style={{ flex: 1, textAlign: 'right' }}>
-                        <Icon type="close" onClick={this.cancelEdit}/>
-                        <Icon type="save" onClick={this.confirmEdit}/>
+            <Select
+              mode="multiple" className="fields-select" placeholder="Fields" value={currentStep.fields} dropdownClassName="dataLab-fields"
+              style={{ width: '100%', marginTop: 10 }} onChange={this.changeFields} disabled={this.state.editMode || !datasource}
+              ref={(select) => { this.select = select; }}
+              getPopupContainer={() => document.getElementById(`dropdown_${step}`)}
+            >
+              { datasource && datasource.fields.map((field, i) => {
+                const isEditing = editing.step === step && editing.field === field;
+                return (
+                  <Option disabled={this.state.editMode} value={field} key={i} title={field} className={isEditing && 'editing-field'}>
+                    { isEditing ?
+                      <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
+                        <Input 
+                          ref={(input) => { this.labelInput = input; input && input.focus(); }}
+                          size="small" value={editing.label} onFocus={this.onFocusEdit}
+                          onChange={(e) => { this.setState({ editing: { ...editing, label: e.target.value } }); }}
+                          onKeyDown={(e) => { if (e.key === 'Enter') this.confirmEdit(); if (e.key === 'Escape') this.cancelEdit(); }}
+                        />
+                        <div style={{ flex: 1, textAlign: 'right' }}>
+                          <Icon type="close" onClick={this.cancelEdit}/>
+                          <Icon type="save" onClick={this.confirmEdit}/>
+                        </div>
                       </div>
-                    </div>
-                  :
-                    <div className="normal-field">
-                      {field in currentStep.labels ? currentStep.labels[field] : field}
-                      {!this.state.editMode && <Icon type="edit" onClick={(e) => this.onEdit(e, field)}/>}
-                    </div>
-                  }
-                </Option>
-              )
-            })}
-          </Select>
+                    :
+                      <div className="normal-field">
+                        {field in currentStep.labels ? currentStep.labels[field] : field}
+                        {!this.state.editMode && <Icon type="edit" onClick={(e) => this.onEdit(e, field)}/>}
+                      </div>
+                    }
+                  </Option>
+                )
+              })}
+            </Select>
+          </Tooltip>
         </FormItem>
       </Card>
     );
