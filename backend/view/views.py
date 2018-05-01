@@ -168,10 +168,10 @@ class ViewViewSet(viewsets.ModelViewSet):
                     if item[step['datasource']['primary']] in data_map:
                         data_map[item[step['datasource']['primary']]].update({step['datasource']['labels'][field]: value for field, value in item.items() if field in step['datasource']['fields']})
                     else:
-                        if 'discrepencies' in step and not step['discrepencies']['primary']:
+                        if 'discrepencies' in step and 'primary' in step['discrepencies'] and not step['discrepencies']['primary']:
                             data_map[item[step['datasource']['primary']]] = {step['datasource']['labels'][field]: value for field, value in item.items() if field in step['datasource']['fields']}
 
-                if 'discrepencies' in step and step['discrepencies']['matching']:
+                if 'discrepencies' in step and 'matching' in step['discrepencies'] and step['discrepencies']['matching']:
                     primary_records = { item[step['datasource']['primary']] for item in datasource.data }
                     matching_records = { item[step['datasource']['matching']] for item in data }
                     matching_discrepencies = matching_records - primary_records
