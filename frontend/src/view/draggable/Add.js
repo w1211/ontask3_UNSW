@@ -44,7 +44,7 @@ class Add extends Component {
 
 		return connectDropTarget(
 			<div>
-				<Tooltip placement="right" title="Drag and drop a module here in order to add it to the DataLab">
+				<Tooltip placement="right" title="Drag and drop a component here in order to add it to the DataLab">
 					<div className={`add item ${hovered && type}`}>
 						<Icon type="plus"/>
 						<span>Add Module</span>

@@ -747,7 +747,7 @@ export const saveBuild = (containerId, selectedId) => (dispatch, getState) => {
   )];
 
   // If no modules have been added, then show an error
-  if (build.steps.length === 0) {
+  if (!('steps' in build) || build.steps.length === 0) {
     message.error('DataLab cannot be saved unless there is at least one module.');
     return;
   };
