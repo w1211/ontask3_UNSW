@@ -10,11 +10,7 @@ class DatasourceModule extends React.Component {
     super(props);
 
     this.state = {
-      editing: {
-        step: null,
-        field: null,
-        label: null
-      },
+      editing: { },
       editMode: false
     };   
   };
@@ -24,7 +20,7 @@ class DatasourceModule extends React.Component {
     if (this.dropdown.contains(e.target)) return;
 
     document.removeEventListener('click', this.handleOutsideClick, false);
-    this.setState({ editMode: false, editing: { step: null, field: null , label: null } });
+    this.setState({ editMode: false, editing: { } });
     this.select.focus();
     this.select.blur();
   };
@@ -89,7 +85,7 @@ class DatasourceModule extends React.Component {
       if (isDuplicate) {
         // Generate a label for this field
         // Show the edit input field for the label
-        this.onEdit(null, field, this.generateLabel(labels, field));
+        this.onEdit(null, field, this.generateLabel(labels, field), true);
         return;
       } else {
         // Not a duplicate, therefore use the field name as-is
@@ -108,7 +104,7 @@ class DatasourceModule extends React.Component {
     };    
   };
   
-  onEdit = (e, field, label) => {
+  onEdit = (e, field, label, isRequired) => {
     const { build, step, onChange } = this.props;
 
     if (e) e.stopPropagation();
@@ -124,7 +120,7 @@ class DatasourceModule extends React.Component {
       label = currentStep.labels[field];
     }
 
-    this.setState({ editMode: true, editing: { step, field, label } }); 
+    this.setState({ editMode: true, editing: { step, field, label, isRequired } }); 
     onChange(step, 'edit', field, true);
     document.addEventListener('click', this.handleOutsideClick, false);
   };
@@ -132,7 +128,7 @@ class DatasourceModule extends React.Component {
   cancelEdit = () => {
     document.removeEventListener('click', this.handleOutsideClick, false);
     this.setState(
-      () => { return ({ editMode: false, editing: { step: null, field: null, label: null }}) },
+      () => { return ({ editMode: false, editing: { } }) },
       () => { this.select.focus(); }
     );
   };
@@ -280,12 +276,17 @@ class DatasourceModule extends React.Component {
                   <Option disabled={this.state.editMode} value={field} key={i} title={field} className={isEditing && 'editing-field'}>
                     { isEditing ?
                       <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
-                        <Input 
-                          ref={(input) => { this.labelInput = input; input && input.focus(); }}
-                          size="small" value={editing.label} onFocus={this.onFocusEdit}
-                          onChange={(e) => { this.setState({ editing: { ...editing, label: e.target.value } }); }}
-                          onKeyDown={(e) => { if (e.key === 'Enter') this.confirmEdit(); if (e.key === 'Escape') this.cancelEdit(); }}
-                        />
+                        <Tooltip 
+                          title={editing.isRequired && `A label is required, as a field with name '${field}' already exists in the DataLab`} 
+                          placement="bottom"
+                        >
+                          <Input 
+                            ref={(input) => { this.labelInput = input; input && input.focus(); }}
+                            size="small" value={editing.label} onFocus={this.onFocusEdit}
+                            onChange={(e) => { this.setState({ editing: { ...editing, label: e.target.value } }); }}
+                            onKeyDown={(e) => { if (e.key === 'Enter') this.confirmEdit(); if (e.key === 'Escape') this.cancelEdit(); }}
+                          />
+                        </Tooltip>
                         <div style={{ flex: 1, textAlign: 'right' }}>
                           <Icon type="close" onClick={this.cancelEdit}/>
                           <Icon type="save" onClick={this.confirmEdit}/>
