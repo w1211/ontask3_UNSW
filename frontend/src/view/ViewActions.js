@@ -651,8 +651,6 @@ export const addModule = (mod) => (dispatch, getState) => {
   // Initialize an object that will store errors for this module
   build.errors.steps.push({});
 
-  console.log(build);
-
   dispatch({
     type: UPDATE_BUILD,
     build
@@ -730,6 +728,7 @@ export const saveBuild = (containerId, selectedId) => (dispatch, getState) => {
   build.errors.name = !build.name;
 
   'steps' in build && build.steps.forEach((step, i) => {
+    if ('discrepencies' in step && step.discrepencies === null) delete step.discrepencies;
     if (step.type === 'datasource') {
       step = step.datasource;
       build.errors.steps.push({
@@ -781,3 +780,42 @@ export const saveBuild = (containerId, selectedId) => (dispatch, getState) => {
 
   requestWrapper(parameters);
 };
+
+export const checkForDiscrepencies = (build, checkStep, isEdit) => dispatch => {
+  const parameters = {
+    url: `/view/check_discrepencies/`,
+    method: 'POST',
+    errorFn: (error) => {
+      dispatch(failureFieldMatchResult(error));
+    },
+    successFn: (result) => {
+      dispatch(receiveFieldMatchResult(result));
+    },
+    payload: { build, checkStep, isEdit }
+  }
+
+  requestWrapper(parameters);
+};
+
+export const resolveDiscrepencies = (didResolve, result) => (dispatch, getState) => {
+  const { view } = getState();
+  let build = Object.assign({}, view.build);
+  const discrepencies = view.discrepencies;
+
+  let step = build.steps[discrepencies.step];
+
+  if (!didResolve && !discrepencies.isEdit) {
+    step.datasource.matching = undefined;
+  } else if (didResolve) {
+    step.discrepencies = {};
+
+    if ('primary' in result) step.discrepencies.primary = result.primary;
+    if ('matching' in result) step.discrepencies.matching = result.matching;
+  };
+
+  dispatch({
+    type: UPDATE_BUILD,
+    build
+  });
+  dispatch(resolveMatchingField());
+}

@@ -32,7 +32,7 @@ class ViewViewSet(viewsets.ModelViewSet):
         if queryset.count():
             raise ValidationError('A view with this name already exists')
 
-        data = self.combine_data(self.request.data)
+        data = self.combine_data(self.request.data['steps'])
 
         serializer.save(data=data)
 
@@ -47,7 +47,7 @@ class ViewViewSet(viewsets.ModelViewSet):
         if queryset.count():
             raise ValidationError('A view with this name already exists')
 
-        data = self.combine_data(self.request.data)
+        data = self.combine_data(self.request.data['steps'])
 
         serializer.save(data=data)
 
@@ -147,9 +147,7 @@ class ViewViewSet(viewsets.ModelViewSet):
     def build_dict(self, seq, key):
         return dict((d[key], dict(d, index=index)) for (index, d) in enumerate(seq))
 
-    def combine_data(self, view):
-        steps = view['steps']
-
+    def combine_data(self, steps):
         # Initialize the dataset using the first step
         first_step = steps[0]
         if first_step['type'] == 'datasource':
@@ -160,17 +158,61 @@ class ViewViewSet(viewsets.ModelViewSet):
         # For each of the remaining steps, add to the dataset
         for step in steps[1:]:
             if step['type'] == 'datasource':
-                step = step['datasource']
-                datasource = DataSource.objects.get(id=step['id'])
+                datasource = DataSource.objects.get(id=step['datasource']['id'])
                 # Create a map of the data generated thus far, with the key being the matching field specified for this step
                 # This allows us to efficiently lookup based on the primary key and find which record should be extended,
                 # Instead of having to iterate over the list to find the matching record for every record in this datasource (n*m complexity)
-                data_map = { item[step['matching']]: item for item in data }
+                data_map = { item[step['datasource']['matching']]: item for item in data }
                 # For each record in this datasource's data, extend the matching record in the data map
                 for item in datasource.data:
-                    if item[step['primary']] in data_map:
-                        data_map[item[step['primary']]].update({step['labels'][field]: value for field, value in item.items() if field in step['fields']})
+                    if item[step['datasource']['primary']] in data_map:
+                        data_map[item[step['datasource']['primary']]].update({step['datasource']['labels'][field]: value for field, value in item.items() if field in step['datasource']['fields']})
+                    else:
+                        if 'discrepencies' in step and not step['discrepencies']['primary']:
+                            data_map[item[step['datasource']['primary']]] = {step['datasource']['labels'][field]: value for field, value in item.items() if field in step['datasource']['fields']}
+
+                if 'discrepencies' in step and step['discrepencies']['matching']:
+                    primary_records = { item[step['datasource']['primary']] for item in datasource.data }
+                    matching_records = { item[step['datasource']['matching']] for item in data }
+                    matching_discrepencies = matching_records - primary_records
+                    for record in matching_discrepencies:
+                        data_map.pop(record, None)
+
                 # Create the data (list of dicts, with each dict representing a record) based on the updated data map 
                 data = [value for value in data_map.values()]
                 
         return data
+
+    @list_route(methods=['post'])
+    def check_discrepencies(self, request):
+        build = self.request.data['build']
+        check_step = self.request.data['checkStep']
+        is_edit = self.request.data['isEdit']
+
+        data = self.combine_data(build)
+        datasource = DataSource.objects.get(id=check_step['datasource']['id'])
+
+        primary_records = { item[check_step['datasource']['primary']] for item in datasource.data }
+        matching_records = { item[check_step['datasource']['matching']] for item in data }
+
+        response = { 'step': len(build), 'datasource': datasource.name, 'isEdit': is_edit }
+
+        # If there are already values, then add them to the response
+        if 'discrepencies' in check_step:
+            response['values'] = {}
+            if 'primary' in check_step['discrepencies']:
+                response['values']['primary'] = check_step['discrepencies']['primary']
+            if 'matching' in check_step['discrepencies']:
+                response['values']['matching'] = check_step['discrepencies']['matching']
+
+        # Values which are in the primary datasource but not the matching
+        primary_discrepencies = primary_records - matching_records
+        if len(primary_discrepencies) > 0:
+            response['primary'] = [value for value in primary_discrepencies]
+
+        # Values which are in the matching datasource but not the primary
+        matching_discrepencies = matching_records - primary_records
+        if len(matching_discrepencies) > 0:
+            response['matching'] = [value for value in matching_discrepencies]
+
+        return JsonResponse(response)

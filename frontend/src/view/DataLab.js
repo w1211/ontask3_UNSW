@@ -15,6 +15,7 @@ import { OPEN_FILTER_MODAL } from '../workflow/WorkflowActions';
 import Module from './draggable/Module';
 import Add from './draggable/Add';
 import DatasourceModule from './modules/Datasource';
+import ResolveMatchModal from './resolve/Discrepencies';
 
 const { Content } = Layout;
 const FormItem = Form.Item;
@@ -46,7 +47,7 @@ class DataLabCreator extends React.Component {
 
 
   render() {
-    const { location, form, loading, selectedId, build, datasources } = this.props;
+    const { location, form, loading, selectedId, build, datasources, discrepencies } = this.props;
 
     const containerId = location.state && location.state.containerId;
 
@@ -89,8 +90,9 @@ class DataLabCreator extends React.Component {
                         { 
                           step.type === 'datasource' && 
                           <DatasourceModule
-                            datasources={datasources} build={build} step={index} 
+                            datasources={datasources} build={build} step={index}
                             onChange={this.boundActionCreators.updateBuild}
+                            checkForDiscrepencies={this.boundActionCreators.checkForDiscrepencies}
                             deleteStep={this.boundActionCreators.deleteStep}
                             form={form}
                           /> 
@@ -99,6 +101,13 @@ class DataLabCreator extends React.Component {
                     ))}
                     <Add/>
                   </div>
+
+                  <ResolveMatchModal
+                    visible={discrepencies && true}
+                    discrepencies={discrepencies}
+                    form={form}
+                    onResolve={this.boundActionCreators.resolveDiscrepencies}
+                  />
 
                   <div style={{ marginBottom: 40 }}>
                     <Button size="large" type="primary" onClick={() => this.boundActionCreators.saveBuild(containerId, selectedId)}>Save</Button>
@@ -129,12 +138,12 @@ class DataLabCreator extends React.Component {
 
 const mapStateToProps = (state) => {
   const {
-    loading, error, selectedId, build, datasources
+    loading, error, selectedId, build, datasources, discrepencies
   } = state.view;
   
   return {
-    loading, error, selectedId, build, datasources
+    loading, error, selectedId, build, datasources, discrepencies
   };
 };
-
+ 
 export default connect(mapStateToProps)(Form.create()(DragDropContext(HTML5Backend)(DataLabCreator)));

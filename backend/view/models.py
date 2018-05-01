@@ -12,6 +12,10 @@ class DropDiscrepencies(EmbeddedDocument):
     dropMatching = BooleanField()
     dropPrimary = BooleanField()
 
+class Discrepencies(EmbeddedDocument):
+    matching = BooleanField()
+    primary = BooleanField()
+
 class DatasourceModule(EmbeddedDocument):
     id = StringField(required=True)
     primary = StringField(required=True)
@@ -21,6 +25,7 @@ class DatasourceModule(EmbeddedDocument):
     
 class Module(EmbeddedDocument):
     type = StringField(choices=('datasource', 'computed', 'form'), required=True)
+    discrepencies = EmbeddedDocumentField(Discrepencies)
     datasource = EmbeddedDocumentField(DatasourceModule)
 
 class View(Document):

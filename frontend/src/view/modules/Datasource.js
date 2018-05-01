@@ -104,6 +104,15 @@ class DatasourceModule extends React.Component {
     };    
   };
   
+  changeMatchingField = (e) => {
+    const { build, step, onChange, checkForDiscrepencies } = this.props;
+
+    onChange(step, 'matching', e);
+
+    // Check if there are discrepencies
+    checkForDiscrepencies(build.steps.slice(0, step), build.steps[step], false);
+  };
+
   onEdit = (e, field, label, isRequired) => {
     const { build, step, onChange } = this.props;
 
@@ -157,22 +166,21 @@ class DatasourceModule extends React.Component {
   };
 
   onFocusEdit = (e) => {
-    // document.removeEventListener('click', this.handleOutsideClick, false);
     // On focus, move the cursor to the end of the input
     const temp_value = e.target.value;
     e.target.value = '';
     e.target.value = temp_value;
-    // document.addEventListener('click', this.handleOutsideClick, false);
   };
 
   render() {
-    const { form, datasources, build, step, onChange, deleteStep } = this.props;
+    const { form, datasources, build, step, onChange, deleteStep, checkForDiscrepencies } = this.props;
     const { editing } = this.state;
 
     if (!datasources) return null;
 
     const currentStep = build.steps[step].datasource;
     const errors = 'errors' in build && build.errors.steps[step];
+    const discrepencies = build.steps[step].discrepencies;
 
     // Identify which datasources have been used in the build
     const usedDatasources = build.steps.filter(step => step.type === 'datasource').map(step => step.datasource.id);
@@ -183,11 +191,10 @@ class DatasourceModule extends React.Component {
     
     // Initialize the array that will hold the datasource's actions
     let actions = [];
+    // If this datasource has discrepencies, show the discrepencies button
+    if (discrepencies && currentStep.matching) actions.push(<Tooltip title="Manage discrepencies"><Icon type="disconnect" onClick={() => checkForDiscrepencies(build.steps.slice(0, step), build.steps[step], true)}/></Tooltip>)
     // If this is the last step, show the delete button
     if (build.steps.length === step+1) actions.push(<Tooltip title="Remove datasource"><Icon type="delete" onClick={deleteStep}/></Tooltip>);
-   
-    // If this datasource has discrepencies, show the discrepencies button
-
     
     return (
       <Card 
@@ -248,7 +255,7 @@ class DatasourceModule extends React.Component {
             >
               <Select 
                 placeholder="Matching field" value={currentStep.matching} style={{ width: '100%', marginTop: 10 }}
-                onChange={(e) => onChange(step, 'matching', e)} disabled={!datasource}
+                onChange={this.changeMatchingField} disabled={!datasource}
               >
                 { labelsUsed.map((label, i) => (
                   <Option value={label} key={label}>{label}</Option>

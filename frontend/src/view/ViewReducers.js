@@ -58,8 +58,7 @@ function view(state = {}, action) {
       });
     case RESOLVE_MATCHING_FIELD:
       return Object.assign({}, state, {
-        fieldMatchResult: null,
-        matchingField: null,
+        discrepencies: null,
         error: null
       });
     case FAILURE_FIELD_MATCH_RESULT:
@@ -68,8 +67,7 @@ function view(state = {}, action) {
       });
     case RECIEVE_FIELD_MATCH_RESULT:
       return Object.assign({}, state, {
-        fieldMatchResult: action.fieldMatchResult,
-        matchingField: action.matchingField,
+        discrepencies: action.fieldMatchResult,
         error: null
       });
 
