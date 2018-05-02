@@ -646,6 +646,9 @@ export const addModule = (mod) => (dispatch, getState) => {
   const { view } = getState();
   let build = Object.assign({}, view.build);
 
+  // TEMPORARY: prevent non-datasource modules from being added
+  if (mod.type !== 'datasource') return;
+
   // Initialize an object that represents this type of module
   // The form will then initialize form fields conditionally based on this type
   build.steps.push({ type: mod.type, datasource: { fields: [], labels: {} } });
