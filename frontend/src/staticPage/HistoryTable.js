@@ -106,10 +106,13 @@ class HistoryTable extends React.Component {
               columns={columns.map((field) => filterWrapper(field))}
               dataSource={data}
             />
-            <Button 
-              style={{ marginLeft: '30px', position:'absolute', bottom: '15px', zIndex:'2'}} 
-              type="primary"
-              onClick={onReset}>Reset</Button>
+            { data &&
+              <Button 
+                style={{ marginLeft: '30px', position:'absolute', bottom: '15px', zIndex:'2'}} 
+                onClick={onReset}>
+                Reset
+              </Button>
+            }
           </div>
       }
       </div>

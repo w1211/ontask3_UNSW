@@ -1,6 +1,7 @@
 import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
+import { Link } from 'react-router-dom';
 import { Form, Input, Select, Button, Alert, Spin, Icon, Checkbox, Tooltip, Row, Col, Divider} from 'antd';
 import { convertToRaw } from 'draft-js';
 import draftToHtml from 'draftjs-to-html';
@@ -44,9 +45,11 @@ class StaticPage extends React.Component{
       <div>
         <h3>
           View auditing history
-          <Button
-            style={{ marginLeft: '10px' }} shape="circle" icon="link"
-          />
+          { workflow &&
+            <Link target="_blank" to={`/staticPageHistoryStaff/${workflow.id}`}>
+              <Button style={{ marginLeft: '10px' }} shape="circle" icon="link"/>
+            </Link>
+          }
         </h3>
         <Divider dashed />
         <h3>
