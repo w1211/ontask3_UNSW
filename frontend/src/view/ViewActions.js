@@ -784,8 +784,6 @@ export const saveBuild = (history, containerId, selectedId) => (dispatch, getSta
     successFn: (response) => {
       dispatch(successRequestView());
        // Redirect to data manipulation interface
-       console.log(history);
-
        history.push(`/view/${response.id}`);
        notification['success']({
          message: `DataLab ${selectedId ? 'updated' : 'created'}`,

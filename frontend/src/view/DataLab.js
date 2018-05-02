@@ -103,7 +103,7 @@ class DataLabCreator extends React.Component {
                   </div>
 
                   <ResolveMatchModal
-                    visible={discrepencies && true}
+                    visible={discrepencies && ('primary' in discrepencies || 'matching' in discrepencies)}
                     discrepencies={discrepencies}
                     form={form}
                     onResolve={this.boundActionCreators.resolveDiscrepencies}
