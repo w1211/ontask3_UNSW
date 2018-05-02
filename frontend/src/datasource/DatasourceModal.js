@@ -287,6 +287,7 @@ const LocalFile = ({ form, onChange }) => (
     onChange={onChange}
     beforeUpload = {() => false} // Prevent immediate upload upon file drop
     action='' // The uploading URL (required) however we do not make use of 
+    showUploadList={false}
   >
     <p className="ant-upload-drag-icon">
       <Icon type="inbox"/>
