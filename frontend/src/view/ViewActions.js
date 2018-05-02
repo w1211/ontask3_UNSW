@@ -491,7 +491,7 @@ export const fetchView = (viewId) => dispatch => {
     initialFn: () => { dispatch(beginRequestView()); },
     // The 'retrieve_view' endpoint includes the datasources from the view's container, as 'datasources' in the response object
     // The datasources are used in the 'add imported column' interface of the view
-    url: `/view/${viewId}/retrieve_view/`,
+    url: `/view/${viewId}/`,
     method: 'GET',
     errorFn: (error) => { 
       dispatch(failureRequestView(error));
@@ -608,8 +608,9 @@ export const retrieveDataLab = (dataLabId) => dispatch => {
         build: { 
           name: dataLab.name, 
           steps: dataLab.steps, 
-          errors: { steps: [] } 
+          errors: { steps: [] }
         },
+        data: dataLab.data,
         datasources: dataLab.datasources
       });
     }
@@ -719,7 +720,7 @@ export const updateBuild = (stepIndex, field, value, isNotField) => (dispatch, g
   });
 };
 
-export const saveBuild = (containerId, selectedId) => (dispatch, getState) => {
+export const saveBuild = (history, containerId, selectedId) => (dispatch, getState) => {
   const { view } = getState();
   let build = Object.assign({}, view.build);
   
@@ -781,7 +782,14 @@ export const saveBuild = (containerId, selectedId) => (dispatch, getState) => {
     },
     successFn: (response) => {
       dispatch(successRequestView());
-      console.log(response);
+       // Redirect to data manipulation interface
+       console.log(history);
+
+       history.push(`/view/${response.id}`);
+       notification['success']({
+         message: `DataLab ${selectedId ? 'updated' : 'created'}`,
+         description: `The DataLab was successfully ${selectedId ? 'updated' : 'created'}.`
+       });
     },
     payload: build
   }

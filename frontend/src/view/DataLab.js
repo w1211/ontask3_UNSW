@@ -47,7 +47,7 @@ class DataLabCreator extends React.Component {
 
 
   render() {
-    const { location, form, loading, selectedId, build, datasources, discrepencies } = this.props;
+    const { location, history, form, loading, selectedId, build, datasources, discrepencies } = this.props;
 
     const containerId = location.state && location.state.containerId;
 
@@ -110,7 +110,7 @@ class DataLabCreator extends React.Component {
                   />
 
                   <div style={{ marginBottom: 40 }}>
-                    <Button size="large" type="primary" onClick={() => this.boundActionCreators.saveBuild(containerId, selectedId)}>Save</Button>
+                    <Button size="large" type="primary" onClick={() => this.boundActionCreators.saveBuild(history, containerId, selectedId)}>Save</Button>
                   </div>
                     
                   <div className="modules">

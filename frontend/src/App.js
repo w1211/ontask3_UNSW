@@ -9,6 +9,7 @@ import requestWrapper from './shared/requestWrapper';
 import Login from './login/Login';
 import Container from './container/Container';
 import DataLab from './view/DataLab';
+import View from './view/View';
 import Workflow from './workflow/Workflow';
 import StaticPageStudent from './staticPage/StaticPageStudent';
 import StaticPageStaff from './staticPage/StaticPageStaff';
@@ -87,6 +88,7 @@ class App extends React.Component {
             )}/>
             <AuthenticatedRoute path="/containers" component={Container}/>
             <AuthenticatedRoute path="/datalab/:id?" component={DataLab}/>
+            <AuthenticatedRoute path="/view/:id?" component={View}/>
             <AuthenticatedRoute path="/workflow/:id" component={Workflow}/>
             <AuthenticatedRoute path="/staticPageHistoryStaff/:id" component={StaticPageHistoryStaff}/>
             <AuthenticatedRoute path="/staticPageHistoryStudent" component={StaticPageHistoryStudent}/>

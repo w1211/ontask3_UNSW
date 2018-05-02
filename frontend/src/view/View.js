@@ -29,7 +29,7 @@ class View extends React.Component {
 
   componentDidMount() {
     const { match } = this.props;
-    this.boundActionCreators.fetchView(match.params.id);
+    this.boundActionCreators.retrieveDataLab(match.params.id);
   };
 
   handleChange = (pagination, filters, sorter) => {
@@ -82,18 +82,19 @@ class View extends React.Component {
   };
 
   render() {
-    const { loading, view } = this.props;
+    const { loading, build, data } = this.props;
     const { filtered, sorted } = this.state;
 
-    let columns = [];
-    let data;
+    // let columns = [];
+    // let data;
 
     const HeaderDropdown = ({ column, label, index }) => (
       <Dropdown trigger={["click"]} overlay={
-        <Menu onClick={(e) => this.handleHeaderDropdownClick(e, index)}>
+        // <Menu onClick={(e) => this.handleHeaderDropdownClick(e, index)}>
+        <Menu>
           <Menu.Item key="visualise" disabled><Icon type="area-chart" style={{ marginRight: 5 }}/>Visualise</Menu.Item>
-          <Menu.Item key="edit"><Icon type="edit" style={{ marginRight: 5 }}/>Edit</Menu.Item>
-          <Menu.Item key="delete"><Icon type="delete" style={{ marginRight: 5 }}/>Delete</Menu.Item>
+          {/* <Menu.Item key="edit"><Icon type="edit" style={{ marginRight: 5 }}/>Edit</Menu.Item> */}
+          {/* <Menu.Item key="delete"><Icon type="delete" style={{ marginRight: 5 }}/>Delete</Menu.Item> */}
         </Menu>
       }>
         <a>{label}</a>
@@ -110,28 +111,48 @@ class View extends React.Component {
       </Dropdown>
     );
 
-    if (view) {
-      columns = view.columns.map((column, i) => {
-        const field = column.label ? column.label : column.field;
-        return {
-          title: (i === 0) ? field : <HeaderDropdown column={column} label={field} index={i}/>,
-          dataIndex: field,
-          key: field,
-          fixed: i === 0 ? 'left' : undefined,
-          filteredValue: filtered && filtered[field],
-          onFilter: (value, record) => record[field].includes(value),
-          sorter: (a, b) => { 
-            a = field in a ? a[field] : '';
-            b = field in b ? b[field] : '';
-            return a.localeCompare(b);
-          },
-          sortOrder: sorted && sorted.columnKey === field && sorted.order,
-          render: (text) => ((i === 0) ? PrimaryKeyDropdown({text}) : text)
-        }
+    let columns = [];
+
+    if (build) {
+      build.steps.forEach(step => {
+        step.datasource.fields.forEach((field) => {
+          const label = step.datasource.labels[field];
+          columns.push({
+            title: <HeaderDropdown label={label}/>,
+            dataIndex: label,
+            key: label,
+            filteredValue: filtered && filtered[label],
+            onFilter: (value, record) => record[label].includes(value),
+            sorter: (a, b) => { 
+              a = label in a ? a[label] : '';
+              b = label in b ? b[label] : '';
+              return a.localeCompare(b);
+            },
+            sortOrder: sorted && sorted.columnKey === label && sorted.order,
+            render: (text) => text
+          })
+        });
+        // const field = column.label ? column.label : column.field;
+        // return {
+        //   title: (i === 0) ? field : <HeaderDropdown column={column} label={field} index={i}/>,
+        //   dataIndex: field,
+        //   key: field,
+        //   fixed: i === 0 ? 'left' : undefined,
+        //   filteredValue: filtered && filtered[field],
+        //   onFilter: (value, record) => record[field].includes(value),
+        //   sorter: (a, b) => { 
+        //     a = field in a ? a[field] : '';
+        //     b = field in b ? b[field] : '';
+        //     return a.localeCompare(b);
+        //   },
+        //   sortOrder: sorted && sorted.columnKey === field && sorted.order,
+        //   render: (text) => ((i === 0) ? PrimaryKeyDropdown({text}) : text)
+        // }
       });
   
-      data = view.data.map((data, i) => ({...data, key: i }));
     };
+
+    const data2 = data && data.map((data, i) => ({...data, key: i }));
 
     return (
       <div>
@@ -147,7 +168,7 @@ class View extends React.Component {
             <Content style={{ padding: '0 24px', minHeight: 280 }}>
 
               <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '1em' }}>
-                <h1 style={{ display: 'inline-block', margin: 0 }}>{view && view.name}</h1>
+                <h1 style={{ display: 'inline-block', margin: 0 }}>{build && build.name}</h1>
                 <Link to="/containers" style={{ width: 'fit-content' }}>
                   <Icon type="arrow-left" />
                   <span >Back to containers</span>
@@ -159,12 +180,12 @@ class View extends React.Component {
               :
                 <div>
                   <div style={{ marginBottom: 10 }}>
-                    { view && 'dropDiscrepencies' in view && Object.keys(view.dropDiscrepencies).length > 0 &&
+                    {/* { view && 'dropDiscrepencies' in view && Object.keys(view.dropDiscrepencies).length > 0 &&
                       <Button size="large" style={{ marginRight: 10 }} onClick={() => this.setState({ discrepenciesModalVisible: true })}>
                         <Icon type="disconnect"/> Manage discrepencies
                       </Button>
-                    }
-                    
+                    } */}
+{/*                     
                     <Dropdown trigger={["click"]} overlay={
                       <Menu onClick={this.handleAddColumn}>
                         <Menu.Item key="imported">Imported column</Menu.Item>
@@ -175,21 +196,21 @@ class View extends React.Component {
                       <Button size="large">
                         <Icon type="plus"/> Add column
                       </Button>
-                    </Dropdown>
+                    </Dropdown> */}
                   </div>
 
-                  <ColumnModal/>
+                  {/* <ColumnModal/> */}
                   
-                  <DiscrepenciesModal
+                  {/* <DiscrepenciesModal
                     visible={this.state.discrepenciesModalVisible}
                     onCancel={() => { this.setState({ discrepenciesModalVisible: false }) }}
                     onOk={this.handleUpdateDiscrepencies}
                     view={view}
-                  />
+                  /> */}
                   
                   <Table
                     columns={columns}
-                    dataSource={data}
+                    dataSource={data2}
                     scroll={{ x: (columns.length - 1) * 175 }}
                     onChange={this.handleChange} 
                   />
@@ -206,11 +227,11 @@ class View extends React.Component {
 
 const mapStateToProps = (state) => {
   const {
-    loading, error, view
+    loading, error, build, data
   } = state.view;
   
   return {
-    loading, error, view
+    loading, error, build, data
   };
 };
 

@@ -125,6 +125,7 @@ function view(state = {}, action) {
         loading: false,
         selectedId: action.selectedId,
         build: action.build,
+        data: action.data,
         datasources: action.datasources
       });
 
