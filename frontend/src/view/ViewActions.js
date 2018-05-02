@@ -630,6 +630,10 @@ export const retrieveDatasources = (containerId) => dispatch => {
     successFn: (datasources) => {
       dispatch({
         type: RECEIVE_DATASOURCES,
+        build: {
+          steps: [],
+          errors: { steps: [] }
+        },
         datasources
       });
     }
@@ -641,9 +645,6 @@ export const retrieveDatasources = (containerId) => dispatch => {
 export const addModule = (mod) => (dispatch, getState) => {
   const { view } = getState();
   let build = Object.assign({}, view.build);
-
-  if (!('steps' in build)) build.steps = [];
-  if (!('errors' in build)) build.errors = { steps: [] };
 
   // Initialize an object that represents this type of module
   // The form will then initialize form fields conditionally based on this type
@@ -680,7 +681,7 @@ export const updateBuild = (stepIndex, field, value, isNotField) => (dispatch, g
 
   // Fields that are not part of a module do not have a stepIndex (as they are not in a step)
   // If no stepIndex is provided, then the step will return false
-  let step = stepIndex !== undefined ? build.steps[stepIndex] : undefined;
+  let step = (stepIndex !== null) ? build.steps[stepIndex] : null;
 
   // If there is a step (i.e. a stepIndex was provided) then perform any module/field specific actions
   if (step && step.type === 'datasource') {

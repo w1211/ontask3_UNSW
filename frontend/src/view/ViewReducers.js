@@ -117,8 +117,8 @@ function view(state = {}, action) {
     case RECEIVE_DATASOURCES:
       return Object.assign({}, state, {
         loading: false,
+        build: action.build,
         datasources: action.datasources,
-        build: null
       });
     case RECEIVE_VIEW:
       return Object.assign({}, state, {
