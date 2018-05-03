@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, Icon, Select, Input, Tooltip, message, Form } from 'antd';
 
-const { Option, OptGroup } = Select;
+const { Option } = Select;
 const FormItem = Form.Item;
 
 
@@ -36,7 +36,7 @@ class DatasourceModule extends React.Component {
   };
 
   checkDuplicateLabel = (field) => {
-    const { build, step } = this.props;
+    const { build } = this.props;
 
     const labels = this.labelsUsed(build.steps);
 
@@ -153,7 +153,7 @@ class DatasourceModule extends React.Component {
       return;
     };
 
-    const [isDuplicate, labels] = this.checkDuplicateLabel(editing.label);
+    const isDuplicate = this.checkDuplicateLabel(editing.label)[0];
 
     if (isDuplicate) {
       message.error('This label is already being used.');
@@ -173,7 +173,7 @@ class DatasourceModule extends React.Component {
   };
 
   render() {
-    const { form, datasources, build, step, onChange, deleteStep, checkForDiscrepencies } = this.props;
+    const { datasources, build, step, onChange, deleteStep, checkForDiscrepencies } = this.props;
     const { editing } = this.state;
 
     if (!datasources) return null;

@@ -2,15 +2,14 @@ import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { Table, Spin, Layout, Breadcrumb, Icon, Tooltip, Dropdown, Button, Modal, Card, Form, Input } from 'antd';
+import { Spin, Layout, Breadcrumb, Icon, Button, Form, Input } from 'antd';
 
-import { DragDropContext, DragSource } from 'react-dnd'
+import { DragDropContext } from 'react-dnd'
 import HTML5Backend from 'react-dnd-html5-backend'
 
 import * as ViewActionCreators from './ViewActions';
 
 import './DataLab.css';
-import { OPEN_FILTER_MODAL } from '../workflow/WorkflowActions';
 
 import Module from './draggable/Module';
 import Add from './draggable/Add';
@@ -94,7 +93,6 @@ class DataLabCreator extends React.Component {
                             onChange={this.boundActionCreators.updateBuild}
                             checkForDiscrepencies={this.boundActionCreators.checkForDiscrepencies}
                             deleteStep={this.boundActionCreators.deleteStep}
-                            form={form}
                           /> 
                         }
                       </div>
