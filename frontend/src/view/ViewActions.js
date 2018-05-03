@@ -793,6 +793,10 @@ export const saveBuild = (history, containerId, selectedId) => (dispatch, getSta
     method: selectedId ? 'PATCH' : 'POST',
     errorFn: (error) => {
       dispatch(failureRequestView(error));
+      notification['error']({
+        message: `DataLab ${selectedId ? 'update' : 'creation'} failed`,
+        description: error
+      });
     },
     successFn: (response) => {
       dispatch(successRequestView());
