@@ -4,7 +4,12 @@ from collections import defaultdict
 def did_pass_formula(item, formula):
   operator = formula['operator']
   comparator = formula['comparator']
-  value = item[formula['field']]
+  try:
+    value = item[formula['field']]
+  except KeyError:
+    # This record must not have a value for this field
+    # The user must have opted to add/keep records that were identified as a discrepency during DataLab creation
+    return False
 
   if operator == '==':
     return value == comparator
