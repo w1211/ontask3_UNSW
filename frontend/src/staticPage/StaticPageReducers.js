@@ -35,7 +35,9 @@ function staticPage(state = initialState, action) {
       });
     case REQUEST_EMAIL_HISTORY:
       return Object.assign({}, state, {
-        isFetching: true
+        isFetching: true,
+        matchField: null,
+        matchReg: null
       });
     case UPDATE_EMAIL_DATA:
       return Object.assign({}, state, {
