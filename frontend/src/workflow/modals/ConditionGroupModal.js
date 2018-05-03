@@ -39,25 +39,32 @@ class ConditionGroupModal extends React.Component {
 
     if (!workflow) return null;
     
-    const options = workflow.view.columns.map(column => {
-      const field = column.label ? column.label : column.field;
-      return {
-        value: field,
-        label: field,
-        children: column.type === 'text' ?
-          [
-            { value: '==', label: 'equal' },
-            { value: '!=', label: 'not equal' }
-          ]
-        :
-          [
-            { value: '==', label: 'equal' },
-            { value: '!=', label: 'not equal' },
-            { value: '<', label: 'less' },
-            { value: '<=', label: 'less or equal' },
-            { value: '>', label: 'greater' },
-            { value: '>=', label: 'greater or equal' }
-          ]
+    let options = [];
+    workflow.view.steps.forEach(step => {
+      if (step.type === 'datasource') {
+        step = step.datasource;
+        step.fields.forEach(field => {
+          const label = step.labels[field];
+          const type = step.types[field];
+          options.push({
+            value: label,
+            label: label,
+            children: type === 'text' ? 
+              [
+                { value: '==', label: 'equal' },
+                { value: '!=', label: 'not equal' }
+              ]
+            :
+              [
+                { value: '==', label: 'equal' },
+                { value: '!=', label: 'not equal' },
+                { value: '<', label: 'less' },
+                { value: '<=', label: 'less or equal' },
+                { value: '>', label: 'greater' },
+                { value: '>=', label: 'greater or equal' }
+              ]
+          });
+        });
       };
     });
 

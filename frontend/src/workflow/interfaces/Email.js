@@ -69,13 +69,17 @@ class Email extends React.Component {
 
   render() {
     const { workflow, loading, error, form, previewLoading, previewContent } = this.props;
-
-    const options = [];
-    if (workflow && workflow.view && 'columns' in workflow.view) {
-      workflow.view.columns.forEach(column => {
-        options.push(column.label ? column.label : column.field);
-      });
-    }
+    
+    let options = [];
+    workflow && workflow.view.steps.forEach(step => {
+      if (step.type === 'datasource') {
+        step = step.datasource;
+        step.fields.forEach(field => {
+          const label = step.labels[field];
+          options.push(label);
+        });
+      };
+    });
 
     return (
       <div>

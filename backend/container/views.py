@@ -187,7 +187,9 @@ class ContainerViewSet(viewsets.ModelViewSet):
         container = Container.objects.get(id=id)
         self.check_object_permissions(self.request, container)
 
-        datasources = DataSource.objects(container=id).only('id', 'name', 'fields')
+        datasources = DataSource.objects(container=id).only('id', 'name', 'fields', 'data')
+        for datasource in datasources:
+            datasource['data'] = datasource['data'][:1]
         datasources = [mongo_to_dict(datasource) for datasource in datasources]
 
         return JsonResponse(datasources, safe=False)
