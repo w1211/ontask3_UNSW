@@ -82,7 +82,7 @@ class View extends React.Component {
   };
 
   render() {
-    const { loading, build, data } = this.props;
+    const { loading, build, data, location, match } = this.props;
     const { filtered, sorted } = this.state;
 
     // let columns = [];
@@ -154,6 +154,8 @@ class View extends React.Component {
 
     const data2 = data && data.map((data, i) => ({...data, key: i }));
 
+    const dataLab = location.state && location.state.fromDataLab;
+
     return (
       <div>
         <Content style={{ padding: '0 50px' }}>
@@ -161,7 +163,8 @@ class View extends React.Component {
           <Breadcrumb style={{ margin: '16px 0' }}>
             <Breadcrumb.Item><Link to="/">Dashboard</Link></Breadcrumb.Item>
             <Breadcrumb.Item><Link to="/containers">Containers</Link></Breadcrumb.Item>
-            <Breadcrumb.Item>View</Breadcrumb.Item>
+            <Breadcrumb.Item><Link to={`/datalab/${match.params.id}`}>DataLab</Link></Breadcrumb.Item>
+            <Breadcrumb.Item>Data Manipulation</Breadcrumb.Item>
           </Breadcrumb>
 
           <Layout style={{ padding: '24px 0', background: '#fff' }}>
@@ -169,9 +172,9 @@ class View extends React.Component {
 
               <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '1em' }}>
                 <h1 style={{ display: 'inline-block', margin: 0 }}>{build && build.name}</h1>
-                <Link to="/containers" style={{ width: 'fit-content' }}>
+                <Link to={dataLab ? `/datalab/${match.params.id}` : '/containers'} style={{ width: 'fit-content' }}>
                   <Icon type="arrow-left" />
-                  <span >Back to containers</span>
+                  <span>Back to {`${dataLab ? 'DataLab' : 'containers'}`}</span>
                 </Link>
               </div>
 
