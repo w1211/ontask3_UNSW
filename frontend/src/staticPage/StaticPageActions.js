@@ -29,11 +29,10 @@ const receiveEmailHistory = (data, columns) => ({
 });
 
 //matchReg is for highlighting matched text
-const updateEmailData = (data, matchReg, matchField) => ({
+const updateEmailData = (data, matchingData) => ({
   type: UPDATE_EMAIL_DATA,
   data,
-  matchReg,
-  matchField
+  matchingData
 });
 
 const failureRequestEmailHistory = (error) => ({
@@ -135,7 +134,7 @@ export const onSearchColumn = (matchingData, field, data, isSearchDate) => dispa
   if(isSearchDate){
     const updatedData = data.map((record) => {
       const date = record[field].split(" ")[1];
-      if (date === matchingData) {
+      if (date === matchingData[field]) {
         return {
           ...record
         };
@@ -146,7 +145,7 @@ export const onSearchColumn = (matchingData, field, data, isSearchDate) => dispa
   }
   else{
     const updatedData = data.map((record) => {
-      const match = record[field].match(matchingData);
+      const match = record[field].match(matchingData[field]);
       if (!match) {
         return null;
       }

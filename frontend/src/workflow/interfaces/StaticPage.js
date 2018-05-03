@@ -2,20 +2,12 @@ import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { Form, Input, Select, Button, Alert, Spin, Icon, Checkbox, Tooltip, Row, Col, Divider} from 'antd';
+import { Form, Button, Alert, Spin, Icon, Divider} from 'antd';
 import { convertToRaw } from 'draft-js';
 import draftToHtml from 'draftjs-to-html';
-import moment from 'moment';
 
 import * as WorkflowActionCreators from '../WorkflowActions';
-import { openSchedulerModal } from '../../scheduler/SchedulerActions';
 
-import {narrowFormItemLayout} from '../../shared/FormItemLayout';
-
-import SchedulerModal from '../../scheduler/SchedulerModal';
-
-const FormItem = Form.Item;
-const Option = Select.Option;
 
 class StaticPage extends React.Component{
   constructor(props) {
@@ -40,7 +32,7 @@ class StaticPage extends React.Component{
   };
 
   render(){
-    const { workflow, loading, error, form, previewLoading, previewContent } = this.props;
+    const { workflow, loading, error, previewLoading, previewContent } = this.props;
     return(
       <div>
         <h3>

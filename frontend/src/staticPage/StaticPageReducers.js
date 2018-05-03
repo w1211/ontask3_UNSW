@@ -21,7 +21,8 @@ const initialState = {
   columns: [],
   containers: [],
   bindWorkflowSuccess: false,
-  isWorkflowFound: false
+  isWorkflowFound: false,
+  matchingData: {}
 }
 
 function staticPage(state = initialState, action) {
@@ -31,19 +32,17 @@ function staticPage(state = initialState, action) {
         isFetching: false,
         data: action.data,
         columns: action.columns,
-        matchReg: ''
+        matchingData: {}
       });
     case REQUEST_EMAIL_HISTORY:
       return Object.assign({}, state, {
         isFetching: true,
-        matchField: null,
-        matchReg: null
+        matchingData: null
       });
     case UPDATE_EMAIL_DATA:
       return Object.assign({}, state, {
         data: action.data,
-        matchReg: action.matchReg,
-        matchField: action.matchField
+        matchingData: action.matchingData
       });
     case FAILURE_REQUEST_EMAIL_HISTORY:
       return Object.assign({}, state, {

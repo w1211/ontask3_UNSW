@@ -32,32 +32,36 @@ class HistoryTable extends React.Component {
 
   //search input text and date picked
   onSearch = (field, onSearchColumn) => {
-    let filterDropdownVisibleObj = {...this.state.filterDropdownVisibleObj}
-    filterDropdownVisibleObj[field] = false;
+    let {filterDropdownVisibleObj} = this.state;
+    let {matchingData} = this.props;
 
+    filterDropdownVisibleObj[field] = false;
     this.setState({
       filterDropdownVisibleObj
     });
 
     if(field==='timeStamp'){
       const {searchDate} = this.state;
+      matchingData[field] = searchDate;
 
-      onSearchColumn(searchDate, field, this.props.data, true);
+      onSearchColumn(matchingData, field, this.props.data, true);
     }
     else{
       const searchText = this.state.filterDropdownTextObj[field];
       const reg = new RegExp(searchText, 'gi');
-      
-      onSearchColumn(reg, field, this.props.data, false);
+      matchingData[field] = reg;
+
+      onSearchColumn(matchingData, field, this.props.data, false);
     }
   };
 
   render(){
     const {
-      isFetching, data, matchField, matchReg, columns, error, onSearchColumn, onReset
+      isFetching, data, matchingData, columns, error, onSearchColumn, onReset
     } = this.props;
     
     const filteredCols = columns.slice(0,4);
+    
     //create a table column with field name
     const filterWrapper = (field) => {
       return {
@@ -98,13 +102,13 @@ class HistoryTable extends React.Component {
           );
         },
         render: (text, record, index) => {
-          if(field===matchField){
+          if(matchingData && (field in matchingData)){
             return (
               <span>
-                { text.split(matchReg).map((content, i) => (
-                  i > 0 ? 
-                    [ <span className="highlight"> { record[matchField].match(matchReg)[0] } </span>, content ] 
-                  : 
+                { text.split(matchingData[field]).map((content, i) => (
+                  i > 0 ?
+                    [ <span className="highlight" key={i}>{ record[field].match(matchingData[field])[0] }</span>, content ] 
+                  :
                     content
                 ))}
               </span>
