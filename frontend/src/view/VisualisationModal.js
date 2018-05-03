@@ -1,7 +1,7 @@
 import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
-import { Modal, Select, Dropdown, Slider, InputNumber, Input } from 'antd';
+import { Modal, Select, Slider, InputNumber } from 'antd';
 import { Chart, Geom, Axis, Legend, Coord, Tooltip, Label } from 'bizcharts';
 import { View as dataView} from '@antv/data-set';
 
@@ -15,7 +15,7 @@ class VisualisationModal extends React.Component {
     const { dispatch } = props;
     this.state = {
       chartType: "barChart",
-      colIndexSelected: "",
+      colNameSelected: null,
       numCols: 5
     };
     this.boundActionCreators = bindActionCreators(ViewActionCreators, dispatch);
@@ -23,37 +23,45 @@ class VisualisationModal extends React.Component {
 
   handleCancel = () => { 
     this.boundActionCreators.closeVisualisationModal(); 
-    this.setState({chartType:"barChart", colIndexSelected:"", rangeMin:null, rangeMax:null, numCols: 5}); 
+    this.setState({ chartType:"barChart", colNameSelected:null, rangeMin:null, rangeMax:null, numCols: 5 }); 
   };
 
   handleSubmit = () => {
-    const {view} = this.props;
-    const {chartType, numCols, rangeMin, rangeMax} = this.state;
-    this.boundActionCreators.updateVisualisationChart(view.id, chartType, numCols, rangeMin, rangeMax);
+    const { selectedId } = this.props;
+    const { chartType, numCols, rangeMin, rangeMax } = this.state;
+    this.boundActionCreators.updateVisualisationChart(selectedId, chartType, numCols, rangeMin, rangeMax);
   };
 
   render() {
-    const { dispatch, visualisation_visible, error, view, columnIndex, userId} = this.props;
+    const { visualisation_visible, build, data, visualise, isRowWise } = this.props;
     const { chartType, numCols, rangeMin, rangeMax } = this.state;
-    const colIndexSelected = this.state.colIndexSelected ? this.state.colIndexSelected : columnIndex;
     const MAX_COL = 15;
 
     let dv;
     let cols;
-    let colNameSelected;
     let defaultMax=1;
     let defaultMin=100;
     let isOverMaxCols=false;
 
-    if(view && colIndexSelected){
+    let type;
+    let colNameSelected;
 
-      colNameSelected = view.columns[colIndexSelected]['field'];
+    if (build && data && (this.state.colNameSelected || visualise)) {
+
+      let buildStepIndex = this.state.colNameSelected ? this.state.colNameSelected.stepIndex : visualise.stepIndex;
+      let fieldName = this.state.colNameSelected ? this.state.colNameSelected.field : visualise.field;
+      
+      const buildStep = build.steps[buildStepIndex];
+      if (buildStep.type === 'datasource') {
+        type = buildStep.datasource.types[fieldName];
+        colNameSelected = buildStep.datasource.labels[fieldName];
+      };
 
       //Barchar ploting
-      if(chartType==="barChart" || chartType=="pieChart"){
+      if (chartType === "barChart" || chartType === "pieChart"){
 
         dv = new dataView()
-        .source(view.data)
+        .source(data)
         //pick selected column and drop others
         .transform({type: 'pick', fields: [colNameSelected]})
         //count based on colNameSelected
@@ -62,7 +70,7 @@ class VisualisationModal extends React.Component {
           groupBy: [colNameSelected]});
 
         //if current column type is number, then we can combine bars with user defined intervals
-        if(view.columns[colIndexSelected]['type']==="number"){
+        if (type === "number") {
           //sort current column values
           dv.transform({type: 'sort', callback(a, b) { 
             if(a[colNameSelected]!=="" && b[colNameSelected]!==""){
@@ -133,13 +141,13 @@ class VisualisationModal extends React.Component {
         }
 
         //define columns in bar chart
-        if(chartType=="barChart"){
+        if(chartType === "barChart"){
           cols = {
             colNameSelected: {tickInterval: 5},
           };
         }
 
-        if(chartType=="pieChart"){
+        if(chartType === "pieChart"){
           //define columns in pie chart
           cols = {
             percent: {
@@ -162,7 +170,7 @@ class VisualisationModal extends React.Component {
       //ploting the box chart
       if(chartType==="boxPlot"){
         dv = new dataView()
-        .source(view.data)
+        .source(data)
         .transform({type: 'pick', fields: [colNameSelected]})
         //filter out rows with empty value in colNameSelected
         .transform({
@@ -202,6 +210,19 @@ class VisualisationModal extends React.Component {
       }
     }
 
+    let options = [];
+    if (isRowWise) {
+      build && build.steps.forEach((step, stepIndex) => {
+        if (step.type === 'datasource') {
+          step = step.datasource;
+          step.fields.forEach(field => {
+            const label = step.labels[field];
+            options.push({ stepIndex, field, label });
+          });
+        };
+      });
+    };
+
     return (
       <Modal
         width={700}
@@ -221,24 +242,30 @@ class VisualisationModal extends React.Component {
         >
           <Option value="barChart">Barchart</Option>
           <Option value="pieChart">Piechart</Option>
-          { view && colIndexSelected && view.columns[colIndexSelected]['type']==="number" && <Option value="boxPlot">Boxplot</Option> }
+          { type === "number" && <Option value="boxPlot">Boxplot</Option> }
         </Select>
 
-      { userId &&
+      { isRowWise &&
         <div style={{display:"flex", justifyContent:"left", alignItems: "center"}}>
           <h4>Columns: </h4>
           <Select
             style={{ width: 150, marginLeft:10, display:"flex"}}
             value={colNameSelected}
             onChange={
-              (value)=>{
-                this.setState({colIndexSelected: value});
+              (e) => {
+                const [stepIndex, field] = e.split(/_(.+)/);
+                this.setState({ 
+                  colNameSelected: {
+                    stepIndex,
+                    field
+                  } 
+                });
               }
             }
           >
-          {view.columns.map((column, i) => {
+          {options.map((option, i) => {
             return(
-              <Option value={i} key={i}>{column.label ? column.label : column.field}</Option>
+              <Option value={`${option.stepIndex}_${option.field}`} key={i}>{option.label}</Option>
             )
           })}
         </Select>
@@ -344,7 +371,7 @@ class VisualisationModal extends React.Component {
             style={{display: "flex", width:"350px", marginRight:10}}
             min={defaultMin} 
             max={defaultMax}
-            onChange={(value) => {{this.setState({rangeMin: value[0], rangeMax: value[1]});}}}/>
+            onChange={(value) => {this.setState({rangeMin: value[0], rangeMax: value[1]});}}/>
         </div>
       </div>
       }
@@ -380,11 +407,11 @@ class VisualisationModal extends React.Component {
 
 const mapStateToProps = (state) => {
   const { 
-    visualisation_visible, error, view, columnIndex, userId
+    visualisation_visible, error, build, data, visualise, isRowWise
   } = state.view;
   
   return { 
-    visualisation_visible, error, view, columnIndex, userId
+    visualisation_visible, error, build, data, visualise, isRowWise
   };
 };
 

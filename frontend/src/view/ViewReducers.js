@@ -22,7 +22,10 @@ import {
   CLOSE_COLUMN_MODAL,
 
   OPEN_VISUALISATION_MODAL,
-  CLOSE_VISUALISATION_MODAL
+  CLOSE_VISUALISATION_MODAL,
+
+  UPDATE_BUILD,
+  RECEIVE_DATASOURCES
 } from './ViewActions';
 
 import _ from 'lodash';
@@ -58,8 +61,7 @@ function view(state = {}, action) {
       });
     case RESOLVE_MATCHING_FIELD:
       return Object.assign({}, state, {
-        fieldMatchResult: null,
-        matchingField: null,
+        discrepencies: null,
         error: null
       });
     case FAILURE_FIELD_MATCH_RESULT:
@@ -68,8 +70,7 @@ function view(state = {}, action) {
       });
     case RECIEVE_FIELD_MATCH_RESULT:
       return Object.assign({}, state, {
-        fieldMatchResult: action.fieldMatchResult,
-        matchingField: action.matchingField,
+        discrepencies: action.fieldMatchResult,
         error: null
       });
 
@@ -115,12 +116,22 @@ function view(state = {}, action) {
         selectedId: null,
         formState: null
       });
-      
+
+    case RECEIVE_DATASOURCES:
+      return Object.assign({}, state, {
+        loading: false,
+        build: action.build,
+        datasources: action.datasources,
+      });
     case RECEIVE_VIEW:
       return Object.assign({}, state, {
         loading: false,
-        view: action.view
+        selectedId: action.selectedId,
+        build: action.build,
+        data: action.data,
+        datasources: action.datasources
       });
+
     case OPEN_COLUMN_MODAL:
       return Object.assign({}, state, {
         visible: true,
@@ -137,13 +148,20 @@ function view(state = {}, action) {
     case OPEN_VISUALISATION_MODAL:
       return Object.assign({}, state, {
         visualisation_visible: true,
-        columnIndex: action.columnIndex,
-        userId: action.userId
+        visualise: action.visualise,
+        isRowWise: action.isRowWise
       });
     case CLOSE_VISUALISATION_MODAL:
       return Object.assign({}, state, {
         visualisation_visible: false,
+        visualise: null,
+        isRowWise: null,
         error: null
+      });
+
+    case UPDATE_BUILD:
+      return Object.assign({}, state, {
+        build: action.build
       });
 
     default:

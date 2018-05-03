@@ -3,7 +3,7 @@ import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { Switch, Route, Redirect } from 'react-router-dom';
-import { Layout, Breadcrumb, Icon, Spin, Menu, Tag } from 'antd';
+import { Layout, Breadcrumb, Icon, Spin, Menu } from 'antd';
 
 import * as WorkflowActionCreators from './WorkflowActions';
 

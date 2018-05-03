@@ -83,7 +83,7 @@ export const createDatasource = (containerId, payload, file) => dispatch => {
   let data;
   if (file) {
     data = new FormData();
-    data.append('file', file);
+    data.append('file', file.originFileObj, file.name);
     data.append('name', payload.name);
     data.append('container', payload.container);
     data.append('payload', JSON.stringify(payload));

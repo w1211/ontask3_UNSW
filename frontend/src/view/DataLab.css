@@ -1,0 +1,153 @@
+.dataLab .item {
+  width: 175px;
+  min-height: 175px;
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  border-radius: 4px;
+  padding: 15px;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+}
+.dataLab .item i {
+  font-size: 32px;
+}
+.dataLab .item span {
+  margin-top: 10px;
+  color: #666;
+}
+
+.dataLab .add i {
+  color: #999;
+}
+.dataLab .add {
+  background-color: #fafafa;
+  border: 1px dashed #d9d9d9;
+  transition: border 0.5s;
+}
+
+.dataLab .datasource i {
+  color: #BBDEFB;
+}
+.dataLab .datasource {
+  background-color: rgba(227,242,253, 0.20);
+  border: 1px solid #BBDEFB;
+}
+
+.dataLab .computed i {
+  color: #C8E6C9;
+}
+.dataLab .computed {
+  background-color: rgba(232,245,233, 0.20);
+  border: 1px solid #C8E6C9;
+}
+
+.dataLab .form i {
+  color: #D1C4E9;
+}
+.dataLab .form {
+  background-color: rgba(237,231,246, 0.20);
+  border: 1px solid #D1C4E9;
+}
+
+.dataLab .dragging {
+  opacity: 0.35;
+  border-style: dashed;
+  cursor: move;
+}
+
+.dataLab .fields-select i {
+  display: none;
+}
+
+/*  */
+.dataLab .ant-form-item-control:not(.has-error) .fields-select.ant-select-disabled .ant-select-selection {
+  border-color: #d9d9d9;
+  box-shadow: none;
+}
+
+.dataLab-fields .editing-field:after {
+  content: none !important;
+  display: none !important;
+}
+
+.dataLab-fields .editing-field i {
+  cursor: pointer;
+  margin-left: 5px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.dataLab-fields .editing-field i:hover {
+  color: #1890ff;
+}
+
+.dataLab-fields .editing-field.ant-select-dropdown-menu-item-disabled {
+  cursor: default;
+}
+
+.dataLab-fields .normal-field i {
+  opacity: 0;
+  margin-left: 5px;
+  transition: opacity 0.1s ease-out;
+  font-weight: 300;
+}
+
+.dataLab-fields .normal-field:hover i {
+  opacity: 1;
+}
+
+.dataLab .ant-form-item {
+  margin: 0;
+  width: 100%;
+}
+
+.dataLab .ant-select {
+  width: 100%;
+}
+
+.dataLab .stepIcon {
+  position: absolute;
+  top: -15px;
+  left: -15px;
+  border-radius: 50%;
+  width: 35px;
+  height: 35px;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.dataLab .stepIcon.datasource {
+  background: #BBDEFB;
+}
+
+.dataLab .modules {
+  position: fixed;
+  top: 0;
+  right: 75px;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  text-align: center;
+}
+.dataLab .modules .wrapper {
+  background: #fafafa;
+  padding: 20px;
+  border: 1px solid #d9d9d9;
+  border-radius: 5px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  text-align: center;
+}
+.dataLab .modules .wrapper > div {
+  cursor: move;
+  width: 100px;
+  min-height: 100px;
+}

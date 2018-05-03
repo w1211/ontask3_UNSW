@@ -1,6 +1,6 @@
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
-from rest_framework.decorators import list_route, permission_classes
+from rest_framework.decorators import detail_route, list_route, permission_classes
 from rest_framework.permissions import IsAuthenticated
 
 from django.http import JsonResponse
@@ -15,12 +15,21 @@ from .serializers import ContainerSerializer
 from .models import Container
 from .permissions import ContainerPermissions
 
+from datasource.models import DataSource
+from scheduler.backend_utils import mongo_to_dict
+
 
 class ContainerViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
     serializer_class = ContainerSerializer
     permission_classes = [ContainerPermissions, IsAuthenticated]
 
+    def json_serial(self, obj):
+        if isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        if isinstance(obj, ObjectId):
+            return str(obj)
+            
     def get_queryset(self):
         return Container.objects.filter(
             Q(owner = self.request.user.id) | Q(sharing__readOnly__contains = self.request.user.id) | Q(sharing__readWrite__contains = self.request.user.id)
@@ -31,13 +40,6 @@ class ContainerViewSet(viewsets.ModelViewSet):
         # Retrieve containers owned by or shared with the current user, including the associated workflows & data sources
         # Consumed by the containers list interface
         # Perform a lookup on each container object so that we can attach its associated workflows & data sources
-
-        def json_serial(obj):
-            if isinstance(obj, (datetime, date)):
-                return obj.isoformat()
-            if isinstance(obj, ObjectId):
-                return str(obj)
-
         pipeline = [
             {
                 '$match': {
@@ -97,7 +99,7 @@ class ContainerViewSet(viewsets.ModelViewSet):
             for datasource in container['datasources']:
                 datasource['data'] = datasource['data'][:10]
 
-        containers_after_dump = dumps(containers_after_query, default=json_serial)
+        containers_after_dump = dumps(containers_after_query, default=self.json_serial)
 
         # Convert the queryset response into a string so that we can transform
         # To remove the underscore from "id" key values
@@ -146,12 +148,6 @@ class ContainerViewSet(viewsets.ModelViewSet):
     #retrieve all workflows owned by current user
     @list_route(methods=['get'])
     def retrieve_workflows(self, request):
-        def json_serial(obj):
-            if isinstance(obj, (datetime, date)):
-                return obj.isoformat()
-            if isinstance(obj, ObjectId):
-                return str(obj)
-
         pipeline = [
             {
                 '$match': {
@@ -178,9 +174,22 @@ class ContainerViewSet(viewsets.ModelViewSet):
                 },
             }
         ]
-        containers_after_dump = dumps(list(Container.objects.aggregate(*pipeline)), default=json_serial)
+        containers_after_dump = dumps(list(Container.objects.aggregate(*pipeline)), default=self.json_serial)
         # Convert the queryset response into a string so that we can transform
         # To remove the underscore from "id" key values
         # For better consistency in field names
         containers = str(containers_after_dump).replace('"_id":', '"id":')
         return JsonResponse(json.loads(containers), safe=False)
+
+    @detail_route(methods=['get'])
+    def retrieve_datasources(self, request, id=None):
+        '''Retrieve all datasources associated with the given container'''
+        container = Container.objects.get(id=id)
+        self.check_object_permissions(self.request, container)
+
+        datasources = DataSource.objects(container=id).only('id', 'name', 'fields', 'data')
+        for datasource in datasources:
+            datasource['data'] = datasource['data'][:1]
+        datasources = [mongo_to_dict(datasource) for datasource in datasources]
+
+        return JsonResponse(datasources, safe=False)

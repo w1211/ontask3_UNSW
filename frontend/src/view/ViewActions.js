@@ -1,4 +1,4 @@
-import { notification, Modal } from 'antd';
+import { notification, Modal, message } from 'antd';
 import requestWrapper from '../shared/requestWrapper';
 import { fetchContainers } from '../container/ContainerActions';
 
@@ -27,6 +27,9 @@ export const CLOSE_COLUMN_MODAL = 'CLOSE_COLUMN_MODAL';
 
 export const OPEN_VISUALISATION_MODAL = "OPEN_VISUALISATION_MODAL";
 export const CLOSE_VISUALISATION_MODAL = "CLOSE_VISUALISATION_MODAL";
+
+export const UPDATE_BUILD = 'UPDATE_BUILD';
+export const RECEIVE_DATASOURCES = 'RECIEVE_DATASOURCES';
 
 
 export const openViewModal = (containerId, datasources, selected) => {
@@ -491,7 +494,7 @@ export const fetchView = (viewId) => dispatch => {
     initialFn: () => { dispatch(beginRequestView()); },
     // The 'retrieve_view' endpoint includes the datasources from the view's container, as 'datasources' in the response object
     // The datasources are used in the 'add imported column' interface of the view
-    url: `/view/${viewId}/retrieve_view/`,
+    url: `/view/${viewId}/`,
     method: 'GET',
     errorFn: (error) => { 
       dispatch(failureRequestView(error));
@@ -509,13 +512,13 @@ export const openColumnModal = (column, index) => ({
   index
 });
 
-export const openVisualisationModal = (columnIndex, userId) =>({
+export const openVisualisationModal = (visualise, isRowWise) =>({
   type: OPEN_VISUALISATION_MODAL,
-  columnIndex,
-  userId
+  visualise,
+  isRowWise
 })
 
-export const closeVisualisationModal = (column) =>({
+export const closeVisualisationModal = () =>({
   type: CLOSE_VISUALISATION_MODAL
 })
 
@@ -621,4 +624,263 @@ export const updateVisualisationChart = (viewId, chartType, numCols, rangeMin, r
     }
   }
   requestWrapper(parameters);
+};
+
+export const retrieveDataLab = (dataLabId) => dispatch => {
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestView()); },
+    url: `/view/${dataLabId}/retrieve_view/`,
+    method: 'GET',
+    errorFn: (error) => {
+      dispatch(failureRequestView(error));
+    },
+    successFn: (dataLab) => {
+      dispatch({
+        type: RECEIVE_VIEW,
+        selectedId: dataLab.id,
+        build: { 
+          name: dataLab.name, 
+          steps: dataLab.steps, 
+          errors: { steps: [] }
+        },
+        data: dataLab.data,
+        datasources: dataLab.datasources
+      });
+    }
+  }
+
+  requestWrapper(parameters);
+};
+
+export const retrieveDatasources = (containerId) => dispatch => {
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestView()); },
+    url: `/container/${containerId}/retrieve_datasources/`,
+    method: 'GET',
+    errorFn: (error) => {
+      dispatch(failureRequestView(error));
+    },
+    successFn: (datasources) => {
+      dispatch({
+        type: RECEIVE_DATASOURCES,
+        build: {
+          steps: [],
+          errors: { steps: [] }
+        },
+        datasources
+      });
+    }
+  }
+
+  requestWrapper(parameters);
+};
+
+export const addModule = (mod) => (dispatch, getState) => {
+  const { view } = getState();
+  let build = Object.assign({}, view.build);
+
+  // TEMPORARY: prevent non-datasource modules from being added
+  if (mod.type !== 'datasource') return;
+
+  // Initialize an object that represents this type of module
+  // The form will then initialize form fields conditionally based on this type
+  build.steps.push({ type: mod.type, datasource: { fields: [], labels: {} } });
+
+  // Initialize an object that will store errors for this module
+  build.errors.steps.push({});
+
+  dispatch({
+    type: UPDATE_BUILD,
+    build
+  });
+};
+
+export const deleteStep = () => (dispatch, getState) => {
+  const { view } = getState();
+  let build = Object.assign({}, view.build);
+
+  // Delete the last step
+  build.steps = build.steps.slice(0, -1);
+  
+  // Remove this step's errors
+  build.errors.steps = build.errors.steps.slice(0, -1);
+
+  dispatch({
+    type: UPDATE_BUILD,
+    build
+  });
+};
+
+export const updateBuild = (stepIndex, field, value, isNotField) => (dispatch, getState) => {
+  const { view } = getState();
+  let build = Object.assign({}, view.build);
+
+  // Fields that are not part of a module do not have a stepIndex (as they are not in a step)
+  // If no stepIndex is provided, then the step will return false
+  let step = (stepIndex !== null) ? build.steps[stepIndex] : null;
+
+  // If there is a step (i.e. a stepIndex was provided) then perform any module/field specific actions
+  if (step && step.type === 'datasource') {
+    step = step.datasource;
+    if (field === 'id') {
+      // The datasource was changed, so reset the fields
+      delete step.primary;
+      delete step.matching;
+      step.fields = []; // The fields to use from the given datasource
+      step.labels = {}; // Object to hold the labels with (key, value) being (field, label)
+    }  
+    else if (field === 'edit' || field === 'remove') {
+      // Remove the field from the list of fields (if it's there)
+      step.fields = ('fields' in step) ? step.fields.filter(field => field !== value) : [];
+      // Remove this field's label
+      delete step.labels[value];
+    };
+  };
+
+  // If isNotField was *not* provided, 
+  // Then automatically merge the field value into the state, by using the given field name
+  if (!isNotField) {
+    // If this is a field inside a module (i.e. a stepIndex was provided)
+    if (step) {
+      step[field] = value;
+      if (build.errors.steps[stepIndex]) build.errors.steps[stepIndex][field] = false;
+    // Otherwise, this must be a field that is not specific to a module/step, such as the DataLab name
+    } else {
+      build[field] = value;
+      build.errors[field] = false;
+    }
+  };
+
+  dispatch({
+    type: UPDATE_BUILD,
+    build
+  });
+};
+
+export const saveBuild = (history, containerId, selectedId) => (dispatch, getState) => {
+  const { view } = getState();
+  let build = Object.assign({}, view.build);
+  const datasources = view.datasources;
+  
+  build.errors = { steps: [] };
+  
+  build.errors.name = !build.name;
+
+  'steps' in build && build.steps.forEach((step, i) => {
+    if ('discrepencies' in step) {
+      if (step.discrepencies === null) {
+        delete step.discrepencies;
+      } else {
+        if ('matching' in step.discrepencies && step.discrepencies.matching === null) delete step.discrepencies.matching;
+        if ('primary' in step.discrepencies && step.discrepencies.primary === null) delete step.discrepencies.primary;
+      }
+    };
+
+    if (step.type === 'datasource') {
+      step = step.datasource;
+      build.errors.steps.push({
+        id: !step.id,
+        primary: !step.primary,
+        matching: i > 0 && !step.matching,
+        fields: !(step.fields.length > 0)
+      });
+    };
+  });
+
+  const errors = [build.errors.name, ...build.errors.steps.map(step => 
+    // Create an array of booleans that denote whether an error exists in each field
+    Object.keys(step).map(field => step[field]).includes(true)
+  )];
+
+  // If no modules have been added, then show an error
+  if (!('steps' in build) || build.steps.length === 0) {
+    message.error('DataLab cannot be saved unless there is at least one module.');
+    return;
+  };
+
+  // If errors are detected then prevent saving, and propagate the errors to the component
+  if (errors.includes(true)) {
+    message.error('DataLab cannot be saved until all required fields are provided.');
+    dispatch({
+      type: UPDATE_BUILD,
+      build
+    });
+    return;
+  };
+
+  if (containerId) build.container = containerId;
+
+  // Guess the type of each field in each module
+  build.steps.forEach((step, i) => {
+    if (step.type === 'datasource') {
+      const data = datasources.find(datasource => datasource.id === step.datasource.id).data[0];
+      step.datasource.types = {};
+      step.datasource.fields.forEach(field => step.datasource.types[field] = getType(data[field].toString()));
+    };
+  });
+
+  // Perform save API call
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestView()); },
+    url: selectedId ? `/view/${selectedId}/` : '/view/',
+    method: selectedId ? 'PATCH' : 'POST',
+    errorFn: (error) => {
+      dispatch(failureRequestView(error));
+      notification['error']({
+        message: `DataLab ${selectedId ? 'update' : 'creation'} failed`,
+        description: error
+      });
+    },
+    successFn: (response) => {
+      dispatch(successRequestView());
+       // Redirect to data manipulation interface
+       history.push({ pathname: `/view/${response.id}`, state: { fromDataLab: true } });
+       notification['success']({
+         message: `DataLab ${selectedId ? 'updated' : 'created'}`,
+         description: `The DataLab was successfully ${selectedId ? 'updated' : 'created'}.`
+       });
+    },
+    payload: build
+  }
+
+  requestWrapper(parameters);
+};
+
+export const checkForDiscrepencies = (build, checkStep, isEdit) => dispatch => {
+  const parameters = {
+    url: `/view/check_discrepencies/`,
+    method: 'POST',
+    errorFn: (error) => {
+      dispatch(failureFieldMatchResult(error));
+    },
+    successFn: (result) => {
+      dispatch(receiveFieldMatchResult(result));
+    },
+    payload: { build, checkStep, isEdit }
+  }
+
+  requestWrapper(parameters);
+};
+
+export const resolveDiscrepencies = (didResolve, result) => (dispatch, getState) => {
+  const { view } = getState();
+  let build = Object.assign({}, view.build);
+  const discrepencies = view.discrepencies;
+
+  let step = build.steps[discrepencies.step];
+
+  if (!didResolve && !discrepencies.isEdit) {
+    step.datasource.matching = undefined;
+  } else if (didResolve) {
+    step.discrepencies = {};
+
+    if ('primary' in result) step.discrepencies.primary = result.primary;
+    if ('matching' in result) step.discrepencies.matching = result.matching;
+  };
+
+  dispatch({
+    type: UPDATE_BUILD,
+    build
+  });
+  dispatch(resolveMatchingField());
 }

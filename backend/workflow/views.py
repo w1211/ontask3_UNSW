@@ -26,7 +26,7 @@ from collections import defaultdict
 
 from django.conf import settings
 
-from scheduler.backend_utils import send_email, create_scheduled_task, remove_scheduled_task, remove_async_task
+from scheduler.backend_utils import *
 from .utils import *
 
 
@@ -92,7 +92,12 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         updated_filter = self.request.data
         updated_filter['name'] = 'filter'
 
-        fields = [column['label'] if column['label'] else column['field'] for column in workflow.view.columns]
+        fields = []
+        for step in workflow.view.steps:
+            if step.type == 'datasource':
+                step = step.datasource
+                for field in step.fields:
+                    fields.append(step.labels[field])
 
         # Validate the filter
         if 'formulas' in updated_filter:
@@ -105,7 +110,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                     del formula['fieldOperator']
 
                 if formula['field'] not in fields:
-                    raise ValidationError(f'Invalid formula: field \'{formula["field"]}\' does not exist in the view')
+                    raise ValidationError(f'Invalid formula: field \'{formula["field"]}\' does not exist in the DataLab')
 
             # Filter the data to store the number of records
             filtered_data = evaluate_filter(workflow['view'], updated_filter)
@@ -207,7 +212,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         preview_content = self.request.data['html']
 
-        populated_content = list(value for key, value in populate_content(workflow, preview_content).items())
+        populated_content = populate_content(workflow, preview_content)
 
         return JsonResponse(populated_content, safe=False)
 
@@ -270,11 +275,10 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         subject = request.data['emailSettings']['subject']
         reply_to = request.data['emailSettings']['replyTo']
         
-        html = list(value for key, value in populate_content(workflow, workflow['content']['html']).items())
+        html = populate_content(workflow, workflow['content']['html'])
 
         data = evaluate_filter(workflow['view'], workflow['filter'])
-        primary_key = workflow['view']['columns'][0]['field']
-        failed_emails = list()
+        failed_emails = False
 
         task_name = None
         async_tasks = []
@@ -296,7 +300,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             for index, item in enumerate(data):
                 email_sent = send_email(item[field], subject, html[index], reply_to)
                 if not email_sent:
-                    failed_emails.append(item[primary_key])
+                    failed_emails = True
                 else:
                     serializer = AuditSerializer(data = {
                         'workflowId': id, 
@@ -308,8 +312,11 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                     })
                     serializer.is_valid()
                     serializer.save() 
-            if len(failed_emails) > 0:
-                raise ValidationError('Emails to the following records failed to send: ' + str(failed_emails).strip('[]').strip("'"))
+            if failed_emails:
+                # TODO: Make these records identifiable, e.g. allow user to specify the primary key of the DataLab?
+                # And send back a list of the specific records that we failed to send an email to
+                raise ValidationError('Emails to the some records failed to send')
+                # raise ValidationError('Emails to the some records failed to send: ' + str(failed_emails).strip('[]').strip("'"))
             serializer = WorkflowSerializer(instance=workflow, data={
                 'emailSettings': request.data['emailSettings']
             }, partial=True)

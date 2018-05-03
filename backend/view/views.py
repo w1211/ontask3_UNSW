@@ -32,7 +32,7 @@ class ViewViewSet(viewsets.ModelViewSet):
         if queryset.count():
             raise ValidationError('A view with this name already exists')
 
-        data = self.combine_data(self.request.data)
+        data = self.combine_data(self.request.data['steps'])
 
         serializer.save(data=data)
 
@@ -47,7 +47,7 @@ class ViewViewSet(viewsets.ModelViewSet):
         if queryset.count():
             raise ValidationError('A view with this name already exists')
 
-        data = self.combine_data(self.request.data)
+        data = self.combine_data(self.request.data['steps'])
 
         serializer.save(data=data)
 
@@ -144,80 +144,75 @@ class ViewViewSet(viewsets.ModelViewSet):
         # Return the first 10 records of the results
         return JsonResponse(data[:10], safe=False)
 
-    def combine_data(self, view):
-        columns = view['columns']
-        drop_discrepencies = view['dropDiscrepencies'] if 'dropDiscrepencies' in view else []
+    def build_dict(self, seq, key):
+        return dict((d[key], dict(d, index=index)) for (index, d) in enumerate(seq))
 
-        # Get the primary key's datasource data
-        primary_datasource_id = columns[0]['datasource']
-        primary_datasource = DataSource.objects.get(id=primary_datasource_id)
-        primary_field = columns[0]['field']
-        primary_key_records = set([record[primary_field] for record in primary_datasource['data']])
-    
-        # Initialize the defaultdict to hold the results, and seed it with the primary keys
-        results = defaultdict(dict)
-        results.update((primary_key, {}) for primary_key in primary_key_records)
+    def combine_data(self, steps):
+        # Initialize the dataset using the first step
+        first_step = steps[0]
+        if first_step['type'] == 'datasource':
+            step = first_step['datasource']
+            datasource = DataSource.objects.get(id=step['id'])
+            data = [{step['labels'][field]: value for field, value in item.items() if field in step['fields']} for item in datasource.data]
 
-        # Initialise an object to store the data of each datasource
-        # Add the datasource of the primary key to this object
-        data = {}
-        data[primary_datasource_id] = primary_datasource['data']
+        # For each of the remaining steps, add to the dataset
+        for step in steps[1:]:
+            if step['type'] == 'datasource':
+                datasource = DataSource.objects.get(id=step['datasource']['id'])
+                # Create a map of the data generated thus far, with the key being the matching field specified for this step
+                # This allows us to efficiently lookup based on the primary key and find which record should be extended,
+                # Instead of having to iterate over the list to find the matching record for every record in this datasource (n*m complexity)
+                data_map = { item[step['datasource']['matching']]: item for item in data }
+                # For each record in this datasource's data, extend the matching record in the data map
+                for item in datasource.data:
+                    if item[step['datasource']['primary']] in data_map:
+                        data_map[item[step['datasource']['primary']]].update({step['datasource']['labels'][field]: value for field, value in item.items() if field in step['datasource']['fields']})
+                    else:
+                        if 'discrepencies' in step and 'primary' in step['discrepencies'] and not step['discrepencies']['primary']:
+                            data_map[item[step['datasource']['primary']]] = {step['datasource']['labels'][field]: value for field, value in item.items() if field in step['datasource']['fields']}
+
+                if 'discrepencies' in step and 'matching' in step['discrepencies'] and step['discrepencies']['matching']:
+                    primary_records = { item[step['datasource']['primary']] for item in datasource.data }
+                    matching_records = { item[step['datasource']['matching']] for item in data }
+                    matching_discrepencies = matching_records - primary_records
+                    for record in matching_discrepencies:
+                        data_map.pop(record, None)
+
+                # Create the data (list of dicts, with each dict representing a record) based on the updated data map 
+                data = [value for value in data_map.values()]
                 
-        primary_key_records_to_drop = set()
+        return data
 
-        # Create a defaultdict of datasources & the fields used from each datasource
-        datasources_used = defaultdict(list)
-        for column in columns[1:]: # Skip the primary key
-            datasources_used[column['datasource']].append(column)
+    @list_route(methods=['post'])
+    def check_discrepencies(self, request):
+        build = self.request.data['build']
+        check_step = self.request.data['checkStep']
+        is_edit = self.request.data['isEdit']
 
-        for datasource_id, related_columns in datasources_used.items():
-            # Retrieve they data for the datasource if needed
-            # If the datasource is the same as the primary key datasource, then we already have the data
-            if not datasource_id in data:
-                datasource = DataSource.objects.get(id=datasource_id)
-                data[datasource_id] = datasource['data']
-        
-            # Create a defaultdict of matching fields used from this datasource
-            matching_fields_used = defaultdict(list)
-            for column in related_columns:
-                matching_fields_used[column['matching']].append(column)
+        data = self.combine_data(build)
+        datasource = DataSource.objects.get(id=check_step['datasource']['id'])
 
-            # Iterate over the grouped matching fields
-            for matching_field, matched_columns in matching_fields_used.items():
-                matching_field_records = set([record[matching_field] for record in data[datasource_id]])
-                
-                # Identify any discrepencies between this matching field and the primary key
-                unique_in_matching = matching_field_records - primary_key_records
-                unique_in_primary = primary_key_records - matching_field_records
+        primary_records = { item[check_step['datasource']['primary']] for item in datasource.data }
+        matching_records = { item[check_step['datasource']['matching']] for item in data }
 
-                should_drop_discrepency = next((discrepency for discrepency in drop_discrepencies if discrepency['datasource'] == datasource_id and discrepency['matching'] == matching_field), {})
-                if 'dropPrimary' in should_drop_discrepency and should_drop_discrepency['dropPrimary']:
-                    # If primary discrepencies should be dropped, and some are detected, then add them to the list for removal later in the function
-                    primary_key_records_to_drop.update(unique_in_primary)
+        response = { 'step': len(build), 'datasource': datasource.name, 'isEdit': is_edit }
 
-                for record in data[datasource_id]:
-                    matching_value = record[matching_field]
+        # If there are already values, then add them to the response
+        if 'discrepencies' in check_step:
+            response['values'] = {}
+            if 'primary' in check_step['discrepencies']:
+                response['values']['primary'] = check_step['discrepencies']['primary']
+            if 'matching' in check_step['discrepencies']:
+                response['values']['matching'] = check_step['discrepencies']['matching']
 
-                    for column in matched_columns:
-                        field = column['label'] if ('label' in column and column['label'] is not None) else column['field']
-                        value = record[column['field']]
+        # Values which are in the primary datasource but not the matching
+        primary_discrepencies = primary_records - matching_records
+        if len(primary_discrepencies) > 0:
+            response['primary'] = [value for value in primary_discrepencies]
 
-                        # If matching field discrepencies should be dropped, and this particular record is one such discrepency
-                        # Then do not add this record to the results dict
-                        if ('dropMatching' in should_drop_discrepency and should_drop_discrepency['dropMatching']) and matching_value in unique_in_matching:
-                            continue
-                        # Otherwise, do add this record to the results dict
-                        results[matching_value][field] = value  
+        # Values which are in the matching datasource but not the primary
+        matching_discrepencies = matching_records - primary_records
+        if len(matching_discrepencies) > 0:
+            response['matching'] = [value for value in matching_discrepencies]
 
-        # Remove any stored primary discrepencies
-        # There would only be values to remove if should_drop_discrepency was true for these values
-        for primary_key in primary_key_records_to_drop:
-            if primary_key in results:
-                results.pop(primary_key)
-
-        # Convert the results into a structure that can be consumed by the data table
-        response = []
-        for primary_key, fields in results.items():
-            response.append({ primary_field: primary_key, **fields })
-
-        return response
+        return JsonResponse(response)

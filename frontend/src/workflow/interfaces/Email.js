@@ -78,13 +78,17 @@ class Email extends React.Component {
 
   render() {
     const { workflow, loading, error, form, previewLoading, previewContent } = this.props;
-
-    const options = [];
-    if (workflow && workflow.view && 'columns' in workflow.view) {
-      workflow.view.columns.forEach(column => {
-        options.push(column.label ? column.label : column.field);
-      });
-    }
+    
+    let options = [];
+    workflow && workflow.view.steps.forEach(step => {
+      if (step.type === 'datasource') {
+        step = step.datasource;
+        step.fields.forEach(field => {
+          const label = step.labels[field];
+          options.push(label);
+        });
+      };
+    });
 
     return (
       <div>
@@ -118,19 +122,19 @@ class Email extends React.Component {
                     </Row>
                     <Row>
                         <Col style={{textAlign:"right", marginBottom:5}} xs={{ span: 24 }} sm={{ span: 5 }}><h4>Frequency: </h4></Col>
-                        {workflow.schedule.frequency == "daily"?
-                          <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }} >Every {workflow.schedule.dayFrequency} {workflow.schedule.dayFrequency=="1"?"day":"days"}</Col>
+                        {workflow.schedule.frequency === "daily"?
+                          <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }} >Every {workflow.schedule.dayFrequency} {workflow.schedule.dayFrequency==="1"?"day":"days"}</Col>
                         :
                           <Col style={{paddingLeft: 10}}>{workflow.schedule.frequency}</Col>
                         }
                     </Row>
-                    { workflow.schedule.frequency == "weekly" && 
+                    { workflow.schedule.frequency === "weekly" && 
                     <Row gutter={8}>
                         <Col style={{textAlign:"right", marginBottom:5}} xs={{ span: 24 }} sm={{ span: 5 }} ><h4>DayOfWeek: </h4></Col>
                         <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }}>{workflow.schedule.dayOfWeek.map((day,i)=><span>{day} </span>)}</Col>
                     </Row>
                     }
-                    { workflow.schedule.frequency == "monthly" && 
+                    { workflow.schedule.frequency === "monthly" && 
                     <Row gutter={8}>
                         <Col style={{textAlign:"right", marginBottom:5}} xs={{ span: 24 }} sm={{ span: 5 }} ><h4>DayOfMonth: </h4></Col>
                         <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }}>{moment(workflow.schedule.dayOfMonth).format("DD")}</Col>
