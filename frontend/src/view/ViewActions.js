@@ -727,6 +727,7 @@ export const updateBuild = (stepIndex, field, value, isNotField) => (dispatch, g
 export const saveBuild = (history, containerId, selectedId) => (dispatch, getState) => {
   const { view } = getState();
   let build = Object.assign({}, view.build);
+  const datasources = view.datasources;
   
   build.errors = { steps: [] };
   
@@ -775,6 +776,15 @@ export const saveBuild = (history, containerId, selectedId) => (dispatch, getSta
   };
 
   if (containerId) build.container = containerId;
+
+  // Guess the type of each field in each module
+  build.steps.forEach((step, i) => {
+    if (step.type === 'datasource') {
+      const data = datasources.find(datasource => datasource.id === step.datasource.id).data[0];
+      step.datasource.types = {};
+      step.datasource.fields.forEach(field => step.datasource.types[field] = getType(data[field]));
+    };
+  });
 
   // Perform save API call
   const parameters = {

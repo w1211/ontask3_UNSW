@@ -22,6 +22,7 @@ class DatasourceModule(EmbeddedDocument):
     matching = StringField(null=True)
     fields = ListField(StringField())
     labels = DictField()
+    types = DictField()
     
 class Module(EmbeddedDocument):
     type = StringField(choices=('datasource', 'computed', 'form'), required=True)
