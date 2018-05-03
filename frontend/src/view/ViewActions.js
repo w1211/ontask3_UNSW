@@ -813,7 +813,8 @@ export const saveBuild = (history, containerId, selectedId) => (dispatch, getSta
   // Guess the type of each field in each module
   build.steps.forEach((step, i) => {
     if (step.type === 'datasource') {
-      const data = datasources.find(datasource => datasource.id === step.datasource.id).data[0];
+      const datasource = datasources.find(datasource => datasource.id === step.datasource.id);
+      const data = datasource.data[0];
       step.datasource.types = {};
       step.datasource.fields.forEach(field => step.datasource.types[field] = getType(data[field].toString()));
     };
