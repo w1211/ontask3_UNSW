@@ -30,15 +30,14 @@ class StaticPageHistoryStaff extends React.Component {
 
   render() {
     const {
-      isFetching, data, matchField, matchReg, columns, error
+      isFetching, data, matchingData, columns, error
     } = this.props;
 
     return (
         <HistoryTable
             isFetching={isFetching}
             data={data}
-            matchField={matchField}
-            matchReg={matchReg}
+            matchingData={matchingData}
             columns={columns}
             error={error}
             onSearchColumn={this.boundActionCreators.onSearchColumn}
@@ -50,10 +49,10 @@ class StaticPageHistoryStaff extends React.Component {
 
 const mapStateToProps = (state) => {
   const {
-    isFetching, data, matchField, matchReg, columns, error
+    isFetching, data, matchField, matchReg, columns, error, matchingData
   } = state.staticPage;
   return {
-    isFetching, data, matchField, matchReg, columns, error
+    isFetching, data, matchField, matchReg, columns, error, matchingData
   };
 }
 
