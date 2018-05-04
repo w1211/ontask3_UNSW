@@ -7,6 +7,10 @@ import { View as dataView} from '@antv/data-set';
 
 import * as ViewActionCreators from './ViewActions';
 
+// Disable diagnostic tracking of BizCharts
+import { track } from "bizcharts";
+track(false);
+
 const {Option} = Select;
 
 class VisualisationModal extends React.Component {
