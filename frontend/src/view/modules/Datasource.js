@@ -249,7 +249,7 @@ class DatasourceModule extends React.Component {
                 !datasource ? 
                   'A datasource must be chosen first' 
                 : 
-                  'The field added to the DataLab thus far that should be matched against the uniquely identifying field of this datasource (above), in order to join the data together'
+                  'In order to join the data from this datasource with the DataLab, you must specify which field from the DataLab will be matched against the primary key (specified above)'
                 }
               placement="right"
             >
