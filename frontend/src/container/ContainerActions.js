@@ -19,9 +19,10 @@ const requestContainers = () => ({
   type: REQUEST_CONTAINERS
 });
 
-const receiveContainers = (containers) => ({
+const receiveContainers = (containers, accordionKey) => ({
   type: RECEIVE_CONTAINERS,
-  containers
+  containers,
+  accordionKey
 });
 
 export const changeContainerAccordion = (key) => ({
@@ -34,7 +35,7 @@ export const changeContainerTab = (key) => ({
   key
 });
 
-export const fetchContainers = () => dispatch => {
+export const fetchContainers = (accordionKey) => dispatch => {
   const parameters = {
     initialFn: () => {
       dispatch(requestContainers());
@@ -45,7 +46,7 @@ export const fetchContainers = () => dispatch => {
       console.error(error);
     },
     successFn: (containers) => {
-      dispatch(receiveContainers(containers));
+      dispatch(receiveContainers(containers, accordionKey));
     }
   }
 
@@ -74,7 +75,12 @@ const successRequestContainer = () => ({
   type: SUCCESS_REQUEST_CONTAINER
 });
 
-export const createContainer = (payload) => dispatch => {
+export const createContainer = (payload) => (dispatch, getState) => {
+  const { containers } = getState();
+  // Determine what index the newly created container would have
+  // And set this index as the currently active accordion key
+  const numberOfContainers = containers.containers.length;
+
   const parameters = {
     initialFn: () => {
       dispatch(beginRequestContainer());
@@ -86,7 +92,7 @@ export const createContainer = (payload) => dispatch => {
     },
     successFn: () => {
       dispatch(successRequestContainer());
-      dispatch(fetchContainers());
+      dispatch(fetchContainers(numberOfContainers));
       notification['success']({
         message: 'Container created',
         description: 'The container was successfully created.'

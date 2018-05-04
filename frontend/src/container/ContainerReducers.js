@@ -21,7 +21,10 @@ function containers(state = {}, action) {
     case RECEIVE_CONTAINERS:
       return Object.assign({}, state, {
         isFetching: false,
-        containers: action.containers
+        containers: action.containers,
+        // If an accordionKey is provided, then use it, and set the tabKey back to the first tab
+        accordionKey: action.accordionKey ? action.accordionKey.toString() : state.accordionKey,
+        tabKey: action.accordionKey ? '1' : state.tabKey
       });
     case CHANGE_CONTAINER_ACCORDION:
       return Object.assign({}, state, {
