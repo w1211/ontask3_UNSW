@@ -215,6 +215,7 @@ class View extends React.Component {
                     dataSource={data2}
                     scroll={{ x: (columns.length - 1) * 175 }}
                     onChange={this.handleChange} 
+                    pagination={{ showSizeChanger: true, pageSizeOptions: ['10', '25', '50', '100'] }}
                   />
                 </div>
               }
