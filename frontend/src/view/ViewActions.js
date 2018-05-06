@@ -458,7 +458,7 @@ export const deleteView = (viewId) => dispatch => {
     errorFn: (error) => {
       dispatch(failureRequestView()); // Don't pass in the error here since we don't need it stored in the state
       notification['error']({
-        message: 'View deletion failed',
+        message: 'DataLab deletion failed',
         description: error
       });
     },
@@ -466,15 +466,15 @@ export const deleteView = (viewId) => dispatch => {
       dispatch(successRequestView());
       dispatch(fetchContainers());
       notification['success']({
-        message: 'View deleted',
-        description: 'The view was successfully deleted.'
+        message: 'DataLab deleted',
+        description: 'The DataLab was successfully deleted.'
       });
     }
   }
 
   confirm({
-    title: 'Confirm view deletion',
-    content: 'Are you sure you want to delete this view?',
+    title: 'Confirm DataLab deletion',
+    content: 'Are you sure you want to delete this DataLab?',
     okText: 'Continue with deletion',
     okType: 'danger',
     cancelText: 'Cancel',

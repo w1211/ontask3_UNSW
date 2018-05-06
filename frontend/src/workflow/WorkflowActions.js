@@ -81,8 +81,8 @@ export const createWorkflow = (containerId, payload) => dispatch => {
       dispatch(successRequestWorkflow());
       dispatch(fetchContainers());
       notification['success']({
-        message: 'Workflow created',
-        description: 'The workflow was successfully created.'
+        message: 'Action created',
+        description: 'The action was successfully created.'
       });
     },
     payload: payload
@@ -105,15 +105,15 @@ export const deleteWorkflow = (workflowId) => dispatch => {
       dispatch(successRequestWorkflow());
       dispatch(fetchContainers());
       notification['success']({
-        message: 'Workflow deleted',
-        description: 'The workflow and its associated view, actions and scheduled tasks have been successfully deleted.'
+        message: 'Action deleted',
+        description: 'The action was successfully deleted.'
       });
     }
   }
 
   confirm({
-    title: 'Confirm workflow deletion',
-    content: 'The associated view, actions and scheduled tasks will be irrevocably deleted with the workflow.',
+    title: 'Confirm action deletion',
+    content: 'Are you sure you want to delete this action?',
     okText: 'Continue with deletion',
     okType: 'danger',
     cancelText: 'Cancel',

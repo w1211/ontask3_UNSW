@@ -35,7 +35,7 @@ class WorkflowModal extends React.Component {
     return (
       <Modal
         visible={visible}
-        title='Create workflow'
+        title='Create action'
         okText='Create'
         onCancel={() => { form.resetFields(); dispatch(this.boundActionCreators.closeWorkflowModal()); }}
         onOk={() => { this.handleOk() }}

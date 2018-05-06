@@ -204,11 +204,11 @@ class ContainerList extends React.Component {
                   </div>
                 </TabPane>
 
-                <TabPane tab={`Workflows (${container.workflows.length})`}  key="3">
+                <TabPane tab={`Actions (${container.workflows.length})`}  key="3">
                   <div className="tab">
                     {container.workflows.length > 0 && 
                       <div style={{ width: '100%' }}>
-                        <Input style={{ marginBottom: 10, maxWidth: 500 }} placeholder="Filter workflows by name"
+                        <Input style={{ marginBottom: 10, maxWidth: 500 }} placeholder="Filter actions by name"
                           value={this.state.workflowFilter} 
                           addonAfter={
                             <Tooltip title="Clear filter">
@@ -228,12 +228,12 @@ class ContainerList extends React.Component {
                           bodyStyle={{ flex: 1 }}
                           title={workflow.name}
                           actions={[
-                            <Tooltip title="Enter workflow">
+                            <Tooltip title="Edit action">
                               <Link to={`/workflow/${workflow.id}`}>
                                 <Button icon="arrow-right"/>
                               </Link>
                             </Tooltip>,
-                            <Tooltip title="Delete workflow">
+                            <Tooltip title="Delete action">
                               <Button type="danger" icon="delete" onClick={() => { this.boundActionCreators.deleteWorkflow(workflow.id); }}/>
                             </Tooltip>
                           ]}
@@ -249,7 +249,7 @@ class ContainerList extends React.Component {
                     })}
                     <div className="add item" onClick={() => { dispatch(this.boundActionCreators.openWorkflowModal(container.id, container.views)); }}>
                       <Icon type="plus"/>
-                      <span>Create workflow</span>
+                      <span>Create action</span>
                     </div>
                   </div>
                 </TabPane>
