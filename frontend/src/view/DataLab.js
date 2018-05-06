@@ -2,7 +2,7 @@ import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { Spin, Layout, Breadcrumb, Icon, Button, Form, Input } from 'antd';
+import { Spin, Layout, Breadcrumb, Icon, Button, Form, Input, Radio } from 'antd';
 
 import { DragDropContext } from 'react-dnd'
 import HTML5Backend from 'react-dnd-html5-backend'
@@ -18,6 +18,8 @@ import ResolveMatchModal from './resolve/Discrepencies';
 
 const { Content } = Layout;
 const FormItem = Form.Item;
+const RadioButton = Radio.Button;
+const RadioGroup = Radio.Group;
 
 
 class DataLabCreator extends React.Component {
@@ -70,6 +72,15 @@ class DataLabCreator extends React.Component {
                   <span>Back to containers</span>
                 </Link>
               </div>
+
+              { selectedId &&
+                <div style={{ marginBottom: 20}} >
+                  <RadioGroup defaultValue="details" size="large" onChange={() => history.push(`/view/${selectedId}`)}>
+                    <RadioButton value="data">Data View</RadioButton>
+                    <RadioButton value="details">Details View</RadioButton>
+                  </RadioGroup>
+                </div>
+              }
 
               { loading ?
                 <Spin size="large" />

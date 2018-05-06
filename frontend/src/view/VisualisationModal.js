@@ -89,7 +89,7 @@ class VisualisationModal extends React.Component {
             isOverMaxCols = true;
 
             //min and max value for slider
-            defaultMin = Number(dv.rows[0][colNameSelected])=='' ? Number(dv.rows[1][colNameSelected]) : Number(dv.rows[0][colNameSelected]);
+            defaultMin = Number(dv.rows[0][colNameSelected])==='' ? Number(dv.rows[1][colNameSelected]) : Number(dv.rows[0][colNameSelected]);
             defaultMax = Number(dv.rows[dv.rows.length-1][colNameSelected]);
 
             //min and max value for calculating interval

@@ -2,13 +2,15 @@ import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { Table, Spin, Layout, Breadcrumb, Icon, Menu, Dropdown } from 'antd';
+import { Table, Spin, Layout, Breadcrumb, Icon, Menu, Dropdown, Radio } from 'antd';
 
 import * as ViewActionCreators from './ViewActions';
 
 import VisualisationModal from './VisualisationModal';
 
 const { Content } = Layout;
+const RadioButton = Radio.Button;
+const RadioGroup = Radio.Group;
 
 
 class View extends React.Component {
@@ -82,7 +84,7 @@ class View extends React.Component {
   };
 
   render() {
-    const { loading, build, data, location, match } = this.props;
+    const { history, loading, build, data, match } = this.props;
     const { filtered, sorted } = this.state;
 
     // let columns = [];
@@ -151,8 +153,6 @@ class View extends React.Component {
 
     const data2 = data && data.map((data, i) => ({...data, key: i }));
 
-    const dataLab = location.state && location.state.fromDataLab;
-
     return (
       <div>
         <Content style={{ padding: '0 50px' }}>
@@ -169,10 +169,17 @@ class View extends React.Component {
 
               <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '1em' }}>
                 <h1 style={{ display: 'inline-block', margin: 0 }}>{build && build.name}</h1>
-                <Link to={dataLab ? `/datalab/${match.params.id}` : '/containers'} style={{ width: 'fit-content' }}>
+                <Link to='/containers' style={{ width: 'fit-content' }}>
                   <Icon type="arrow-left" />
-                  <span>Back to {`${dataLab ? 'DataLab' : 'containers'}`}</span>
+                  <span>Back to containers</span>
                 </Link>
+              </div>
+
+              <div style={{ marginBottom: 20}} >
+                <RadioGroup defaultValue="data" size="large" onChange={() => history.push(`/datalab/${match.params.id}`)}>
+                  <RadioButton value="data">Data View</RadioButton>
+                  <RadioButton value="details">Details View</RadioButton>
+                </RadioGroup>
               </div>
 
               { loading ?

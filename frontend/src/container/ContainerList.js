@@ -171,14 +171,9 @@ class ContainerList extends React.Component {
                           bodyStyle={{ flex: 1 }}
                           title={view.name}
                           actions={[
-                            <Tooltip title="Data manipulation">
-                              <Link to={`/view/${view.id}`}>
-                                <Button icon="table"/>
-                              </Link>
-                            </Tooltip>,
-                            <Link to={{ pathname: `/datalab/${view.id}`}}>
+                            <Link to={{ pathname: `/view/${view.id}`}}>
                               <Tooltip title="Edit DataLab">
-                                <Button icon="edit"/>
+                                <Button icon="arrow-right"/>
                               </Tooltip>
                             </Link>,
                             <Tooltip title="Delete DataLab">

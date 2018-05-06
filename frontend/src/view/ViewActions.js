@@ -835,7 +835,7 @@ export const saveBuild = (history, containerId, selectedId) => (dispatch, getSta
     successFn: (response) => {
       dispatch(successRequestView());
        // Redirect to data manipulation interface
-       history.push({ pathname: `/view/${response.id}`, state: { fromDataLab: true } });
+       history.push({ pathname: `/view/${response.id}` });
        notification['success']({
          message: `DataLab ${selectedId ? 'updated' : 'created'}`,
          description: `The DataLab was successfully ${selectedId ? 'updated' : 'created'}.`
