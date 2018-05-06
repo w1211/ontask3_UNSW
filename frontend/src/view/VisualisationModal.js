@@ -87,15 +87,16 @@ class VisualisationModal extends React.Component {
 
           if(dv.rows.length>MAX_COL){
             isOverMaxCols = true;
+
             //min and max value for slider
-            defaultMin = Number(dv.rows[1][colNameSelected]);
+            defaultMin = Number(dv.rows[0][colNameSelected])=='' ? Number(dv.rows[1][colNameSelected]) : Number(dv.rows[0][colNameSelected]);
             defaultMax = Number(dv.rows[dv.rows.length-1][colNameSelected]);
-            
+
             //min and max value for calculating interval
             const min = rangeMin? rangeMin : defaultMin;
             const max = rangeMax? rangeMax : defaultMax;
-            //interval is current range=max-min divided by number of columns which is given by the user
-            //round up the result so that we always get the number of columns user defined
+
+            //last col range will be equal or less than this interval
             const interval = Math.ceil((max-min)/numCols);
 
             //if user customize range, we filter out rows with values outside of this range
@@ -103,7 +104,7 @@ class VisualisationModal extends React.Component {
               dv.transform({
                 type: 'filter',
                 callback(row) {
-                  return row[colNameSelected] > min && row[colNameSelected] < max ;
+                  return row[colNameSelected] >= min && row[colNameSelected] <= max ;
                 }
               });
             }
@@ -112,8 +113,8 @@ class VisualisationModal extends React.Component {
             dv.transform({
               type: 'map',
               callback: (row, i)=>{
-                if(row[colNameSelected]===""){ row.mergeIndex = 0; }
-                else{ row.mergeIndex = Math.ceil(row[colNameSelected]/interval); }
+                if(row[colNameSelected]===""){ row.mergeIndex = -1; }
+                else{ row.mergeIndex = Math.floor((row[colNameSelected]-min)/interval); }
                 return row;
             }})
             //count how many rows are in each interval
@@ -130,7 +131,11 @@ class VisualisationModal extends React.Component {
                   row.axisLabel = "";
                 }
                 else{
-                  row.axisLabel = ''+(min + interval*(row.mergeIndex-1))+'-'+(min + interval*row.mergeIndex);
+                  let axisMax = (min + interval*(row.mergeIndex+1));
+                  if (axisMax>max){
+                    axisMax = max;
+                  }
+                  row.axisLabel = ''+(min + interval*row.mergeIndex)+'-'+axisMax;
                 }
                 return row;
             }});
