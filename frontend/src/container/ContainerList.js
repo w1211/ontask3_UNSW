@@ -118,22 +118,29 @@ class ContainerList extends React.Component {
                     {container.datasources.map((datasource, i) => {
                       if (this.state.datasourceFilter && !datasource.name.includes(this.state.datasourceFilter)) return null;
 
+                      let actions = [];
+                      actions.push(
+                        <Tooltip title="Edit datasource">
+                          <Button icon="edit" onClick={() => { dispatch(this.boundActionCreators.openDatasourceModal(container.id, datasource)); }}/>
+                        </Tooltip>
+                      );
+                      if (['mysql', 'postgresql', 'sqlite', 'mssql', 's3BucketFile'].includes(datasource.connection.dbType)) actions.push(
+                        <Tooltip title={'schedule' in datasource ? 'Update schedule' : 'Create schedule'}>
+                          <Button icon="calendar" onClick={() => { dispatch(this.boundActionCreators.openSchedulerModal(datasource.id, datasource.schedule)); }}/>
+                        </Tooltip>
+                      );
+                      actions.push(
+                        <Tooltip title="Delete datasource">
+                          <Button type="danger" icon="delete" onClick={() => { this.boundActionCreators.deleteDatasource(datasource.id) }} />
+                        </Tooltip>
+                      );
+
                       return (
                         <Card
                           className="item"
                           bodyStyle={{ flex: 1 }}
                           title={datasource.name}
-                          actions={[
-                            <Tooltip title="Edit datasource">
-                              <Button icon="edit" onClick={() => { dispatch(this.boundActionCreators.openDatasourceModal(container.id, datasource)); }}/>
-                            </Tooltip>,
-                            <Tooltip title={'schedule' in datasource ? 'Update schedule' : 'Create schedule'}>
-                              <Button icon="calendar" onClick={() => { dispatch(this.boundActionCreators.openSchedulerModal(datasource.id, datasource.schedule)); }}/>
-                            </Tooltip>,
-                            <Tooltip title="Delete datasource">
-                              <Button type="danger" icon="delete" onClick={() => { this.boundActionCreators.deleteDatasource(datasource.id) }} />
-                            </Tooltip>
-                          ]}
+                          actions={actions}
                           key={i}
                         >
                           <Meta description={<span>{typeMap[datasource.connection.dbType]}</span>}/>
