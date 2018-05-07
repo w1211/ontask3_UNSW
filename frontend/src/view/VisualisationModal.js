@@ -25,6 +25,10 @@ class VisualisationModal extends React.Component {
     this.boundActionCreators = bindActionCreators(ViewActionCreators, dispatch);
   };
 
+  isInt = (n) => {
+    return n % 1 === 0;
+  }
+
   handleCancel = () => { 
     this.boundActionCreators.closeVisualisationModal(); 
     this.setState({ chartType:"barChart", colNameSelected:null, rangeMin:null, rangeMax:null, numCols: 5 }); 
@@ -97,7 +101,7 @@ class VisualisationModal extends React.Component {
             const max = rangeMax? rangeMax : defaultMax;
 
             //last col range will be equal or less than this interval
-            const interval = Math.ceil((max-min)/numCols);
+            const interval = (max-min)/numCols;
 
             //if user customize range, we filter out rows with values outside of this range
             if (rangeMin && rangeMax){
@@ -108,7 +112,7 @@ class VisualisationModal extends React.Component {
                 }
               });
             }
-            
+
             //mark each column with corresponding interval number, stored in mergeIndex field
             dv.transform({
               type: 'map',
@@ -123,6 +127,7 @@ class VisualisationModal extends React.Component {
               operations: 'sum', as: 'summation',
               groupBy: ["mergeIndex"]
             })
+            
             //label each bar with the start and end number of corresponding interval
             .transform({
               type: 'map',
@@ -135,7 +140,9 @@ class VisualisationModal extends React.Component {
                   if (axisMax>max){
                     axisMax = max;
                   }
-                  row.axisLabel = ''+(min + interval*row.mergeIndex)+'-'+axisMax;
+                  row.axisLabel = 
+                    ''+(this.isInt(min + interval*row.mergeIndex)?(min + interval*row.mergeIndex).toString():Number(min + interval*row.mergeIndex).toFixed(2).toString())+'-'
+                    +(this.isInt(axisMax)?axisMax.toString():Number(axisMax).toFixed(2).toString());
                 }
                 return row;
             }});
@@ -285,10 +292,10 @@ class VisualisationModal extends React.Component {
       { chartType === "barChart" && dv &&
         <div>
           <Chart height={450} data={dv} scale={cols} forceFit>
-            <Axis name={dv.rows[0] && dv.rows[0]["axisLabel"]?"axisLabel":colNameSelected} label={{autoRotate: true}} title={colNameSelected} />
+            <Axis name={dv.rows[0] && ("axisLabel" in dv.rows[0])?"axisLabel":colNameSelected} label={{autoRotate: true}} title={colNameSelected} />
             <Axis title={"Count"} name= {"count"} />
             <Tooltip crosshairs={{type : "y"}} />
-            <Geom type="interval" position={dv.rows[0] && dv.rows[0]["axisLabel"]? "axisLabel*summation": colNameSelected+"*count"} />
+            <Geom type="interval" position={dv.rows[0] && ("axisLabel" in dv.rows[0])? "axisLabel*summation": colNameSelected+"*count"} />
           </Chart>
         </div>
       }
