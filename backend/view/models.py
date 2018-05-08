@@ -6,12 +6,6 @@ from container.models import Container
 from datasource.models import DataSource
 
 
-class DropDiscrepencies(EmbeddedDocument):
-    matching = StringField(required=True)
-    datasource = StringField(required=True)
-    dropMatching = BooleanField()
-    dropPrimary = BooleanField()
-
 class Discrepencies(EmbeddedDocument):
     matching = BooleanField()
     primary = BooleanField()
@@ -32,7 +26,5 @@ class Module(EmbeddedDocument):
 class View(Document):
     container = ReferenceField(Container, required=True, reverse_delete_rule=2) # Cascade delete if container is deleted
     name = StringField(required=True)
-    dropDiscrepencies = EmbeddedDocumentListField(DropDiscrepencies)
     steps = EmbeddedDocumentListField(Module)
     data = ListField(DictField())
-

@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { Button, Collapse, Card, Icon, Tooltip, Tabs, Input } from 'antd';
 
 import * as ContainerActionCreators from './ContainerActions';
-import { openViewModal, deleteView } from '../view/ViewActions';
+import { deleteView } from '../view/ViewActions';
 import { openDatasourceModal, deleteDatasource } from '../datasource/DatasourceActions';
 import { openWorkflowModal, deleteWorkflow } from '../workflow/WorkflowActions';
 import { openSchedulerModal } from '../scheduler/SchedulerActions';
@@ -53,7 +53,7 @@ class ContainerList extends React.Component {
     
     this.boundActionCreators = bindActionCreators({
       ...ContainerActionCreators, 
-      openViewModal, deleteView, 
+      deleteView, 
       openDatasourceModal, deleteDatasource, 
       openWorkflowModal, deleteWorkflow,
       openSchedulerModal

@@ -10,7 +10,6 @@ import { updateSchedule, deleteSchedule } from '../datasource/DatasourceActions'
 import ContainerModal from './ContainerModal';
 import ContainerList from './ContainerList';
 import DatasourceModal from '../datasource/DatasourceModal';
-import ViewModal from '../view/ViewModal';
 import WorkflowModal from '../workflow/WorkflowModal';
 import SchedulerModal from '../scheduler/SchedulerModal';
 
@@ -68,8 +67,6 @@ class Container extends React.Component {
                     onDelete={this.boundActionCreators.deleteSchedule}
                     allowFutureStart={false}
                   />
-
-                  <ViewModal history={history}/>
 
                   <ContainerList/>
                 </div>
