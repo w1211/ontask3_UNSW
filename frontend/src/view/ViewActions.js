@@ -1,6 +1,7 @@
 import { notification, Modal, message } from 'antd';
 import requestWrapper from '../shared/requestWrapper';
 import { fetchContainers } from '../container/ContainerActions';
+import _ from 'lodash';
 
 const confirm = Modal.confirm;
 
@@ -679,12 +680,18 @@ export const addModule = (mod) => (dispatch, getState) => {
   const { view } = getState();
   let build = Object.assign({}, view.build);
 
-  // TEMPORARY: prevent non-datasource modules from being added
-  if (mod.type !== 'datasource') return;
-
   // Initialize an object that represents this type of module
   // The form will then initialize form fields conditionally based on this type
-  build.steps.push({ type: mod.type, datasource: { fields: [], labels: {} } });
+  switch (mod.type) {
+    case 'datasource':
+      build.steps.push({ type: mod.type, datasource: { fields: [], labels: {} } });
+      break;
+    case 'form':
+      build.steps.push({ type: mod.type, form: { } });
+      break;
+    default:
+      break;
+  }
 
   // Initialize an object that will store errors for this module
   build.errors.steps.push({});
@@ -711,140 +718,21 @@ export const deleteStep = () => (dispatch, getState) => {
   });
 };
 
-export const updateBuild = (stepIndex, field, value, isNotField) => (dispatch, getState) => {
-  const { view } = getState();
-  let build = Object.assign({}, view.build);
-
-  // Fields that are not part of a module do not have a stepIndex (as they are not in a step)
-  // If no stepIndex is provided, then the step will return false
-  let step = (stepIndex !== null) ? build.steps[stepIndex] : null;
-
-  // If there is a step (i.e. a stepIndex was provided) then perform any module/field specific actions
-  if (step && step.type === 'datasource') {
-    step = step.datasource;
-    if (field === 'id') {
-      // The datasource was changed, so reset the fields
-      delete step.primary;
-      delete step.matching;
-      step.fields = []; // The fields to use from the given datasource
-      step.labels = {}; // Object to hold the labels with (key, value) being (field, label)
-    }  
-    else if (field === 'edit' || field === 'remove') {
-      // Remove the field from the list of fields (if it's there)
-      step.fields = ('fields' in step) ? step.fields.filter(field => field !== value) : [];
-      // Remove this field's label
-      delete step.labels[value];
-    };
+const datasourceFunction = (step, field, value) => {
+  if (field === 'id') {
+    // The datasource was changed, so reset the fields
+    delete step.primary;
+    delete step.matching;
+    step.fields = []; // The fields to use from the given datasource
+    step.labels = {}; // Object to hold the labels with (key, value) being (field, label)
   };
 
-  // If isNotField was *not* provided, 
-  // Then automatically merge the field value into the state, by using the given field name
-  if (!isNotField) {
-    // If this is a field inside a module (i.e. a stepIndex was provided)
-    if (step) {
-      step[field] = value;
-      if (build.errors.steps[stepIndex]) build.errors.steps[stepIndex][field] = false;
-    // Otherwise, this must be a field that is not specific to a module/step, such as the DataLab name
-    } else {
-      build[field] = value;
-      build.errors[field] = false;
-    }
+  if (field === 'edit' || field === 'remove') {
+    // Remove the field from the list of fields (if it's there)
+    step.fields = ('fields' in step) ? step.fields.filter(field => field !== value) : [];
+    // Remove this field's label
+    delete step.labels[value];
   };
-
-  dispatch({
-    type: UPDATE_BUILD,
-    build
-  });
-};
-
-export const saveBuild = (history, containerId, selectedId) => (dispatch, getState) => {
-  const { view } = getState();
-  let build = Object.assign({}, view.build);
-  const datasources = view.datasources;
-  
-  build.errors = { steps: [] };
-  
-  build.errors.name = !build.name;
-
-  'steps' in build && build.steps.forEach((step, i) => {
-    if ('discrepencies' in step) {
-      if (step.discrepencies === null) {
-        delete step.discrepencies;
-      } else {
-        if ('matching' in step.discrepencies && step.discrepencies.matching === null) delete step.discrepencies.matching;
-        if ('primary' in step.discrepencies && step.discrepencies.primary === null) delete step.discrepencies.primary;
-      }
-    };
-
-    if (step.type === 'datasource') {
-      step = step.datasource;
-      build.errors.steps.push({
-        id: !step.id,
-        primary: !step.primary,
-        matching: i > 0 && !step.matching,
-        fields: !(step.fields.length > 0)
-      });
-    };
-  });
-
-  const errors = [build.errors.name, ...build.errors.steps.map(step => 
-    // Create an array of booleans that denote whether an error exists in each field
-    Object.keys(step).map(field => step[field]).includes(true)
-  )];
-
-  // If no modules have been added, then show an error
-  if (!('steps' in build) || build.steps.length === 0) {
-    message.error('DataLab cannot be saved unless there is at least one module.');
-    return;
-  };
-
-  // If errors are detected then prevent saving, and propagate the errors to the component
-  if (errors.includes(true)) {
-    message.error('DataLab cannot be saved until all required fields are provided.');
-    dispatch({
-      type: UPDATE_BUILD,
-      build
-    });
-    return;
-  };
-
-  if (containerId) build.container = containerId;
-
-  // Guess the type of each field in each module
-  build.steps.forEach((step, i) => {
-    if (step.type === 'datasource') {
-      const datasource = datasources.find(datasource => datasource.id === step.datasource.id);
-      const data = datasource.data[0];
-      step.datasource.types = {};
-      step.datasource.fields.forEach(field => step.datasource.types[field] = getType(data[field].toString()));
-    };
-  });
-
-  // Perform save API call
-  const parameters = {
-    initialFn: () => { dispatch(beginRequestView()); },
-    url: selectedId ? `/view/${selectedId}/` : '/view/',
-    method: selectedId ? 'PATCH' : 'POST',
-    errorFn: (error) => {
-      dispatch(failureRequestView(error));
-      notification['error']({
-        message: `DataLab ${selectedId ? 'update' : 'creation'} failed`,
-        description: error
-      });
-    },
-    successFn: (response) => {
-      dispatch(successRequestView());
-       // Redirect to data manipulation interface
-       history.push({ pathname: `/view/${response.id}` });
-       notification['success']({
-         message: `DataLab ${selectedId ? 'updated' : 'created'}`,
-         description: `The DataLab was successfully ${selectedId ? 'updated' : 'created'}.`
-       });
-    },
-    payload: build
-  }
-
-  requestWrapper(parameters);
 };
 
 export const checkForDiscrepencies = (build, checkStep, isEdit) => dispatch => {
@@ -885,3 +773,127 @@ export const resolveDiscrepencies = (didResolve, result) => (dispatch, getState)
   });
   dispatch(resolveMatchingField());
 }
+
+export const updateBuild = (stepIndex, field, value, isNotField) => (dispatch, getState) => {
+  const { view } = getState();
+  let build = Object.assign({}, view.build);
+
+  // Any field related to a module will call this function with a step index
+  let step = (stepIndex !== null) ? build.steps[stepIndex] : null;
+
+  // If this relates to a specific module
+  if (step) {
+    // Run any specific functional required for this 
+    if (step.type === 'datasource') datasourceFunction(step.datasource, field, value);
+
+    if (!isNotField) {
+      _.set(step[step.type], field, value);
+      _.set(build.errors.steps[stepIndex], field, false);
+    }
+  // If this is a field for the DataLab itself (e.g. DataLab name), i.e. has no stepIndex
+  } else {
+    _.set(build, field, value);
+    _.set(build.errors, field, false);
+  }
+  
+  dispatch({
+    type: UPDATE_BUILD,
+    build
+  });
+};
+
+const validateDatasourceModule = (build, step, stepIndex) => {
+  build.errors.steps.push({
+    id: !step.datasource.id,
+    primary: !step.datasource.primary,
+    matching: stepIndex > 0 && !step.datasource.matching,
+    fields: !('fields' in step.datasource && step.datasource.fields.length > 0)
+  });
+};
+
+const saveDatasourceModule = (datasources, build, step) => {
+  if ('discrepencies' in step) {
+    if (step.discrepencies === null) {
+      delete step.discrepencies;
+    } else {
+      if ('matching' in step.discrepencies && step.discrepencies.matching === null) delete step.discrepencies.matching;
+      if ('primary' in step.discrepencies && step.discrepencies.primary === null) delete step.discrepencies.primary;
+    };
+  };
+
+  // Guess the type of each field in each module
+  const datasource = datasources.find(datasource => datasource.id === step.datasource.id);
+  const data = datasource.data[0];
+  step.datasource.types = {};
+  step.datasource.fields.forEach(field => step.datasource.types[field] = getType(data[field].toString()));
+};
+
+export const saveBuild = (history, containerId, selectedId) => (dispatch, getState) => {
+  const { view } = getState();
+  let build = Object.assign({}, view.build);
+  const datasources = view.datasources;
+  
+  if (containerId) build.container = containerId;
+
+  build.errors = { steps: [] };
+  build.errors.name = !build.name;
+
+  // Validate each of the modules based on its type
+  'steps' in build && build.steps.forEach((step, i) => {
+    if (step.type === 'datasource') validateDatasourceModule(build, step, i);
+  });
+
+  // Create an array of booleans that denote whether an error exists in each module or non-module field
+  const errors = [build.errors.name, ...build.errors.steps.map(step => 
+    Object.keys(step).map(field => step[field]).includes(true)
+  )];
+
+  // If no modules have been added, then show an error
+  // And return out of this function
+  if (!('steps' in build) || build.steps.length === 0) {
+    message.error('DataLab cannot be saved unless there is at least one module.');
+    return;
+  };
+
+  // If errors are detected then prevent saving, and propagate the errors to the component
+  // And return out of this function
+  if (errors.includes(true)) {
+    message.error('DataLab cannot be saved until all required fields are provided.');
+    dispatch({
+      type: UPDATE_BUILD,
+      build
+    });
+    return;
+  };
+
+  // Run custom functionality for each step depending on the module type
+  'steps' in build && build.steps.forEach((step, i) => {
+    if (step.type === 'datasource') saveDatasourceModule(datasources, build, step);
+  });
+  
+  // Perform save API call
+  const parameters = {
+    initialFn: () => { dispatch(beginRequestView()); },
+    url: selectedId ? `/view/${selectedId}/` : '/view/',
+    method: selectedId ? 'PATCH' : 'POST',
+    errorFn: (error) => {
+      dispatch(failureRequestView(error));
+      notification['error']({
+        message: `DataLab ${selectedId ? 'update' : 'creation'} failed`,
+        description: error
+      });
+    },
+    successFn: (response) => {
+      dispatch(successRequestView());
+       // Redirect to data manipulation interface
+       history.push({ pathname: `/view/${response.id}` });
+       notification['success']({
+         message: `DataLab ${selectedId ? 'updated' : 'created'}`,
+         description: `The DataLab was successfully ${selectedId ? 'updated' : 'created'}.`
+       });
+    },
+    payload: build
+  }
+
+  requestWrapper(parameters);
+};
