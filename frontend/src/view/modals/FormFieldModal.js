@@ -39,11 +39,11 @@ class FormFieldModal extends React.Component {
             didError = true;
           };
         });
+
+        values = { ...values, options };
       };
 
       if (err || didError) return;
-
-      values = { ...values, options };
       
       if (field) {
         onChange(`fields[${fieldIndex}]`, values);
@@ -77,9 +77,11 @@ class FormFieldModal extends React.Component {
   };
 
   render() {
-    const { visible, form, field, checkDuplicateLabel } = this.props;
+    const { visible, form, field, fieldIndex, checkDuplicateLabel } = this.props;
     const { options } = this.state;
 
+    if (!visible) return null;
+    
     return (
       <Modal
         visible={visible}

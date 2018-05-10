@@ -56,11 +56,24 @@ class DataLabCreator extends React.Component {
   };
 
   labelsUsed = (steps) => {
+    const { formField } = this.state;
+
     // Identify the fields already used in the build
     let labels = [];
-    steps.forEach(step => {
+    steps.forEach((step, i) => {
       if (step.type === 'datasource') labels = [...labels, ...Object.values(step.datasource.labels)];
-      if (step.type === 'form') labels = [...labels, ...step.form.fields.map(field => field.name)];
+
+      if (step.type === 'form') {
+        const fields = [...step.form.fields];
+        // stepIndex & fieldIndex is set in the state when editing a field in a form module
+        // The index will be used to remove that particular field from the list of fields in the given module
+        // So that the field label is not compared against itself (and thus avoiding a false-positive duplicate label)
+        if ('stepIndex' in formField && 'fieldIndex' in formField && (i === formField.stepIndex)) {
+          fields.splice(formField.fieldIndex, 1); 
+        };
+
+        labels = [...labels, ...fields.map(field => field.name)];
+      };
     });
 
     return labels;
