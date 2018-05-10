@@ -176,6 +176,12 @@ export const addModule = (mod) => (dispatch, getState) => {
   const { view } = getState();
   let build = Object.assign({}, view.build);
 
+  // Force the first module to be a datasource
+  if (build.steps.length === 0 && mod.type !== 'datasource') {
+    message.error('The first module of a DataLab must be a datasource.');
+    return;
+  };
+
   // Initialize an object that represents this type of module
   // The form will then initialize form fields conditionally based on this type
   switch (mod.type) {
