@@ -31,7 +31,7 @@
 .dataLab .modules .datasource i {
   color: #BBDEFB;
 }
-.dataLab .modules .datasource {
+.dataLab .add.datasource, .dataLab .modules .datasource {
   background-color: rgba(227,242,253, 0.20);
   border: 1px solid #BBDEFB;
 }
@@ -39,7 +39,7 @@
 .dataLab .modules .computed i {
   color: #C8E6C9;
 }
-.dataLab .modules .computed {
+.dataLab .add.computed, .dataLab .modules .computed {
   background-color: rgba(232,245,233, 0.20);
   border: 1px solid #C8E6C9;
 }
@@ -47,7 +47,7 @@
 .dataLab .modules .form i {
   color: #D1C4E9;
 }
-.dataLab .modules .form {
+.dataLab .add.form, .dataLab .modules .form {
   background-color: rgba(237,231,246, 0.20);
   border: 1px solid #D1C4E9;
 }

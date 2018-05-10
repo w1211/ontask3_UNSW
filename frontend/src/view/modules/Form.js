@@ -69,7 +69,7 @@ class FormModule extends React.Component {
         </FormItem>
         { errors.activeTo && <p style={{ color: '#f5222d' }}>Active to cannot be before active from.</p>}
 
-        <Divider style={{ fontSize: 12, margin: '8px 0' }}>Added fields</Divider>
+        <Divider style={{ fontSize: 14, margin: '8px 0' }}>Added fields</Divider>
 
         { 'fields' in currentStep && currentStep.fields.length === 0 ?
           errors.fields ?
