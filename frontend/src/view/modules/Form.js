@@ -60,12 +60,14 @@ class FormModule extends React.Component {
         <FormItem validateStatus={errors && errors.activeTo ? 'error' : null}>
           <DatePicker
             showTime
-            format="DD/MM/YYYY HH:mm:ss"
+            format="DD/MM/YYYY HH:mm"
             placeholder="Active to"
+            value={currentStep.activeTo}
             onChange={(e) => onChange(step, 'activeTo', e) }
             style={{ width: '100%', marginBottom: 10 }}
           />
         </FormItem>
+        { errors.activeTo && <p style={{ color: '#f5222d' }}>Active to cannot be before active from.</p>}
 
         <Divider style={{ fontSize: 12, margin: '8px 0' }}>Added fields</Divider>
 

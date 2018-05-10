@@ -335,7 +335,8 @@ const validateDatasourceModule = (build, step, stepIndex) => {
 const validateFormModule = (build, step, stepIndex) => {
   build.errors.steps.push({
     name: !step.form.name,
-    fields: !('fields' in step.form && step.form.fields.length > 0)
+    fields: !('fields' in step.form && step.form.fields.length > 0),
+    activeTo: (step.form.activeFrom && step.form.activeTo && step.form.activeTo.isBefore(step.form.activeFrom))
   });
 };
 
@@ -400,7 +401,7 @@ export const saveBuild = (history, containerId, selectedId) => (dispatch, getSta
   // If errors are detected then prevent saving, and propagate the errors to the component
   // And return out of this function
   if (errors.includes(true)) {
-    message.error('DataLab cannot be saved until all required fields are provided.');
+    message.error('DataLab cannot be saved until all required fields are provided and any issues are resolved.');
     dispatch({
       type: UPDATE_BUILD,
       build
