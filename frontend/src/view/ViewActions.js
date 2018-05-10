@@ -2,6 +2,7 @@ import { notification, Modal, message } from 'antd';
 import requestWrapper from '../shared/requestWrapper';
 import { fetchContainers } from '../container/ContainerActions';
 import _ from 'lodash';
+import moment from 'moment';
 
 const confirm = Modal.confirm;
 
@@ -182,7 +183,7 @@ export const addModule = (mod) => (dispatch, getState) => {
       build.steps.push({ type: mod.type, datasource: { fields: [], labels: {} } });
       break;
     case 'form':
-      build.steps.push({ type: mod.type, form: { } });
+      build.steps.push({ type: mod.type, form: { fields: [] } });
       break;
     default:
       break;
@@ -283,6 +284,16 @@ export const resolveDiscrepencies = (didResolve, result) => (dispatch, getState)
   dispatch(resolveMatchingField());
 }
 
+const formFunction = (step, field, value) => {
+  if (field === 'add') {
+    step.fields.push(value);
+  };
+
+  if (field === 'delete') {
+    step.fields.splice(value, 1);
+  }
+};
+
 export const updateBuild = (stepIndex, field, value, isNotField) => (dispatch, getState) => {
   const { view } = getState();
   let build = Object.assign({}, view.build);
@@ -294,6 +305,7 @@ export const updateBuild = (stepIndex, field, value, isNotField) => (dispatch, g
   if (step) {
     // Run any specific functional required for this 
     if (step.type === 'datasource') datasourceFunction(step.datasource, field, value);
+    if (step.type === 'form') formFunction(step.form, field, value);
 
     if (!isNotField) {
       _.set(step[step.type], field, value);
@@ -320,6 +332,13 @@ const validateDatasourceModule = (build, step, stepIndex) => {
   });
 };
 
+const validateFormModule = (build, step, stepIndex) => {
+  build.errors.steps.push({
+    name: !step.form.name,
+    fields: !('fields' in step.form && step.form.fields.length > 0)
+  });
+};
+
 const getType = (str) => {
   // isNan() returns false if the input only contains numbers
   if (!isNaN(str)) return 'number';
@@ -338,11 +357,16 @@ const saveDatasourceModule = (datasources, build, step) => {
     };
   };
 
-  // Guess the type of each field in each module
+  // Guess the type of each field added to this datasource module
   const datasource = datasources.find(datasource => datasource.id === step.datasource.id);
   const data = datasource.data[0];
   step.datasource.types = {};
   step.datasource.fields.forEach(field => step.datasource.types[field] = getType(data[field].toString()));
+};
+
+const saveFormModule = (build, step) => {
+  if ('activeFrom' in step.form) step.form.activeFrom = moment.utc(step.form.activeFrom).format();
+  if ('activeTo' in step.form) step.form.activeTo = moment.utc(step.form.activeTo).format();
 };
 
 export const saveBuild = (history, containerId, selectedId) => (dispatch, getState) => {
@@ -358,7 +382,8 @@ export const saveBuild = (history, containerId, selectedId) => (dispatch, getSta
   // Validate each of the modules based on its type
   'steps' in build && build.steps.forEach((step, i) => {
     if (step.type === 'datasource') validateDatasourceModule(build, step, i);
-  });
+    if (step.type === 'form') validateFormModule(build, step, i);
+  }); 
 
   // Create an array of booleans that denote whether an error exists in each module or non-module field
   const errors = [build.errors.name, ...build.errors.steps.map(step => 
@@ -386,6 +411,7 @@ export const saveBuild = (history, containerId, selectedId) => (dispatch, getSta
   // Run custom functionality for each step depending on the module type
   'steps' in build && build.steps.forEach((step, i) => {
     if (step.type === 'datasource') saveDatasourceModule(datasources, build, step);
+    if (step.type === 'form') saveFormModule(build, step);
   });
   
   // Perform save API call

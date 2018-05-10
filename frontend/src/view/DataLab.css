@@ -28,26 +28,26 @@
   transition: border 0.5s;
 }
 
-.dataLab .datasource i {
+.dataLab .modules .datasource i {
   color: #BBDEFB;
 }
-.dataLab .datasource {
+.dataLab .modules .datasource {
   background-color: rgba(227,242,253, 0.20);
   border: 1px solid #BBDEFB;
 }
 
-.dataLab .computed i {
+.dataLab .modules .computed i {
   color: #C8E6C9;
 }
-.dataLab .computed {
+.dataLab .modules .computed {
   background-color: rgba(232,245,233, 0.20);
   border: 1px solid #C8E6C9;
 }
 
-.dataLab .form i {
+.dataLab .modules .form i {
   color: #D1C4E9;
 }
-.dataLab .form {
+.dataLab .modules .form {
   background-color: rgba(237,231,246, 0.20);
   border: 1px solid #D1C4E9;
 }
@@ -60,6 +60,19 @@
 
 .dataLab .fields-select i {
   display: none;
+}
+
+.dataLab .form .fields > div {
+  background: white;
+  cursor: default;
+}
+.dataLab .form .fields .ant-select-selection__choice { 
+  background-color: #fafafa;
+  color: rgba(0, 0, 0, 0.65);
+  cursor: pointer;
+}
+.dataLab .form .fields .ant-select-selection__choice:hover { 
+  border-color: #40a9ff;
 }
 
 /*  */
@@ -122,6 +135,9 @@
 
 .dataLab .stepIcon.datasource {
   background: #BBDEFB;
+}
+.dataLab .stepIcon.form {
+  background: #D1C4E9;
 }
 
 .dataLab .modules {

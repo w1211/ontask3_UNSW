@@ -16,7 +16,6 @@ import {
   UPDATE_BUILD
 } from './ViewActions';
 
-import _ from 'lodash';
 
 function view(state = {}, action) {
   switch (action.type) {

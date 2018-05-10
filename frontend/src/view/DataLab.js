@@ -13,8 +13,13 @@ import './DataLab.css';
 
 import Module from './draggable/Module';
 import Add from './draggable/Add';
+
 import DatasourceModule from './modules/Datasource';
-import ResolveMatchModal from './resolve/Discrepencies';
+import FormModule from './modules/Form';
+
+import DiscrepenciesModal from './modals/DiscrepenciesModal';
+import FormFieldModal from './modals/FormFieldModal';
+
 
 const { Content } = Layout;
 const FormItem = Form.Item;
@@ -28,6 +33,10 @@ class DataLabCreator extends React.Component {
     const { dispatch } = props;
     
     this.boundActionCreators = bindActionCreators(ViewActionCreators, dispatch);
+
+    this.state = {
+      formField: { visible: false, stepIndex: null, field: null, fieldIndex: null }
+    };
   };
 
   componentDidMount() {
@@ -43,9 +52,27 @@ class DataLabCreator extends React.Component {
       // The user must have cold-loaded the URL, so we have no container to reference
       // Therefore redirect the user back to the container list
       history.push('/containers');
-    }
+    };
   };
 
+  labelsUsed = (steps) => {
+    // Identify the fields already used in the build
+    let labels = [];
+    steps.forEach(step => {
+      if (step.type === 'datasource') labels = [...labels, ...Object.values(step.datasource.labels)];
+      if (step.type === 'form') labels = [...labels, ...step.form.fields.map(field => field.name)];
+    });
+
+    return labels;
+  };
+
+  checkDuplicateLabel = (field) => {
+    const { build } = this.props;
+
+    const labels = this.labelsUsed(build.steps);
+
+    return [labels.includes(field), labels];
+  };
 
   render() {
     const { location, history, form, loading, selectedId, build, datasources, discrepencies } = this.props;
@@ -104,6 +131,18 @@ class DataLabCreator extends React.Component {
                             onChange={this.boundActionCreators.updateBuild}
                             checkForDiscrepencies={this.boundActionCreators.checkForDiscrepencies}
                             deleteStep={this.boundActionCreators.deleteStep}
+                            labelsUsed={this.labelsUsed}
+                            checkDuplicateLabel={this.checkDuplicateLabel}
+                          /> 
+                        }
+                        { 
+                          step.type === 'form' && 
+                          <FormModule
+                            build={build} step={index}
+                            onChange={this.boundActionCreators.updateBuild}
+                            deleteStep={this.boundActionCreators.deleteStep}
+                            onAddField={(stepIndex) => { this.setState({ formField: { visible: true, stepIndex } }) }}
+                            onEditField={(stepIndex, field, fieldIndex) => { this.setState({ formField: { visible: true, stepIndex, field, fieldIndex } }) }}
                           /> 
                         }
                       </div>
@@ -111,11 +150,21 @@ class DataLabCreator extends React.Component {
                     <Add/>
                   </div>
 
-                  <ResolveMatchModal
+                  <DiscrepenciesModal
                     visible={discrepencies && ('primary' in discrepencies || 'matching' in discrepencies)}
                     discrepencies={discrepencies}
                     form={form}
                     onResolve={this.boundActionCreators.resolveDiscrepencies}
+                  />
+
+                  <FormFieldModal
+                    visible={this.state.formField.visible}
+                    form={form}
+                    field={this.state.formField.field}
+                    fieldIndex={this.state.formField.fieldIndex}
+                    onChange={(field, value, isNotField) => this.boundActionCreators.updateBuild(this.state.formField.stepIndex, field, value, isNotField)}
+                    onClose={() => this.setState({ formField: { visible: false, stepIndex: null, field: null, fieldIndex: null } })}
+                    checkDuplicateLabel={this.checkDuplicateLabel}
                   />
 
                   <div style={{ marginBottom: 40 }}>

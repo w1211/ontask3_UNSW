@@ -25,24 +25,6 @@ class DatasourceModule extends React.Component {
     this.select.blur();
   };
 
-  labelsUsed = (steps) => {
-    // Identify the fields already used in the build
-    let labels = [];
-    steps.forEach(step => {
-      if (step.type === 'datasource') labels = [...labels, ...Object.values(step.datasource.labels)];
-    });
-
-    return labels;
-  };
-
-  checkDuplicateLabel = (field) => {
-    const { build } = this.props;
-
-    const labels = this.labelsUsed(build.steps);
-
-    return [labels.includes(field), labels];
-  };
-
   generateLabel = (fields, field) => {    
     let suffix = 1;
     while (fields.includes(`${field}_${suffix}`)) {
@@ -68,7 +50,7 @@ class DatasourceModule extends React.Component {
   };
 
   changeFields = (e) => {
-    const { build, step, onChange } = this.props;
+    const { build, step, onChange, checkDuplicateLabel } = this.props;
   
     const currentStep = build.steps[step].datasource;
 
@@ -79,7 +61,7 @@ class DatasourceModule extends React.Component {
       // Identify the field added
       const field = e.filter(field => !fields.includes(field))[0];
       
-      const [isDuplicate, labels] = this.checkDuplicateLabel(field);
+      const [isDuplicate, labels] = checkDuplicateLabel(field);
 
       // If this field name is a duplicate of an existing label in the build
       if (isDuplicate) {
@@ -143,7 +125,7 @@ class DatasourceModule extends React.Component {
   };
 
   confirmEdit = () => {
-    const { build, step, onChange } = this.props;
+    const { build, step, onChange, checkDuplicateLabel } = this.props;
     const { editing } = this.state;
 
     const currentStep = build.steps[step].datasource;
@@ -153,7 +135,7 @@ class DatasourceModule extends React.Component {
       return;
     };
 
-    const isDuplicate = this.checkDuplicateLabel(editing.label)[0];
+    const isDuplicate = checkDuplicateLabel(editing.label)[0];
 
     if (isDuplicate) {
       message.error('This label is already being used.');
@@ -173,7 +155,7 @@ class DatasourceModule extends React.Component {
   };
 
   render() {
-    const { datasources, build, step, onChange, deleteStep, checkForDiscrepencies } = this.props;
+    const { datasources, build, step, onChange, deleteStep, checkForDiscrepencies, labelsUsed } = this.props;
     const { editing } = this.state;
 
     if (!datasources) return null;
@@ -187,7 +169,7 @@ class DatasourceModule extends React.Component {
     // Find the datasource object representing this datasource (if chosen)
     const datasource = 'id' in currentStep && datasources.find(datasource => datasource.id === currentStep.id);
     // Determine the labels used in all steps up until (and not including) this one
-    const labelsUsed = this.labelsUsed(build.steps.slice(0, step));
+    const labels = labelsUsed(build.steps.slice(0, step));
     
     // Initialize the array that will hold the datasource's actions
     let actions = [];
@@ -198,7 +180,7 @@ class DatasourceModule extends React.Component {
     
     return (
       <Card 
-        style={{ width: 250, minHeight: 250, borderColor: '#BBDEFB' }} 
+        style={{ width: 250, borderColor: '#BBDEFB' }} 
         actions={actions}
         title={
           <div style={{ display: 'flex', alignItems: 'center', borderColor: '#BBDEFB' }}>
@@ -257,7 +239,7 @@ class DatasourceModule extends React.Component {
                 placeholder="Matching field" value={currentStep.matching} style={{ width: '100%', marginTop: 10 }}
                 onChange={this.changeMatchingField} disabled={!datasource}
               >
-                { labelsUsed.map((label, i) => (
+                { labels.map((label, i) => (
                   <Option value={label} key={label}>{label}</Option>
                 ))}
               </Select>

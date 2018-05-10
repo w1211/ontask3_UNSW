@@ -33,7 +33,7 @@ class Container extends React.Component {
   };
 
   render() {
-    const { dispatch, isFetching, containers, history } = this.props;
+    const { dispatch, isFetching, containers } = this.props;
 
     return (
       <Content style={{ padding: '0 50px' }}>

@@ -3,7 +3,7 @@ import { Modal, Icon, Table, Radio } from 'antd';
 
 const RadioGroup = Radio.Group;
 
-const ResolveMatchModal = ({ form, visible, discrepencies, onResolve }) => {
+const DiscrepenciesModal = ({ form, visible, discrepencies, onResolve }) => {
   if (!discrepencies) return null;
     
   const mismatchedPrimaryRecords = discrepencies.primary;
@@ -81,4 +81,4 @@ const ResolveMatchModal = ({ form, visible, discrepencies, onResolve }) => {
   )
 }
 
-export default ResolveMatchModal;
+export default DiscrepenciesModal;
