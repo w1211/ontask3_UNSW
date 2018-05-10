@@ -80,80 +80,10 @@ class ViewViewSet(viewsets.ModelViewSet):
        
         return JsonResponse(serializer.data, safe=False)
 
-    @detail_route(methods=['put'])
-    def update_discrepencies(self, request, id=None):
-        view = View.objects.get(id=id)
-        self.check_object_permissions(self.request, view)
-
-        view.dropDiscrepencies = request.data['dropDiscrepencies']
-        print(view.dropDiscrepencies)
-        data = self.combine_data(view)
-
-        serializer = ViewSerializer(instance=view, data={
-            'data': data, 
-            'dropDiscrepencies': view.dropDiscrepencies
-        }, partial=True)
-
-        serializer.is_valid()
-        serializer.save()
-
-        return JsonResponse({ 'success': 'true' }, safe=False)
-
-    @detail_route(methods=['put'])
-    def update_columns(self, request, id=None):
-        view = View.objects.get(id=id)
-        self.check_object_permissions(self.request, view)
-
-        view.columns = request.data['columns']
-        view.dropDiscrepencies = request.data['dropDiscrepencies']
-        data = self.combine_data(view)
-
-        serializer = ViewSerializer(instance=view, data={
-            'data': data, 
-            'columns': view.columns,
-            'dropDiscrepencies': view.dropDiscrepencies
-        }, partial=True)
-
-        serializer.is_valid()
-        serializer.save()
-
-        return JsonResponse({ 'success': 'true' }, safe=False)
-
-    @detail_route(methods=['post'])
-    def delete_column(self, request, id=None):
-        view = View.objects.get(id=id)
-        self.check_object_permissions(self.request, view)
-
-        columnIndex = self.request.data['columnIndex']
-        if columnIndex == 0:
-            raise ValidationError('The primary key cannot be deleted')
-
-        del view.columns[columnIndex]
-        data = self.combine_data(view)
-        serializer = ViewSerializer(instance=view, data={'data': data}, partial=True)
-
-        serializer.is_valid()
-        serializer.save()
-
-        return JsonResponse({ 'success': 'true' }, safe=False)
-
-    @list_route(methods=['post'])
-    def preview_data(self, request):
-        data = self.combine_data(self.request.data)
-
-        # Return the first 10 records of the results
-        return JsonResponse(data[:10], safe=False)
-
-    def build_dict(self, seq, key):
-        return dict((d[key], dict(d, index=index)) for (index, d) in enumerate(seq))
-
     def combine_data(self, steps):
-        # Initialize the dataset using the first step
-        first_step = steps[0]
-        if first_step['type'] == 'datasource':
-            step = first_step['datasource']
-            datasource = DataSource.objects.get(id=step['id'])
-            data = [{step['labels'][field]: value for field, value in item.items() if field in step['fields']} for item in datasource.data]
+        # Initialize the dataset using the first step, which is always a datasource module
+        datasource = DataSource.objects.get(id=steps[0]['datasource']['id'])
+        data = [{steps[0]['datasource']['labels'][field]: value for field, value in item.items() if field in steps[0]['datasource']['fields']} for item in datasource.data]
 
         # For each of the remaining steps, add to the dataset
         for step in steps[1:]:

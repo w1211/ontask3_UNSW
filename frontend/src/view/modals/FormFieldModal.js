@@ -77,7 +77,7 @@ class FormFieldModal extends React.Component {
   };
 
   render() {
-    const { visible, form, field, fieldIndex, checkDuplicateLabel } = this.props;
+    const { visible, form, field, checkDuplicateLabel } = this.props;
     const { options } = this.state;
 
     if (!visible) return null;

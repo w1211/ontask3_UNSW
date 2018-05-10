@@ -17,7 +17,7 @@ class FormModule extends React.Component {
     const { build, step, onChange, deleteStep, onAddField, onEditField } = this.props;
 
     const currentStep = build.steps[step].form;
-    const errors =  _.get(build, `errors.steps[${step}]`);
+    const errors =  _.get(build, `errors.steps[${step}]`, {});
    
     // Initialize the array that will hold the datasource's actions
     let actions = [
