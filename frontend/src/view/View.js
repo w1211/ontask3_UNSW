@@ -39,22 +39,6 @@ class View extends React.Component {
     });
   };
 
-  handleUpdateDiscrepencies = (dropDiscrepencies) => {
-    const { view } = this.props;
-    this.boundActionCreators.updateDiscrepencies(view.id, dropDiscrepencies);
-    this.setState({ discrepenciesModalVisible: false });
-  };
-
-  handleAddColumn = (e) => {
-    switch (e.key) {
-      case 'imported':
-        this.boundActionCreators.openColumnModal();
-        break;
-      default:
-        break;
-    };
-  };
-
   handleHeaderDropdownClick = (e, stepIndex, field, label) => {
     switch (e.key)  {
       case 'visualise':
