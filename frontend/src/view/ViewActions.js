@@ -388,8 +388,13 @@ export const saveBuild = (history, containerId, selectedId) => (dispatch, getSta
 
   // Validate each of the modules based on its type
   'steps' in build && build.steps.forEach((step, i) => {
-    if (step.type === 'datasource') validateDatasourceModule(build, step, i);
-    if (step.type === 'form') validateFormModule(build, step, i);
+    if (step.type === 'datasource') {
+      validateDatasourceModule(build, step, i);
+      delete step.form;
+    } else if (step.type === 'form') { 
+      validateFormModule(build, step, i);
+      delete step.datasource;
+    };
   }); 
 
   // Create an array of booleans that denote whether an error exists in each module or non-module field
