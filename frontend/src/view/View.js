@@ -88,20 +88,23 @@ class View extends React.Component {
     if (build) {
       // First non-primary field in the first module, assuming its a datasource
       const defaultField = build.steps[0].datasource.fields.filter(field => field !== build.steps[0].datasource.primary)[0];
-      const defaultVisualisation = {
-        stepIndex: 0,
-        field: defaultField,
-        label: build.steps[0].datasource.labels[defaultField]
+      // Only show the row-wise visualisations column if we have at least one non-primary field in the dataset
+      if (defaultField) {
+        const defaultVisualisation = {
+          stepIndex: 0,
+          field: defaultField,
+          label: build.steps[0].datasource.labels[defaultField]
+        };
+  
+        columns = [{
+          title: 'Action', fixed: 'left', dataIndex: 0, key: 0,
+          render: () => (
+            <a>
+              <Icon type="area-chart" onClick={() => this.boundActionCreators.openVisualisationModal(defaultVisualisation, true)}/>
+            </a>
+          )
+        }];
       };
-
-      columns = [{
-        title: 'Action', fixed: 'left', dataIndex: 0, key: 0,
-        render: () => (
-          <a>
-            <Icon type="area-chart" onClick={() => this.boundActionCreators.openVisualisationModal(defaultVisualisation, true)}/>
-          </a>
-        )
-      }];
 
       let index = 1;
       build.steps.forEach((step, stepIndex) => {
@@ -132,7 +135,6 @@ class View extends React.Component {
           index++;
         });
       });
-  
     };
 
     return (
