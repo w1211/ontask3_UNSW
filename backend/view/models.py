@@ -17,7 +17,7 @@ class Option(EmbeddedDocument):
 class Field(EmbeddedDocument):
     name = StringField(required=True)
     type = StringField(required=True)
-    textArea = BooleanField()
+    textArea = BooleanField(null=True)
     options = EmbeddedDocumentListField(Option)
 
 class DatasourceModule(EmbeddedDocument):
@@ -30,8 +30,8 @@ class DatasourceModule(EmbeddedDocument):
 
 class FormModule(EmbeddedDocument):
     name = StringField(required=True)
-    activeFrom = DateTimeField()
-    activeTo = DateTimeField()
+    activeFrom = DateTimeField(null=True)
+    activeTo = DateTimeField(null=True)
     fields = EmbeddedDocumentListField(Field, required=True)
     data = ListField(DictField())
     

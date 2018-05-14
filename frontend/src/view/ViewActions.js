@@ -123,7 +123,7 @@ export const updateVisualisationChart = (viewId, chartType, numCols, rangeMin, r
   requestWrapper(parameters);
 };
 
-export const retrieveDataLab = (dataLabId) => dispatch => {
+export const retrieveDataLab = (dataLabId) => dispatch => {  
   const parameters = {
     initialFn: () => { dispatch(beginRequestView()); },
     url: `/view/${dataLabId}/retrieve_view/`,
@@ -132,6 +132,14 @@ export const retrieveDataLab = (dataLabId) => dispatch => {
       dispatch(failureRequestView(error));
     },
     successFn: (dataLab) => {
+      // Convert DatePicker field timestamps to moment.js objects (required by DatePicker component)
+      dataLab.steps.forEach(step => {
+        if (step.type === 'form') {
+          if (step.form.activeFrom) step.form.activeFrom = moment(step.form.activeFrom);
+          if (step.form.activeTo) step.form.activeTo = moment(step.form.activeTo);
+        };
+      });
+
       dispatch({
         type: RECEIVE_VIEW,
         selectedId: dataLab.id,
@@ -330,6 +338,8 @@ export const updateBuild = (stepIndex, field, value, isNotField) => (dispatch, g
 };
 
 const validateDatasourceModule = (build, step, stepIndex) => {
+  delete step.form;
+
   build.errors.steps.push({
     id: !step.datasource.id,
     primary: !step.datasource.primary,
@@ -339,6 +349,11 @@ const validateDatasourceModule = (build, step, stepIndex) => {
 };
 
 const validateFormModule = (build, step, stepIndex) => {
+  delete step.datasource;
+  delete step.discrepencies;
+  if (!step.form.activeFrom) delete step.form.activeFrom;
+  if (!step.form.activeTo) delete step.form.activeTo;
+
   build.errors.steps.push({
     name: !step.form.name,
     fields: !('fields' in step.form && step.form.fields.length > 0),
@@ -388,13 +403,8 @@ export const saveBuild = (history, containerId, selectedId) => (dispatch, getSta
 
   // Validate each of the modules based on its type
   'steps' in build && build.steps.forEach((step, i) => {
-    if (step.type === 'datasource') {
-      validateDatasourceModule(build, step, i);
-      delete step.form;
-    } else if (step.type === 'form') { 
-      validateFormModule(build, step, i);
-      delete step.datasource;
-    };
+    if (step.type === 'datasource') validateDatasourceModule(build, step, i);
+    if (step.type === 'form') validateFormModule(build, step, i);
   }); 
 
   // Create an array of booleans that denote whether an error exists in each module or non-module field
