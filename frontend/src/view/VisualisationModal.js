@@ -1,7 +1,7 @@
 import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
-import { Modal, Select, Slider, InputNumber } from 'antd';
+import { Modal, Select, Slider, InputNumber, Steps } from 'antd';
 import { Chart, Geom, Axis, Legend, Coord, Tooltip, Label } from 'bizcharts';
 import { View as dataView} from '@antv/data-set';
 
@@ -232,8 +232,10 @@ class VisualisationModal extends React.Component {
         if (step.type === 'datasource') {
           step = step.datasource;
           step.fields.forEach(field => {
-            const label = step.labels[field];
-            options.push({ stepIndex, field, label });
+            if (step.matching !== field && step.primary !== field) {
+              const label = step.labels[field];
+              options.push({ stepIndex, field, label });
+            };
           });
         };
       });
