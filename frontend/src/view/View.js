@@ -3,7 +3,7 @@ import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
 import moment from 'moment';
-import { Table, Spin, Layout, Breadcrumb, Icon, Menu, Dropdown, Radio, Input, InputNumber, DatePicker, Checkbox, Select } from 'antd';
+import { Table, Spin, Layout, Breadcrumb, Icon, Menu, Dropdown, Radio, Input, InputNumber, DatePicker, Checkbox, Select, message } from 'antd';
 
 import * as ViewActionCreators from './ViewActions';
 
@@ -201,8 +201,8 @@ class View extends React.Component {
                 if (field.type === 'checkbox') {
                   text = text ? 'True' : 'False';
                 }
-
-                return (editable.primary === primary && editable.field.name === field.name) ?
+                
+                return (editable.primary === primary && 'field' in editable && editable.field.name === field.name) ?
                   <div className="editable-field">
                     <EditableField 
                       field={field} value={text} 
@@ -215,7 +215,16 @@ class View extends React.Component {
                 :
                   <div className="form-field">
                     {label ? label : text}
-                    <Icon size="large" type="edit" onClick={(e) => this.setState({ editable: { stepIndex, field, primary, text } })}/>
+                    <Icon 
+                      size="large" type="edit" 
+                      onClick={(e) => {
+                        if (record[step.form.primary]) {
+                          this.setState({ editable: { stepIndex, field, primary, text } });
+                        } else {
+                          message.warning(`This form field cannot be edited as the matching field (${step.form.primary}) for this record is empty.`);
+                        };
+                      }}
+                    />
                   </div>
               }  
             });

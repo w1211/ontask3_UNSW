@@ -113,7 +113,9 @@ class ViewViewSet(viewsets.ModelViewSet):
                 primary = step['form']['primary']
                 form_data = step['form']['data']
 
-                data_map = { item[primary]: item for item in data }
+                for item in data:
+                    if primary in item:
+                        data_map[item[primary]] = item
 
                 for item in form_data:
                     if item[primary] in data_map:
@@ -168,8 +170,10 @@ class ViewViewSet(viewsets.ModelViewSet):
         field = request.data['field']
         value = request.data['text'] if 'text' in request.data else None
 
-        form = view.steps[step].form
+        print(value)
         
+        form = view.steps[step].form
+
         form_data_map = { item[form.primary]: item for item in form.data } if 'data' in form  else { }
 
         if primary_key in form_data_map:
