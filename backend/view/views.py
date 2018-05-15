@@ -118,7 +118,7 @@ class ViewViewSet(viewsets.ModelViewSet):
                         data_map[item[primary]] = item
 
                 for item in form_data:
-                    if item[primary] in data_map:
+                    if primary in item and item[primary] in data_map:
                         data_map[item[primary]].update(item)
 
             # Create the data (list of dicts, with each dict representing a record) based on the updated data map 
@@ -169,12 +169,14 @@ class ViewViewSet(viewsets.ModelViewSet):
         primary_key = request.data['primary']
         field = request.data['field']
         value = request.data['text'] if 'text' in request.data else None
-
-        print(value)
         
         form = view.steps[step].form
 
-        form_data_map = { item[form.primary]: item for item in form.data } if 'data' in form  else { }
+        form_data_map = { }
+        if 'data' in form:
+            for item in form.data:
+                if form.primary in item:
+                    form_data_map[item[form.primary]] = item
 
         if primary_key in form_data_map:
             form_data_map[primary_key].update({ field: value })
