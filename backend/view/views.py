@@ -120,8 +120,8 @@ class ViewViewSet(viewsets.ModelViewSet):
                         data_map[item[primary]].update(item)
 
             # Create the data (list of dicts, with each dict representing a record) based on the updated data map 
-            data = [value for value in data_map.values()]
-                
+            data = [value for value in data_map.values()] if len(data_map) else data
+
         return data
 
     @list_route(methods=['post'])
