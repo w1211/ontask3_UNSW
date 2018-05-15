@@ -32,7 +32,7 @@ const EditableField = ({ field, value, onChange, onOk }) => {
     return <InputNumber autoFocus defaultValue={value} onChange={(e) => onChange(e)}/>;
 
   } else if (type === 'date') {
-    return <DatePicker autoFocus defaultValue={value ? moment(value) : null} onChange={(e) => onChange(moment.utc(e).format())}/>;
+    return <DatePicker autoFocus defaultValue={value ? moment(value) : null} onChange={(e) => onChange(e ? moment.utc(e).format() : null)}/>;
 
   } else if (type === 'checkbox') {
     return <Checkbox defaultChecked={value === 'True'} onChange={(e) => { onChange(e.target.checked) }}/>;
