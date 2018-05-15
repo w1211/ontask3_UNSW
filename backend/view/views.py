@@ -90,10 +90,12 @@ class ViewViewSet(viewsets.ModelViewSet):
         for step in steps[1:]:
             if step['type'] == 'datasource':
                 datasource = DataSource.objects.get(id=step['datasource']['id'])
+                
                 # Create a map of the data generated thus far, with the key being the matching field specified for this step
                 # This allows us to efficiently lookup based on the primary key and find which record should be extended,
                 # Instead of having to iterate over the list to find the matching record for every record in this datasource (n*m complexity)
-                data_map = { item[step['datasource']['matching']]: item for item in data }
+                data_map = { item[step['datasource']['matching']]: item for item in data if step['datasource']['matching'] in item }
+
                 # For each record in this datasource's data, extend the matching record in the data map
                 for item in datasource.data:
                     if item[step['datasource']['primary']] in data_map:
@@ -104,7 +106,7 @@ class ViewViewSet(viewsets.ModelViewSet):
 
                 if 'discrepencies' in step and 'matching' in step['discrepencies'] and step['discrepencies']['matching']:
                     primary_records = { item[step['datasource']['primary']] for item in datasource.data }
-                    matching_records = { item[step['datasource']['matching']] for item in data }
+                    matching_records = { item[step['datasource']['matching']] for item in data if step['datasource']['matching'] in item }
                     matching_discrepencies = matching_records - primary_records
                     for record in matching_discrepencies:
                         data_map.pop(record, None)
@@ -113,10 +115,10 @@ class ViewViewSet(viewsets.ModelViewSet):
                 primary = step['form']['primary']
                 form_data = step['form']['data']
 
-                for item in data:
-                    if primary in item:
-                        data_map[item[primary]] = item
+                # Initialise the data map based on the values bound thus far
+                data_map = { item[primary]: item for item in data if primary in item }
 
+                # Update keys in the data map with this form's data
                 for item in form_data:
                     if primary in item and item[primary] in data_map:
                         data_map[item[primary]].update(item)
@@ -136,7 +138,7 @@ class ViewViewSet(viewsets.ModelViewSet):
         datasource = DataSource.objects.get(id=check_step['datasource']['id'])
 
         primary_records = { item[check_step['datasource']['primary']] for item in datasource.data }
-        matching_records = { item[check_step['datasource']['matching']] for item in data }
+        matching_records = { item[check_step['datasource']['matching']] for item in data if check_step['datasource']['matching'] in item }
 
         response = { 'step': len(build), 'datasource': datasource.name, 'isEdit': is_edit }
 
@@ -172,11 +174,7 @@ class ViewViewSet(viewsets.ModelViewSet):
         
         form = view.steps[step].form
 
-        form_data_map = { }
-        if 'data' in form:
-            for item in form.data:
-                if form.primary in item:
-                    form_data_map[item[form.primary]] = item
+        form_data_map = { item[form.primary]: item for item in form.data if form.primary in item }
 
         if primary_key in form_data_map:
             form_data_map[primary_key].update({ field: value })

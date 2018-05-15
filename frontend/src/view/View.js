@@ -152,7 +152,7 @@ class View extends React.Component {
                 step[step.type].matching !== field && step[step.type].primary !== field ?
                   <HeaderDropdown stepIndex={stepIndex} field={field} label={label}/>
                 :
-                  field
+                  label
               ),
               dataIndex: label,
               key: label,
