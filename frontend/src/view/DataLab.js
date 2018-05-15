@@ -156,6 +156,7 @@ class DataLabCreator extends React.Component {
                             deleteStep={this.boundActionCreators.deleteStep}
                             onAddField={(stepIndex) => { this.setState({ formField: { visible: true, stepIndex } }) }}
                             onEditField={(stepIndex, field, fieldIndex) => { this.setState({ formField: { visible: true, stepIndex, field, fieldIndex } }) }}
+                            labelsUsed={this.labelsUsed}
                           /> 
                         }
                       </div>

@@ -18,6 +18,7 @@ class Field(EmbeddedDocument):
     name = StringField(required=True)
     type = StringField(required=True)
     textArea = BooleanField(null=True)
+    multiSelect = BooleanField(null=True)
     options = EmbeddedDocumentListField(Option)
 
 class DatasourceModule(EmbeddedDocument):
@@ -29,6 +30,7 @@ class DatasourceModule(EmbeddedDocument):
     types = DictField()
 
 class FormModule(EmbeddedDocument):
+    primary = StringField(required=True)
     name = StringField(required=True)
     activeFrom = DateTimeField(null=True)
     activeTo = DateTimeField(null=True)

@@ -22,6 +22,7 @@ export const OPEN_VISUALISATION_MODAL = "OPEN_VISUALISATION_MODAL";
 export const CLOSE_VISUALISATION_MODAL = "CLOSE_VISUALISATION_MODAL";
 
 export const UPDATE_BUILD = 'UPDATE_BUILD';
+export const REFRESH_DATA = 'REFRESH_DATA';
 
 
 const beginRequestView = () => ({
@@ -355,6 +356,7 @@ const validateFormModule = (build, step, stepIndex) => {
   if (!step.form.activeTo) delete step.form.activeTo;
 
   build.errors.steps.push({
+    primary: !step.form.primary,
     name: !step.form.name,
     fields: !('fields' in step.form && step.form.fields.length > 0),
     activeTo: (step.form.activeFrom && step.form.activeTo && step.form.activeTo.isBefore(step.form.activeFrom))
@@ -458,6 +460,32 @@ export const saveBuild = (history, containerId, selectedId) => (dispatch, getSta
        });
     },
     payload: build
+  }
+
+  requestWrapper(parameters);
+};
+
+export const updateFormNode = (dataLabId, payload, callback) => dispatch => {
+  const parameters = {
+    initialFn: () => { },
+    url: `/view/${dataLabId}/update_form_node/`,
+    method: 'PATCH',
+    errorFn: (error) => {
+      console.log(error);
+      notification['error']({
+        message: 'Failed to update form',
+        description: error
+      });
+    },
+    successFn: (response) => {
+      message.success('Form successfully updated.');
+      dispatch({
+        type: REFRESH_DATA,
+        data: response.data
+      });
+      callback();
+    },
+    payload
   }
 
   requestWrapper(parameters);

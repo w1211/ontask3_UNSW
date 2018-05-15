@@ -1,7 +1,7 @@
 import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
-import { Modal, Select, Slider, InputNumber, Steps } from 'antd';
+import { Modal, Select, Slider, InputNumber } from 'antd';
 import { Chart, Geom, Axis, Legend, Coord, Tooltip, Label } from 'bizcharts';
 import { View as dataView} from '@antv/data-set';
 

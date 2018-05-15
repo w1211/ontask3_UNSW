@@ -17,7 +17,7 @@ class FormFieldModal extends React.Component {
 
   componentWillReceiveProps(nextProps) {
     const field = nextProps.field;
-    if (field && 'options' in field) this.setState({ options: field.options });
+    if (field && 'options' in field && this.state.options.length === 0) this.setState({ options: field.options });
   };
 
   handleOk = () => {

@@ -13,7 +13,8 @@ import {
   FAILURE_FIELD_MATCH_RESULT,
   RECEIVE_FIELD_MATCH_RESULT,
 
-  UPDATE_BUILD
+  UPDATE_BUILD,
+  REFRESH_DATA
 } from './ViewActions';
 
 
@@ -85,6 +86,10 @@ function view(state = {}, action) {
     case UPDATE_BUILD:
       return Object.assign({}, state, {
         build: action.build
+      });
+    case REFRESH_DATA:
+      return Object.assign({}, state, {
+        data: action.data
       });
 
     default:

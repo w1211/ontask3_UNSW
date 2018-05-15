@@ -167,3 +167,22 @@
   width: 100px;
   min-height: 100px;
 }
+
+.dataManipulation .form-field i, .dataManipulation .editable-field i {
+  cursor: pointer;
+  font-size: 16px;
+}
+.dataManipulation .form-field i {
+  opacity: 0;
+  transition: opacity 0.1s ease-out;
+}
+.dataManipulation .form-field:hover i {
+  opacity: 1;
+}
+.dataManipulation .editable-field {
+  display: flex;
+  align-items: center;
+}
+.dataManipulation .editable-field i {
+  margin-left: 5px;
+}

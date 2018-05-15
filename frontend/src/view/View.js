@@ -2,7 +2,8 @@ import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { Table, Spin, Layout, Breadcrumb, Icon, Menu, Dropdown, Radio } from 'antd';
+import moment from 'moment';
+import { Table, Spin, Layout, Breadcrumb, Icon, Menu, Dropdown, Radio, Input, InputNumber, DatePicker, Checkbox, Select } from 'antd';
 
 import * as ViewActionCreators from './ViewActions';
 
@@ -11,7 +12,48 @@ import VisualisationModal from './VisualisationModal';
 const { Content } = Layout;
 const RadioButton = Radio.Button;
 const RadioGroup = Radio.Group;
+const Option = Select.Option;
 
+
+const EditableField = ({ field, value, onChange, onOk }) => {
+  const type = field.type;
+
+  const onKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) onOk();
+  };
+
+  if (type === 'text') {
+    return field.textArea ?
+        <Input.TextArea autoFocus onKeyPress={onKeyPress} defaultValue={value} onChange={(e) => onChange(e.target.value)}/>
+      :
+        <Input autoFocus onKeyPress={onKeyPress} defaultValue={value} onChange={(e) => onChange(e.target.value)}/>
+
+  } else if (type === 'number') {
+    return <InputNumber autoFocus defaultValue={value} onChange={(e) => onChange(e)}/>;
+
+  } else if (type === 'date') {
+    return <DatePicker autoFocus defaultValue={value ? moment(value) : null} onChange={(e) => onChange(moment.utc(e).format())}/>;
+
+  } else if (type === 'checkbox') {
+    return <Checkbox defaultChecked={value === 'True'} onChange={(e) => { onChange(e.target.checked) }}/>;
+
+  } else if (type === 'dropdown') {
+    return (
+      <Select 
+        autoFocus defaultValue={value ? value : []}  style={{ width: '100%' }} 
+        mode={field.multiSelect ? 'multiple' : 'default'}
+        onChange={(e) => onChange(e)}
+        allowClear={true}
+      >
+        { field.options.map(option => 
+          <Option key={option.value}>{option.label}</Option>
+        )}
+      </Select>
+    );
+  }
+
+  return null;
+};
 
 class View extends React.Component {
   constructor(props) {
@@ -23,7 +65,7 @@ class View extends React.Component {
     this.state = {
       filtered: null,
       sorted: null,
-      discrepenciesModalVisible: false
+      editable: { }
     };
   };
 
@@ -50,9 +92,20 @@ class View extends React.Component {
     };
   };
 
+  editNode = () => {
+    const { match } = this.props;
+    const { editable } = this.state;
+    
+    this.boundActionCreators.updateFormNode(
+      match.params.id, 
+      { ...editable, field: editable.field.name },
+      () => this.setState({ editable: { } })
+    );
+  };
+
   render() {
     const { history, loading, build, data, match } = this.props;
-    const { filtered, sorted } = this.state;
+    const { filtered, sorted, editable } = this.state;
 
     let columns = [];
     let tableData = data && data.map((data, i) => ({...data, key: i }));
@@ -90,39 +143,89 @@ class View extends React.Component {
         }];
       };
 
-      let index = 1;
       build.steps.forEach((step, stepIndex) => {
-        if (step.type !== 'datasource') return;
-        
-        step.datasource.fields.forEach((field) => {
-          const label = step.datasource.labels[field];
-          columns.push({
-            title: (
-              step[step.type].matching !== field && step[step.type].primary !== field ?
-                <HeaderDropdown stepIndex={stepIndex} field={field} label={label}/>
-              :
-                field
-            ),
-            dataIndex: label,
-            key: index,
-            filteredValue: filtered && filtered[label],
-            onFilter: (value, record) => record[label].includes(value),
-            sorter: (a, b) => {
-              a = label in a ? a[label] : '';
-              b = label in b ? b[label] : '';
-              return a.localeCompare(b);
-            },
-            sortOrder: sorted && sorted.field === label && sorted.order,
-            render: (text) => text
-          })
+        if (step.type === 'datasource') {
+          step.datasource.fields.forEach((field) => {
+            const label = step.datasource.labels[field];
+            columns.push({
+              title: (
+                step[step.type].matching !== field && step[step.type].primary !== field ?
+                  <HeaderDropdown stepIndex={stepIndex} field={field} label={label}/>
+                :
+                  field
+              ),
+              dataIndex: label,
+              key: label,
+              filteredValue: filtered && filtered[label],
+              onFilter: (value, record) => record[label].includes(value),
+              sorter: (a, b) => {
+                a = label in a ? a[label] : '';
+                b = label in b ? b[label] : '';
+                return a.localeCompare(b);
+              },
+              sortOrder: sorted && sorted.field === label && sorted.order,
+              render: (text) => text
+            })
+          });
+        };
 
-          index++;
-        });
+        if (step.type === 'form') {
+          step.form.fields.forEach(field => {
+            columns.push({
+              title: field.name,
+              dataIndex: field.name,
+              key: field.name,
+              render: (text, record, row) => {
+                const primary = record[step.form.primary];
+                let label;
+
+                if (field.type === 'dropdown') {
+                  if (field.multiSelect) {
+                    if (field.name in record) record[field.name].forEach((value, i) => {
+                      const option = field.options.find(option => option.value === value);
+                      if (option) {
+                        if (i === 0) label = option.label;
+                        if (i > 0) label += `, ${option.label}`
+                      };
+                    });
+                  } else {
+                    const option = field.options.find(option => option.value === text);
+                    if (option) label = option.label;
+                  };
+                }
+
+                if (field.type === 'date') {
+                  if (text) text = moment(text).format('YYYY-MM-DD');
+                }
+
+                if (field.type === 'checkbox') {
+                  text = text ? 'True' : 'False';
+                }
+
+                return (editable.primary === primary && editable.field.name === field.name) ?
+                  <div className="editable-field">
+                    <EditableField 
+                      field={field} value={text} 
+                      onChange={(e) => this.setState({ editable: { ...editable, text: e } })}
+                      onOk={this.editNode}
+                    />
+                    <Icon type="close" onClick={() => this.setState({ editable: { } })}/>
+                    <Icon type="save" onClick={this.editNode}/>
+                  </div>
+                :
+                  <div className="form-field">
+                    {label ? label : text}
+                    <Icon size="large" type="edit" onClick={(e) => this.setState({ editable: { stepIndex, field, primary, text } })}/>
+                  </div>
+              }  
+            });
+          });
+        };
       });
     };
 
     return (
-      <div>
+      <div className="dataManipulation">
         <Content style={{ padding: '0 50px' }}>
 
           <Breadcrumb style={{ margin: '16px 0' }}>

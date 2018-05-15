@@ -86,6 +86,7 @@ class ViewViewSet(viewsets.ModelViewSet):
         data = [{steps[0]['datasource']['labels'][field]: value for field, value in item.items() if field in steps[0]['datasource']['fields']} for item in datasource.data]
 
         # For each of the remaining steps, add to the dataset
+        data_map = { }
         for step in steps[1:]:
             if step['type'] == 'datasource':
                 datasource = DataSource.objects.get(id=step['datasource']['id'])
@@ -108,8 +109,18 @@ class ViewViewSet(viewsets.ModelViewSet):
                     for record in matching_discrepencies:
                         data_map.pop(record, None)
 
-                # Create the data (list of dicts, with each dict representing a record) based on the updated data map 
-                data = [value for value in data_map.values()]
+            if step['type'] == 'form' and 'data' in step['form']:
+                primary = step['form']['primary']
+                form_data = step['form']['data']
+
+                data_map = { item[primary]: item for item in data }
+
+                for item in form_data:
+                    if item[primary] in data_map:
+                        data_map[item[primary]].update(item)
+
+            # Create the data (list of dicts, with each dict representing a record) based on the updated data map 
+            data = [value for value in data_map.values()]
                 
         return data
 
@@ -146,3 +157,33 @@ class ViewViewSet(viewsets.ModelViewSet):
             response['matching'] = [value for value in matching_discrepencies]
 
         return JsonResponse(response)
+
+    @detail_route(methods=['patch'])
+    def update_form_node(self, request, id=None):
+        view = View.objects.get(id=id)
+        self.check_object_permissions(self.request, view)
+
+        step = request.data['stepIndex']
+        primary_key = request.data['primary']
+        field = request.data['field']
+        value = request.data['text'] if 'text' in request.data else None
+
+        form = view.steps[step].form
+        
+        form_data_map = { item[form.primary]: item for item in form.data } if 'data' in form  else { }
+
+        if primary_key in form_data_map:
+            form_data_map[primary_key].update({ field: value })
+        else:
+            form_data_map[primary_key] = { form.primary: primary_key, field: value }
+
+        form_data = [value for value in form_data_map.values()]
+
+        kw = { f'set__steps__{step}__form__data': form_data }
+        View.objects(id=id).update(**kw)
+        
+        view.reload()
+        data = self.combine_data(view.steps)
+        View.objects(id=id).update(set__data = data)
+
+        return JsonResponse({ 'data': data })

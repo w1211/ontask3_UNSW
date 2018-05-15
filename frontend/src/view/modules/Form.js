@@ -3,6 +3,8 @@ import { Card, Icon, Select, Input, Tooltip, Form, DatePicker, Divider } from 'a
 import _ from 'lodash';
 
 const FormItem = Form.Item;
+const { Option } = Select;
+
 
 class FormModule extends React.Component {
   constructor(props) {
@@ -14,7 +16,7 @@ class FormModule extends React.Component {
   };
 
   render() {
-    const { build, step, onChange, deleteStep, onAddField, onEditField } = this.props;
+    const { build, step, onChange, deleteStep, onAddField, onEditField, labelsUsed } = this.props;
 
     const currentStep = build.steps[step].form;
     const errors =  _.get(build, `errors.steps[${step}]`, {});
@@ -25,6 +27,9 @@ class FormModule extends React.Component {
     ];
     // If this is the last step, show the delete button
     if (build.steps.length === step + 1) actions.push(<Tooltip title="Remove form"><Icon type="delete" onClick={deleteStep} /></Tooltip>);
+
+    // Determine the labels used in all steps up until (and not including) this one
+    const labels = labelsUsed(build.steps.slice(0, step));
 
     return (
       <Card
@@ -69,6 +74,22 @@ class FormModule extends React.Component {
         </FormItem>
         { errors.activeTo && <p style={{ color: '#f5222d' }}>Active to cannot be before active from.</p>}
 
+        <FormItem validateStatus={errors && errors.primary ? 'error' : null}>
+          <Tooltip 
+            title="You must specify which field from the DataLab should be used to identify the data collected from this form"
+            placement="right"
+          >
+            <Select 
+              placeholder="Primary key" value={currentStep.primary} style={{ width: '100%', marginTop: 10 }}
+              onChange={(e) => onChange(step, 'primary', e) }
+            >
+              { labels.map((label, i) => (
+                <Option value={label} key={label}>{label}</Option>
+              ))}
+            </Select>
+          </Tooltip>
+        </FormItem>
+        
         <Divider style={{ fontSize: 14, margin: '8px 0' }}>Added fields</Divider>
 
         { 'fields' in currentStep && currentStep.fields.length === 0 ?
