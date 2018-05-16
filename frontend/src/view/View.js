@@ -114,11 +114,11 @@ class View extends React.Component {
       <Dropdown trigger={["click"]} overlay={
         <Menu onClick={(e) => this.handleHeaderDropdownClick(e, stepIndex, field, label)}>
           { type === 'form' &&
-            <Menu.Item key="edit">
+            <Menu.Item key="edit"  disabled={true}>
               <Icon type="edit" style={{ marginRight: 5 }}/>Enter data
             </Menu.Item>
           }
-          <Menu.Item key="visualise">
+          <Menu.Item key="visualise" disabled={type==='form'}>
             <Icon type="area-chart" style={{ marginRight: 5 }}/>Visualise
           </Menu.Item>
         </Menu>
