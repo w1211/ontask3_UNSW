@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, Icon, Select, Input, Tooltip, message, Form } from 'antd';
 
-const { Option } = Select;
+const { Option, OptGroup } = Select;
 const FormItem = Form.Item;
 
 
@@ -33,31 +33,26 @@ class DatasourceModule extends React.Component {
     return `${field}_${suffix}`;
   };
 
-  hasDependency = (field) => {
-    const { build, step } = this.props;
-
-    const currentStep = build.steps[step].datasource;
-    const label = currentStep.labels[field];
-
-    // If this field is used as a matching field for any datasources
-    let relatedSteps = build.steps.slice(step + 1);
-
-    relatedSteps = relatedSteps.filter(step => 
-      step.type === 'datasource' && 'matching' in step.datasource && step.datasource.matching === label
-    );
-
-    return (relatedSteps.length > 0);
-  };
-
-  changeFields = (e) => {
-    const { build, step, onChange, checkDuplicateLabel } = this.props;
+  changeFields = (e, isAggregate) => {
+    const { build, step, onChange, checkDuplicateLabel, datasources, hasDependency } = this.props;
   
     const currentStep = build.steps[step].datasource;
 
     const fields = currentStep['fields'];
+    
+    if (e.slice(-1)[0] === '_all') {
+      const datasource = datasources.find(datasource => datasource.id === currentStep.id);
+      datasource.fields.forEach(field => {
+        if (!currentStep.fields.includes(field)) this.changeFields([...currentStep.fields, field], true);
+      });
+
+    } else if (e.slice(-1)[0] === '_none') {
+      currentStep.fields.forEach(field => {
+        this.changeFields(currentStep.fields.filter(selectedField => selectedField !== field));
+      });
 
     // If a field was added
-    if (e.length > fields.length) {
+    } else if (e.length > fields.length) { 
       // Identify the field added
       const field = e.filter(field => !fields.includes(field))[0];
       
@@ -67,23 +62,27 @@ class DatasourceModule extends React.Component {
       if (isDuplicate) {
         // Generate a label for this field
         // Show the edit input field for the label
-        this.onEdit(null, field, this.generateLabel(labels, field), true);
-        return;
+        if (isAggregate) {
+          message.error(`'${field}' cannot be added automatically as this field name is already being used in the DataLab.`);
+        } else {
+          this.onEdit(null, field, this.generateLabel(labels, field), true);
+        };
       } else {
         // Not a duplicate, therefore use the field name as-is
         onChange(step, 'labels', { ...currentStep.labels, [field]: field });
         onChange(step, 'fields', e);
       };
+
     // If a field was removed
     } else if (e.length < fields.length) {
       // Identify the field removed
       const field = fields.filter(field => !e.includes(field))[0];
-      if (this.hasDependency(field)) {
-        message.error('This field cannot be removed as it is being used as a matching field.');
+      if (hasDependency(step, field)) {
+        message.error(`'${field}' cannot be removed as it is being used as a matching field.`);
       } else {
         onChange(step, 'remove', field, true);
       };
-    };    
+    };
   };
   
   changeMatchingField = (e) => {
@@ -96,11 +95,11 @@ class DatasourceModule extends React.Component {
   };
 
   onEdit = (e, field, label, isRequired) => {
-    const { build, step, onChange } = this.props;
+    const { build, step, onChange, hasDependency } = this.props;
 
     if (e) e.stopPropagation();
 
-    if (this.hasDependency(field)) {
+    if (hasDependency(step, field)) {
       message.error('This field cannot be renamed as it is being used as a matching field.');
       return;
     };
@@ -231,13 +230,16 @@ class DatasourceModule extends React.Component {
                 !datasource ? 
                   'A datasource must be chosen first' 
                 : 
-                  'In order to join the data from this datasource with the DataLab, you must specify which field from the DataLab will be matched against the primary key (specified above)'
+                  !currentStep.primary ?
+                    'A primary key must be chosen first'
+                  :
+                    'In order to join the data from this datasource with the DataLab, you must specify which field from the DataLab will be matched against the primary key (specified above)'
                 }
               placement="right"
             >
               <Select 
                 placeholder="Matching field" value={currentStep.matching} style={{ width: '100%', marginTop: 10 }}
-                onChange={this.changeMatchingField} disabled={!datasource}
+                onChange={this.changeMatchingField} disabled={!datasource || !currentStep.primary}
               >
                 { labels.map((label, i) => (
                   <Option value={label} key={label}>{label}</Option>
@@ -261,41 +263,47 @@ class DatasourceModule extends React.Component {
           >
             <Select
               mode="multiple" className="fields-select" placeholder="Fields" value={currentStep.fields} dropdownClassName="dataLab-fields"
-              style={{ width: '100%', marginTop: 10 }} onChange={this.changeFields} disabled={this.state.editMode || !datasource}
+              style={{ width: '100%', marginTop: 10 }} onChange={(e) => this.changeFields(e)} disabled={this.state.editMode || !datasource}
               ref={(select) => { this.select = select; }}
               getPopupContainer={() => document.getElementById(`dropdown_${step}`)}
             >
-              { datasource && datasource.fields.map((field, i) => {
-                const isEditing = editing.step === step && editing.field === field;
-                return (
-                  <Option disabled={this.state.editMode} value={field} key={i} title={field} className={isEditing && 'editing-field'}>
-                    { isEditing ?
-                      <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
-                        <Tooltip 
-                          title={editing.isRequired && `A label is required, as a field with name '${field}' already exists in the DataLab`} 
-                          placement="bottom"
-                        >
-                          <Input 
-                            ref={(input) => { this.labelInput = input; input && input.focus(); }}
-                            size="small" value={editing.label} onFocus={this.onFocusEdit}
-                            onChange={(e) => { this.setState({ editing: { ...editing, label: e.target.value } }); }}
-                            onKeyDown={(e) => { if (e.key === 'Enter') this.confirmEdit(); if (e.key === 'Escape') this.cancelEdit(); }}
-                          />
-                        </Tooltip>
-                        <div style={{ flex: 1, textAlign: 'right' }}>
-                          <Icon type="close" onClick={this.cancelEdit}/>
-                          <Icon type="save" onClick={this.confirmEdit}/>
+              <OptGroup label="Utilities">
+                <Option key="_all">Select all</Option>
+                <Option key="_none">Reset</Option>
+              </OptGroup>
+              <OptGroup label="Datasource fields">
+                { datasource && datasource.fields.map((field, i) => {
+                  const isEditing = editing.step === step && editing.field === field;
+                  return (
+                    <Option disabled={this.state.editMode} value={field} key={i} title={field} className={isEditing && 'editing-field'}>
+                      { isEditing ?
+                        <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
+                          <Tooltip 
+                            title={editing.isRequired && `A label is required, as a field with name '${field}' already exists in the DataLab`} 
+                            placement="bottom"
+                          >
+                            <Input 
+                              ref={(input) => { this.labelInput = input; input && input.focus(); }}
+                              size="small" value={editing.label} onFocus={this.onFocusEdit}
+                              onChange={(e) => { this.setState({ editing: { ...editing, label: e.target.value } }); }}
+                              onKeyDown={(e) => { if (e.key === 'Enter') this.confirmEdit(); if (e.key === 'Escape') this.cancelEdit(); }}
+                            />
+                          </Tooltip>
+                          <div style={{ flex: 1, textAlign: 'right' }}>
+                            <Icon type="close" onClick={this.cancelEdit}/>
+                            <Icon type="save" onClick={this.confirmEdit}/>
+                          </div>
                         </div>
-                      </div>
-                    :
-                      <div className="normal-field">
-                        {field in currentStep.labels ? currentStep.labels[field] : field}
-                        {!this.state.editMode && <Icon type="edit" onClick={(e) => this.onEdit(e, field)}/>}
-                      </div>
-                    }
-                  </Option>
-                )
-              })}
+                      :
+                        <div className="normal-field">
+                          {field in currentStep.labels ? currentStep.labels[field] : field}
+                          {!this.state.editMode && <Icon type="edit" onClick={(e) => this.onEdit(e, field)}/>}
+                        </div>
+                      }
+                    </Option>
+                  )
+                })}
+              </OptGroup>
             </Select>
           </Tooltip>
         </FormItem>

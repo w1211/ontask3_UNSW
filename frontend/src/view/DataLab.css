@@ -186,3 +186,11 @@
 .dataManipulation .editable-field i {
   margin-left: 5px;
 }
+
+.dataManipulation .column-header.form {
+  color: #9C27B0;
+}
+
+.dataManipulation .column-header.datasource {
+  color: #2196F3;
+}

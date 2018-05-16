@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Input, Form, Select, Checkbox, Icon, Tooltip, Button, Alert } from 'antd';
+import { Modal, Input, Form, Select, Checkbox, Icon, Tooltip, Button, Alert, message } from 'antd';
 
 import FormItemLayout from '../../shared/FormItemLayout';
 
@@ -64,16 +64,20 @@ class FormFieldModal extends React.Component {
   };
 
   handleDelete = () => {
-    const { fieldIndex, onChange } = this.props;
+    const { stepIndex, fieldIndex, field, onChange, hasDependency } = this.props;
     
-    confirm({
-      title: 'Confirm field deletion',
-      content: 'Are you sure you want to delete this field from the form? Any data entered in the form for this field will be lost.',
-      onOk: () => {
-        onChange('delete', fieldIndex, true);
-        this.handleClose();
-      }
-    });
+    if (hasDependency(stepIndex, field.name)) {
+      message.error(`'${field.name}' cannot be removed as it is being used as a matching field.`);
+    } else {
+      confirm({
+        title: 'Confirm field deletion',
+        content: 'Are you sure you want to delete this field from the form? Any data entered in the form for this field will be lost.',
+        onOk: () => {
+          onChange('delete', fieldIndex, true);
+          this.handleClose();
+        }
+      });
+    };
   };
 
   render() {

@@ -79,6 +79,25 @@ class DataLabCreator extends React.Component {
     return labels;
   };
 
+  hasDependency = (step, field) => {
+    const { build } = this.props;
+
+    const currentStep = build.steps[step];
+
+    if (currentStep.type === 'datasource') field = currentStep.datasource.labels[field];
+    
+    // If this field is used as a matching field for any modules
+    let relatedSteps = build.steps.slice(step + 1);
+
+    relatedSteps = relatedSteps.filter(step => {
+      if (step.type === 'datasource') return 'matching' in step.datasource && step.datasource.matching === field;
+      if (step.type === 'form') return 'primary' in step.form && step.form.primary === field;
+      return false;
+    });
+
+    return (relatedSteps.length > 0);
+  };
+
   checkDuplicateLabel = (field) => {
     const { build } = this.props;
 
@@ -145,6 +164,7 @@ class DataLabCreator extends React.Component {
                             checkForDiscrepencies={this.boundActionCreators.checkForDiscrepencies}
                             deleteStep={this.boundActionCreators.deleteStep}
                             labelsUsed={this.labelsUsed}
+                            hasDependency={this.hasDependency}
                             checkDuplicateLabel={this.checkDuplicateLabel}
                           /> 
                         }
@@ -174,11 +194,13 @@ class DataLabCreator extends React.Component {
                   <FormFieldModal
                     visible={this.state.formField.visible}
                     form={form}
+                    stepIndex={this.state.formField.stepIndex}
                     field={this.state.formField.field}
                     fieldIndex={this.state.formField.fieldIndex}
                     onChange={(field, value, isNotField) => this.boundActionCreators.updateBuild(this.state.formField.stepIndex, field, value, isNotField)}
                     onClose={() => this.setState({ formField: { visible: false, stepIndex: null, field: null, fieldIndex: null } })}
                     checkDuplicateLabel={this.checkDuplicateLabel}
+                    hasDependency={this.hasDependency}
                   />
 
                   <div style={{ marginBottom: 40 }}>

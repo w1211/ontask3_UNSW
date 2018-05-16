@@ -110,15 +110,20 @@ class View extends React.Component {
     let columns = [];
     let tableData = data && data.map((data, i) => ({...data, key: i }));
 
-    const HeaderDropdown = ({ stepIndex, field, label }) => (
+    const HeaderDropdown = ({ stepIndex, field, label, type }) => (
       <Dropdown trigger={["click"]} overlay={
         <Menu onClick={(e) => this.handleHeaderDropdownClick(e, stepIndex, field, label)}>
+          { type === 'form' &&
+            <Menu.Item key="edit">
+              <Icon type="edit" style={{ marginRight: 5 }}/>Enter data
+            </Menu.Item>
+          }
           <Menu.Item key="visualise">
             <Icon type="area-chart" style={{ marginRight: 5 }}/>Visualise
           </Menu.Item>
         </Menu>
       }>
-        <a>{label}</a>
+        <a className={`column-header ${type}`}>{label}</a>
       </Dropdown>
     );
     
@@ -150,7 +155,7 @@ class View extends React.Component {
             columns.push({
               title: (
                 step[step.type].matching !== field && step[step.type].primary !== field ?
-                  <HeaderDropdown stepIndex={stepIndex} field={field} label={label}/>
+                  <HeaderDropdown stepIndex={stepIndex} field={field} label={label} type={step.type}/>
                 :
                   label
               ),
@@ -168,13 +173,24 @@ class View extends React.Component {
             })
           });
         };
-
+        
         if (step.type === 'form') {
           step.form.fields.forEach(field => {
             columns.push({
-              title: field.name,
+              title: (
+                step[step.type].matching !== field && step[step.type].primary !== field ?
+                  <HeaderDropdown stepIndex={stepIndex} field={field.name} label={field.name} type={step.type}/>
+                :
+                  field.name
+              ),
               dataIndex: field.name,
               key: field.name,
+              sorter: (a, b) => {
+                a = field.name in a ? a[field.name] : '';
+                b = field.name in b ? b[field.name] : '';
+                a.localeCompare(b);
+              },
+              sortOrder: sorted && sorted.field === field.name && sorted.order,
               render: (text, record, row) => {
                 const primary = record[step.form.primary];
                 let label;
