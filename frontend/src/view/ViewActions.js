@@ -94,7 +94,7 @@ export const fetchView = (viewId) => dispatch => {
   requestWrapper(parameters);
 };
 
-export const openVisualisationModal = (visualise, isRowWise) =>({
+export const openVisualisationModal = (visualise, isRowWise) => ({
   type: OPEN_VISUALISATION_MODAL,
   visualise,
   isRowWise
@@ -465,10 +465,10 @@ export const saveBuild = (history, containerId, selectedId) => (dispatch, getSta
   requestWrapper(parameters);
 };
 
-export const updateFormNode = (dataLabId, payload, callback) => dispatch => {
+export const updateFormValues = (dataLabId, payload, callback) => dispatch => {
   const parameters = {
     initialFn: () => { },
-    url: `/view/${dataLabId}/update_form_node/`,
+    url: `/view/${dataLabId}/update_form_values/`,
     method: 'PATCH',
     errorFn: (error) => {
       console.log(error);

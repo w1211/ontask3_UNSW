@@ -163,23 +163,24 @@ class ViewViewSet(viewsets.ModelViewSet):
         return JsonResponse(response)
 
     @detail_route(methods=['patch'])
-    def update_form_node(self, request, id=None):
+    def update_form_values(self, request, id=None):
         view = View.objects.get(id=id)
         self.check_object_permissions(self.request, view)
 
         step = request.data['stepIndex']
-        primary_key = request.data['primary']
         field = request.data['field']
-        value = request.data['text'] if 'text' in request.data else None
+        values = request.data['values'] if 'values' in request.data else None
         
         form = view.steps[step].form
 
         form_data_map = { item[form.primary]: item for item in form.data if form.primary in item }
 
-        if primary_key in form_data_map:
-            form_data_map[primary_key].update({ field: value })
-        else:
-            form_data_map[primary_key] = { form.primary: primary_key, field: value }
+        if values:
+            for primary_key, value in values.items():
+                if primary_key in form_data_map:
+                    form_data_map[primary_key].update({ field: value })
+                else:
+                    form_data_map[primary_key] = { form.primary: primary_key, field: value }
 
         form_data = [value for value in form_data_map.values()]
 

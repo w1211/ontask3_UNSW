@@ -187,10 +187,16 @@
   margin-left: 5px;
 }
 
+.dataManipulation .column-header-icons {
+  vertical-align: middle;
+}
+.dataManipulation .column-header-icons i {
+  cursor: pointer;
+  margin-left: 4px;
+}
 .dataManipulation .column-header.form {
   color: #9C27B0;
 }
-
 .dataManipulation .column-header.datasource {
   color: #2196F3;
 }
