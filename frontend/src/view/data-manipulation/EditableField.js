@@ -9,7 +9,10 @@ const EditableField = ({ field, value, onChange, onOk, isColumnEdit }) => {
   const type = field.type;
 
   const onKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) onOk();
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      onOk();
+    };
   };
 
   let component;
@@ -23,6 +26,7 @@ const EditableField = ({ field, value, onChange, onOk, isColumnEdit }) => {
             onKeyPress={onKeyPress} 
             defaultValue={value} 
             onChange={(e) => onChange(e.target.value)}
+            rows="5"
           />
         );
       } else {
