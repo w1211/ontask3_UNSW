@@ -21,7 +21,9 @@ class VisualisationModal extends React.Component {
     this.state = {
       chartType: "barChart",
       colNameSelected: null,
-      numCols: 5
+      interval: 5,
+      rangeMin:0,
+      rangeMax:100
     };
     this.boundActionCreators = bindActionCreators(ViewActionCreators, dispatch);
   };
@@ -32,13 +34,13 @@ class VisualisationModal extends React.Component {
 
   handleCancel = () => { 
     this.boundActionCreators.closeVisualisationModal(); 
-    this.setState({ chartType:"barChart", colNameSelected:null, rangeMin:null, rangeMax:null, numCols: 5 }); 
+    this.setState({ chartType:"barChart", colNameSelected:null, rangeMin:null, rangeMax:null, interval: 5 }); 
   };
 
   handleSubmit = () => {
     const { selectedId } = this.props;
-    const { chartType, numCols, rangeMin, rangeMax } = this.state;
-    this.boundActionCreators.updateVisualisationChart(selectedId, chartType, numCols, rangeMin, rangeMax);
+    const { chartType, numBins, rangeMin, rangeMax } = this.state;
+    this.boundActionCreators.updateVisualisationChart(selectedId, chartType, numBins, rangeMin, rangeMax);
   };
 
   onRangeMaxChange = (value, defaultMin, defaultMax) => {
@@ -71,14 +73,11 @@ class VisualisationModal extends React.Component {
 
   render() {
     const { visualisation_visible, build, data, visualise, isRowWise, record } = this.props;
-    const { chartType, numCols, rangeMin, rangeMax } = this.state;
-    const MAX_COL = 15;
+    const { chartType, interval } = this.state;
+    let { rangeMin, rangeMax, numBins } = this.state;
 
     let dv;
     let cols;
-    let defaultMax=1;
-    let defaultMin=100;
-
     let type;
     let colNameSelected;
 
@@ -96,6 +95,37 @@ class VisualisationModal extends React.Component {
         colNameSelected = buildStep.datasource.labels[fieldName];
       };
 
+      dv = new dataView()
+      .source(data)
+      .transform({
+        type: 'filter',
+        callback(row) {
+          if(row[colNameSelected] !==''){
+            row[colNameSelected] = Number(row[colNameSelected]);
+            return row;
+          }
+        }
+      })
+      .transform({
+        type: 'aggregate',
+        fields: [colNameSelected, colNameSelected],
+        operations: ['max', 'min'],
+        as: ['maxValue', 'minValue']
+      });
+      rangeMin = Number(dv.rows[0].minValue);
+      rangeMax = Number(dv.rows[0].maxValue);
+
+      //TODO: round up should add 1 some time
+      //call when numbins not defined
+      if(!numBins){
+        if(this.isInt(rangeMax/interval)){
+          numBins = (rangeMax - Math.floor(rangeMin/interval)*interval)/interval+1;
+        }
+        else{
+          numBins = (Math.ceil(rangeMax/interval)*interval - Math.floor(rangeMin/interval)*interval)/interval;
+        }
+      }
+      
       //Barchar ploting
       if (chartType === "barChart" || chartType === "pieChart"){
         dv = new dataView()
@@ -111,7 +141,7 @@ class VisualisationModal extends React.Component {
           dv.transform({
             type: 'bin.histogram',
             field: colNameSelected,
-            binWidth: 5,
+            binWidth: interval,
             as: [colNameSelected, 'count']
           });
         }
@@ -142,9 +172,12 @@ class VisualisationModal extends React.Component {
           })
           if(type === "number")
           dv.transform({
-            type: 'map', 
+            type: 'map',
             callback: (row) => {
-              row[colNameSelected] = row[colNameSelected][0]+'-'+row[colNameSelected][1];
+              row[colNameSelected]= 
+                (this.isInt(row[colNameSelected][0])?row[colNameSelected][0]:row[colNameSelected][0].toFixed(2))
+                +'-'+
+                (this.isInt(row[colNameSelected][1])?row[colNameSelected][1]:row[colNameSelected][1].toFixed(2));
               return row;
           }});
         }
@@ -236,8 +269,10 @@ class VisualisationModal extends React.Component {
                 this.setState({ 
                   colNameSelected: {
                     stepIndex,
-                    field
-                  } 
+                    field,
+                  },
+                  numBins:null,
+                  interval:5
                 });
               }
             }
@@ -256,7 +291,7 @@ class VisualisationModal extends React.Component {
         <div>
           <Chart height={450} data={dv} scale={cols} forceFit>
             <Axis 
-              name={colNameSelected} 
+              name={colNameSelected}
               title={colNameSelected} 
               autoRotate={true}
             />
@@ -338,37 +373,61 @@ class VisualisationModal extends React.Component {
             <h4>Interval: </h4>
             <InputNumber min={1}
               style={{display: "flex", marginRight:15, marginLeft:5}}
-              max={defaultMax}
-              value={this.state.numCols}
-              onChange={(value) => {this.setState({numCols: value})}}
+              max={rangeMax}
+              value={this.state.interval}
+              onChange={(value) => {
+                if(value!=='' && value!==0){
+                  let num;
+                  if(this.isInt(rangeMax/value)){
+                    num = (rangeMax - Math.floor(rangeMin/value)*value)/value+1;
+                  }
+                  else{
+                    num = (Math.ceil(rangeMax/value)*value - Math.floor(rangeMin/value)*value)/value;
+                  }
+                  this.setState({interval: value, numBins: num});
+                }
+              }}
             />
-            <Slider style={{display: "flex", width:"350px", marginRight:10}} defaultValue={5} value={this.state.numCols}  min={1} max={defaultMax} onChange={(value) => {this.setState({numCols: value})} }/>
+            <h4>Bin number: </h4>
+            <InputNumber min={1}
+              style={{display: "flex", marginRight:15, marginLeft:5}}
+              max={rangeMax}
+              value={numBins}
+              onChange={(value) => {
+                if(value!=='' && this.isInt(value)){
+                  //TODO: rebust?
+                  let int = ((rangeMax - rangeMin + 1)/value).toFixed(2) ;
+                  this.setState({numBins: value, interval: int});
+                }
+              }}
+            />
           </div>
 
           <div style={{display: "flex", justifyContent: "left", alignItems: "center"}}>
             <h4 style={{verticalAlign:"middle"}}>Min: </h4>
-            <InputNumber min={defaultMin}
-              max={defaultMax}
+            <InputNumber min={rangeMin}
+              max={rangeMax}
               style={{display: "flex", marginRight:10, marginLeft:5}}
-              value={rangeMin ? rangeMin : defaultMin}
-              onChange={(value) => this.onRangeMinChange(value, defaultMin, defaultMax)}
+              value={rangeMin}
+              onChange={(value) => this.onRangeMinChange(value, rangeMin, rangeMax)}
             />
 
             <h4>Max: </h4>
             <InputNumber
-              min={defaultMin}
-              max={defaultMax}
+              min={rangeMin}
+              max={rangeMax}
               style={{display: "flex", marginLeft:5, marginRight:15}}
-              value={rangeMax ? rangeMax : defaultMax}
-              onChange={(value) => this.onRangeMaxChange(value, defaultMin, defaultMax)}
+              value={rangeMax}
+              onChange={(value) => this.onRangeMaxChange(value, rangeMin, rangeMax)}
             />
             <Slider range
-              defaultValue={[defaultMin, defaultMax]}
-              value={[rangeMin?rangeMin:defaultMin, rangeMax?rangeMax:defaultMax]} 
+              defaultValue={[rangeMin, rangeMax]}
+              value={[rangeMin, rangeMax]}
               style={{display: "flex", width:"350px", marginRight:10}}
-              min={defaultMin}
-              max={defaultMax}
-              onChange={(value) => {this.setState({rangeMin: value[0], rangeMax: value[1]});}}/>
+              min={rangeMin}
+              max={rangeMax}
+              onChange={(value) => {this.setState({rangeMin: value[0], rangeMax: value[1]});}}
+            />
           </div>
         </div>
       }
@@ -391,8 +450,8 @@ class VisualisationModal extends React.Component {
               return {
                 name: na, low, q1, median, q3, high
               };
-              }]} 
-              style={{stroke: 'rgba(0, 0, 0, 0.45)',fill: '#1890FF',fillOpacity: 0.3}}  
+              }]}
+              style={{stroke: 'rgba(0, 0, 0, 0.45)',fill: '#1890FF',fillOpacity: 0.3}}
             />
           </Chart>
         </div>
