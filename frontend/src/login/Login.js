@@ -54,7 +54,11 @@ class Login extends React.Component {
             <Col><img src={loginImg} alt="Login" style={LoginImgStyle}/></Col>
             <Col style={{height:'350px', margin: '30px'}}>
               <Tabs defaultActiveKey="1" style={{width: '300px', margin: 'auto'}}>
-                  <TabPane tab="Internal Login" key="1">
+                  <TabPane tab="AAF Login" key="1" >
+                    <a href={`${process.env.REACT_APP_AAF_URL}`}><img src={aaf} alt="AAF Logo" style={{ width: 200 }}/></a>
+                  </TabPane>
+
+                  <TabPane tab="Internal Login" key="2">
                     <Form style={{width: '300px'}}>
                       <FormItem>
                           {form.getFieldDecorator('email', {
@@ -77,9 +81,6 @@ class Login extends React.Component {
                         </Button>
                       </div>
                   </Form>
-                  </TabPane>
-                  <TabPane tab="AAF Login" key="2" >
-                    <a href={`${process.env.REACT_APP_AAF_URL}`}><img src={aaf} alt="AAF Logo" style={{ width: 200 }}/></a>
                   </TabPane>
               </Tabs>
             </Col>
