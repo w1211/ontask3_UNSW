@@ -45,7 +45,7 @@ const Title = ({ visualise, label, editable, onEdit, confirmEdit, openVisualisat
 
     { editable.target === '_all' &&
       <div className="column-header-icons" style={{ display: 'inline-block' }}>
-        <Tooltip title="Cancel data entry">
+        <Tooltip title="Discard changes">
           <Icon type="close" onClick={() => {
             confirm({
               title: 'Discard changes',
