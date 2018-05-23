@@ -77,6 +77,69 @@ class VisualisationModal extends React.Component {
     }
   }
 
+  generateCountField= (dv, type, interval, colNameSelected) => {
+    //generate count field based on type
+    if (type === "number") {
+      dv.transform({
+        type: 'bin.histogram',
+        field: colNameSelected,
+        binWidth: interval,
+        as: [colNameSelected, 'count']
+      });
+    }
+    else{
+      dv.transform({
+        type: 'aggregate', fields: [colNameSelected], 
+        operations: 'count', as: 'count',
+        groupBy: [colNameSelected]
+      });
+    }
+    return dv;
+  }
+
+  generatePieChart = (dv,type, colNameSelected) => {
+    dv.transform({
+      type: 'percent', field: 'count',
+      dimension: colNameSelected, as: 'percent'
+    })
+    if(type === "number"){
+      dv.transform({
+        type: 'map',
+        callback: (row) => {
+          row[colNameSelected]=
+            (this.isInt(row[colNameSelected][0])?row[colNameSelected][0]:row[colNameSelected][0].toFixed(2))
+            +'-'+
+            (this.isInt(row[colNameSelected][1])?row[colNameSelected][1]:row[colNameSelected][1].toFixed(2));
+          return row;
+      }});
+    }
+    return dv;
+  }
+
+  generateBoxPlot = (dv, colNameSelected) => {
+    dv.transform({
+      type: 'map',
+      callback: (obj) => {
+        obj[colNameSelected] = Number(obj[colNameSelected]);
+        return obj;
+    }})
+    .transform({
+      type: 'bin.quantile',
+      field: colNameSelected,
+      as: 'range',
+      fraction: 4
+    })
+    .transform({
+      type: 'map',
+      callback: (row) => {
+        row.low = row.range[0]; row.q1 = row.range[1];
+        row.median = row.range[2]; row.q3 = row.range[3];
+        row.high = row.range[4]; row.na = colNameSelected;
+        return row;
+    }});
+    return dv;
+  }
+
   render() {
     const { visualisation_visible, build, data, visualise, isRowWise, record } = this.props;
     const { chartType, interval, groupByCol } = this.state;
@@ -101,6 +164,7 @@ class VisualisationModal extends React.Component {
         colNameSelected = buildStep.datasource.labels[fieldName];
       };
 
+      //get max and min values for colNameSelected
       dv = new dataView()
       .source(data)
       .transform({
@@ -122,6 +186,7 @@ class VisualisationModal extends React.Component {
       rangeMin = Number(dv.rows[0].minValue);
       rangeMax = Number(dv.rows[0].maxValue);
 
+      //calculate num of bins
       if(!numBins){
         if(this.isInt(rangeMax/interval)){
           numBins = (rangeMax - Math.floor(rangeMin/interval)*interval)/interval+1;
@@ -131,6 +196,7 @@ class VisualisationModal extends React.Component {
         }
       }
 
+      //group by function
       if(groupByCol!=='None'){
         if(chartType==="barChart"){
           cols = {
@@ -153,6 +219,13 @@ class VisualisationModal extends React.Component {
                 return val;
           }}};
         }
+        if(chartType==="boxPlot"){
+          cols={
+            range: {
+              max: rangeMax,
+              min: rangeMin
+          }};
+        }
         
         dv = new dataView().source(data)
         .transform({
@@ -162,125 +235,41 @@ class VisualisationModal extends React.Component {
 
         keys = Object.keys(dv.rows);
 
-        if(chartType==="boxPlot"){
-          cols = [];
-        }
-
         for(let i in keys){
           let tmpdv;
-          if(chartType==="pieChart" || chartType==="barChart"){
-            tmpdv = new dataView().source(data)
-            .transform({
-              type: 'filter',
-              callback(row) {
-                if('_'+row[groupByCol] === keys[i] && row[colNameSelected] !==''){
-                  return row;
-                }
-              }
-            });
-    
-            if (type === "number") {
-              tmpdv.transform({
-                type: 'bin.histogram',
-                field: colNameSelected,
-                binWidth: interval,
-                as: [colNameSelected, 'count']
-              });
-            }
-            else{
-              tmpdv.transform({
-                type: 'aggregate', fields: [colNameSelected], 
-                operations: 'count', as: 'count',
-                groupBy: [colNameSelected]
-              });
-            }
-
-            if(chartType === "pieChart"){
-              tmpdv.transform({
-                type: 'percent', field: 'count',
-                dimension: colNameSelected, as: 'percent'
-              })
-              if(type === "number"){
-                tmpdv.transform({
-                  type: 'map',
-                  callback: (row) => {
-                    row[colNameSelected]=
-                      (this.isInt(row[colNameSelected][0])?row[colNameSelected][0]:row[colNameSelected][0].toFixed(2))
-                      +'-'+
-                      (this.isInt(row[colNameSelected][1])?row[colNameSelected][1]:row[colNameSelected][1].toFixed(2));
-                    return row;
-                }});
-              }
-            }
-          }
-
-          if(chartType==="boxPlot"){
-            tmpdv = new dataView().source(data)
-            .transform({
-              type: 'filter',
-              callback(row) {
-                if('_'+row[groupByCol] === keys[i] && row[colNameSelected] !==''){
-                  return row;
-                }
-              }
-            })
-            .transform({
-              type: 'map',
-              callback: (obj) => {
-                obj[colNameSelected] = Number(obj[colNameSelected]);
-                return obj;
-            }})
-            .transform({
-              type: 'bin.quantile',
-              field: colNameSelected,
-              as: 'range',
-              fraction: 4
-            })
-            .transform({
-              type: 'map',
-              callback: (row) => {
-                row.low = row.range[0]; row.q1 = row.range[1];
-                row.median = row.range[2]; row.q3 = row.range[3];
-                row.high = row.range[4]; row.na = colNameSelected;
+          tmpdv = new dataView().source(data)
+          .transform({
+            type: 'filter',
+            callback(row) {
+              if('_'+row[groupByCol] === keys[i] && row[colNameSelected] !==''){
                 return row;
-            }});
+              }
+            }
+          });
 
-            cols={
-              range: {
-                max: rangeMax,
-                min: rangeMin
-            }};
+          if(chartType!=="boxPlot"){
+            this.generateCountField(tmpdv, type, interval, colNameSelected);
+          }
+          if(chartType === "pieChart"){
+            this.generatePieChart(tmpdv, type, colNameSelected);
+          }
+          if(chartType==="boxPlot"){
+            this.generateBoxPlot(tmpdv, colNameSelected);
           }
           dataViews.push(tmpdv);
         }
       }
       else{
-        
-        if (chartType === "barChart" || chartType === "pieChart"){
-          dv = new dataView()
+        dv = new dataView()
           .source(data)
           .transform({
             type: 'filter',
             callback(row) {
               return row[colNameSelected] !=='' ;
             }
-          });
-
-          if (type === "number") {
-            dv.transform({
-              type: 'bin.histogram',
-              field: colNameSelected,
-              binWidth: interval,
-              as: [colNameSelected, 'count']
-            });
-          }
-          else{
-            dv.transform({
-              type: 'aggregate', fields: [colNameSelected], 
-              operations: 'count', as: 'count',
-              groupBy: [colNameSelected]
-            });
-          }
+        });
+        if (chartType!=="boxPlot"){
+          this.generateCountField(dv, type, interval, colNameSelected);
 
           if(chartType === "pieChart"){
             cols = {
@@ -289,54 +278,12 @@ class VisualisationModal extends React.Component {
                   val = parseFloat(val * 100).toFixed(2) + '%';
                   return val;
             }}};
-            dv.transform({
-              type: 'percent', field: 'count',
-              dimension: colNameSelected, as: 'percent'
-            })
-
-            if(type === "number"){
-              dv.transform({
-                type: 'map',
-                callback: (row) => {
-                  row[colNameSelected]=
-                    (this.isInt(row[colNameSelected][0])?row[colNameSelected][0]:row[colNameSelected][0].toFixed(2))
-                    +'-'+
-                    (this.isInt(row[colNameSelected][1])?row[colNameSelected][1]:row[colNameSelected][1].toFixed(2));
-                  return row;
-              }});
-            }
+            this.generatePieChart(dv, type, colNameSelected);
           }
       }
 
       if(chartType==="boxPlot"){
-        dv = new dataView()
-        .source(data)
-        .transform({type: 'pick', fields: [colNameSelected]})
-        .transform({
-          type: 'filter',
-          callback(row) {
-              return row[colNameSelected]!=="";
-        }})
-        .transform({
-          type: 'map',
-          callback: (obj) => {
-            obj[colNameSelected] = Number(obj[colNameSelected]);
-            return obj;
-        }})
-        .transform({
-          type: 'bin.quantile',
-          field: colNameSelected,
-          as: 'range',
-          fraction: 4
-        })
-        .transform({
-          type: 'map',
-          callback: (row) => {
-            row.low = row.range[0]; row.q1 = row.range[1];
-            row.median = row.range[2]; row.q3 = row.range[3];
-            row.high = row.range[4]; row.na = colNameSelected;
-            return row;
-        }});
+        this.generateBoxPlot(dv, colNameSelected);
 
         cols ={
           range: {
@@ -389,12 +336,7 @@ class VisualisationModal extends React.Component {
             showSearch
             style={{ width: 150, marginLeft:10}}
             onChange={(value)=>{
-              if(value==='None'){
-                this.setState({groupByCol: null});
-              }
-              else{
-                this.setState({groupByCol: value});
-              }
+              this.setState({groupByCol: value});
             }}
             value={groupByCol}
             placeholder="choose group"
