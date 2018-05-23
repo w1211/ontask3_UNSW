@@ -34,7 +34,7 @@ class FormModule extends React.Component {
     return (
       <Card
         className="form"
-        style={{ width: 250, borderColor: '#D1C4E9' }}
+        style={{ width: 350, borderColor: '#D1C4E9' }}
         actions={actions}
         title={
           <div style={{ display: 'flex', alignItems: 'center', borderColor: '#D1C4E9' }}>

@@ -70,8 +70,13 @@ const Title = ({ visualise, label, editable, onEdit, confirmEdit, openVisualisat
 const renderFormField = (stepIndex, primary, field, text, record, editable, onEdit, confirmEdit) => {
   let label;
 
-  if (field.type === 'dropdown') {
-    if (field.multiSelect) {
+  if (field.type === 'number' && field.numberDisplay === 'range' && text instanceof Array) {
+    label = text[0] ? text[0] : 0;
+    if (text[1]) label += ` - ${text[1]}`;
+  } 
+
+  if (field.textDisplay === 'list' || field.numberDisplay === 'list') {
+    if (text instanceof Array) {
       if (field.name in record) record[field.name].forEach((value, i) => {
         const option = field.options.find(option => option.value === value);
         if (option) {

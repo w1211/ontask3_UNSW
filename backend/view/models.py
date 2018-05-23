@@ -1,6 +1,6 @@
 from mongoengine import Document, EmbeddedDocument
-from mongoengine.fields import StringField, DictField, ListField, EmbeddedDocumentListField,\
-                                ReferenceField, BooleanField, EmbeddedDocumentField, DateTimeField
+from mongoengine.fields import StringField, DictField, ListField, EmbeddedDocumentListField, IntField, \
+                                ReferenceField, BooleanField, EmbeddedDocumentField, DateTimeField, FloatField
 
 from container.models import Container
 from datasource.models import DataSource
@@ -17,9 +17,18 @@ class Option(EmbeddedDocument):
 class Field(EmbeddedDocument):
     name = StringField(required=True)
     type = StringField(required=True)
+    textDisplay = StringField(null=True)
     textArea = BooleanField(null=True)
+    maxLength = IntField(null=True)
     multiSelect = BooleanField(null=True)
     options = EmbeddedDocumentListField(Option)
+    listStyle = StringField(null=True)
+    alignment = StringField(null=True)
+    minimum = IntField(null=True)
+    maximum = IntField(null=True)
+    precision = IntField(null=True)
+    interval = FloatField(null=True)
+    numberDisplay = StringField(null=True)
 
 class DatasourceModule(EmbeddedDocument):
     id = StringField(required=True)

@@ -211,8 +211,8 @@ class DataLabCreator extends React.Component {
                     <div className="wrapper">
                       <h2>Components</h2>
                       <Module type="datasource" icon="database" label="Datasource"/>
-                      <Module type="computed" icon="calculator" label="Computed Fields"/>
                       <Module type="form" icon="form" label="Form"/>
+                      <Module type="computed" icon="calculator" label="Computed Fields"/>
                     </div>
                   </div>
 

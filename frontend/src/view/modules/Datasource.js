@@ -179,7 +179,7 @@ class DatasourceModule extends React.Component {
     
     return (
       <Card 
-        style={{ width: 250, borderColor: '#BBDEFB' }} 
+        style={{ width: 350, borderColor: '#BBDEFB' }} 
         actions={actions}
         title={
           <div style={{ display: 'flex', alignItems: 'center', borderColor: '#BBDEFB' }}>
