@@ -144,7 +144,8 @@ class FormFieldModal extends React.Component {
           <div>
             <FormItem {...FormItemLayout} label="Display">
               { form.getFieldDecorator('textDisplay', {
-                initialValue: field && field.textDisplay ? field.textDisplay : 'input'
+                initialValue: field && field.textDisplay ? field.textDisplay : 'input',
+                onChange: () => this.setState({ error: null })
               })(
                 <RadioGroup>
                   <RadioButton value="input">Input</RadioButton>
