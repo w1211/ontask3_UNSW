@@ -118,13 +118,10 @@ const EditableField = ({ field, value, onChange, onOk, isColumnEdit }) => {
         component = (
           <InputNumber 
             autoFocus={!isColumnEdit} 
-            defaultValue={value} 
+            defaultValue={value instanceof Array ? null : value} 
             onChange={(e) => onChange(e)}
-            // The below values must be undefined instead of null if no value is defined
-            // Otherwise the InputNumber component behaves incorrectly
-            // This is not required for the Slider component, as minimum, maximum and step fields would be required (and hence always have a value)
-            min={field.minimum ? field.minimum : undefined}
-            max={field.maximum ? field.maximum : undefined}
+            min={field.minimum !== undefined && field.minimum !== null ? field.minimum : -Infinity}
+            max={field.maximum !== undefined && field.maximum !== null ? field.maximum : Infinity}
             step={field.interval ? field.interval : undefined}
             precision={field.precision}
           />

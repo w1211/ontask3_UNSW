@@ -135,7 +135,6 @@ class FormFieldModal extends React.Component {
               <Option value="number">Number</Option>
               <Option value="date">Date</Option>
               <Option value="checkbox">Checkbox</Option>
-              <Option value="dropdown">Dropdown</Option>
             </Select>
           )}
         </FormItem>
@@ -177,7 +176,7 @@ class FormFieldModal extends React.Component {
               <div>
                 <FormItem {...FormItemLayout} label="List style" style={{ marginBottom: 14 }}>
                   { form.getFieldDecorator('listStyle', {
-                    initialValue: field ? field.listStyle : 'dropdown',
+                    initialValue: field && field.listStyle ? field.listStyle : 'dropdown',
                   })(
                     <RadioGroup>
                       <RadioButton value="dropdown">Dropdown</RadioButton>
@@ -189,7 +188,7 @@ class FormFieldModal extends React.Component {
                 { (form.getFieldValue('listStyle') === 'radio' || (!form.getFieldValue('listStyle') && field && field.listStyle === 'radio')) &&
                   <FormItem {...FormItemLayout} label="Alignment" style={{ marginBottom: 14 }}>
                     { form.getFieldDecorator('alignment', {
-                      initialValue: field ? field.alignment : 'horizontal',
+                      initialValue: field && field.alignment ? field.alignment : 'horizontal',
                     })(
                       <RadioGroup>
                         <RadioButton value="horizontal">Horizontal</RadioButton>
