@@ -178,7 +178,7 @@ class ContainerList extends React.Component {
                           bodyStyle={{ flex: 1 }}
                           title={view.name}
                           actions={[
-                            <Link to={{ pathname: `/view/${view.id}`}}>
+                            <Link to={{ pathname: `/datalab/${view.id}/data`}}>
                               <Tooltip title="Edit DataLab">
                                 <Button icon="arrow-right"/>
                               </Tooltip>

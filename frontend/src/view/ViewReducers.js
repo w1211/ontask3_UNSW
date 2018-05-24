@@ -44,6 +44,8 @@ function view(state = {}, action) {
         loading: false,
         build: action.build,
         datasources: action.datasources,
+        data: null,
+        selectedId: null
       });
     case RECEIVE_VIEW:
       return Object.assign({}, state, {
