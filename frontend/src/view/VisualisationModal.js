@@ -77,7 +77,7 @@ class VisualisationModal extends React.Component {
     }
   }
 
-  generateCountField= (dv, type, interval, colNameSelected) => {
+  generateCountField = (dv, type, interval, colNameSelected) => {
     //generate count field based on type
     if (type === "number") {
       dv.transform({
@@ -95,6 +95,16 @@ class VisualisationModal extends React.Component {
       });
     }
     return dv;
+  }
+
+  getMaxCount = (dv) => {
+    dv.transform({
+      type: 'sort',
+      callback(a, b) {
+        return a.count - b.count;
+      }
+    });
+    return dv.rows[dv.rows.length-1].count;
   }
 
   generatePieChart = (dv,type, colNameSelected) => {
@@ -198,15 +208,55 @@ class VisualisationModal extends React.Component {
 
       //group by function
       if(groupByCol!=='None'){
+
+        dv = new dataView().source(data)
+        .transform({
+          type: 'partition',
+          groupBy: [ groupByCol ]
+        });
+
+        keys = Object.keys(dv.rows);
+
+        let maxCount=0;
+
+        for(let i in keys){
+          let tmpdv;
+          tmpdv = new dataView().source(data)
+          .transform({
+            type: 'filter',
+            callback(row) {
+              if('_'+row[groupByCol] === keys[i] && row[colNameSelected] !==''){
+                return row;
+              }
+            }
+          });
+          
+          if(chartType!=="boxPlot"){
+            this.generateCountField(tmpdv, type, interval, colNameSelected);
+            let tmpMax = this.getMaxCount(tmpdv);
+            if( tmpMax > maxCount){
+              maxCount = tmpMax;
+            }
+          }
+
+          if(chartType === "pieChart"){
+            this.generatePieChart(tmpdv, type, colNameSelected);
+          }
+          if(chartType==="boxPlot"){
+            this.generateBoxPlot(tmpdv, colNameSelected);
+          }
+          dataViews.push(tmpdv);
+        }
+
         if(chartType==="barChart"){
           cols = {
             [colNameSelected]: {
               tickInterval: interval,
               max: rangeMax,
-              min:rangeMin
+              min: rangeMin
             },
             count:{
-              max: data.length,
+              max: maxCount,
               min: 0
             }
           };
@@ -225,38 +275,6 @@ class VisualisationModal extends React.Component {
               max: rangeMax,
               min: rangeMin
           }};
-        }
-        
-        dv = new dataView().source(data)
-        .transform({
-          type: 'partition',
-          groupBy: [ groupByCol ]
-        });
-
-        keys = Object.keys(dv.rows);
-
-        for(let i in keys){
-          let tmpdv;
-          tmpdv = new dataView().source(data)
-          .transform({
-            type: 'filter',
-            callback(row) {
-              if('_'+row[groupByCol] === keys[i] && row[colNameSelected] !==''){
-                return row;
-              }
-            }
-          });
-
-          if(chartType!=="boxPlot"){
-            this.generateCountField(tmpdv, type, interval, colNameSelected);
-          }
-          if(chartType === "pieChart"){
-            this.generatePieChart(tmpdv, type, colNameSelected);
-          }
-          if(chartType==="boxPlot"){
-            this.generateBoxPlot(tmpdv, colNameSelected);
-          }
-          dataViews.push(tmpdv);
         }
       }
       else{
@@ -309,7 +327,7 @@ class VisualisationModal extends React.Component {
 
     return (
       <Modal
-        width={700}
+        width={1000}
         visible={visualisation_visible}
         title={'Visualisation'}
         onCancel={this.handleCancel}
@@ -408,7 +426,8 @@ class VisualisationModal extends React.Component {
               }
             </div>
           :
-            <Chart height={450} data={dv} scale={cols} forceFit>
+            <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
+            <Chart height={450} width={600} data={dv} scale={cols}>
               <Axis 
                 name={colNameSelected}
                 title={colNameSelected} 
@@ -435,6 +454,7 @@ class VisualisationModal extends React.Component {
                 </Guide>
               }
             </Chart>
+            </div>
           }
         </div>
       }
@@ -486,7 +506,8 @@ class VisualisationModal extends React.Component {
               })}
             </div>
           :
-            <Chart height={450} data={dv} scale={cols} padding={[ 80, 100, 80, 80 ]} forceFit>
+            <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
+            <Chart height={450} width={700} data={dv} scale={cols} padding={[ 80, 100, 80, 80 ]}>
               <Coord type='theta' radius={0.75} />
               <Axis name="percent" />
               <Legend position='right' offsetY={-window.innerHeight / 2 +330} offsetX={-30} />
@@ -522,6 +543,7 @@ class VisualisationModal extends React.Component {
                 />
               </Geom>
             </Chart>
+            </div>
           }
         </div>
       }
@@ -598,7 +620,8 @@ class VisualisationModal extends React.Component {
               }
             </div>
           :
-            <Chart height={450} data={dv} scale={cols} padding={[ 20, 120, 95 ]} forceFit>
+            <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
+            <Chart height={450} width={700} data={dv} scale={cols} padding={[ 20, 120, 95 ]}>
               <Axis name='na' />
               <Axis name='range' />
               <Tooltip showTitle={false} crosshairs={{type:'rect',style: {fill: '#E4E8F1', fillOpacity: 0.43}}}     
@@ -618,6 +641,7 @@ class VisualisationModal extends React.Component {
                 style={{stroke: 'rgba(0, 0, 0, 0.45)',fill: '#1890FF',fillOpacity: 0.3}}
               />
             </Chart>
+            </div>
           }
       </div>
       }
