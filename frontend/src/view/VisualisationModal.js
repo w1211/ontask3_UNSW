@@ -1,7 +1,7 @@
 import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
-import { Modal, Select, Slider, InputNumber } from 'antd';
+import { Modal, Select, Slider, InputNumber, TreeSelect } from 'antd';
 import { Chart, Geom, Axis, Legend, Coord, Tooltip, Label, Guide } from 'bizcharts';
 import { View as dataView} from '@antv/data-set';
 
@@ -19,13 +19,10 @@ class VisualisationModal extends React.Component {
     super(props);
     const { dispatch } = props;
     this.state = {
-      chartType: "barChart",
-      colNameSelected: null,
-      interval: 5,
-      rangeMin:0,
-      rangeMax:100,
-      groupByCol: 'None',
-      numBins:null
+      chartType: "barChart", colNameSelected: null,
+      interval: 5, rangeMin:0,
+      rangeMax:100, groupByCol: 'None',
+      numBins:null, visibleField: null
     };
     this.boundActionCreators = bindActionCreators(ViewActionCreators, dispatch);
   };
@@ -39,7 +36,7 @@ class VisualisationModal extends React.Component {
     this.setState({ chartType:"barChart", colNameSelected:null, 
                     rangeMin:0, rangeMax:100, 
                     interval:5, groupByCol:'None',
-                    numBins: null
+                    numBins: null, visibleField: null
                   }); 
   };
 
@@ -150,9 +147,24 @@ class VisualisationModal extends React.Component {
     return dv;
   }
 
+  generateSubOptionList = (field, data) => {
+    let keyList = [];
+    let dv = new dataView().source(data).transform({
+      type: 'aggregate', fields: [field], 
+      operations: 'count', as: 'count',
+      groupBy: [field]
+    });
+    
+    for(let i in dv.rows){
+      let tmp = dv.rows[i][field];
+      keyList.push({label:tmp, value:field+'-'+tmp, key:''+tmp+'-'+i});
+    }
+    return keyList;
+  }
+
   render() {
     const { visualisation_visible, build, data, visualise, isRowWise, record } = this.props;
-    const { chartType, interval, groupByCol } = this.state;
+    const { chartType, interval, groupByCol,visibleField } = this.state;
     let { rangeMin, rangeMax, numBins } = this.state;
 
     let dv;
@@ -206,7 +218,6 @@ class VisualisationModal extends React.Component {
         }
       }
 
-      //group by function
       if(groupByCol!=='None'){
 
         dv = new dataView().source(data)
@@ -238,7 +249,6 @@ class VisualisationModal extends React.Component {
               maxCount = tmpMax;
             }
           }
-
           if(chartType === "pieChart"){
             this.generatePieChart(tmpdv, type, colNameSelected);
           }
@@ -311,20 +321,23 @@ class VisualisationModal extends React.Component {
     }
   }
 
-    let options = [];
+    let options = [{label: 'None', value: 'None'}];
+
     build && build.steps.forEach((step, stepIndex) => {
       if (step.type === 'datasource') {
+        let index=0;
         step = step.datasource;
         step.fields.forEach(field => {
-          if (step.matching !== field && step.primary !== field) {
+          if (step.matching !== field && step.primary !== field && step.types[field]==='text') {
             const label = step.labels[field];
-            const type = step.types[field];
-            options.push({ stepIndex, field, label, type });
+            let sublist = this.generateSubOptionList(field, data);
+            options.push({ label: field, value: 'group-'+field, children: sublist, key: ''+field+'-'+index});
           };
+          index++;
         });
       };
     });
-
+    
     return (
       <Modal
         width={1000}
@@ -350,24 +363,21 @@ class VisualisationModal extends React.Component {
       { !isRowWise &&
           <div style={{display:"flex", justifyContent:"left", alignItems: "center"}}>
           <h4>Plot by: </h4>
-          <Select
-            showSearch
-            style={{ width: 150, marginLeft:10}}
+          <TreeSelect
+            style={{ width: 200, marginLeft:10}}
             onChange={(value)=>{
-              this.setState({groupByCol: value});
+              if(!value) return;
+              if(value.split('-')[0]==='group'){
+                this.setState({groupByCol: value.split('-')[1], visibleField: null});
+              }
+              else{
+                this.setState({groupByCol: value.split('-')[0], visibleField: value.split('-')[1]});
+              }
             }}
-            value={groupByCol}
-            placeholder="choose group"
-          >
-          <Option value={'None'}>None</Option>
-          {options.map((option, i) => {
-            if(option.type==='text'){
-              return(
-                <Option value={option.field} key={i}>{option.label}</Option>
-              )
-            }
-          })}
-        </Select>
+            treeData={options}
+            dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
+            placeholder="Please select"
+          />
         </div>
       }
 
@@ -404,24 +414,26 @@ class VisualisationModal extends React.Component {
       { chartType === "barChart" && dv &&
         <div>
           { groupByCol!=='None' ?
-            <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'flex-start'}}>
+            <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
               {dataViews.map((value, i)=>{
-                return(
-                  <div key={i} style={{margin:5, width:300}}>
-                  <p style={{paddingLeft:50}}>{keys[i].split('_').slice(1)}</p>
-                  <Chart height={250} width={300} data={value} scale={cols}>
-                    <Axis
-                      name={colNameSelected}
-                      title={colNameSelected}
-                      autoRotate={true}
-                    />
-                    <Axis title={"Count"} name= {"count"} />
-                    <Legend />
-                    <Tooltip crosshairs={{type : "y"}} />
-                    <Geom type='interval' position={colNameSelected+"*count"} />
-                  </Chart>
-                  </div>
-                );
+                if(!visibleField || visibleField==keys[i].split('_').slice(1)){
+                  return(
+                    <div key={i} style={{margin:5, width:300}}>
+                    <p style={{paddingLeft:50}}>{keys[i].split('-').slice(1)}</p>
+                    <Chart height={250} width={300} data={value} scale={cols}>
+                      <Axis
+                        name={colNameSelected}
+                        title={colNameSelected}
+                        autoRotate={true}
+                      />
+                      <Axis title={"Count"} name= {"count"} />
+                      <Legend />
+                      <Tooltip crosshairs={{type : "y"}} />
+                      <Geom type='interval' position={colNameSelected+"*count"} />
+                    </Chart>
+                    </div>
+                  );
+                }
               })
               }
             </div>
@@ -430,7 +442,7 @@ class VisualisationModal extends React.Component {
             <Chart height={450} width={600} data={dv} scale={cols}>
               <Axis 
                 name={colNameSelected}
-                title={colNameSelected} 
+                title={colNameSelected}
                 autoRotate={true}
               />
               <Axis title={"Count"} name= {"count"} />
@@ -462,47 +474,49 @@ class VisualisationModal extends React.Component {
       { chartType==="pieChart" && dv &&
         <div>
           {groupByCol!=='None' ?
-            <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'flex-start'}}>
+            <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
               {dataViews.map((value, i)=>{
-                return(
-                  <div key={i} style={{margin:5, width:300}}>
-                  <p style={{paddingLeft:50}}>{keys[i].split('_').slice(1)}</p>
-                  <Chart height={300} data={value} scale={cols} forceFit>
-                    <Coord type='theta' radius={0.75} />
-                    <Axis name="percent" />
-                    <Legend />
-                    <Tooltip 
-                      showTitle={false} 
-                      itemTpl='<li>
-                                <span style="background-color:{color};" class="g2-tooltip-marker"></span>
-                                {name}: {value}
-                              </li>'
-                    />
-                    <Geom
-                      type="intervalStack"
-                      position="percent"
-                      color={colNameSelected}
-                      tooltip={colNameSelected &&
-                        [colNameSelected+'*percent',(colNameSelected, percent) => {
-                          percent = (percent * 100).toFixed(2) + '%';
-                          return {
-                            name: colNameSelected,
-                            value: percent
-                          };
-                        }]
-                      }
-                      style={{lineWidth: 1, stroke: '#fff'}}
-                    >
-                      <Label
-                        content='percent'
-                        formatter={(val, item) => {
-                            return item.point[colNameSelected] + ': ' + val;
-                        }}
+                if(!visibleField || visibleField==keys[i].split('_').slice(1)){
+                  return(
+                    <div key={i} style={{margin:5, width:300}}>
+                    <p style={{paddingLeft:50}}>{keys[i].split('_').slice(1)}</p>
+                    <Chart height={300} data={value} scale={cols} forceFit>
+                      <Coord type='theta' radius={0.75} />
+                      <Axis name="percent" />
+                      <Legend />
+                      <Tooltip 
+                        showTitle={false} 
+                        itemTpl='<li>
+                                  <span style="background-color:{color};" class="g2-tooltip-marker"></span>
+                                  {name}: {value}
+                                </li>'
                       />
-                    </Geom>
-                  </Chart>
-                  </div>
-                );
+                      <Geom
+                        type="intervalStack"
+                        position="percent"
+                        color={colNameSelected}
+                        tooltip={colNameSelected &&
+                          [colNameSelected+'*percent',(colNameSelected, percent) => {
+                            percent = (percent * 100).toFixed(2) + '%';
+                            return {
+                              name: colNameSelected,
+                              value: percent
+                            };
+                          }]
+                        }
+                        style={{lineWidth: 1, stroke: '#fff'}}
+                      >
+                        <Label
+                          content='percent'
+                          formatter={(val, item) => {
+                              return item.point[colNameSelected] + ': ' + val;
+                          }}
+                        />
+                      </Geom>
+                    </Chart>
+                    </div>
+                  );
+                }
               })}
             </div>
           :
@@ -589,33 +603,35 @@ class VisualisationModal extends React.Component {
       { chartType==="boxPlot" &&
         <div>
         { groupByCol!=='None' ?
-            <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'flex-start'}}>
+            <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
               {dataViews.map((value, i)=>{
-                return(
-                  <div key={i} style={{margin:5, width:300}}>
-                  <p style={{paddingLeft:50}}>{keys[i].split('_').slice(1)}</p>
-                  <Chart height={250} width={300} data={value} scale={cols}>
-                    <Axis name='na' />
-                    <Axis name='range' />
-                    <Tooltip showTitle={false} crosshairs={{type:'rect', style: {fill: '#E4E8F1',fillOpacity: 0.43}}} 
-                    itemTpl='<li style="margin-bottom:4px;">
-                            <span style="background-color:{color};" class="g2-tooltip-marker"></span>
-                            {name}<br/>
-                            <span style="padding-left: 16px">Max: {high}</span><br/>
-                            <span style="padding-left: 16px">Upper quartile: {q3}</span><br/>
-                            <span style="padding-left: 16px">Median: {median}</span><br/>
-                            <span style="padding-left: 16px">Lower quartile: {q1}</span><br/>
-                            <span style="padding-left: 16px">Min: {low}</span><br/></li>'/>
-                    <Geom type="schema" position="na*range" shape='box' tooltip={['na*low*q1*median*q3*high', (na, low, q1, median, q3, high) => {
-                      return {
-                        name: na, low, q1, median, q3, high
-                      };
-                      }]}
-                      style={{stroke: 'rgba(0, 0, 0, 0.45)',fill: '#1890FF',fillOpacity: 0.3}}
-                    />
-                  </Chart>
-                  </div>
-                );
+                if(!visibleField || visibleField==keys[i].split('_').slice(1)){
+                  return(
+                    <div key={i} style={{margin:5, width:300}}>
+                    <p style={{paddingLeft:50}}>{keys[i].split('_').slice(1)}</p>
+                    <Chart height={250} width={300} data={value} scale={cols}>
+                      <Axis name='na' />
+                      <Axis name='range' />
+                      <Tooltip showTitle={false} crosshairs={{type:'rect', style: {fill: '#E4E8F1',fillOpacity: 0.43}}} 
+                      itemTpl='<li style="margin-bottom:4px;">
+                              <span style="background-color:{color};" class="g2-tooltip-marker"></span>
+                              {name}<br/>
+                              <span style="padding-left: 16px">Max: {high}</span><br/>
+                              <span style="padding-left: 16px">Upper quartile: {q3}</span><br/>
+                              <span style="padding-left: 16px">Median: {median}</span><br/>
+                              <span style="padding-left: 16px">Lower quartile: {q1}</span><br/>
+                              <span style="padding-left: 16px">Min: {low}</span><br/></li>'/>
+                      <Geom type="schema" position="na*range" shape='box' tooltip={['na*low*q1*median*q3*high', (na, low, q1, median, q3, high) => {
+                        return {
+                          name: na, low, q1, median, q3, high
+                        };
+                        }]}
+                        style={{stroke: 'rgba(0, 0, 0, 0.45)',fill: '#1890FF',fillOpacity: 0.3}}
+                      />
+                    </Chart>
+                    </div>
+                  );
+                }
               })
               }
             </div>
