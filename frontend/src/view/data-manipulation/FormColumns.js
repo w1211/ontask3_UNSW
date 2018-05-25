@@ -47,16 +47,20 @@ const Title = ({ visualise, label, editable, onEdit, confirmEdit, openVisualisat
       <div className="column-header-icons" style={{ display: 'inline-block' }}>
         <Tooltip title="Discard changes">
           <Icon type="close" onClick={() => {
-            confirm({
-              title: 'Discard changes',
-              content: 'Are you sure you want to discard changes made to the form?',
-              okText: 'Yes, discard',
-              okType: 'danger',
-              cancelText: 'Cancel',
-              onOk() {
-                onEdit({});
-              }
-            });
+            if ('values' in editable) {
+              confirm({
+                title: 'Discard changes',
+                content: 'Are you sure you want to discard changes made to the form?',
+                okText: 'Yes, discard',
+                okType: 'danger',
+                cancelText: 'Cancel',
+                onOk() {
+                  onEdit({});
+                }
+              });
+            } else {
+              onEdit({});
+            };
           }}/>
         </Tooltip>
         <Tooltip title="Save data">
