@@ -210,6 +210,35 @@ class VisualisationModal extends React.Component {
     return dv;
   }
 
+  generateGroupedBoxPlot = (data, colNameSelected, groupByCol) => {
+    let dv;
+
+    dv = new dataView().source(data)
+    .transform({
+      type: 'filter',
+      callback(row) {
+        if(row[colNameSelected] !=='' && row[groupByCol] !==''){
+          return row;
+        }
+      }
+    })
+    .transform({
+      type: 'map',
+      callback: (obj) => {
+        obj[colNameSelected] = Number(obj[colNameSelected]);
+        obj.na = colNameSelected;
+        return obj;
+    }})
+    .transform({
+      type: 'bin.quantile',
+      field: colNameSelected,
+      as: '_bin',
+      groupBy: [ groupByCol ],
+    });
+
+    return dv;
+  }
+
   render() {
     const { visualisation_visible, build, data, visualise, isRowWise, record } = this.props;
     const { chartType, interval, groupByCol, visibleField, onSameChart } = this.state;
@@ -251,6 +280,16 @@ class VisualisationModal extends React.Component {
       
       if(groupByCol!=='None' && onSameChart===true && chartType==="barChart"){
         dv = this.generateStackedHistogram(data, type, interval, colNameSelected, groupByCol);
+      }
+
+      if(groupByCol!=='None' && onSameChart===true && chartType==="boxPlot"){
+        cols={
+          _bin: {
+            max: rangeMax,
+            min: rangeMin
+        }};
+
+        dv = this.generateGroupedBoxPlot(data, colNameSelected, groupByCol);
       }
 
       if(groupByCol!=='None' && onSameChart==false){
@@ -663,38 +702,52 @@ class VisualisationModal extends React.Component {
       { chartType==="boxPlot" &&
         <div>
         { groupByCol!=='None' ?
-            <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
-              {dataViews.map((value, i)=>{
-                if(!visibleField || visibleField==keys[i].split('_').slice(1)){
-                  return(
-                    <div key={i} style={{margin:5, width:300}}>
-                    <p style={{paddingLeft:50}}>{keys[i].split('_').slice(1)}</p>
-                    <Chart height={250} width={300} data={value} scale={cols}>
-                      <Axis name='na' />
-                      <Axis name='range' />
-                      <Tooltip showTitle={false} crosshairs={{type:'rect', style: {fill: '#E4E8F1',fillOpacity: 0.43}}} 
-                      itemTpl='<li style="margin-bottom:4px;">
-                              <span style="background-color:{color};" class="g2-tooltip-marker"></span>
-                              {name}<br/>
-                              <span style="padding-left: 16px">Max: {high}</span><br/>
-                              <span style="padding-left: 16px">Upper quartile: {q3}</span><br/>
-                              <span style="padding-left: 16px">Median: {median}</span><br/>
-                              <span style="padding-left: 16px">Lower quartile: {q1}</span><br/>
-                              <span style="padding-left: 16px">Min: {low}</span><br/></li>'/>
-                      <Geom type="schema" position="na*range" shape='box' tooltip={['na*low*q1*median*q3*high', (na, low, q1, median, q3, high) => {
-                        return {
-                          name: na, low, q1, median, q3, high
-                        };
-                        }]}
-                        style={{stroke: 'rgba(0, 0, 0, 0.45)',fill: '#1890FF',fillOpacity: 0.3}}
-                      />
-                    </Chart>
-                    </div>
-                  );
-                }
-              })
+            <div>
+              { onSameChart ? 
+              <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
+                <Chart height={450} width={900} data={dv} scale={cols} padding={[ 20, 120, 95 ]}>
+                  <Tooltip crosshairs={{type:'rect'}} />
+                  <Legend />
+                  <Axis name='na' />
+                  <Axis name='_bin' />
+                  <Geom type="schema" position="na*_bin" shape='box' color={groupByCol} adjust='dodge'/>
+                </Chart>
+              </div>
+              :
+              <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
+                {dataViews.map((value, i)=>{
+                  if(!visibleField || visibleField==keys[i].split('_').slice(1)){
+                    return(
+                      <div key={i} style={{margin:5, width:300}}>
+                      <p style={{paddingLeft:50}}>{keys[i].split('_').slice(1)}</p>
+                      <Chart height={250} width={300} data={value} scale={cols}>
+                        <Axis name='na' />
+                        <Axis name='range' />
+                        <Tooltip showTitle={false} crosshairs={{type:'rect', style: {fill: '#E4E8F1',fillOpacity: 0.43}}} 
+                        itemTpl='<li style="margin-bottom:4px;">
+                                <span style="background-color:{color};" class="g2-tooltip-marker"></span>
+                                {name}<br/>
+                                <span style="padding-left: 16px">Max: {high}</span><br/>
+                                <span style="padding-left: 16px">Upper quartile: {q3}</span><br/>
+                                <span style="padding-left: 16px">Median: {median}</span><br/>
+                                <span style="padding-left: 16px">Lower quartile: {q1}</span><br/>
+                                <span style="padding-left: 16px">Min: {low}</span><br/></li>'/>
+                        <Geom type="schema" position="na*range" shape='box' tooltip={['na*low*q1*median*q3*high', (na, low, q1, median, q3, high) => {
+                          return {
+                            name: na, low, q1, median, q3, high
+                          };
+                          }]}
+                          style={{stroke: 'rgba(0, 0, 0, 0.45)',fill: '#1890FF',fillOpacity: 0.3}}
+                        />
+                      </Chart>
+                      </div>
+                    );
+                  }
+                })
               }
             </div>
+          }
+          </div>
           :
             <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
             <Chart height={450} width={700} data={dv} scale={cols} padding={[ 20, 120, 95 ]}>
