@@ -53,7 +53,7 @@ export const fetchSheetnames = (file, payload) => dispatch => {
   let data;
   if (file) {
     data = new FormData();
-    data.append('file', file.originFileObj, file.name);
+    data.append('file', file, file.name);
   } else {
     data = payload;
   }
@@ -83,7 +83,7 @@ export const createDatasource = (containerId, payload, file) => dispatch => {
   let data;
   if (file) {
     data = new FormData();
-    data.append('file', file.originFileObj, file.name);
+    data.append('file', file, file.name);
     data.append('name', payload.name);
     data.append('container', payload.container);
     data.append('payload', JSON.stringify(payload));
@@ -116,14 +116,11 @@ export const createDatasource = (containerId, payload, file) => dispatch => {
 };
 
 export const updateDatasource = (datasourceId, payload, file) => dispatch => {
-  dispatch(beginRequestDatasource());
-
   let data;
   if (file) {
     data = new FormData();
-    data.append('file', file.originFileObj, file.name);
+    data.append('file', file, file.name);
     data.append('name', payload.name);
-    data.append('container', payload.container);
     data.append('payload', JSON.stringify(payload));
   } else {
     data = payload;
