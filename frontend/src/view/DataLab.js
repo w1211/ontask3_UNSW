@@ -4,12 +4,15 @@ import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { Switch, Route } from 'react-router-dom';
 import { Spin, Layout, Breadcrumb, Icon, Radio } from 'antd';
+import { DragDropContext } from 'react-dnd';
+import HTML5Backend from 'react-dnd-html5-backend';
 
 import * as ViewActionCreators from './ViewActions';
 
 import './DataLab.css';
 
 import Model from './interfaces/Model';
+import Details from './interfaces/Details';
 import Data from './interfaces/Data';
 
 const { Content } = Layout;
@@ -70,9 +73,10 @@ class DataLab extends React.Component {
                   <RadioGroup 
                     size="large" 
                     onChange={(e) => history.push(`${match.url}/${e.target.value}`)}
-                    defaultValue={location.pathname.split('/').slice(-1)[0]} 
+                    value={location.pathname.split('/').slice(-1)[0]} 
                   >
                     <RadioButton value="data">Data</RadioButton>
+                    <RadioButton value="details">Details</RadioButton>
                     <RadioButton value="model">Model</RadioButton>
                   </RadioGroup>
                 </div>
@@ -84,6 +88,7 @@ class DataLab extends React.Component {
                 <Switch>
                   <Route exact path={`${match.url}`} component={Model}/>
                   <Route path={`${match.url}/model`} component={Model}/>
+                  <Route path={`${match.url}/details`} component={Details}/>
                   <Route path={`${match.url}/data`} component={Data}/>
                 </Switch> 
               }
@@ -109,4 +114,4 @@ const mapStateToProps = (state) => {
   };
 };
  
-export default connect(mapStateToProps)(DataLab);
+export default connect(mapStateToProps)(DragDropContext(HTML5Backend)(DataLab));

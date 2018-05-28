@@ -38,6 +38,8 @@ const datasourceColumns = (step, stepIndex, sort, openVisualisation) => {
     const title = isPrimaryOrMatching ? label : <HeaderDropdown visualise={visualise} label={label} openVisualisation={openVisualisation}/>;
 
     columns.push({
+      stepIndex,
+      field,
       title,
       dataIndex: label,
       key: label,

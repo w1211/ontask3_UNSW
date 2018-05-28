@@ -200,3 +200,26 @@
 .dataManipulation .column-header.datasource {
   color: #2196F3;
 }
+
+.dataLab .details .from {
+  display: flex;
+  align-items: center;
+}
+
+.dataLab .details .from i {
+  font-size: 125%;
+  margin-right: 5px;
+}
+.dataLab .details .datasourceIcon {
+  color: #BBDEFB;
+}
+.dataLab .details .formIcon {
+  color: #D1C4E9;
+}
+
+.dataLab .details  tr.drop-over-downward td {
+  border-bottom: 2px dashed #1890ff;
+}
+.dataLab .details  tr.drop-over-upward td {
+  border-top: 2px dashed #1890ff;
+}

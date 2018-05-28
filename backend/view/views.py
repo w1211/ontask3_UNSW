@@ -32,9 +32,15 @@ class ViewViewSet(viewsets.ModelViewSet):
         if queryset.count():
             raise ValidationError('A view with this name already exists')
 
-        data = self.combine_data(self.request.data['steps'])
+        steps = self.request.data['steps']
+        data = self.combine_data(steps)
 
-        serializer.save(data=data)
+        order = []
+        for (step_index, step) in enumerate(steps):
+            for field in step[step['type']]['fields']:
+                order.append({ 'stepIndex': step_index, 'field': field })
+
+        serializer.save(data=data, order=order)
 
     def perform_update(self, serializer):
         self.check_object_permissions(self.request, self.get_object())
@@ -47,9 +53,26 @@ class ViewViewSet(viewsets.ModelViewSet):
         if queryset.count():
             raise ValidationError('A view with this name already exists')
 
-        data = self.combine_data(self.request.data['steps'])
+        steps = self.request.data['steps']
+        data = self.combine_data(steps)
 
-        serializer.save(data=data)
+        order = [item for item in self.get_object().order]
+
+        # Check for any removed fields and remove from order list
+        for (item_index, item) in enumerate(order):
+            step = steps[item['stepIndex']]
+            fields = step[step['type']]['fields']
+            if item['field'] not in fields:
+                del order[item_index]
+
+        # Check for any added fields and append to end of order list
+        for (step_index, step) in enumerate(steps):
+            for field in step[step['type']]['fields']:
+                already_exists = next((item for item in order if item['stepIndex'] == step_index and item['field'] == field), None)
+                if not already_exists:
+                    order.append({ 'stepIndex': step_index, 'field': field })
+         
+        serializer.save(data=data, order=order)
 
     def perform_destroy(self, obj):
         self.check_object_permissions(self.request, obj)
@@ -192,3 +215,21 @@ class ViewViewSet(viewsets.ModelViewSet):
         View.objects(id=id).update(set__data = data)
 
         return JsonResponse({ 'data': data })
+
+    @detail_route(methods=['patch'])
+    def change_column_order(self, request, id=None):
+        view = View.objects.get(id=id)
+        self.check_object_permissions(self.request, view)
+
+        order = [item for item in view.order]
+        drag_index = request.data['dragIndex']
+        hover_index = request.data['hoverIndex']
+
+        field = order.pop(drag_index)
+        order.insert(hover_index, field)
+
+        serializer = ViewSerializer(instance=view, data={'order': order}, partial=True)
+        serializer.is_valid()
+        serializer.save()
+
+        return JsonResponse(serializer.data)

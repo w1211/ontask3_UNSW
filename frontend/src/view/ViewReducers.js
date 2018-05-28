@@ -31,7 +31,6 @@ function view(state = {}, action) {
       });
     case SUCCESS_REQUEST_VIEW:
       return Object.assign({}, state, {
-        visible: false,
         loading: false,
         error: null,
         datasources: null,
@@ -50,6 +49,7 @@ function view(state = {}, action) {
     case RECEIVE_VIEW:
       return Object.assign({}, state, {
         loading: false,
+        error: null,
         selectedId: action.selectedId,
         build: action.build,
         data: action.data,

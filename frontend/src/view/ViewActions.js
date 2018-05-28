@@ -72,9 +72,17 @@ export const deleteView = (viewId) => dispatch => {
   });
 };
 
-const receiveView = (view) => ({
+const receiveView = (dataLab) => ({
   type: RECEIVE_VIEW,
-  view
+  selectedId: dataLab.id,
+  build: { 
+    name: dataLab.name, 
+    steps: dataLab.steps, 
+    order: dataLab.order,
+    errors: { steps: [] }
+  },
+  data: dataLab.data,
+  datasources: dataLab.datasources
 });
 
 export const fetchView = (viewId) => dispatch => {
@@ -141,17 +149,7 @@ export const retrieveDataLab = (dataLabId) => dispatch => {
         };
       });
 
-      dispatch({
-        type: RECEIVE_VIEW,
-        selectedId: dataLab.id,
-        build: { 
-          name: dataLab.name, 
-          steps: dataLab.steps, 
-          errors: { steps: [] }
-        },
-        data: dataLab.data,
-        datasources: dataLab.datasources
-      });
+      dispatch(receiveView(dataLab));
     }
   }
 
@@ -450,10 +448,11 @@ export const saveBuild = (history, containerId, selectedId) => (dispatch, getSta
         description: error
       });
     },
-    successFn: (response) => {
-      dispatch(successRequestView());
+    successFn: (dataLab) => {
+      dataLab.datasources = datasources;
+      dispatch(receiveView(dataLab));
        // Redirect to data manipulation interface
-       history.push({ pathname: `/view/${response.id}` });
+       history.push({ pathname: `/datalab/${dataLab.id}/data` });
        notification['success']({
          message: `DataLab ${selectedId ? 'updated' : 'created'}`,
          description: `The DataLab was successfully ${selectedId ? 'updated' : 'created'}.`
@@ -484,6 +483,32 @@ export const updateFormValues = (dataLabId, payload, callback) => dispatch => {
         data: response.data
       });
       callback();
+    },
+    payload
+  }
+
+  requestWrapper(parameters);
+};
+
+export const changeColumnOrder = (dataLabId, payload) => (dispatch, getState) => {
+  const { view } = getState();
+  const datasources = view.datasources;
+
+  const parameters = {
+    initialFn: () => { },
+    url: `/view/${dataLabId}/change_column_order/`,
+    method: 'PATCH',
+    errorFn: (error) => {
+      console.log(error);
+      // notification['error']({
+      //   message: 'Failed to update form',
+      //   description: error
+      // });
+    },
+    successFn: (dataLab) => {
+      message.success('Column order successfully updated.');
+      dataLab.datasources = datasources;
+      dispatch(receiveView(dataLab));
     },
     payload
   }

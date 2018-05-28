@@ -154,6 +154,8 @@ const formColumns = (step, stepIndex, sort, editable, onEdit, confirmEdit, openV
     const title = isPrimary ? label : <Title visualise={visualise} label={label} editable={editable} onEdit={onEdit} confirmEdit={confirmEdit} openVisualisation={openVisualisation}/>;
 
     columns.push({
+      stepIndex,
+      field,
       title,
       dataIndex: label,
       key: label,

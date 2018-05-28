@@ -3,9 +3,6 @@ import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { Button, Form, Input } from 'antd';
 
-import { DragDropContext } from 'react-dnd'
-import HTML5Backend from 'react-dnd-html5-backend'
-
 import * as ViewActionCreators from '../ViewActions';
 
 import Module from '../draggable/Module';
@@ -88,7 +85,7 @@ class Model extends React.Component {
     const { location, history, form, selectedId, build, datasources, discrepencies } = this.props;
 
     const containerId = location.state && location.state.containerId;
-
+    
     return (
       <div style={{ paddingRight: 160 }}>
         <h2>Details</h2>
@@ -181,4 +178,4 @@ const mapStateToProps = (state) => {
   };
 };
  
-export default connect(mapStateToProps)(Form.create()(DragDropContext(HTML5Backend)(Model)));
+export default connect(mapStateToProps)(Form.create()(Model));

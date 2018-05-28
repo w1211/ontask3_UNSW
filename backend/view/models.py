@@ -57,3 +57,4 @@ class View(Document):
     name = StringField(required=True)
     steps = EmbeddedDocumentListField(Module)
     data = ListField(DictField())
+    order = ListField(DictField())
