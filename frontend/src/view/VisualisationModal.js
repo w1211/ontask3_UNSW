@@ -1,7 +1,7 @@
 import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
-import { Modal, Select, Slider, InputNumber, TreeSelect } from 'antd';
+import { Modal, Select, Slider, InputNumber, TreeSelect, Checkbox } from 'antd';
 import { Chart, Geom, Axis, Legend, Coord, Tooltip, Label, Guide } from 'bizcharts';
 import { View as dataView} from '@antv/data-set';
 
@@ -22,7 +22,8 @@ class VisualisationModal extends React.Component {
       chartType: "barChart", colNameSelected: null,
       interval: 5, rangeMin:0,
       rangeMax:100, groupByCol: 'None',
-      numBins:null, visibleField: null
+      numBins:null, visibleField: null,
+      onSameChart: false
     };
     this.boundActionCreators = bindActionCreators(ViewActionCreators, dispatch);
   };
@@ -36,7 +37,8 @@ class VisualisationModal extends React.Component {
     this.setState({ chartType:"barChart", colNameSelected:null, 
                     rangeMin:0, rangeMax:100, 
                     interval:5, groupByCol:'None',
-                    numBins: null, visibleField: null
+                    numBins: null, visibleField: null,
+                    onSameChart: false
                   }); 
   };
 
@@ -162,9 +164,55 @@ class VisualisationModal extends React.Component {
     return keyList;
   }
 
+  getMinMaxValue = (data, colNameSelected) => {
+    let dv = new dataView()
+    .source(data)
+    .transform({
+      type: 'filter',
+      callback(row) {
+        if(row[colNameSelected] !==''){
+          row[colNameSelected] = Number(row[colNameSelected]);
+          return row;
+        }
+      }
+    })
+    .transform({
+      type: 'aggregate',
+      fields: [colNameSelected, colNameSelected],
+      operations: ['max', 'min'],
+      as: ['maxValue', 'minValue']
+    });
+
+    return [Number(dv.rows[0].minValue),Number(dv.rows[0].maxValue)]
+  }
+
+  generateStackedHistogram = (data, type, interval, colNameSelected, groupByCol) => {
+    let dv;
+    if(type==='number'){
+      dv = new dataView().source(data)
+      .transform({
+        type: 'bin.histogram',
+        field: colNameSelected,
+        binWidth: interval,
+        groupBy: [groupByCol],
+        as: [colNameSelected, 'count']
+      });
+    }
+    else{
+      dv = new dataView().source(data)
+      .transform({
+        type: 'aggregate', fields: [colNameSelected], 
+        operations: 'count', as: 'count',
+        groupBy: [groupByCol]
+      });
+    }
+
+    return dv;
+  }
+
   render() {
     const { visualisation_visible, build, data, visualise, isRowWise, record } = this.props;
-    const { chartType, interval, groupByCol,visibleField } = this.state;
+    const { chartType, interval, groupByCol, visibleField, onSameChart } = this.state;
     let { rangeMin, rangeMax, numBins } = this.state;
 
     let dv;
@@ -186,27 +234,10 @@ class VisualisationModal extends React.Component {
         colNameSelected = buildStep.datasource.labels[fieldName];
       };
 
-      //get max and min values for colNameSelected
-      dv = new dataView()
-      .source(data)
-      .transform({
-        type: 'filter',
-        callback(row) {
-          if(row[colNameSelected] !==''){
-            row[colNameSelected] = Number(row[colNameSelected]);
-            return row;
-          }
-        }
-      })
-      .transform({
-        type: 'aggregate',
-        fields: [colNameSelected, colNameSelected],
-        operations: ['max', 'min'],
-        as: ['maxValue', 'minValue']
-      });
+      let minMax = this.getMinMaxValue(data, colNameSelected);
 
-      rangeMin = Number(dv.rows[0].minValue);
-      rangeMax = Number(dv.rows[0].maxValue);
+      rangeMin = minMax[0];
+      rangeMax = minMax[1];
 
       //calculate num of bins
       if(!numBins){
@@ -217,8 +248,12 @@ class VisualisationModal extends React.Component {
           numBins = (Math.ceil(rangeMax/interval)*interval - Math.floor(rangeMin/interval)*interval)/interval;
         }
       }
+      
+      if(groupByCol!=='None' && onSameChart===true && chartType==="barChart"){
+        dv = this.generateStackedHistogram(data, type, interval, colNameSelected, groupByCol);
+      }
 
-      if(groupByCol!=='None'){
+      if(groupByCol!=='None' && onSameChart==false){
 
         dv = new dataView().source(data)
         .transform({
@@ -287,7 +322,8 @@ class VisualisationModal extends React.Component {
           }};
         }
       }
-      else{
+
+      if(groupByCol==='None'){
         dv = new dataView()
           .source(data)
           .transform({
@@ -296,6 +332,7 @@ class VisualisationModal extends React.Component {
               return row[colNameSelected] !=='' ;
             }
         });
+
         if (chartType!=="boxPlot"){
           this.generateCountField(dv, type, interval, colNameSelected);
 
@@ -378,6 +415,7 @@ class VisualisationModal extends React.Component {
             dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
             placeholder="Please select"
           />
+          <Checkbox value={onSameChart} style={{ width: 200, marginLeft:10}} onChange={()=>{this.setState({onSameChart:!onSameChart})}}>On same chart</Checkbox>
         </div>
       }
 
@@ -414,29 +452,51 @@ class VisualisationModal extends React.Component {
       { chartType === "barChart" && dv &&
         <div>
           { groupByCol!=='None' ?
-            <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
-              {dataViews.map((value, i)=>{
-                if(!visibleField || visibleField==keys[i].split('_').slice(1)){
-                  return(
-                    <div key={i} style={{margin:5, width:300}}>
-                    <p style={{paddingLeft:50}}>{keys[i].split('-').slice(1)}</p>
-                    <Chart height={250} width={300} data={value} scale={cols}>
-                      <Axis
-                        name={colNameSelected}
-                        title={colNameSelected}
-                        autoRotate={true}
-                      />
-                      <Axis title={"Count"} name= {"count"} />
-                      <Legend />
-                      <Tooltip crosshairs={{type : "y"}} />
-                      <Geom type='interval' position={colNameSelected+"*count"} />
-                    </Chart>
-                    </div>
-                  );
-                }
-              })
-              }
-            </div>
+              onSameChart?
+                <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
+                  <Chart height={450} width={600} data={dv}>
+                    <Axis
+                      name={colNameSelected}
+                      title={colNameSelected}
+                      autoRotate={true}
+                      grid={{
+                        lineStyle: {
+                          stroke: '#d9d9d9',
+                          lineWidth: 1,
+                          lineDash: [ 2, 2 ]
+                        }
+                      }}
+                    />
+                    <Axis title={"Count"} name= {"count"} />
+                    <Legend />
+                    <Tooltip crosshairs={false} position={'top'} inPlot={false}/>
+                    <Geom type='intervalStack' position={colNameSelected+"*count"} color={groupByCol}/>
+                  </Chart>
+                </div>
+                  :        
+                <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
+                  {dataViews.map((value, i)=>{
+                    if(!visibleField || visibleField==keys[i].split('_').slice(1)){
+                      return(
+                        <div key={i} style={{margin:5, width:300}}>
+                        <p style={{paddingLeft:50}}>{keys[i].split('-').slice(1)}</p>
+                        <Chart height={250} width={300} data={value} scale={cols}>
+                          <Axis
+                            name={colNameSelected}
+                            title={colNameSelected}
+                            autoRotate={true}
+                          />
+                          <Axis title={"Count"} name= {"count"} />
+                          <Legend />
+                          <Tooltip crosshairs={{type : "y"}} />
+                          <Geom type='interval' position={colNameSelected+"*count"} />
+                        </Chart>
+                        </div>
+                      );
+                    }
+                  })
+                  }
+                </div>    
           :
             <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
             <Chart height={450} width={600} data={dv} scale={cols}>
