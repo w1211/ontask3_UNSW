@@ -74,12 +74,13 @@ class Details extends React.Component {
           step.fields.forEach((field, fieldIndex) => {
             tableData.push({
               stepIndex,
-              field,
+              field: field.name,
               key: field.name,
               label: field.name,
               module,
               from: step.name, 
-              type: field.type
+              type: field.type,
+              visible: build.order.find(column => column.stepIndex === stepIndex && column.field === field.name).visible
             });
           });
         };

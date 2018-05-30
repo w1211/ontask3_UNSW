@@ -155,7 +155,7 @@ const formColumns = (step, stepIndex, sort, editable, onEdit, confirmEdit, openV
 
     columns.push({
       stepIndex,
-      field,
+      field: label,
       title,
       dataIndex: label,
       key: label,

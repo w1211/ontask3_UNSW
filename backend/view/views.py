@@ -62,6 +62,8 @@ class ViewViewSet(viewsets.ModelViewSet):
         for item in order:
             step = steps[item['stepIndex']]
             fields = step[step['type']]['fields']
+            if step['type'] == 'form':
+                fields = [field['name'] for field in fields]
             if item['field'] not in fields:
                 order = filter(lambda x: x['field'] != item['field'] and x['stepIndex'] != item['stepIndex'], order)
         
@@ -70,10 +72,12 @@ class ViewViewSet(viewsets.ModelViewSet):
         # Check for any added fields and append to end of order list
         for (step_index, step) in enumerate(steps):
             for field in step[step['type']]['fields']:
+                if step['type'] == 'form':
+                    field = field['name']
                 already_exists = next((item for item in order if item['stepIndex'] == step_index and item['field'] == field), None)
                 if not already_exists:
                     order.append({ 'stepIndex': step_index, 'field': field })
-         
+        
         serializer.save(data=data, order=order)
 
     def perform_destroy(self, obj):
