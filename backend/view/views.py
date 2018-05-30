@@ -56,7 +56,7 @@ class ViewViewSet(viewsets.ModelViewSet):
         steps = self.request.data['steps']
         data = self.combine_data(steps)
 
-        order = [item for item in self.get_object().order]
+        order = [{ 'stepIndex': item['stepIndex'], 'field': item['field'], 'visible': item['visible'] } for item in self.get_object().order]
 
         # Check for any removed fields and remove from order list
         for item in order:
@@ -66,7 +66,7 @@ class ViewViewSet(viewsets.ModelViewSet):
                 order = filter(lambda x: x['field'] != item['field'] and x['stepIndex'] != item['stepIndex'], order)
         
         order = list(order)
-        
+
         # Check for any added fields and append to end of order list
         for (step_index, step) in enumerate(steps):
             for field in step[step['type']]['fields']:
@@ -223,7 +223,7 @@ class ViewViewSet(viewsets.ModelViewSet):
         view = View.objects.get(id=id)
         self.check_object_permissions(self.request, view)
 
-        order = [item for item in view.order]
+        order = [{ 'stepIndex': item['stepIndex'], 'field': item['field'], 'visible': item['visible'] } for item in view.order]
         drag_index = request.data['dragIndex']
         hover_index = request.data['hoverIndex']
 

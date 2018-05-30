@@ -5,6 +5,10 @@ from mongoengine.fields import StringField, DictField, ListField, EmbeddedDocume
 from container.models import Container
 from datasource.models import DataSource
 
+class Column(EmbeddedDocument):
+    stepIndex = IntField()
+    field = StringField()
+    visible = BooleanField(default=True)
 
 class Discrepencies(EmbeddedDocument):
     matching = BooleanField()
@@ -57,4 +61,4 @@ class View(Document):
     name = StringField(required=True)
     steps = EmbeddedDocumentListField(Module)
     data = ListField(DictField())
-    order = ListField(DictField())
+    order = EmbeddedDocumentListField(Column)
