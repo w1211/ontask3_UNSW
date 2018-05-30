@@ -59,12 +59,14 @@ class ViewViewSet(viewsets.ModelViewSet):
         order = [item for item in self.get_object().order]
 
         # Check for any removed fields and remove from order list
-        for (item_index, item) in enumerate(order):
+        for item in order:
             step = steps[item['stepIndex']]
             fields = step[step['type']]['fields']
             if item['field'] not in fields:
-                del order[item_index]
-
+                order = filter(lambda x: x['field'] != item['field'] and x['stepIndex'] != item['stepIndex'], order)
+        
+        order = list(order)
+        
         # Check for any added fields and append to end of order list
         for (step_index, step) in enumerate(steps):
             for field in step[step['type']]['fields']:
