@@ -232,7 +232,8 @@ class VisualisationModal extends React.Component {
         if (step.type === 'datasource') {
           step = step.datasource;
           step.fields.forEach(field => {
-            if (step.matching !== field && step.primary !== field) {
+            const column = build.order.find(column => column.stepIndex === stepIndex && column.field === field);
+            if (step.matching !== field && step.primary !== field && column.visible) {
               const label = step.labels[field];
               options.push({ stepIndex, field, label });
             };

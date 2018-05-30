@@ -65,17 +65,20 @@ class Data extends React.Component {
       // Order the columns
       build.order.forEach(field => {
         const column = columns.find(column => column.stepIndex === field.stepIndex && column.field === field.field);
-        if (column) orderedColumns.push(column);
+        if (column && field.visible) orderedColumns.push(column);
       });
 
-      // First non-primary field in the first module, assuming its a datasource
-      const defaultField = build.steps[0].datasource.fields.filter(field => field !== build.steps[0].datasource.primary)[0];
+      // First non-primary field
+      const defaultField = orderedColumns.filter(column => {
+        const step = build.steps[column.stepIndex];
+        return column.field !== step[step.type].primary;
+      })[0];
+
       // Only show the row-wise visualisations column if we have at least one non-primary field in the dataset
       if (defaultField) {
         const defaultVisualisation = {
-          stepIndex: 0,
-          field: defaultField,
-          label: build.steps[0].datasource.labels[defaultField]
+          stepIndex: defaultField.stepIndex,
+          field: defaultField.field
         };
   
         orderedColumns.unshift({
@@ -95,7 +98,7 @@ class Data extends React.Component {
         
         <Table
           columns={orderedColumns}
-          dataSource={tableData}
+          dataSource={orderedColumns.length > 0 ? tableData : []}
           scroll={{ x: (columns.length - 1) * 175 }}
           onChange={this.handleChange} 
           pagination={{ showSizeChanger: true, pageSizeOptions: ['10', '25', '50', '100'] }}

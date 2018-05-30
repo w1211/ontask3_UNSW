@@ -235,3 +235,20 @@ class ViewViewSet(viewsets.ModelViewSet):
         serializer.save()
 
         return JsonResponse(serializer.data)
+
+    @detail_route(methods=['patch'])
+    def change_column_visibility(self, request, id=None):
+        view = View.objects.get(id=id)
+        self.check_object_permissions(self.request, view)
+
+        column_index = request.data['columnIndex']
+        visible = request.data['visible']
+
+        order = [{ 'stepIndex': item['stepIndex'], 'field': item['field'], 'visible': item['visible'] } for item in view.order]
+        order[column_index]['visible'] = visible
+
+        serializer = ViewSerializer(instance=view, data={'order': order}, partial=True)
+        serializer.is_valid()
+        serializer.save()
+
+        return JsonResponse(serializer.data)

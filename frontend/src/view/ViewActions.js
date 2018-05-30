@@ -515,3 +515,29 @@ export const changeColumnOrder = (dataLabId, payload) => (dispatch, getState) =>
 
   requestWrapper(parameters);
 };
+
+export const changeColumnVisibility = (dataLabId, payload) => (dispatch, getState) => {
+  const { view } = getState();
+  const datasources = view.datasources;
+
+  const parameters = {
+    initialFn: () => { },
+    url: `/view/${dataLabId}/change_column_visibility/`,
+    method: 'PATCH',
+    errorFn: (error) => {
+      console.log(error);
+      // notification['error']({
+      //   message: 'Failed to update form',
+      //   description: error
+      // });
+    },
+    successFn: (dataLab) => {
+      message.success('Column visibility successfully updated.');
+      dataLab.datasources = datasources;
+      dispatch(receiveView(dataLab));
+    },
+    payload
+  }
+
+  requestWrapper(parameters);
+};

@@ -23,7 +23,7 @@ class Details extends React.Component {
   };
 
   render() {
-    const { build, datasources } = this.props;
+    const { build, datasources, selectedId } = this.props;
 
     let columns = [];
     let tableData = [];
@@ -37,8 +37,11 @@ class Details extends React.Component {
           if (record.module === 'form') return <div className="from"><Icon type="form" className="formIcon"/>{record.from}</div>;;
         }},
         { title: 'Type', dataIndex: 'type', key: 'type' },
-        { title: 'Visible', dataIndex: 'visible', key: 'visible', render: (text, record) => (
-          <Checkbox defaultChecked={true}/>
+        { title: 'Visible', dataIndex: 'visible', key: 'visible', render: (text, record, row) => (
+          <Checkbox 
+            defaultChecked={text} 
+            onChange={(e) => this.boundActionCreators.changeColumnVisibility(selectedId, { columnIndex: row, visible: e.target.checked })}
+          />
         )}
       ];
 
@@ -59,7 +62,8 @@ class Details extends React.Component {
               label,
               module,
               from: datasource.name, 
-              type
+              type,
+              visible: build.order.find(column => column.stepIndex === stepIndex && column.field === field).visible
             });
           });
 
