@@ -1,11 +1,13 @@
 import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
-import { Table, Icon, Checkbox } from 'antd';
+import { Table, Icon, Checkbox, Select } from 'antd';
 
 import * as ViewActionCreators from '../ViewActions';
 
 import components from '../draggable/Column';
+
+const { Option } = Select;
 
 
 class Details extends React.Component {
@@ -36,7 +38,20 @@ class Details extends React.Component {
           if (record.module === 'datasource') return <div className="from"><Icon type="database" className="datasourceIcon"/>{record.from}</div>;
           if (record.module === 'form') return <div className="from"><Icon type="form" className="formIcon"/>{record.from}</div>;;
         }},
-        { title: 'Type', dataIndex: 'type', key: 'type' },
+        { title: 'Type', dataIndex: 'type', key: 'type', render: (text, record) => {
+          if (record.module === 'datasource') return (
+            <Select 
+              size="small" 
+              defaultValue={text} 
+              onChange={(e) => this.boundActionCreators.updateFieldType(selectedId, { stepIndex: record.stepIndex, field: record.field, type: e })}
+            >
+              <Option value="text">text</Option>
+              <Option value="number">number</Option>
+              <Option value="date">date</Option>
+            </Select>
+          );
+          if (record.module === 'form') return text;
+        }},
         { title: 'Visible', dataIndex: 'visible', key: 'visible', render: (text, record, row) => (
           <Checkbox 
             defaultChecked={text} 

@@ -541,3 +541,29 @@ export const changeColumnVisibility = (dataLabId, payload) => (dispatch, getStat
 
   requestWrapper(parameters);
 };
+
+export const updateFieldType = (dataLabId, payload) => (dispatch, getState) => {
+  const { view } = getState();
+  const datasources = view.datasources;
+
+  const parameters = {
+    initialFn: () => { },
+    url: `/view/${dataLabId}/update_field_type/`,
+    method: 'PATCH',
+    errorFn: (error) => {
+      console.log(error);
+      // notification['error']({
+      //   message: 'Failed to update form',
+      //   description: error
+      // });
+    },
+    successFn: (dataLab) => {
+      message.success('Field type successfully updated.');
+      dataLab.datasources = datasources;
+      dispatch(receiveView(dataLab));
+    },
+    payload
+  }
+
+  requestWrapper(parameters);
+};

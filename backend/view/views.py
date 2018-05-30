@@ -256,3 +256,19 @@ class ViewViewSet(viewsets.ModelViewSet):
         serializer.save()
 
         return JsonResponse(serializer.data)
+
+
+    @detail_route(methods=['patch'])
+    def update_field_type(self, request, id=None):
+        view = View.objects.get(id=id)
+        self.check_object_permissions(self.request, view)
+
+        step_index = request.data['stepIndex']
+        field = request.data['field']
+        field_type = request.data['type']
+
+        view.steps[step_index].datasource.types[field] = field_type
+        view.save()
+
+        serializer = ViewSerializer(instance=view)
+        return JsonResponse(serializer.data)
