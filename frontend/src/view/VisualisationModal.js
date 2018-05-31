@@ -12,6 +12,7 @@ import { track } from "bizcharts";
 track(false);
 
 const {Option} = Select;
+const {TreeNode} = TreeSelect;
 const {Line, Text} = Guide;
 
 class VisualisationModal extends React.Component {
@@ -21,7 +22,7 @@ class VisualisationModal extends React.Component {
     this.state = {
       chartType: "barChart", colNameSelected: null,
       interval: 5, rangeMin:0,
-      rangeMax:100, groupByCol: 'None',
+      rangeMax:100, groupByCol: null,
       numBins:null, visibleField: null,
       onSameChart: false
     };
@@ -36,9 +37,9 @@ class VisualisationModal extends React.Component {
     this.boundActionCreators.closeVisualisationModal(); 
     this.setState({ chartType:"barChart", colNameSelected:null, 
                     rangeMin:0, rangeMax:100, 
-                    interval:5, groupByCol:'None',
+                    interval:5, groupByCol: null,
                     numBins: null, visibleField: null,
-                    onSameChart: false
+                    onSameChart: false, selections: null
                   }); 
   };
 
@@ -77,7 +78,6 @@ class VisualisationModal extends React.Component {
   }
 
   generateCountField = (dv, type, interval, colNameSelected) => {
-    //generate count field based on type
     if (type === "number") {
       dv.transform({
         type: 'bin.histogram',
@@ -283,11 +283,11 @@ class VisualisationModal extends React.Component {
         }
       }
       
-      if(groupByCol!=='None' && onSameChart===true && chartType==="barChart"){
+      if(groupByCol && onSameChart===true && chartType==="barChart"){
         dv = this.generateStackedHistogram(data, type, interval, colNameSelected, groupByCol);
       }
 
-      if(groupByCol!=='None' && onSameChart===true && chartType==="boxPlot"){
+      if(groupByCol && onSameChart===true && chartType==="boxPlot"){
         cols={
           _bin: {
             max: rangeMax,
@@ -297,7 +297,7 @@ class VisualisationModal extends React.Component {
         dv = this.generateGroupedBoxPlot(data, colNameSelected, groupByCol);
       }
 
-      if(groupByCol!=='None' && onSameChart==false){
+      if(groupByCol && onSameChart==false){
 
         dv = new dataView().source(data)
         .transform({
@@ -381,7 +381,7 @@ class VisualisationModal extends React.Component {
         }
       }
 
-      if(groupByCol==='None'){
+      if(!groupByCol){
         dv = new dataView()
           .source(data)
           .transform({
@@ -403,20 +403,20 @@ class VisualisationModal extends React.Component {
             }}};
             this.generatePieChart(dv, type, colNameSelected);
           }
-      }
+        }
 
-      if(chartType==="boxPlot"){
-        this.generateBoxPlot(dv, colNameSelected);
+        if(chartType==="boxPlot"){
+          this.generateBoxPlot(dv, colNameSelected);
 
-        cols ={
-          range: {
-            max: dv.rows[0].high
-        }}
+          cols ={
+            range: {
+              max: dv.rows[0].high
+          }}
+        }
       }
     }
-  }
 
-    let options = [{label: 'None', value: 'None'}];
+    let options = [];
 
     build && build.steps.forEach((step, stepIndex) => {
       if (step.type === 'datasource') {
@@ -460,20 +460,65 @@ class VisualisationModal extends React.Component {
           <h4>Plot by: </h4>
           <TreeSelect
             style={{ width: 200, marginLeft:10}}
-            onChange={(value)=>{
-              if(!value) return;
-              if(value.split('-')[0]==='group'){
-                this.setState({groupByCol: value.split('-')[1], visibleField: null});
+            onChange={(value, label, extra)=>{
+              if(value.length===0){
+                this.setState({
+                  groupByCol: null,
+                  visibleField: null,
+                  selections: null,
+                  onSameChart: false
+                });
               }
-              else{
-                this.setState({groupByCol: value.split('-')[0], visibleField: value.split('-')[1]});
+              else if(extra.triggerValue.split('-')[0]==='group' && extra.triggerValue.split('-')[1]!==groupByCol){
+                this.setState({
+                  groupByCol: extra.triggerValue.split('-')[1],
+                  visibleField: null,
+                  selections: [extra.triggerValue]
+                });
+              }
+              else if(extra.triggerValue.split('-')[0]!=='group' && extra.triggerValue.split('-')[0]===groupByCol){;
+                if(value.length===1 && value[0].split('-')[1]===groupByCol){
+                  this.setState({
+                    visibleField: null,
+                    selections: value
+                  });
+                }
+                else{
+                  this.setState({
+                    visibleField: value,
+                    selections: value
+                  });
+                }
+              }
+              else if(extra.triggerValue.split('-')[0]!=='group' && extra.triggerValue.split('-')[0]!==groupByCol){
+                this.setState({
+                  groupByCol: extra.triggerValue.split('-')[0], 
+                  visibleField: [extra.triggerValue],
+                  selections: [extra.triggerValue]
+                });
               }
             }}
-            treeData={options}
             dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
-            placeholder="Please select"
-            value={visibleField ? visibleField : groupByCol}
-          />
+            placeholder="Please select group"
+            value={this.state.selections}
+            treeCheckable={true}
+            showCheckedStrategy={TreeSelect.SHOW_PARENT}
+            allowClear={true}
+          >
+          {options && options.map((option, i) => {
+            return(
+              <TreeNode title={option.label} value={option.value} key={i+option.key}>
+                {!onSameChart && option.children &&
+                  option.children.map((child, i) => {
+                    return(
+                      <TreeNode title={child.label} value={child.value} key={i+child.key}/>
+                    )
+                  })
+                }
+              </TreeNode>
+            )
+          })}
+          </TreeSelect>
           <Checkbox checked={onSameChart} style={{ width: 200, marginLeft:10}} onChange={()=>{this.setState({onSameChart:!onSameChart})}}>On same chart</Checkbox>
         </div>
       }
@@ -510,7 +555,7 @@ class VisualisationModal extends React.Component {
 
       { chartType === "barChart" && dv &&
         <div>
-          { groupByCol!=='None' ?
+          { groupByCol ?
               onSameChart?
                 <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
                   <Chart height={450} width={600} data={dv}>
@@ -535,7 +580,7 @@ class VisualisationModal extends React.Component {
                   :        
                 <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
                   {dataViews.map((value, i)=>{
-                    if(!visibleField || visibleField==keys[i].split('_').slice(1)){
+                    if(!visibleField || visibleField.includes(groupByCol +'-'+ keys[i].split('_').slice(1))){
                       return(
                         <div key={i} style={{margin:5, width:300}}>
                         <p style={{paddingLeft:50}}>{keys[i].split('_').slice(1)}</p>
@@ -592,10 +637,10 @@ class VisualisationModal extends React.Component {
 
       { chartType==="pieChart" && dv &&
         <div>
-          {groupByCol!=='None' ?
+          { groupByCol ?
             <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
-              {dataViews.map((value, i)=>{
-                if(!visibleField || visibleField==keys[i].split('_').slice(1)){
+              { dataViews.map((value, i)=>{
+                if(!visibleField || visibleField.includes(groupByCol +'-'+ keys[i].split('_').slice(1))){
                   return(
                     <div key={i} style={{margin:5, width:300}}>
                     <p style={{paddingLeft:50}}>{keys[i].split('_').slice(1)}</p>
@@ -721,7 +766,7 @@ class VisualisationModal extends React.Component {
 
       { chartType==="boxPlot" &&
         <div>
-        { groupByCol!=='None' ?
+        { groupByCol ?
             <div>
               { onSameChart ? 
               <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
@@ -735,8 +780,8 @@ class VisualisationModal extends React.Component {
               </div>
               :
               <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
-                {dataViews.map((value, i)=>{
-                  if(!visibleField || visibleField==keys[i].split('_').slice(1)){
+                { dataViews.map((value, i)=>{
+                  if(!visibleField || visibleField.includes(groupByCol +'-'+ keys[i].split('_').slice(1))){
                     return(
                       <div key={i} style={{margin:5, width:300}}>
                       <p style={{paddingLeft:50}}>{keys[i].split('_').slice(1)}</p>
