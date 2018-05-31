@@ -187,10 +187,17 @@ class VisualisationModal extends React.Component {
   }
 
   generateStackedHistogram = (data, type, interval, colNameSelected, groupByCol) => {
-    let dv;
+    let dv = new dataView().source(data)
+    .transform({
+      type: 'filter',
+      callback(row) {
+        if(row[groupByCol] !==''){
+          return row;
+        }
+      }
+    });
     if(type==='number'){
-      dv = new dataView().source(data)
-      .transform({
+      dv.transform({
         type: 'bin.histogram',
         field: colNameSelected,
         binWidth: interval,
@@ -199,14 +206,12 @@ class VisualisationModal extends React.Component {
       });
     }
     else{
-      dv = new dataView().source(data)
-      .transform({
+      dv.transform({
         type: 'aggregate', fields: [colNameSelected], 
         operations: 'count', as: 'count',
-        groupBy: [groupByCol]
+        groupBy: [groupByCol, colNameSelected]
       });
     }
-
     return dv;
   }
 
@@ -296,6 +301,14 @@ class VisualisationModal extends React.Component {
 
         dv = new dataView().source(data)
         .transform({
+          type: 'filter',
+          callback(row) {
+            if(row[groupByCol] !==''){
+              return row;
+            }
+          }
+        })
+        .transform({
           type: 'partition',
           groupBy: [ groupByCol ]
         });
@@ -316,6 +329,12 @@ class VisualisationModal extends React.Component {
             }
           });
           
+          if(tmpdv.rows.length===0){
+            dataViews.push(tmpdv);
+            cols={};
+            continue;
+          }
+
           if(chartType!=="boxPlot"){
             this.generateCountField(tmpdv, type, interval, colNameSelected);
             let tmpMax = this.getMaxCount(tmpdv);
@@ -453,8 +472,9 @@ class VisualisationModal extends React.Component {
             treeData={options}
             dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
             placeholder="Please select"
+            value={visibleField ? visibleField : groupByCol}
           />
-          <Checkbox value={onSameChart} style={{ width: 200, marginLeft:10}} onChange={()=>{this.setState({onSameChart:!onSameChart})}}>On same chart</Checkbox>
+          <Checkbox checked={onSameChart} style={{ width: 200, marginLeft:10}} onChange={()=>{this.setState({onSameChart:!onSameChart})}}>On same chart</Checkbox>
         </div>
       }
 
@@ -518,7 +538,7 @@ class VisualisationModal extends React.Component {
                     if(!visibleField || visibleField==keys[i].split('_').slice(1)){
                       return(
                         <div key={i} style={{margin:5, width:300}}>
-                        <p style={{paddingLeft:50}}>{keys[i].split('-').slice(1)}</p>
+                        <p style={{paddingLeft:50}}>{keys[i].split('_').slice(1)}</p>
                         <Chart height={250} width={300} data={value} scale={cols}>
                           <Axis
                             name={colNameSelected}
