@@ -7,6 +7,7 @@ import { View as dataView} from '@antv/data-set';
 
 import * as ViewActionCreators from './ViewActions';
 
+import FilterModal from './FilterModal'
 // Disable diagnostic tracking of BizCharts
 import { track } from "bizcharts";
 track(false);
@@ -245,7 +246,7 @@ class VisualisationModal extends React.Component {
   }
 
   render() {
-    const { visualisation_visible, build, data, visualise, isRowWise, record } = this.props;
+    const { visualisation_visible, build, data, visualise, isRowWise, record, containerId } = this.props;
     const { chartType, interval, groupByCol, visibleField, onSameChart } = this.state;
     let { rangeMin, rangeMax, numBins } = this.state;
 
@@ -423,10 +424,10 @@ class VisualisationModal extends React.Component {
         let index=0;
         step = step.datasource;
         step.fields.forEach(field => {
-          if (step.matching !== field && step.primary !== field && step.types[field]==='text') {
+          if (step.matching !== field && step.primary !== field) {
             const label = step.labels[field];
             let sublist = this.generateSubOptionList(field, data);
-            options.push({ label: field, value: 'group-'+field, children: sublist, key: ''+field+'-'+index});
+            options.push({ type: step.types[field], label: field, value: 'group-'+field, children: sublist, key: ''+field+'-'+index});
           };
           index++;
         });
@@ -434,6 +435,8 @@ class VisualisationModal extends React.Component {
     });
     
     return (
+      <div>
+      <FilterModal/>
       <Modal
         width={1000}
         visible={visualisation_visible}
@@ -455,11 +458,11 @@ class VisualisationModal extends React.Component {
           { type === "number" && <Option value="boxPlot">Boxplot</Option> }
         </Select>
 
-      { !isRowWise &&
+      { !isRowWise && options &&
           <div style={{display:"flex", justifyContent:"left", alignItems: "center"}}>
           <h4>Plot by: </h4>
           <TreeSelect
-            style={{ width: 200, marginLeft:10}}
+            style={{ width: 250, marginLeft:10}}
             onChange={(value, label, extra)=>{
               if(value.length===0){
                 this.setState({
@@ -505,21 +508,26 @@ class VisualisationModal extends React.Component {
             showCheckedStrategy={TreeSelect.SHOW_PARENT}
             allowClear={true}
           >
-          {options && options.map((option, i) => {
-            return(
-              <TreeNode title={option.label} value={option.value} key={i+option.key}>
-                {!onSameChart && option.children &&
-                  option.children.map((child, i) => {
-                    return(
-                      <TreeNode title={child.label} value={child.value} key={i+child.key}/>
-                    )
-                  })
-                }
-              </TreeNode>
-            )
-          })}
+          { options.filter(option => {
+              if(option.type==="text") return true;
+              return false;
+            }).map((option, i) => {
+              return(
+                <TreeNode title={option.label} value={option.value} key={i+option.key}>
+                  {!onSameChart && option.children.length!==0 &&
+                    option.children.map((child, i) => {
+                      return(
+                        <TreeNode title={child.label} value={child.value} key={i+child.key}/>
+                      )
+                    })
+                  }
+                </TreeNode>
+              )
+            })}
           </TreeSelect>
-          <Checkbox checked={onSameChart} style={{ width: 200, marginLeft:10}} onChange={()=>{this.setState({onSameChart:!onSameChart})}}>On same chart</Checkbox>
+          { chartType === "barChart" &&
+            <Checkbox checked={onSameChart} style={{ width: 200, marginLeft:10}} onChange={()=>{this.setState({onSameChart:!onSameChart})}}>On same chart</Checkbox>
+          }
         </div>
       }
 
@@ -545,7 +553,7 @@ class VisualisationModal extends React.Component {
           >
           {options.map((option, i) => {
             return(
-              <Option value={`${option.stepIndex}_${option.field}`} key={i}>{option.label}</Option>
+              <Option value={option.value} key={option.key}>{option.label}</Option>
             )
           })}
         </Select>
@@ -558,7 +566,8 @@ class VisualisationModal extends React.Component {
           { groupByCol ?
               onSameChart?
                 <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
-                  <Chart height={450} width={600} data={dv}>
+                  <Chart height={450} width={600} data={dv}
+                  >
                     <Axis
                       name={colNameSelected}
                       title={colNameSelected}
@@ -602,34 +611,46 @@ class VisualisationModal extends React.Component {
                   }
                 </div>    
           :
-            <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
-            <Chart height={450} width={600} data={dv} scale={cols}>
-              <Axis 
-                name={colNameSelected}
-                title={colNameSelected}
-                autoRotate={true}
-              />
-              <Axis title={"Count"} name= {"count"} />
-              <Tooltip crosshairs={{type : "y"}} />
-              <Geom type="interval" position={dv.rows[0] && colNameSelected+"*count"} />
-              {record &&
-                <Guide>
-                  <Line top={true} start={[record[colNameSelected], 0]}
-                        end={[record[colNameSelected], 'max']}
-                        lineStyle= {{
-                          lineDash:[2,0],
-                          lineWidth: 1
-                        }}
-                  />
-                  <Text
-                    top= {true} position= {[record[colNameSelected],'max']} 
-                    content= {"You are here"}
-                    style= {{fill: '#666', fontSize: '12'}}
-                    offsetX= {5} offsetY= {0.5}
-                  />
-                </Guide>
-              }
-            </Chart>
+            <div style={{display: 'flex', textAlign: 'center', flexDirection: 'column', justifyContent:'center'}}>
+              <Chart height={450} width={600} data={dv} scale={cols}
+                onGetG2Instance={(chart) => {
+                  this.chart = chart;
+                }}
+                onPlotDblClick={(ev) => {
+                  let point = {
+                    x: ev.x,
+                    y: ev.y
+                  };
+                  let items = this.chart.getTooltipItems(point);
+                  this.boundActionCreators.openFilterModal(items[0].title, colNameSelected, containerId);
+                }}
+              >
+                <Axis 
+                  name={colNameSelected}
+                  title={colNameSelected}
+                  autoRotate={true}
+                />
+                <Axis title={"Count"} name= {"count"} />
+                <Tooltip/>
+                <Geom type="interval" position={dv.rows[0] && colNameSelected+"*count"} />
+                {record &&
+                  <Guide>
+                    <Line top={true} start={[record[colNameSelected], 0]}
+                          end={[record[colNameSelected], 'max']}
+                          lineStyle= {{
+                            lineDash:[2,0],
+                            lineWidth: 1
+                          }}
+                    />
+                    <Text
+                      top= {true} position= {[record[colNameSelected],'max']} 
+                      content= {"You are here"}
+                      style= {{fill: '#666', fontSize: '12'}}
+                      offsetX= {5} offsetY= {0.5}
+                    />
+                  </Guide>
+                }
+              </Chart>
             </div>
           }
         </div>
@@ -840,17 +861,18 @@ class VisualisationModal extends React.Component {
       </div>
       }
       </Modal>
+      </div>
     );
   };
 };
 
 const mapStateToProps = (state) => {
   const { 
-    visualisation_visible, error, build, data, visualise, isRowWise, record
+    visualisation_visible, error, build, data, visualise, isRowWise, record, containerId
   } = state.view;
   
   return { 
-    visualisation_visible, error, build, data, visualise, isRowWise, record
+    visualisation_visible, error, build, data, visualise, isRowWise, record, containerId
   };
 };
 

@@ -18,6 +18,8 @@ from .permissions import ContainerPermissions
 from datasource.models import DataSource
 from scheduler.backend_utils import mongo_to_dict
 
+from workflow.models import Workflow
+
 
 class ContainerViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
@@ -193,3 +195,15 @@ class ContainerViewSet(viewsets.ModelViewSet):
         datasources = [mongo_to_dict(datasource) for datasource in datasources]
 
         return JsonResponse(datasources, safe=False)
+
+    @detail_route(methods=['get'])
+    def retrieve_workflows(self, request, id=None):
+        '''Retrieve all workflows associated with the given container'''
+        container = Container.objects.get(id=id)
+        self.check_object_permissions(self.request, container)
+
+        workflows = Workflow.objects(container=id).only('id', 'name')
+
+        workflows = [mongo_to_dict(workflow) for workflow in workflows]
+
+        return JsonResponse(workflows, safe=False)

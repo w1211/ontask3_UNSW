@@ -24,6 +24,33 @@ export const CLOSE_VISUALISATION_MODAL = "CLOSE_VISUALISATION_MODAL";
 export const UPDATE_BUILD = 'UPDATE_BUILD';
 export const REFRESH_DATA = 'REFRESH_DATA';
 
+export const RECEIVE_WORKFLOWS= 'RECEIVE_WORKFLOWS';
+export const CLOSE_FILTER_MODAL = 'CLOSE_FILTER_MODAL'; 
+
+export const openFilterModal = (category, value, containerId) => dispatch => {
+  const parameters = {
+      url: `/container/${containerId}/retrieve_workflows`,
+      method: 'GET',
+      errorFn: (error) => {
+        console.log(error);
+      },
+      successFn: (workflows) => {
+        dispatch(receiveWorkflows(category, value, workflows));
+      }
+    }
+    requestWrapper(parameters);
+  };
+
+const receiveWorkflows = (category, value, workflows) => ({
+  type: RECEIVE_WORKFLOWS,
+  category,
+  value,
+  workflows
+});
+
+export const closeFilterModal = () => ({
+  type: CLOSE_FILTER_MODAL
+});
 
 const beginRequestView = () => ({
   type: BEGIN_REQUEST_VIEW
@@ -150,7 +177,8 @@ export const retrieveDataLab = (dataLabId) => dispatch => {
           errors: { steps: [] }
         },
         data: dataLab.data,
-        datasources: dataLab.datasources
+        datasources: dataLab.datasources,
+        containerId: dataLab.container
       });
     }
   }

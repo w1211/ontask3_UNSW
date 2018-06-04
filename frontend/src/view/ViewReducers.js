@@ -14,7 +14,10 @@ import {
   RECEIVE_FIELD_MATCH_RESULT,
 
   UPDATE_BUILD,
-  REFRESH_DATA
+  REFRESH_DATA,
+
+  RECEIVE_WORKFLOWS,
+  CLOSE_FILTER_MODAL
 } from './ViewActions';
 
 
@@ -51,7 +54,8 @@ function view(state = {}, action) {
         selectedId: action.selectedId,
         build: action.build,
         data: action.data,
-        datasources: action.datasources
+        datasources: action.datasources,
+        containerId: action.containerId
       });
 
     case OPEN_VISUALISATION_MODAL:
@@ -91,6 +95,17 @@ function view(state = {}, action) {
       return Object.assign({}, state, {
         data: action.data
       });
+    case CLOSE_FILTER_MODAL:
+      return Object.assign({}, state, {
+        filterModalVisibility: false
+      });
+    case RECEIVE_WORKFLOWS:
+      return Object.assign({}, state, {
+        filterModalVisibility: true,
+        category: action.category,
+        value: action.value,
+        workflows: action.workflows
+      })
 
     default:
       return state;
