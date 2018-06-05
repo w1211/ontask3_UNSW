@@ -299,7 +299,6 @@ class View extends React.Component {
       </div>
     );
   };
-
 };
 
 const mapStateToProps = (state) => {
