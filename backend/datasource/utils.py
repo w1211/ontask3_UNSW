@@ -48,7 +48,19 @@ def retrieve_sql_data(connection):
 def retrieve_csv_data(file, delimiter):
     '''Generic service to retrieve data from a csv file with a given delimiter (comma by default)'''
     delimiter = ',' if delimiter is None else delimiter
-    reader = csv.DictReader(io.StringIO(file.read().decode('utf-8')), delimiter=delimiter)
+
+    file = file.read().decode('utf-8').split('\r\n')
+    column_headers = file.pop(0).split(delimiter)
+    modified_headers = set() 
+    for (index, header) in enumerate(column_headers):
+      for char in ['.', '$', '"', "'"]:
+        if char in header:
+          new_header = header.replace(char, '')
+          modified_headers.add((header, new_header))
+          column_headers[index] = new_header
+
+    file = '\r\n'.join(file)
+    reader = csv.DictReader(io.StringIO(file), fieldnames=column_headers, delimiter=delimiter)
     data = list(reader)
 
     return data
