@@ -1,5 +1,5 @@
 import React from 'react';
-import { Icon, Menu, Dropdown, message, Tooltip, Modal } from 'antd';
+import { Icon, Menu, Dropdown, message, Tooltip, Modal, Popover } from 'antd';
 import moment from 'moment';
 
 import EditableField from './EditableField';
@@ -151,7 +151,9 @@ const formColumns = (step, stepIndex, sort, editable, onEdit, confirmEdit, openV
 
     const visualise = { stepIndex, field: label };
 
-    const title = isPrimary ? label : <Title visualise={visualise} label={label} editable={editable} onEdit={onEdit} confirmEdit={confirmEdit} openVisualisation={openVisualisation}/>;
+    const truncatedLabel = label.length > 15 ? <Popover mouseEnterDelay={0} content={label}>{`${label.slice(0, 15)}...`}</Popover> : label;
+
+    const title = isPrimary ? label : <Title visualise={visualise} label={truncatedLabel} editable={editable} onEdit={onEdit} confirmEdit={confirmEdit} openVisualisation={openVisualisation}/>;
 
     columns.push({
       stepIndex,

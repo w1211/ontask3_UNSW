@@ -1,5 +1,5 @@
 import React from 'react';
-import { Icon, Menu, Dropdown } from 'antd';
+import { Icon, Menu, Dropdown, Popover } from 'antd';
 
 
 const handleHeaderClick = (e, visualise, openVisualisation) => {
@@ -35,7 +35,9 @@ const datasourceColumns = (step, stepIndex, sort, openVisualisation) => {
 
     const visualise = { stepIndex, field };
 
-    const title = isPrimaryOrMatching ? label : <HeaderDropdown visualise={visualise} label={label} openVisualisation={openVisualisation}/>;
+    const truncatedLabel = label.length > 15 ? <Popover mouseEnterDelay={0} content={label}>{`${label.slice(0, 15)}...`}</Popover> : label;
+
+    const title = isPrimaryOrMatching ? truncatedLabel : <HeaderDropdown visualise={visualise} label={truncatedLabel} openVisualisation={openVisualisation}/>;
 
     columns.push({
       stepIndex,

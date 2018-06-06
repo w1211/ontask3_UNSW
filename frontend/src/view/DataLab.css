@@ -200,6 +200,14 @@
 .dataManipulation .column-header.datasource {
   color: #2196F3;
 }
+/* The following are for ensuring that column headers stay on a single line */
+.dataManipulation .ant-table-thead > tr > th {
+  word-break: normal;
+}
+.dataManipulation .ant-table-thead > tr > th > span {
+  display: flex;
+  align-items: center;
+}
 
 .dataLab .details .from {
   display: flex;
