@@ -1,7 +1,7 @@
 import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
-import { Modal, Select, Slider, InputNumber, TreeSelect, Checkbox } from 'antd';
+import { Modal, Select, Slider, InputNumber, TreeSelect, Checkbox, Table } from 'antd';
 import { Chart, Geom, Axis, Legend, Coord, Tooltip, Label, Guide } from 'bizcharts';
 import { View as dataView} from '@antv/data-set';
 
@@ -270,6 +270,7 @@ class VisualisationModal extends React.Component {
     let keys;
     let colNameSelected;
     let dataViews = [];
+    let tableData;
 
     if (build && data && (this.state.colNameSelected || visualise)) {
 
@@ -288,7 +289,6 @@ class VisualisationModal extends React.Component {
       rangeMin = minMax[0];
       rangeMax = minMax[1];
 
-      //calculate num of bins
       if(!numBins){
         if(this.isInt(rangeMax/interval)){
           numBins = (rangeMax - Math.floor(rangeMin/interval)*interval)/interval+1;
@@ -371,8 +371,19 @@ class VisualisationModal extends React.Component {
           if(chartType === "pieChart" || percentageAxis){
             this.generatePieChart(tmpdv, type, colNameSelected);
           }
+
           if(chartType==="boxPlot"){
             this.generateBoxPlot(tmpdv, colNameSelected);
+          }
+
+          if(chartType === "table"){
+            this.generatePieChart(tmpdv, type, colNameSelected);
+            tmpdv = tmpdv.rows.map(
+              (value, i)=>{
+                value['percent'] = parseFloat(value['percent'] * 100).toFixed(2) + '%';
+                value['key']=i; 
+                return value;
+            });
           }
           dataViews.push(tmpdv);
         }
@@ -417,8 +428,17 @@ class VisualisationModal extends React.Component {
               min: rangeMin
           }};
         }
+
+        if(chartType==="table"){
+          cols = [
+            {title: colNameSelected, dataIndex: colNameSelected, key: colNameSelected},
+            {title: 'Count', dataIndex: 'count', key: 'count'},
+            {title: 'Percent', dataIndex:'percent', key:'percent'}
+          ];
+        }
       }
 
+      //no group by
       if(!groupByCol){
         dv = new dataView()
           .source(data)
@@ -439,22 +459,18 @@ class VisualisationModal extends React.Component {
               },
               count:{
                 min: 0
-              }
-            };
-          }
+          }};}
           else{
             cols = {
               count:{
                 min: 0
-              }
-            };
-          }
+          }};}
         }
 
         if (chartType!=="boxPlot"){
           this.generateCountField(dv, type, interval, colNameSelected);
 
-          if(chartType === "pieChart" || percentageAxis){
+          if(chartType === "pieChart" || percentageAxis || chartType === "table"){
             cols = {
               percent: {
                 formatter: val => {
@@ -472,6 +488,20 @@ class VisualisationModal extends React.Component {
             range: {
               max: dv.rows[0].high
           }}
+        }
+        
+        if(chartType === "table"){
+          tableData = dv.rows.map(
+            (value, i)=>{
+              value['percent'] = parseFloat(value['percent'] * 100).toFixed(2) + '%';
+              value['key']=i; 
+              return value;
+          });
+          cols = [
+            {title: colNameSelected, dataIndex: colNameSelected, key: colNameSelected},
+            {title: 'Count', dataIndex: 'count', key: 'count'},
+            {title: 'Percent', dataIndex:'percent', key:'percent'}
+          ]
         }
       }
     }
@@ -512,9 +542,9 @@ class VisualisationModal extends React.Component {
         >
           <Option value="barChart">Barchart</Option>
           <Option value="pieChart">Piechart</Option>
+          <Option value="table">Table</Option>
           { type === "number" && <Option value="boxPlot">Boxplot</Option> }
         </Select>
-
       { !isRowWise && options &&
         <div style={{display:"flex", justifyContent:"left", alignItems: "center"}}>
           <h4>Plot by: </h4>
@@ -584,13 +614,12 @@ class VisualisationModal extends React.Component {
           </TreeSelect>
           </div>
       }
-      { !isRowWise && chartType !== "pieChart" &&
+      { !isRowWise && chartType !== "pieChart" && chartType !== "table" &&
         <Checkbox checked={onSameChart} style={{marginLeft:15}} onChange={(value)=>{this.setState({onSameChart:value.target.checked})}}>On same chart</Checkbox>
       }
       { !isRowWise && chartType === "barChart" &&
         <Checkbox checked={percentageAxis} style={{ marginLeft:15}} onChange={(value)=>{this.setState({percentageAxis:value.target.checked})}}>Show percentage</Checkbox>
       }
-
       { isRowWise &&
         <div>
           <h4>Columns: </h4>
@@ -620,7 +649,6 @@ class VisualisationModal extends React.Component {
         </div>
       }
       </div>
-
       { chartType === "barChart" && groupByCol && onSameChart && !percentageAxis &&
         <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
           <Chart height={450} width={600} data={dv}
@@ -818,6 +846,24 @@ class VisualisationModal extends React.Component {
             />
           </Geom>
         </Chart>
+        </div>
+      }
+      { chartType==="table" && tableData && !groupByCol &&
+        <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
+          <Table dataSource={tableData} columns={cols}/>
+        </div>
+      }
+      { chartType==="table" && groupByCol &&
+        <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
+        { dataViews.map((value, i)=>{
+          return(
+            <div key={i} style={{margin:5, width:300}}>
+              <p style={{paddingLeft:10}}>{keys[i].split('_').slice(1)}</p>
+              <Table key={i} dataSource={value} columns={cols}/>
+            </div>
+          )
+        })  
+        }
         </div>
       }
       { type === "number" && chartType !== "boxPlot" &&
