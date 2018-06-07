@@ -24,7 +24,8 @@ class VisualisationModal extends React.Component {
       interval:5, range:null, 
       groupByCol:null, numBins:null, 
       visibleField:null, onSameChart:false, 
-      percentageAxis:false, selections:null
+      percentageAxis:false, selections:null,
+      filterCols:[]
     };
     this.boundActionCreators = bindActionCreators(ViewActionCreators, dispatch);
   };
@@ -39,7 +40,8 @@ class VisualisationModal extends React.Component {
                     range:null, interval:5, 
                     groupByCol: null, numBins: null, 
                     visibleField: null, onSameChart: false, 
-                    selections: null, percentageAxis:false
+                    selections: null, percentageAxis:false,
+                    filterCols:[]
                   }); 
   };
 
@@ -166,7 +168,7 @@ class VisualisationModal extends React.Component {
     return [Number(dv.rows[0].minValue),Number(dv.rows[0].maxValue)]
   }
 
-  generateStackedHistogram = (data, type, interval, colNameSelected, groupByCol, range) => {
+  generateStackedHistogram = (data, type, interval, colNameSelected, groupByCol, range, filterCols) => {
     let dv = new dataView().source(data)
     .transform({
       type: 'filter',
@@ -176,11 +178,6 @@ class VisualisationModal extends React.Component {
         }
       }
     })
-    .transform({
-      type: 'filter',
-      callback(row) {
-        return row[colNameSelected] >= range[0] && row[colNameSelected] <= range[1] ;
-    }});
 
     if(type==='number'){
       dv.transform({
@@ -189,9 +186,21 @@ class VisualisationModal extends React.Component {
         binWidth: interval,
         groupBy: [groupByCol],
         as: [colNameSelected, 'count']
-      });
+      })
+      .transform({
+        type: 'filter',
+        callback(row) {
+          return row[colNameSelected] >= range[0] && row[colNameSelected] <= range[1] ;
+      }});
     }
     else{
+      if(filterCols.length!==0){
+        dv.transform({
+          type: 'filter',
+          callback(row) {
+            return filterCols.indexOf(row[colNameSelected]) !== -1;
+        }})
+      }
       dv.transform({
         type: 'aggregate', fields: [colNameSelected], 
         operations: 'count', as: 'count',
@@ -244,7 +253,7 @@ class VisualisationModal extends React.Component {
   render() {
     const { visualisation_visible, build, data, visualise, isRowWise, record, containerId } = this.props;
     const { chartType, interval, groupByCol, visibleField, onSameChart, percentageAxis } = this.state;
-    let { range, numBins } = this.state;
+    let { range, numBins, filterCols } = this.state;
 
     let dv;
     let cols;
@@ -280,11 +289,11 @@ class VisualisationModal extends React.Component {
       }
       
       if(groupByCol && onSameChart && chartType==="barChart" && !percentageAxis){
-        dv = this.generateStackedHistogram(data, type, interval, colNameSelected, groupByCol, range);
+        dv = this.generateStackedHistogram(data, type, interval, colNameSelected, groupByCol, range, filterCols);
       }
 
       if(groupByCol && onSameChart && chartType==="barChart" && percentageAxis){
-        dv = this.generateStackedHistogram(data, type, interval, colNameSelected, groupByCol, range);
+        dv = this.generateStackedHistogram(data, type, interval, colNameSelected, groupByCol, range, filterCols);
         this.generatePieChart(dv, type, colNameSelected, percentageAxis);
         cols = {
           percent: {
@@ -335,12 +344,21 @@ class VisualisationModal extends React.Component {
               }
             }
           })
-          .transform({
-            type: 'filter',
-            callback(row) {
-              return row[colNameSelected] >= range[0] && row[colNameSelected] <= range[1] ;
-          }});
-          
+          if(type === "number"){
+            tmpdv.transform({
+              type: 'filter',
+              callback(row) {
+                return row[colNameSelected] >= range[0] && row[colNameSelected] <= range[1] ;
+            }});
+          }
+          else if(filterCols.length!==0){
+            tmpdv.transform({
+              type: 'filter',
+              callback(row) {
+                return filterCols.indexOf(row[colNameSelected]) !== -1;
+            }});
+          }
+
           if(tmpdv.rows.length===0){
             dataViews.push(tmpdv);
             cols={};
@@ -433,13 +451,23 @@ class VisualisationModal extends React.Component {
             callback(row) {
               return row[colNameSelected] !=='' ;
             }
-        })
-        .transform({
-          type: 'filter',
-          callback(row) {
-            return row[colNameSelected] >= range[0] && row[colNameSelected] <= range[1] ;
-        }});
+        });
 
+        if(type==="number"){
+          dv.transform({
+            type: 'filter',
+            callback(row) {
+              return row[colNameSelected] >= range[0] && row[colNameSelected] <= range[1] ;
+          }});
+        }
+        else if(filterCols.length!==0){
+          dv.transform({
+            type: 'filter',
+            callback(row) {
+              return filterCols.indexOf(row[colNameSelected]) !== -1;
+          }});
+        }
+      
         if(chartType==="barChart"){
           if(chartType==="number"){
             cols = {
@@ -498,6 +526,7 @@ class VisualisationModal extends React.Component {
     }
 
     let options = [];
+    let childrenOptions = [];
 
     build && build.steps.forEach((step, stepIndex) => {
       if (step.type === 'datasource') {
@@ -508,6 +537,9 @@ class VisualisationModal extends React.Component {
             const label = step.labels[field];
             let sublist = this.generateSubOptionList(field, data);
             options.push({ type: step.types[field], label: field, value: 'group-'+field, children: sublist, key: ''+field+'-'+index});
+            if(label==colNameSelected){
+              childrenOptions=sublist;
+            }
           };
           index++;
         });
@@ -963,7 +995,7 @@ class VisualisationModal extends React.Component {
       }
       <div style={{display:"flex", justifyContent:"left", flexWrap: 'wrap', alignItems: "center"}}>
         <h4>Filter by: </h4>
-        {type==='number' && minMax ?
+        { type==='number' && minMax &&
           <div style={{display:"flex", justifyContent:"left", flexWrap: 'wrap', alignItems: "center"}}>
             <p style={{marginLeft:10, marginBottom:0}}>Min: {range[0]}</p>
             <Slider range 
@@ -977,8 +1009,24 @@ class VisualisationModal extends React.Component {
             />
             <p style={{marginLeft:5, marginBottom:0}}>Max: {range[1]}</p>
           </div>
-          :
-          <div>not number</div>
+        }
+        { type!="number" && childrenOptions &&
+          <div style={{marginLeft:10}}>
+            <Select
+              mode="multiple"
+              style={{ width: 300 }}
+              placeholder="Please select"
+              allowClear={true}
+              onChange={(value)=>{this.setState({filterCols:value})}}
+            >
+              { childrenOptions.map((child, i) => {
+                  return(
+                    <Option key={i+child.key} value={child.label}>{child.label}</Option>
+                  )
+                })
+              }
+            </Select>
+          </div>
         }
       </div>
       </Modal>
