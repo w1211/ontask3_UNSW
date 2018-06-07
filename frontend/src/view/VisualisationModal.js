@@ -20,12 +20,11 @@ class VisualisationModal extends React.Component {
     super(props);
     const { dispatch } = props;
     this.state = {
-      chartType: "barChart", colNameSelected: null,
-      interval: 5, rangeMin:0,
-      rangeMax:100, groupByCol: null,
-      numBins:null, visibleField: null,
-      onSameChart: false, percentageAxis:false,
-      selections:null
+      chartType:"barChart", colNameSelected:null,
+      interval:5, range:null, 
+      groupByCol:null, numBins:null, 
+      visibleField:null, onSameChart:false, 
+      percentageAxis:false, selections:null
     };
     this.boundActionCreators = bindActionCreators(ViewActionCreators, dispatch);
   };
@@ -37,46 +36,18 @@ class VisualisationModal extends React.Component {
   handleCancel = () => { 
     this.boundActionCreators.closeVisualisationModal(); 
     this.setState({ chartType:"barChart", colNameSelected:null, 
-                    rangeMin:0, rangeMax:100, 
-                    interval:5, groupByCol: null,
-                    numBins: null, visibleField: null,
-                    onSameChart: false, selections: null, percentageAxis:false
+                    range:null, interval:5, 
+                    groupByCol: null, numBins: null, 
+                    visibleField: null, onSameChart: false, 
+                    selections: null, percentageAxis:false
                   }); 
   };
 
   handleSubmit = () => {
     const { selectedId } = this.props;
-    const { chartType, numBins, rangeMin, rangeMax } = this.state;
-    this.boundActionCreators.updateVisualisationChart(selectedId, chartType, numBins, rangeMin, rangeMax);
+    const { chartType, numBins, range} = this.state;
+    this.boundActionCreators.updateVisualisationChart(selectedId, chartType, numBins, range[0], range[1]);
   };
-
-  onRangeMaxChange = (value, defaultMin, defaultMax) => {
-    const {rangeMin, rangeMax} = this.state;
-    if(rangeMin){
-      if(value>=rangeMin && value<=defaultMax){
-        this.setState({rangeMax: value});
-      }
-    }
-    else{
-      if(value>=defaultMin && value<=defaultMax){
-        this.setState({rangeMax: value});
-      }
-    }
-  }
-
-  onRangeMinChange = (value, defaultMin, defaultMax) => {
-    const {rangeMin, rangeMax} = this.state;
-    if(rangeMax){
-      if(value<=rangeMax && value>=defaultMin){
-        this.setState({rangeMin: value});
-      }
-    }
-    else{
-      if(value<=defaultMax && value>=defaultMin){
-        this.setState({rangeMin: value});
-      }
-    }
-  }
 
   generateCountField = (dv, type, interval, colNameSelected) => {
     if (type === "number") {
@@ -195,7 +166,7 @@ class VisualisationModal extends React.Component {
     return [Number(dv.rows[0].minValue),Number(dv.rows[0].maxValue)]
   }
 
-  generateStackedHistogram = (data, type, interval, colNameSelected, groupByCol, percentageAxis) => {
+  generateStackedHistogram = (data, type, interval, colNameSelected, groupByCol, range) => {
     let dv = new dataView().source(data)
     .transform({
       type: 'filter',
@@ -204,7 +175,13 @@ class VisualisationModal extends React.Component {
           return row;
         }
       }
-    });
+    })
+    .transform({
+      type: 'filter',
+      callback(row) {
+        return row[colNameSelected] >= range[0] && row[colNameSelected] <= range[1] ;
+    }});
+
     if(type==='number'){
       dv.transform({
         type: 'bin.histogram',
@@ -230,7 +207,7 @@ class VisualisationModal extends React.Component {
     return dv;
   }
 
-  generateGroupedBoxPlot = (data, colNameSelected, groupByCol) => {
+  generateGroupedBoxPlot = (data, colNameSelected, groupByCol, range) => {
     let dv;
 
     dv = new dataView().source(data)
@@ -242,6 +219,11 @@ class VisualisationModal extends React.Component {
         }
       }
     })
+    .transform({
+      type: 'filter',
+      callback(row) {
+        return row[colNameSelected] >= range[0] && row[colNameSelected] <= range[1] ;
+    }})
     .transform({
       type: 'map',
       callback: (obj) => {
@@ -262,7 +244,7 @@ class VisualisationModal extends React.Component {
   render() {
     const { visualisation_visible, build, data, visualise, isRowWise, record, containerId } = this.props;
     const { chartType, interval, groupByCol, visibleField, onSameChart, percentageAxis } = this.state;
-    let { rangeMin, rangeMax, numBins } = this.state;
+    let { range, numBins } = this.state;
 
     let dv;
     let cols;
@@ -271,6 +253,7 @@ class VisualisationModal extends React.Component {
     let colNameSelected;
     let dataViews = [];
     let tableData;
+    let minMax;
 
     if (build && data && (this.state.colNameSelected || visualise)) {
 
@@ -284,26 +267,24 @@ class VisualisationModal extends React.Component {
         colNameSelected = buildStep.datasource.labels[fieldName];
       };
 
-      let minMax = this.getMinMaxValue(data, colNameSelected);
-
-      rangeMin = minMax[0];
-      rangeMax = minMax[1];
+      minMax = this.getMinMaxValue(data, colNameSelected);
+      range = range ? range : minMax;
 
       if(!numBins){
-        if(this.isInt(rangeMax/interval)){
-          numBins = (rangeMax - Math.floor(rangeMin/interval)*interval)/interval+1;
+        if(this.isInt(range[1]/interval)){
+          numBins = (range[1] - Math.floor(range[0]/interval)*interval)/interval+1;
         }
         else{
-          numBins = (Math.ceil(rangeMax/interval)*interval - Math.floor(rangeMin/interval)*interval)/interval;
+          numBins = (Math.ceil(range[1]/interval)*interval - Math.floor(range[0]/interval)*interval)/interval;
         }
       }
       
       if(groupByCol && onSameChart && chartType==="barChart" && !percentageAxis){
-        dv = this.generateStackedHistogram(data, type, interval, colNameSelected, groupByCol);
+        dv = this.generateStackedHistogram(data, type, interval, colNameSelected, groupByCol, range);
       }
 
       if(groupByCol && onSameChart && chartType==="barChart" && percentageAxis){
-        dv = this.generateStackedHistogram(data, type, interval, colNameSelected, groupByCol);
+        dv = this.generateStackedHistogram(data, type, interval, colNameSelected, groupByCol, range);
         this.generatePieChart(dv, type, colNameSelected, percentageAxis);
         cols = {
           percent: {
@@ -316,11 +297,11 @@ class VisualisationModal extends React.Component {
       if(groupByCol && onSameChart && chartType==="boxPlot"){
         cols={
           _bin: {
-            max: rangeMax,
-            min: rangeMin
+            max: range[1],
+            min: range[0]
         }};
 
-        dv = this.generateGroupedBoxPlot(data, colNameSelected, groupByCol);
+        dv = this.generateGroupedBoxPlot(data, colNameSelected, groupByCol, range);
       }
 
       if(groupByCol && !onSameChart){
@@ -353,7 +334,12 @@ class VisualisationModal extends React.Component {
                 return row;
               }
             }
-          });
+          })
+          .transform({
+            type: 'filter',
+            callback(row) {
+              return row[colNameSelected] >= range[0] && row[colNameSelected] <= range[1] ;
+          }});
           
           if(tmpdv.rows.length===0){
             dataViews.push(tmpdv);
@@ -393,8 +379,8 @@ class VisualisationModal extends React.Component {
             cols = {
               [colNameSelected]: {
                 tickInterval: interval,
-                max: rangeMax,
-                min: rangeMin
+                max: range[1],
+                min: range[0]
               },
               count:{
                 max: maxCount,
@@ -424,8 +410,8 @@ class VisualisationModal extends React.Component {
         if(chartType==="boxPlot"){
           cols={
             range: {
-              max: rangeMax,
-              min: rangeMin
+              max: range[1],
+              min: range[0]
           }};
         }
 
@@ -447,15 +433,20 @@ class VisualisationModal extends React.Component {
             callback(row) {
               return row[colNameSelected] !=='' ;
             }
-        });
+        })
+        .transform({
+          type: 'filter',
+          callback(row) {
+            return row[colNameSelected] >= range[0] && row[colNameSelected] <= range[1] ;
+        }});
 
         if(chartType==="barChart"){
           if(chartType==="number"){
             cols = {
               [colNameSelected]: {
                 tickInterval: interval,
-                max: rangeMax,
-                min: rangeMin
+                max: range[1],
+                min: range[0]
               },
               count:{
                 min: 0
@@ -871,16 +862,16 @@ class VisualisationModal extends React.Component {
           <h4>Interval: </h4>
           <InputNumber min={1}
             style={{display: "flex", marginRight:15, marginLeft:5}}
-            max={rangeMax}
+            max={range[1]}
             value={interval}
             onChange={(value) => {
               if(value!=='' && value!==0){
                 let num;
-                if(this.isInt(rangeMax/value)){
-                  num = (rangeMax - Math.floor(rangeMin/value)*value)/value+1;
+                if(this.isInt(range[1]/value)){
+                  num = (range[1] - Math.floor(range[0]/value)*value)/value+1;
                 }
                 else{
-                  num = (Math.ceil(rangeMax/value)*value - Math.floor(rangeMin/value)*value)/value;
+                  num = (Math.ceil(range[1]/value)*value - Math.floor(range[0]/value)*value)/value;
                 }
                 this.setState({interval: value, numBins: num});
               }
@@ -889,12 +880,12 @@ class VisualisationModal extends React.Component {
           <h4>Bin number: </h4>
           <InputNumber min={1}
             style={{display: "flex", marginRight:15, marginLeft:5}}
-            max={rangeMax}
+            max={range[1]}
             value={numBins}
             onChange={(value) => {
               if(value!=='' && this.isInt(value)){
                 //TODO: rebust?
-                let int = ((rangeMax - rangeMin + 1)/value).toFixed(2) ;
+                let int = ((range[1] - range[0] + 1)/value).toFixed(2) ;
                 this.setState({numBins: value, interval: int});
               }
             }}
@@ -970,10 +961,22 @@ class VisualisationModal extends React.Component {
         </Chart>
         </div>
       }
-      <div style={{display:"flex", justifyContent:"left", alignItems: "center"}}>
+      <div style={{display:"flex", justifyContent:"left", flexWrap: 'wrap', alignItems: "center"}}>
         <h4>Filter by: </h4>
-        {type==='number' ?
-          <div>number</div>
+        {type==='number' && minMax ?
+          <div style={{display:"flex", justifyContent:"left", flexWrap: 'wrap', alignItems: "center"}}>
+            <p style={{marginLeft:10, marginBottom:0}}>Min: {range[0]}</p>
+            <Slider range 
+              defaultValue={minMax} 
+              value={range[1] && range[0] ? [range[0], range[1]] : minMax} 
+              style={{display: "flex", width:"350px", marginRight:10}}
+              min={minMax[0]} 
+              max={minMax[1]}
+              onChange={(value) => {this.setState({range: value});}}
+              style={{width: 300, marginLeft:15}}
+            />
+            <p style={{marginLeft:5, marginBottom:0}}>Max: {range[1]}</p>
+          </div>
           :
           <div>not number</div>
         }
