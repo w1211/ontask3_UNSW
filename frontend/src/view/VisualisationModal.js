@@ -52,12 +52,20 @@ class VisualisationModal extends React.Component {
   };
 
   generateCountField = (dv, type, interval, colNameSelected) => {
+    let totalCount=dv.rows.length;
     if (type === "number") {
       dv.transform({
         type: 'bin.histogram',
         field: colNameSelected,
         binWidth: interval,
         as: [colNameSelected, 'count']
+      })
+      .transform({
+        type: 'map',
+        callback(row){
+          row['percent']=row['count']/totalCount;
+          return row;
+        }
       });
     }
     else{
@@ -95,12 +103,18 @@ class VisualisationModal extends React.Component {
     }
     if(type === "number"){
       dv.transform({
+        type: 'sort',
+        callback(a, b) {
+          return a[colNameSelected][0] - b[colNameSelected][0];
+        }
+      })
+      .transform({
         type: 'map',
         callback: (row) => {
           row[colNameSelected]=
-            (this.isInt(row[colNameSelected][0])?row[colNameSelected][0]:row[colNameSelected][0].toFixed(2))
+            (this.isInt(row[colNameSelected][0])?row[colNameSelected][0]:row[colNameSelected][0].toFixed(1))
             +'-'+
-            (this.isInt(row[colNameSelected][1])?row[colNameSelected][1]:row[colNameSelected][1].toFixed(2));
+            (this.isInt(row[colNameSelected][1])?row[colNameSelected][1]:row[colNameSelected][1].toFixed(1));
           return row;
       }});
     }
@@ -181,17 +195,17 @@ class VisualisationModal extends React.Component {
 
     if(type==='number'){
       dv.transform({
+        type: 'filter',
+        callback(row) {
+          return row[colNameSelected] >= range[0] && row[colNameSelected] <= range[1] ;
+      }})
+      .transform({
         type: 'bin.histogram',
         field: colNameSelected,
         binWidth: interval,
         groupBy: [groupByCol],
         as: [colNameSelected, 'count']
-      })
-      .transform({
-        type: 'filter',
-        callback(row) {
-          return row[colNameSelected] >= range[0] && row[colNameSelected] <= range[1] ;
-      }});
+      });
     }
     else{
       if(filterCols.length!==0){
@@ -297,8 +311,9 @@ class VisualisationModal extends React.Component {
         this.generatePieChart(dv, type, colNameSelected, percentageAxis);
         cols = {
           percent: {
+            max: 1,
             formatter: val => {
-              val = parseFloat(val * 100).toFixed(2) + '%';
+              val = parseFloat(val * 100).toFixed(1) + '%';
               return val;
         }}};
       }
@@ -372,7 +387,7 @@ class VisualisationModal extends React.Component {
               maxCount = tmpMax;
             }
           }
-          if(chartType === "pieChart" || percentageAxis){
+          if(chartType === "pieChart" || (chartType==="barChart" && percentageAxis && type!=='number') ){
             this.generatePieChart(tmpdv, type, colNameSelected);
           }
 
@@ -384,7 +399,7 @@ class VisualisationModal extends React.Component {
             this.generatePieChart(tmpdv, type, colNameSelected);
             tmpdv = tmpdv.rows.map(
               (value, i)=>{
-                value['percent'] = parseFloat(value['percent'] * 100).toFixed(2) + '%';
+                value['percent'] = parseFloat(value['percent'] * 100).toFixed(1) + '%';
                 value['key']=i; 
                 return value;
             });
@@ -419,8 +434,9 @@ class VisualisationModal extends React.Component {
         if(chartType==="pieChart" || percentageAxis){
           cols = {
             percent: {
+              max: 1,
               formatter: val => {
-                val = parseFloat(val * 100).toFixed(2) + '%';
+                val = parseFloat(val * 100).toFixed(1) + '%';
                 return val;
           }}};
         }
@@ -479,6 +495,15 @@ class VisualisationModal extends React.Component {
               count:{
                 min: 0
           }};}
+          else if(percentageAxis){
+            cols = {
+              percent: {
+                max: 1,
+                formatter: val => {
+                  val = parseFloat(val * 100).toFixed(1) + '%';
+                  return val;
+            }}};
+          }
           else{
             cols = {
               count:{
@@ -489,11 +514,12 @@ class VisualisationModal extends React.Component {
         if (chartType!=="boxPlot"){
           this.generateCountField(dv, type, interval, colNameSelected);
 
-          if(chartType === "pieChart" || percentageAxis || chartType === "table"){
+          if(chartType === "pieChart" || (chartType==="barChart" && percentageAxis && type!=='number') || chartType === "table"){
             cols = {
               percent: {
+                max: 1,
                 formatter: val => {
-                  val = parseFloat(val * 100).toFixed(2) + '%';
+                  val = parseFloat(val * 100).toFixed(1) + '%';
                   return val;
             }}};
             this.generatePieChart(dv, type, colNameSelected);
@@ -512,7 +538,7 @@ class VisualisationModal extends React.Component {
         if(chartType === "table"){
           tableData = dv.rows.map(
             (value, i)=>{
-              value['percent'] = parseFloat(value['percent'] * 100).toFixed(2) + '%';
+              value['percent'] = parseFloat(value['percent'] * 100).toFixed(1) + '%';
               value['key']=i; 
               return value;
           });
@@ -674,19 +700,12 @@ class VisualisationModal extends React.Component {
       </div>
       { chartType === "barChart" && groupByCol && onSameChart && !percentageAxis &&
         <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
-          <Chart height={450} width={600} data={dv}
-          >
-            <Axis
-              name={colNameSelected}
-              title={colNameSelected}
-              autoRotate={true}
-              grid={{
-                lineStyle: {
-                  stroke: '#d9d9d9',
-                  lineWidth: 1,
-                  lineDash: [ 2, 2 ]
-                }
-              }}
+          <Chart height={450} width={600} data={dv} padding='auto'>
+            <Axis name={colNameSelected} title={colNameSelected}
+                  label={ type!=='number' && (filterCols.length===0? childrenOptions.length>10 : filterCols.length>10) ? 
+                        {offset:5, autoRotate:false, textStyle:{rotate:90, textAlign:'start'}}
+                        :
+                        {autoRotate:true}}
             />
             <Axis title={"Count"} name= {"count"} />
             <Legend />
@@ -697,21 +716,14 @@ class VisualisationModal extends React.Component {
       }
       { chartType === "barChart" && groupByCol && onSameChart && percentageAxis &&
         <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
-          <Chart height={450} width={600} data={dv} scale={cols}
-          >
-            <Axis
-              name={colNameSelected}
-              title={colNameSelected}
-              autoRotate={true}
-              grid={{
-                lineStyle: {
-                  stroke: '#d9d9d9',
-                  lineWidth: 1,
-                  lineDash: [ 2, 2 ]
-                }
-              }}
+          <Chart height={450} width={600} data={dv} scale={cols} padding='auto'>
+            <Axis name={colNameSelected} title={colNameSelected}
+                  label={ type!=='number' && (filterCols.length===0? childrenOptions.length>10 : filterCols.length>10) ? 
+                        {offset:5, autoRotate:false, textStyle:{rotate:90, textAlign:'start'}}
+                        :
+                        {autoRotate:true}}
             />
-            <Axis title={"Percent"} name= {"percent"} />
+            <Axis title={{offset:70}} name= {"percent"} />
             <Legend />
             <Tooltip crosshairs={false} position={'top'} inPlot={false}/>
             <Geom type='intervalStack' position={colNameSelected+"*percent"} color={groupByCol}/>
@@ -719,15 +731,20 @@ class VisualisationModal extends React.Component {
         </div>
       }
       { chartType === "barChart" && groupByCol && !onSameChart && percentageAxis &&
-        <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
+        <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'left'}}>
           {dataViews.map((value, i)=>{
             if(!visibleField || visibleField.includes(groupByCol +'-'+ keys[i].split('_').slice(1))){
               return(
-                <div key={i} style={{margin:5, width:300}}>
+                <div key={i} style={type!=="number" && value.rows.length>20?value.rows.length>40?{margin:5, width:900}:{margin:5, width:600}:{margin:5, width:300}}>
                 <p style={{paddingLeft:50}}>{keys[i].split('_').slice(1)}</p>
-                <Chart height={250} width={300} data={value} scale={cols}>
-                  <Axis name={colNameSelected} title={colNameSelected} autoRotate={true} />
-                  <Axis title={"Percent"} name= {"percent"} />
+                <Chart height={300} width={type!=="number" && value.rows.length>20 ? value.rows.length>40?900:600:300} data={value} scale={cols} padding={['auto', 'auto', 150, 'auto']}>
+                  <Axis name={colNameSelected} title={{offset:70}}
+                        label={ type!=="number" && value.rows.length>5 ? 
+                                {offset:5, autoRotate:false, textStyle:{rotate:90, textAlign:'start'}}
+                                :
+                                {autoRotate:true}}
+                  />
+                  <Axis title={{offset:70}} name= {"percent"} />
                   <Legend />
                   <Tooltip />
                   <Geom type='interval' position={colNameSelected+"*percent"} />
@@ -740,19 +757,20 @@ class VisualisationModal extends React.Component {
         </div>
       }
       { chartType === "barChart" && groupByCol && !onSameChart && !percentageAxis &&
-        <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
+        <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'left'}}>
           {dataViews.map((value, i)=>{
             if(!visibleField || visibleField.includes(groupByCol +'-'+ keys[i].split('_').slice(1))){
               return(
-                <div key={i} style={{margin:5, width:300}}>
+                <div key={i} style={type!=="number" && value.rows.length>20?value.rows.length>40?{margin:5, width:900}:{margin:5, width:600}:{margin:5, width:300}}>
                 <p style={{paddingLeft:50}}>{keys[i].split('_').slice(1)}</p>
-                <Chart height={250} width={300} data={value} scale={cols}>
-                  <Axis
-                    name={colNameSelected}
-                    title={colNameSelected}
-                    autoRotate={true}
+                <Chart height={300} width={type!=="number" && value.rows.length>20 ? value.rows.length>40?900:600:300} data={value} scale={cols} padding={['auto', 'auto', 150, 'auto']}>
+                  <Axis name={colNameSelected} title={{offset:70}}
+                        label={ type!=="number" && value.rows.length>5 ? 
+                                {offset:5, autoRotate:false, textStyle:{rotate:90, textAlign:'start'}}
+                                :
+                                {autoRotate:true}}
                   />
-                  <Axis title={"Count"} name= {"count"} />
+                  <Axis title={{offset:70}} name= {"count"} />
                   <Legend />
                   <Tooltip />
                   <Geom type='interval' position={colNameSelected+"*count"} />
@@ -766,9 +784,15 @@ class VisualisationModal extends React.Component {
       }
       { chartType === "barChart" && !groupByCol && dv && percentageAxis &&
         <div style={{display: 'flex', textAlign: 'center', flexDirection: 'column', justifyContent:'center'}}>
-          <Chart height={450} width={600} data={dv} scale={cols}>
-            <Axis name={colNameSelected} title={colNameSelected} autoRotate={true} />
-            <Axis title={"Percent"} name= {"percent"} />
+          <Chart height={450} width={600} data={dv} scale={cols} padding='auto'>
+            <Axis
+              name={colNameSelected} title={{offset:50}}
+              label={ type!=='number' && dv.rows.length>10 ? 
+                          {offset:5, autoRotate:false, textStyle:{rotate:90, textAlign:'start'}}
+                          :
+                          {autoRotate:true}}
+            />
+            <Axis title={{offset:70}} name= {"percent"} autoRotate={true} label={{autoRotate:false}} />
             <Tooltip/>
             <Geom type="interval" position={colNameSelected+"*percent"} />
           </Chart>
@@ -776,8 +800,13 @@ class VisualisationModal extends React.Component {
       }
       { chartType === "barChart" && !groupByCol && dv && !percentageAxis &&
         <div style={{display: 'flex', textAlign: 'center', flexDirection: 'column', justifyContent:'center'}}>
-          <Chart height={450} width={600} data={dv} scale={cols}>
-            <Axis name={colNameSelected} title={colNameSelected} autoRotate={true} />
+          <Chart height={450} width={600} data={dv} scale={cols} padding='auto'>
+            <Axis name={colNameSelected} title={{offset:50}} autoRotate={true}
+                  label={ type!=='number' && dv.rows.length>10 ? 
+                          {offset:5, autoRotate:false, textStyle:{rotate:90, textAlign:'start'}}
+                          :
+                          {autoRotate:true}}
+            />
             <Axis title={"Count"} name= {"count"} />
             <Tooltip/>
             <Geom type="interval" position={colNameSelected+"*count"} />
@@ -785,16 +814,16 @@ class VisualisationModal extends React.Component {
         </div>
       }
       { chartType==="pieChart" && groupByCol &&
-        <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
+        <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'left'}}>
           { dataViews.map((value, i)=>{
             if(!visibleField || visibleField.includes(groupByCol +'-'+ keys[i].split('_').slice(1))){
               return(
-                <div key={i} style={{margin:5, width:300}}>
+                <div key={i} style={{margin:5, width:300, hight:400, overflow:'scroll'}}>
                 <p style={{paddingLeft:50}}>{keys[i].split('_').slice(1)}</p>
-                <Chart height={300} data={value} scale={cols} forceFit>
+                <Chart forceFit hight={300} data={value} scale={cols}>
                   <Coord type='theta' radius={0.75} />
                   <Axis name="percent" />
-                  <Legend />
+                  <Legend name={colNameSelected} title={true} useHtml={true} dx={20} offsetY={-100}/>
                   <Tooltip 
                     showTitle={false} 
                     itemTpl='<li>
@@ -808,7 +837,7 @@ class VisualisationModal extends React.Component {
                     color={colNameSelected}
                     tooltip={colNameSelected &&
                       [colNameSelected+'*percent',(colNameSelected, percent) => {
-                        percent = (percent * 100).toFixed(2) + '%';
+                        percent = (percent * 100).toFixed(1) + '%';
                         return {
                           name: colNameSelected,
                           value: percent
@@ -832,11 +861,11 @@ class VisualisationModal extends React.Component {
         </div>
       }
       { chartType==="pieChart" && !groupByCol &&
-        <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
-        <Chart height={450} width={700} data={dv} scale={cols} padding={[ 80, 100, 80, 80 ]}>
+        <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center', overflow: 'scroll'}}>
+        <Chart height={450} width={600} data={dv} scale={cols}>
           <Coord type='theta' radius={0.75} />
           <Axis name="percent" />
-          <Legend position='right' offsetY={-window.innerHeight / 2 +330} offsetX={-30} />
+          <Legend name={colNameSelected} title={true} useHtml={true} dx={20} offsetY={-10}/>
           <Tooltip 
             showTitle={false} 
             itemTpl='<li>
@@ -917,7 +946,7 @@ class VisualisationModal extends React.Component {
             onChange={(value) => {
               if(value!=='' && this.isInt(value)){
                 //TODO: rebust?
-                let int = ((range[1] - range[0] + 1)/value).toFixed(2) ;
+                let int = ((range[1] - range[0] + 1)/value).toFixed(1) ;
                 this.setState({numBins: value, interval: int});
               }
             }}
@@ -926,7 +955,7 @@ class VisualisationModal extends React.Component {
       }
       { chartType==="boxPlot" && groupByCol && onSameChart &&
         <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
-          <Chart height={450} width={900} data={dv} scale={cols} padding={[ 20, 120, 95 ]}>
+          <Chart height={450} width={900} data={dv} scale={cols} padding='auto'>
             <Tooltip />
             <Legend />
             <Axis name='na' />
@@ -936,7 +965,7 @@ class VisualisationModal extends React.Component {
         </div>
       }
       { chartType==="boxPlot" && groupByCol && !onSameChart &&
-        <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
+        <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'left'}}>
             { dataViews.map((value, i)=>{
               if(!visibleField || visibleField.includes(groupByCol +'-'+ keys[i].split('_').slice(1))){
                 return(
@@ -1000,7 +1029,7 @@ class VisualisationModal extends React.Component {
             <p style={{marginLeft:10, marginBottom:0}}>Min: {range[0]}</p>
             <Slider range 
               defaultValue={minMax} 
-              value={range[1] && range[0] ? [range[0], range[1]] : minMax} 
+              value={range[1] || range[0] ? [range[0], range[1]] : minMax} 
               style={{display: "flex", width:"350px", marginRight:10}}
               min={minMax[0]} 
               max={minMax[1]}
@@ -1017,6 +1046,7 @@ class VisualisationModal extends React.Component {
               style={{ width: 300 }}
               placeholder="Please select"
               allowClear={true}
+              value={filterCols}
               onChange={(value)=>{this.setState({filterCols:value})}}
             >
               { childrenOptions.map((child, i) => {
