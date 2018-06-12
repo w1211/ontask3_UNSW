@@ -88,19 +88,13 @@ class VisualisationModal extends React.Component {
     return dv.rows[dv.rows.length-1].count;
   }
 
-  generatePieChart = (dv,type, colNameSelected, percentageAxis) => {
-    if(percentageAxis){
-      dv.transform({
-        type: 'percent', field: 'count',
-        dimension: 'combinedFiled', as: 'percent'
-      })
-    }
-    else{
-      dv.transform({
-        type: 'percent', field: 'count',
-        dimension: colNameSelected, as: 'percent'
-      })
-    }
+  generatePieChart = (dv,type, colNameSelected) => {
+
+    dv.transform({
+      type: 'percent', field: 'count',
+      dimension: colNameSelected, as: 'percent'
+    })
+
     if(type === "number"){
       dv.transform({
         type: 'sort',
@@ -221,12 +215,6 @@ class VisualisationModal extends React.Component {
         groupBy: [groupByCol, colNameSelected]
       });
     }
-    dv.transform({
-      type: 'map',
-      callback: (obj) => {
-        obj['combinedFiled'] = obj[colNameSelected]+obj[groupByCol];
-        return obj;
-    }})
     return dv;
   }
 
@@ -308,7 +296,14 @@ class VisualisationModal extends React.Component {
 
       if(groupByCol && onSameChart && chartType==="barChart" && percentageAxis){
         dv = this.generateStackedHistogram(data, type, interval, colNameSelected, groupByCol, range, filterCols);
-        this.generatePieChart(dv, type, colNameSelected, percentageAxis);
+          dv.transform({
+            type: 'percent',
+            field: 'count',
+            dimension: groupByCol,
+            groupBy: [ colNameSelected ],
+            as: 'percent'
+          });
+          
         cols = {
           percent: {
             max: 1,
