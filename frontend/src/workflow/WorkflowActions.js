@@ -65,7 +65,7 @@ const successRequestWorkflow = () => ({
   type: SUCCESS_REQUEST_WORKFLOW
 });
 
-export const createWorkflow = (containerId, payload) => dispatch => {
+export const createWorkflow = (containerId, payload, history) => dispatch => {
   payload.container = containerId;
 
   const parameters = {
@@ -77,13 +77,14 @@ export const createWorkflow = (containerId, payload) => dispatch => {
     errorFn: (error) => {
       dispatch(failureRequestWorkflow(error));
     },
-    successFn: () => {
+    successFn: (workflow) => {
       dispatch(successRequestWorkflow());
-      dispatch(fetchContainers());
       notification['success']({
         message: 'Action created',
         description: 'The action was successfully created.'
       });
+      // Redirect to workflow interface
+      history.push({ pathname: `/workflow/${workflow.id}` });
     },
     payload: payload
   }

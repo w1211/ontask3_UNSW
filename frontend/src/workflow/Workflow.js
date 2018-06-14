@@ -38,7 +38,7 @@ class Workflow extends React.Component {
         <Breadcrumb style={{ margin: '16px 0' }}>
           <Breadcrumb.Item><Link to="/">Dashboard</Link></Breadcrumb.Item>
           <Breadcrumb.Item><Link to="/containers">Containers</Link></Breadcrumb.Item>
-          <Breadcrumb.Item>Workflow</Breadcrumb.Item>
+          <Breadcrumb.Item>Action</Breadcrumb.Item>
         </Breadcrumb>
 
         <Layout style={{ padding: '24px 0', background: '#fff' }}>

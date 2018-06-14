@@ -21,11 +21,11 @@ class WorkflowModal extends React.Component {
   }
 
   handleOk = () => {
-    const { form, containerId } = this.props;
+    const { form, containerId, history } = this.props;
     
     form.validateFields((err, values) => {
       if (err) return;
-      this.boundActionCreators.createWorkflow(containerId, values);
+      this.boundActionCreators.createWorkflow(containerId, values, history);
     });
   }
 
