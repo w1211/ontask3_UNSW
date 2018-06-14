@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Icon, Select, Input, Tooltip, message, Form } from 'antd';
+import { Card, Icon, Select, Input, Tooltip, message, Form, Popover } from 'antd';
 
 const { Option, OptGroup } = Select;
 const FormItem = Form.Item;
@@ -265,6 +265,7 @@ class DatasourceModule extends React.Component {
               mode="multiple" className="fields-select" placeholder="Fields" value={currentStep.fields} dropdownClassName="dataLab-fields"
               style={{ width: '100%', marginTop: 10 }} onChange={(e) => this.changeFields(e)} disabled={this.state.editMode || !datasource}
               ref={(select) => { this.select = select; }}
+              maxTagCount={10} maxTagPlaceholder={`...${currentStep.fields.length - 10} more fields selected`}
               getPopupContainer={() => document.getElementById(`dropdown_${step}`)}
             >
               <OptGroup label="Utilities">
@@ -274,19 +275,22 @@ class DatasourceModule extends React.Component {
               <OptGroup label="Datasource fields">
                 { datasource && datasource.fields.map((field, i) => {
                   const isEditing = editing.step === step && editing.field === field;
+                  const label = field in currentStep.labels ? currentStep.labels[field] : field;
+                  const truncatedLabel = label.length > 20 ? `${label.slice(0, 20)}...` : label;
                   return (
-                    <Option disabled={this.state.editMode} value={field} key={i} title={field} className={isEditing && 'editing-field'}>
+                    <Option disabled={this.state.editMode} value={field} key={i} className={isEditing && 'editing-field'}>
                       { isEditing ?
                         <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
                           <Tooltip 
                             title={editing.isRequired && `A label is required, as a field with name '${field}' already exists in the DataLab`} 
                             placement="bottom"
+                            mouseEnterDelay={0} 
                           >
                             <Input 
                               ref={(input) => { this.labelInput = input; input && input.focus(); }}
                               size="small" value={editing.label} onFocus={this.onFocusEdit}
                               onChange={(e) => { this.setState({ editing: { ...editing, label: e.target.value } }); }}
-                              onKeyDown={(e) => { if (e.key === 'Enter') this.confirmEdit(); if (e.key === 'Escape') this.cancelEdit(); }}
+                              onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Enter') this.confirmEdit(); if (e.key === 'Escape') this.cancelEdit(); }}
                             />
                           </Tooltip>
                           <div style={{ flex: 1, textAlign: 'right' }}>
@@ -296,7 +300,7 @@ class DatasourceModule extends React.Component {
                         </div>
                       :
                         <div className="normal-field">
-                          {field in currentStep.labels ? currentStep.labels[field] : field}
+                          {truncatedLabel !== label ? <Popover content={label} overlayStyle={{ zIndex: 2000 }} mouseLeaveDelay={0}>{truncatedLabel}</Popover> : label}
                           {!this.state.editMode && <Icon type="edit" onClick={(e) => this.onEdit(e, field)}/>}
                         </div>
                       }

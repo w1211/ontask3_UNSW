@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Icon, Select, Input, Tooltip, Form, DatePicker, Divider } from 'antd';
+import { Card, Icon, Select, Input, Tooltip, Form, DatePicker, Divider, Popover } from 'antd';
 import _ from 'lodash';
 
 const FormItem = Form.Item;
@@ -98,7 +98,7 @@ class FormModule extends React.Component {
           :
             <p>Add a field by clicking the button below.</p>
         :
-          <Tooltip title="Edit a given field by clicking on its name">
+          <Tooltip title="Edit a given field by clicking on its name" placement="right">
             <Select
               disabled
               mode="tags" 
@@ -107,11 +107,17 @@ class FormModule extends React.Component {
               labelInValue={true}
               className="fields"
               value={
-                currentStep.fields.map((field, i) => ({ 
-                  key: field.name, 
-                  label: <span onClick={() => onEditField(step, field, i)}>{field.name}</span>,
-                  title: 'test'
-                }))
+                currentStep.fields.map((field, i) => {
+                  const label = field.name;
+                  const truncatedLabel = label.length > 20 ? `${label.slice(0, 20)}...` : label;
+
+                  return ({ 
+                    key: label, 
+                    label: <span onClick={() => onEditField(step, field, i)}>
+                      { truncatedLabel !== label ? <Popover content={label} overlayStyle={{ zIndex: 2000 }} mouseLeaveDelay={0}>{truncatedLabel}</Popover> : label }
+                    </span>
+                  })
+              })
               }
             />
           </Tooltip>
