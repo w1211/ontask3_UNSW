@@ -481,13 +481,13 @@ class VisualisationModal extends React.Component {
           }
           if(!isNew){dataViews.push(tmpdv)};
         }
-
+        
         if(chartType==="barChart" && !percentageAxis){
-          if(chartType==="number"){
+          if(type==="number"){
             cols = {
               [colNameSelected]: {
                 tickInterval: interval,
-                max: range[1],
+                max: this.isInt(range[1]/interval)?range[1]+interval:range[1],
                 min: range[0]
               },
               count:{
@@ -508,6 +508,11 @@ class VisualisationModal extends React.Component {
         
         if(chartType==="pieChart" || percentageAxis){
           cols = {
+            [colNameSelected]: {
+              tickInterval: interval,
+              max: this.isInt(range[1]/interval)?range[1]+interval:range[1],
+              min: range[0]
+            },
             percent: {
               max: 1,
               formatter: val => {
@@ -560,11 +565,11 @@ class VisualisationModal extends React.Component {
         }
       
         if(chartType==="barChart"){
-          if(chartType==="number"){
+          if(type==="number"){
             cols = {
               [colNameSelected]: {
                 tickInterval: interval,
-                max: range[1],
+                max: this.isInt(range[1]/interval)?range[1]+interval:range[1],
                 min: range[0]
               },
               count:{
