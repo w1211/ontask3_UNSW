@@ -112,6 +112,19 @@ class VisualisationModal extends React.Component {
           return row;
       }});
     }
+    else{
+      dv.rows.sort(function(a, b){
+        if(a[colNameSelected] > b[colNameSelected]){
+          return 1;
+        }
+        else if(a[colNameSelected] == b[colNameSelected]){
+          return 0;
+        }
+        else{
+          return -1;
+        }
+      });
+    }
     return dv;
   }
 
@@ -329,7 +342,7 @@ class VisualisationModal extends React.Component {
         .transform({
           type: 'filter',
           callback(row) {
-            if(row[groupByCol] !==''){
+            if(row[groupByCol] !=='' && row[colNameSelected]!==''){
               return row;
             }
           }
@@ -345,6 +358,8 @@ class VisualisationModal extends React.Component {
 
         for(let i in keys){
           let tmpdv;
+          let isNew=false;
+
           tmpdv = new dataView().source(data)
           .transform({
             type: 'filter',
@@ -395,11 +410,76 @@ class VisualisationModal extends React.Component {
             tmpdv = tmpdv.rows.map(
               (value, i)=>{
                 value['percent'] = parseFloat(value['percent'] * 100).toFixed(1) + '%';
-                value['key']=i; 
+                value['key'] = i;
                 return value;
             });
+
+            if(type==="number"){
+              let min = Math.floor(range[0]/interval)*interval;
+              let numBins = (Math.ceil((this.isInt(range[1]/interval)?range[1]/interval+1:range[1]/interval))*interval-Math.floor(range[0]/interval)*interval)/interval;
+              
+              if(numBins > tmpdv.length){
+                for(let i=0; i<numBins; i++){
+                  let tmp = ''+(min+interval*i)+'-'+(min+interval*(i+1));
+                  if(i>=tmpdv.length||tmpdv[i][colNameSelected]!==tmp){
+                    tmpdv.splice(i, 0, {[colNameSelected]:tmp, percent:0+'%', count:0, key:i});
+                  }
+                  else{
+                    tmpdv[i]['key']=i;
+                  }
+                }
+              }
+            }
+            else{
+              let keysDv = new dataView().source(data)
+              .transform({
+                type: 'filter',
+                callback(row) {
+                  if(row[groupByCol] !=='' && row[colNameSelected] !==''){
+                    return row;
+                  }
+                }
+              })
+              .transform({
+                type: 'partition',
+                groupBy: [colNameSelected]
+              });
+
+              let paddingKeys = Object.keys(keysDv.rows);
+              let tmpLen = tmpdv.length;
+              
+              paddingKeys.sort(function(a, b){
+                if(a.split('_')[1] > b.split('_')[1]){
+                  return 1;
+                }
+                else if(a.split('_')[1] == b.split('_')[1]){
+                  return 0;
+                }
+                else{
+                  return -1;
+                }
+              });
+
+              if(paddingKeys.length > tmpLen){
+                let j=0;
+                let newTmpDv = [];
+
+                for(let i=0; i<paddingKeys.length; i++){
+                  if(i>=tmpLen || '_'+tmpdv[j][colNameSelected]!==paddingKeys[i]){
+                    newTmpDv.push({[colNameSelected]:paddingKeys[i].split('_')[1], percent:0+'%', count:0, key:i+tmpLen});
+                  }
+                  else{
+                    tmpdv[j]['key']= i+tmpLen;
+                    newTmpDv.push(tmpdv[j]);
+                    j++;
+                  }
+                }
+                isNew=true;
+                dataViews.push(newTmpDv);
+              }
+            }
           }
-          dataViews.push(tmpdv);
+          if(!isNew){dataViews.push(tmpdv)};
         }
 
         if(chartType==="barChart" && !percentageAxis){
@@ -529,7 +609,7 @@ class VisualisationModal extends React.Component {
               max: dv.rows[0].high
           }}
         }
-        
+
         if(chartType === "table"){
           tableData = dv.rows.map(
             (value, i)=>{
