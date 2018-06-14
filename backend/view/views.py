@@ -65,9 +65,7 @@ class ViewViewSet(viewsets.ModelViewSet):
             if step['type'] == 'form':
                 fields = [field['name'] for field in fields]
             if item['field'] not in fields:
-                order = filter(lambda x: x['field'] != item['field'] and x['stepIndex'] != item['stepIndex'], order)
-        
-        order = list(order)
+                order = [x for x in order if (x['field'] != item['field'] and x['stepIndex'] != item['field'])]
 
         # Check for any added fields and append to end of order list
         for (step_index, step) in enumerate(steps):
