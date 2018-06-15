@@ -172,11 +172,20 @@
   cursor: pointer;
   font-size: 16px;
 }
-.dataManipulation .form-field i {
+.dataManipulation .form-field i:hover, .dataManipulation .editable-field i:hover {
+  color: #40a9ff;
+}
+.dataManipulation .form-field .edit-button {
   opacity: 0;
   transition: opacity 0.1s ease-out;
 }
-.dataManipulation .form-field:hover i {
+/* The second selector below looks redundant, but is necessary depending on whether the button is disabled or not */
+.dataManipulation .form-field .edit-button, .dataManipulation .form-field .edit-button > button {
+  padding: 0 !important;
+  background: none;
+  border: none;
+}
+.dataManipulation .form-field:hover .edit-button {
   opacity: 1;
 }
 .dataManipulation .editable-field {
@@ -193,6 +202,9 @@
 .dataManipulation .column-header-icons i {
   cursor: pointer;
   margin-left: 4px;
+}
+.dataManipulation .column-header-icons i:hover {
+  color: #40a9ff;
 }
 .dataManipulation .column-header.form {
   color: #9C27B0;

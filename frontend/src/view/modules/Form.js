@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, Icon, Select, Input, Tooltip, Form, DatePicker, Divider, Popover } from 'antd';
 import _ from 'lodash';
+import moment from 'moment';
 
 const FormItem = Form.Item;
 const { Option } = Select;
@@ -56,7 +57,7 @@ class FormModule extends React.Component {
             showTime
             format="DD/MM/YYYY HH:mm"
             placeholder="Active from"
-            value={currentStep.activeFrom}
+            value={currentStep.activeFrom ? moment(currentStep.activeFrom) : null}
             onChange={(e) => onChange(step, 'activeFrom', e) }
             style={{ width: '100%', marginBottom: 10 }}
           />
@@ -67,7 +68,7 @@ class FormModule extends React.Component {
             showTime
             format="DD/MM/YYYY HH:mm"
             placeholder="Active to"
-            value={currentStep.activeTo}
+            value={currentStep.activeTo ? moment(currentStep.activeTo) : null}
             onChange={(e) => onChange(step, 'activeTo', e) }
             style={{ width: '100%', marginBottom: 10 }}
           />

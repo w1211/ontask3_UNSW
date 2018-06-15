@@ -1,5 +1,5 @@
 import React from 'react';
-import { Icon, Menu, Dropdown, message, Tooltip, Modal, Popover } from 'antd';
+import { Icon, Menu, Dropdown, message, Tooltip, Modal, Popover, Button } from 'antd';
 import moment from 'moment';
 
 import EditableField from './EditableField';
@@ -10,7 +10,6 @@ const confirm = Modal.confirm;
 const handleHeaderClick = (e, visualise, onEdit, openVisualisation) => {
   switch (e.key)  {
     case 'visualise':
-      console.log(visualise);
       openVisualisation(visualise);
       break;
   
@@ -23,12 +22,14 @@ const handleHeaderClick = (e, visualise, onEdit, openVisualisation) => {
   };
 };
 
-const HeaderDropdown = ({ visualise, label, onEdit, openVisualisation }) => (
+const HeaderDropdown = ({ visualise, label, onEdit, openVisualisation, isActive }) => (
   <Dropdown trigger={["click"]} overlay={
-    <Menu onClick={(e) => handleHeaderClick(e, visualise, onEdit, openVisualisation)}>
-      <Menu.Item key="edit">
-        <Icon type="edit" style={{ marginRight: 5 }}/>Enter data
-      </Menu.Item>
+    <Menu onClick={(e) => handleHeaderClick(e, visualise, onEdit, openVisualisation, isActive)}>
+        <Menu.Item key="edit" disabled={!isActive}>
+          <Tooltip title={!isActive && 'This column cannot be edited as it belongs to a form that is no longer active'}>
+            <Icon type="edit" style={{ marginRight: 5 }}/>Enter data
+          </Tooltip>
+        </Menu.Item>
       
       <Menu.Item key="visualise" disabled>
         <Icon type="area-chart" style={{ marginRight: 5 }}/>Visualise
@@ -39,9 +40,9 @@ const HeaderDropdown = ({ visualise, label, onEdit, openVisualisation }) => (
   </Dropdown>
 );
 
-const Title = ({ visualise, label, editable, onEdit, confirmEdit, openVisualisation }) => (
+const Title = ({ visualise, label, editable, onEdit, confirmEdit, openVisualisation, isActive }) => (
   <div style={{ display: 'inline-block' }}>
-    <HeaderDropdown visualise={visualise} label={label} onEdit={onEdit} openVisualisation={openVisualisation}/>
+    <HeaderDropdown visualise={visualise} label={label} onEdit={onEdit} openVisualisation={openVisualisation} isActive={isActive}/>
 
     { editable.target === '_all' &&
       <div className="column-header-icons" style={{ display: 'inline-block' }}>
@@ -71,7 +72,7 @@ const Title = ({ visualise, label, editable, onEdit, confirmEdit, openVisualisat
   </div>
 );
 
-const renderFormField = (stepIndex, primary, field, text, record, editable, onEdit, confirmEdit) => {
+const renderFormField = (stepIndex, primary, field, text, record, editable, onEdit, confirmEdit, isActive) => {
   let label;
 
   if (field.type === 'number' && field.numberDisplay === 'range' && text instanceof Array) {
@@ -125,17 +126,24 @@ const renderFormField = (stepIndex, primary, field, text, record, editable, onEd
   } else {
     return (
       <div className="form-field">
-        {label ? label : text}
-        <Icon 
-          size="large" type="edit" 
-          onClick={(e) => {
-            if (record[primary]) {
-              onEdit({ stepIndex, field: field.name, target: record[primary] });
-            } else {
-              message.warning(`This form field cannot be edited as the matching field (${primary}) for this record is empty.`);
-            };
-          }}
-        />
+        <span style={{ marginRight: (label || text) ? 5 : 0 }}>
+          {label ? label : text}
+        </span>
+        <Tooltip title={!isActive && 'This item cannot be edited as the form it belongs to is no longer active'}>
+          <Button
+            className="edit-button"
+            size="small"
+            icon="edit"
+            disabled={!isActive}
+            onClick={(e) => {
+              if (record[primary]) {
+                onEdit({ stepIndex, field: field.name, target: record[primary] });
+              } else {
+                message.warning(`This form field cannot be edited as the matching field (${primary}) for this record is empty.`);
+              };
+            }}
+          />
+        </Tooltip>
       </div>
     );
   }
@@ -145,15 +153,19 @@ const formColumns = (step, stepIndex, sort, editable, onEdit, confirmEdit, openV
   const currentStep = step && step.form;
   const columns = [];
 
+  let isActive = true;
+  if (currentStep.activeFrom && !moment().isAfter(currentStep.activeFrom)) isActive = false;
+  if (currentStep.activeTo && !moment().isBefore(currentStep.activeTo)) isActive = false;
+
   currentStep && currentStep.fields.forEach(field => {
     const label = field.name;
+    const truncatedLabel = label.length > 15 ? <Popover mouseEnterDelay={0} content={label}>{`${label.slice(0, 15)}...`}</Popover> : label;
+
     const isPrimary = currentStep.primary === field;
 
     const visualise = { stepIndex, field: label };
 
-    const truncatedLabel = label.length > 15 ? <Popover mouseEnterDelay={0} content={label}>{`${label.slice(0, 15)}...`}</Popover> : label;
-
-    const title = isPrimary ? label : <Title visualise={visualise} label={truncatedLabel} editable={editable} onEdit={onEdit} confirmEdit={confirmEdit} openVisualisation={openVisualisation}/>;
+    const title = isPrimary ? label : <Title visualise={visualise} label={truncatedLabel} editable={editable} onEdit={onEdit} confirmEdit={confirmEdit} openVisualisation={openVisualisation} isActive={isActive}/>;
 
     columns.push({
       stepIndex,
@@ -167,7 +179,7 @@ const formColumns = (step, stepIndex, sort, editable, onEdit, confirmEdit, openV
         return a.localeCompare(b);
       },
       sortOrder: sort && sort.field === label && sort.order,
-      render: (text, record) => renderFormField(stepIndex, currentStep.primary, field, text, record, editable, onEdit, confirmEdit)
+      render: (text, record) => renderFormField(stepIndex, currentStep.primary, field, text, record, editable, onEdit, confirmEdit, isActive)
     });
 
   });
