@@ -168,6 +168,11 @@
   min-height: 100px;
 }
 
+/* Darker background for the '...N more fields selected' tag */
+.dataLab .fields-select .ant-select-selection__choice__disabled {
+  background: #E0E0E0;
+}
+
 .dataManipulation .form-field i, .dataManipulation .editable-field i {
   cursor: pointer;
   font-size: 16px;
