@@ -14,7 +14,10 @@ import {
   RECEIVE_FIELD_MATCH_RESULT,
 
   UPDATE_BUILD,
-  REFRESH_DATA
+  REFRESH_DATA,
+
+  BEGIN_REQUEST_FORM_FIELD,
+  FINISH_REQUEST_FORM_FIELD
 } from './ViewActions';
 
 
@@ -92,6 +95,15 @@ function view(state = {}, action) {
     case REFRESH_DATA:
       return Object.assign({}, state, {
         data: action.data
+      });
+
+    case BEGIN_REQUEST_FORM_FIELD:
+      return Object.assign({}, state, {
+        formFieldLoading: true
+      });
+    case FINISH_REQUEST_FORM_FIELD:
+      return Object.assign({}, state, {
+        formFieldLoading: false
       });
 
     default:

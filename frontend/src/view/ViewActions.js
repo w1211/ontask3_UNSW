@@ -24,6 +24,9 @@ export const CLOSE_VISUALISATION_MODAL = "CLOSE_VISUALISATION_MODAL";
 export const UPDATE_BUILD = 'UPDATE_BUILD';
 export const REFRESH_DATA = 'REFRESH_DATA';
 
+export const BEGIN_REQUEST_FORM_FIELD = 'BEGIN_REQUEST_FORM_FIELD';
+export const FINISH_REQUEST_FORM_FIELD = 'FINISH_REQUEST_FORM_FIELD';
+
 
 const beginRequestView = () => ({
   type: BEGIN_REQUEST_VIEW
@@ -464,19 +467,28 @@ export const saveBuild = (history, containerId, selectedId) => (dispatch, getSta
   requestWrapper(parameters);
 };
 
+const beginRequestFormField = () => ({
+  type: BEGIN_REQUEST_FORM_FIELD
+});
+
+const finishRequestFormField = () => ({
+  type: FINISH_REQUEST_FORM_FIELD
+});
+
 export const updateFormValues = (dataLabId, payload, callback) => dispatch => {
   const parameters = {
-    initialFn: () => { },
+    initialFn: () => { dispatch(beginRequestFormField()) },
     url: `/view/${dataLabId}/update_form_values/`,
     method: 'PATCH',
     errorFn: (error) => {
-      console.log(error);
+      dispatch(finishRequestFormField());
       notification['error']({
         message: 'Failed to update form',
         description: error
       });
     },
     successFn: (response) => {
+      dispatch(finishRequestFormField());
       message.success('Form successfully updated.');
       dispatch({
         type: REFRESH_DATA,

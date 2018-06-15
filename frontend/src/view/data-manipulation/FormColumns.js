@@ -12,7 +12,7 @@ const handleHeaderClick = (e, visualise, onEdit, openVisualisation) => {
     case 'visualise':
       openVisualisation(visualise);
       break;
-  
+
     case 'edit':
       onEdit({ ...visualise,  target: '_all' });
       break;
@@ -40,14 +40,14 @@ const HeaderDropdown = ({ visualise, label, onEdit, openVisualisation, isActive 
   </Dropdown>
 );
 
-const Title = ({ visualise, label, editable, onEdit, confirmEdit, openVisualisation, isActive }) => (
+const Title = ({ visualise, label, editable, onEdit, confirmEdit, openVisualisation, isActive, loading }) => (
   <div style={{ display: 'inline-block' }}>
     <HeaderDropdown visualise={visualise} label={label} onEdit={onEdit} openVisualisation={openVisualisation} isActive={isActive}/>
 
     { editable.target === '_all' &&
       <div className="column-header-icons" style={{ display: 'inline-block' }}>
         <Tooltip title="Discard changes">
-          <Icon type="close" onClick={() => {
+          <Button shape="circle" className="button" size="small" icon="close" onClick={() => {
             if ('values' in editable) {
               confirm({
                 title: 'Discard changes',
@@ -65,14 +65,14 @@ const Title = ({ visualise, label, editable, onEdit, confirmEdit, openVisualisat
           }}/>
         </Tooltip>
         <Tooltip title="Save data">
-          <Icon type="save" onClick={confirmEdit}/>
+          <Button loading={loading} shape="circle" type="primary" className="button" size="small" icon="save" onClick={confirmEdit}/>
         </Tooltip>
       </div>
     }
   </div>
 );
 
-const renderFormField = (stepIndex, primary, field, text, record, editable, onEdit, confirmEdit, isActive) => {
+const renderFormField = (stepIndex, primary, field, text, record, editable, onEdit, confirmEdit, isActive, loading) => {
   let label;
 
   if (field.type === 'number' && field.numberDisplay === 'range' && text instanceof Array) {
@@ -117,8 +117,8 @@ const renderFormField = (stepIndex, primary, field, text, record, editable, onEd
         />
         { editable.target !== '_all' &&
           <div style={{ display: 'flex' }}>
-            <Icon type="close" onClick={() => onEdit({})}/>
-            <Icon type="save" onClick={confirmEdit}/>
+            <Button shape="circle" className="button" size="small" icon="close" onClick={() => onEdit({})}/>
+            <Button shape="circle" loading={loading} type="primary" className="button" size="small" icon="save" onClick={confirmEdit}/>
           </div>
         }
       </div>
@@ -131,7 +131,8 @@ const renderFormField = (stepIndex, primary, field, text, record, editable, onEd
         </span>
         <Tooltip title={!isActive && 'This item cannot be edited as the form it belongs to is no longer active'}>
           <Button
-            className="edit-button"
+            className="button"
+            shape="circle"
             size="small"
             icon="edit"
             disabled={!isActive}
@@ -149,7 +150,7 @@ const renderFormField = (stepIndex, primary, field, text, record, editable, onEd
   }
 };
 
-const formColumns = (step, stepIndex, sort, editable, onEdit, confirmEdit, openVisualisation) => {
+const formColumns = (step, stepIndex, sort, editable, onEdit, confirmEdit, openVisualisation, formFieldLoading) => {
   const currentStep = step && step.form;
   const columns = [];
 
@@ -165,7 +166,7 @@ const formColumns = (step, stepIndex, sort, editable, onEdit, confirmEdit, openV
 
     const visualise = { stepIndex, field: label };
 
-    const title = isPrimary ? label : <Title visualise={visualise} label={truncatedLabel} editable={editable} onEdit={onEdit} confirmEdit={confirmEdit} openVisualisation={openVisualisation} isActive={isActive}/>;
+    const title = isPrimary ? label : <Title visualise={visualise} label={truncatedLabel} editable={editable} onEdit={onEdit} confirmEdit={confirmEdit} openVisualisation={openVisualisation} isActive={isActive} loading={formFieldLoading}/>;
 
     columns.push({
       stepIndex,
@@ -179,7 +180,7 @@ const formColumns = (step, stepIndex, sort, editable, onEdit, confirmEdit, openV
         return a.localeCompare(b);
       },
       sortOrder: sort && sort.field === label && sort.order,
-      render: (text, record) => renderFormField(stepIndex, currentStep.primary, field, text, record, editable, onEdit, confirmEdit, isActive)
+      render: (text, record) => renderFormField(stepIndex, currentStep.primary, field, text, record, editable, onEdit, confirmEdit, isActive, formFieldLoading)
     });
 
   });

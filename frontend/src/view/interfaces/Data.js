@@ -46,7 +46,7 @@ class Data extends React.Component {
   };
 
   render() {
-    const { build, data } = this.props;
+    const { build, data, formFieldLoading } = this.props;
     const { sort, editable } = this.state;
 
     let columns = [];
@@ -59,7 +59,7 @@ class Data extends React.Component {
       // Initialise the columns of the table
       build.steps.forEach((step, stepIndex) => {
         if (step.type === 'datasource') columns.push(...datasourceColumns(step, stepIndex, sort, openVisualisation));
-        if (step.type === 'form') columns.push(...formColumns(step, stepIndex, sort, editable, this.onEdit, this.confirmEdit, openVisualisation));
+        if (step.type === 'form') columns.push(...formColumns(step, stepIndex, sort, editable, this.onEdit, this.confirmEdit, openVisualisation, formFieldLoading));
       });
 
       // Order the columns
@@ -111,11 +111,11 @@ class Data extends React.Component {
 
 const mapStateToProps = (state) => {
   const {
-    loading, error, build, data, selectedId
+    loading, error, build, data, selectedId, formFieldLoading
   } = state.view;
   
   return {
-    loading, error, build, data, selectedId
+    loading, error, build, data, selectedId, formFieldLoading
   };
 };
 
