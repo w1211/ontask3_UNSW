@@ -7,7 +7,7 @@ import { Table, Spin, Layout, Breadcrumb, Icon, Menu, Dropdown, Radio, Input, In
 
 import * as ViewActionCreators from './ViewActions';
 
-import VisualisationModal from './VisualisationModal';
+import VisualisationModal from './visualisation/VisualisationModal';
 
 const { Content } = Layout;
 const RadioButton = Radio.Button;
@@ -104,7 +104,7 @@ class View extends React.Component {
   };
 
   render() {
-    const { history, loading, build, data, match } = this.props;
+    const { history, loading, build, data, match, visualisation_visible } = this.props;
     const { filtered, sorted, editable } = this.state;
 
     let columns = [];
@@ -281,8 +281,10 @@ class View extends React.Component {
               { loading ?
                 <Spin size="large" />
               :
-                <div>                  
-                  <VisualisationModal/>
+                <div>
+                  {visualisation_visible &&                  
+                    <VisualisationModal/>
+                  }
                   
                   <Table
                     columns={columns}
@@ -303,11 +305,11 @@ class View extends React.Component {
 
 const mapStateToProps = (state) => {
   const {
-    loading, error, build, data
+    loading, error, build, data, visualisation_visible
   } = state.view;
   
   return {
-    loading, error, build, data
+    loading, error, build, data, visualisation_visible
   };
 };
 
