@@ -56,7 +56,8 @@ function view(state = {}, action) {
         selectedId: action.selectedId,
         build: action.build,
         data: action.data,
-        datasources: action.datasources
+        datasources: action.datasources,
+        containerId: action.containerId
       });
 
     case OPEN_VISUALISATION_MODAL:

@@ -5,7 +5,7 @@ import { Table, Icon } from 'antd';
 
 import * as ViewActionCreators from '../ViewActions';
 
-import VisualisationModal from '../VisualisationModal';
+import VisualisationModal from '../visualisation/VisualisationModal';
 import datasourceColumns from '../data-manipulation/DatasourceColumns';
 import formColumns from '../data-manipulation/FormColumns';
 
