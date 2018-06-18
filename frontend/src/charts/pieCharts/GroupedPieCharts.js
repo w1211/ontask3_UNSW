@@ -9,7 +9,7 @@ import { filterData, isInt, generateCountPercentField, generatePieChartLabel } f
 import { track } from "bizcharts";
 track(false);
 
-class GroupedPieChart extends React.Component {
+class GroupedPieCharts extends React.Component {
   constructor(props){
     super(props);
     this.state = {
@@ -170,4 +170,4 @@ class GroupedPieChart extends React.Component {
   }
 }
 
-export default GroupedPieChart;
+export default GroupedPieCharts;

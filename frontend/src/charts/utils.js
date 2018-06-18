@@ -55,7 +55,7 @@ export const generateCountPercentField = (dataView, type, interval, colNameSelec
     .transform({
       type: 'map',
       callback(row){
-        row['percent']=row['count']/totalCount;
+        row['percent']=(row['count']/totalCount).toFixed(3);
         return row;
       }
     });
@@ -70,6 +70,13 @@ export const generateCountPercentField = (dataView, type, interval, colNameSelec
       type: 'percent', field: 'count',
       dimension: colNameSelected, as: 'percent'
     })
+    .transform({
+      type: 'map',
+      callback(row){
+        row['percent']=row['percent'].toFixed(3);
+        return row;
+      }
+    });
   }
 }
 

@@ -9,7 +9,7 @@ import { filterData, generateBoxPlot } from '../utils.js';
 import { track } from "bizcharts";
 track(false);
 
-class GroupedBoxPlot extends React.Component {
+class GroupedBoxPlots extends React.Component {
   constructor(props){
     super(props);
     this.state = {
@@ -150,4 +150,4 @@ class GroupedBoxPlot extends React.Component {
   }
 }
 
-export default GroupedBoxPlot;
+export default GroupedBoxPlots;

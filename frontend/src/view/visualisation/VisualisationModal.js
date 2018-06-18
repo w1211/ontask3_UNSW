@@ -3,18 +3,10 @@ import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { Modal, Select, Slider, InputNumber, TreeSelect, Checkbox } from 'antd';
 import { View as dataView} from '@antv/data-set';
+import { BarChart, BoxPlot, PieChart, StackedBarChart, GroupedBarCharts, GroupedBoxPlots, StackedBoxPlot,
+         GroupedPieCharts, TableChart, GroupedTables } from '../../charts/charts';
 
 import * as ViewActionCreators from '../ViewActions';
-import BarChart from './barCharts/BarChart';
-import BoxPlot from './boxPlots/BoxPlot';
-import PieChart from './pieCharts/PieChart';
-import StackedBarChart from './barCharts/StackedBarChart';
-import GroupedBarChart from './barCharts/GroupedBarChart';
-import GroupedBoxPlot from './boxPlots/GroupedBoxPlot';
-import StackedBoxPlot from './boxPlots/StackedBoxPlot';
-import GroupedPieChart from './pieCharts/GroupedPieChart';
-import TableChart from './tables/TableChart';
-import GroupedTables from './tables/GroupedTables';
 
 // Disable diagnostic tracking of BizCharts
 import { track } from "bizcharts";
@@ -99,8 +91,6 @@ class VisualisationModal extends React.Component {
     return [Number(dv.rows[0].minValue),Number(dv.rows[0].maxValue)]
   }
 
-  onSelectChange = (value) => {this.setState({chartType: value})};
-
   render() {
     const { visualisation_visible, build, data, visualise, isRowWise } = this.props;
     const { chartType, interval, groupByCol, onSameChart, percentageAxis } = this.state;
@@ -167,7 +157,7 @@ class VisualisationModal extends React.Component {
         <Select
           style={{width: 150, marginLeft:15, marginRight:15}}
           value={chartType}
-          onChange={this.onSelectChange}
+          onChange={(value) => {this.setState({chartType: value})}}
         >
           <Option value="barChart">Barchart</Option>
           <Option value="pieChart">Piechart</Option>
@@ -280,7 +270,7 @@ class VisualisationModal extends React.Component {
       </div>
       { data && chartType === "barChart" && !groupByCol && !onSameChart &&
         <BarChart
-          show={visualisation_visible} data={data} type={type} percentageYAxis={percentageAxis} interval={interval} range={range}
+          show={visualisation_visible} data={data} type={type} percentageYAxis={percentageAxis} interval={interval} range={range} numBins={numBins}
           colNameSelected={colNameSelected} filterCols={filterCols}
         />
       }
@@ -291,7 +281,7 @@ class VisualisationModal extends React.Component {
         />
       }
       {chartType === "barChart" && groupByCol && !onSameChart &&
-        <GroupedBarChart
+        <GroupedBarCharts
           show={visualisation_visible} data={data} type={type} percentageYAxis={percentageAxis} interval={interval} range={range}
           colNameSelected={colNameSelected} groupByCol={groupByCol} filterCols={filterCols}
         />
@@ -302,7 +292,7 @@ class VisualisationModal extends React.Component {
         /> 
       }
       { chartType==="pieChart" && groupByCol &&
-        <GroupedPieChart
+        <GroupedPieCharts
           show={visualisation_visible} data={data} type={type} interval={interval} range={range}
           colNameSelected={colNameSelected} groupByCol={groupByCol} filterCols={filterCols}
         /> 
@@ -317,7 +307,7 @@ class VisualisationModal extends React.Component {
         />
       }
       { data && chartType === "boxPlot" && groupByCol && !onSameChart &&
-        <GroupedBoxPlot 
+        <GroupedBoxPlots 
           show={visualisation_visible} data={data} type={type} interval={interval} range={range}
           colNameSelected={colNameSelected} groupByCol={groupByCol} filterCols={filterCols}
         />

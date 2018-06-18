@@ -49,16 +49,18 @@ class BarChart extends React.Component {
   }
 
   render(){
-    const { type, percentageYAxis, interval, range, colNameSelected } = this.props;
+    const { type, percentageYAxis, interval, range, colNameSelected, numBins } = this.props;
     const { dataView } = this.state;
     let cols={};
 
     if(type==='number'){
-      cols[colNameSelected] = {
-        tickInterval: interval,
+      cols[colNameSelected] = numBins>20 ? 
+       {max: isInt(range[1]/interval)?range[1]+interval:range[1],
+        min: range[0]}
+      :
+       {tickInterval: interval,
         max: isInt(range[1]/interval)?range[1]+interval:range[1],
-        min: range[0]
-      };
+        min: range[0]}
     }
 
     if(percentageYAxis){
@@ -77,7 +79,7 @@ class BarChart extends React.Component {
       
     return(
       <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
-        { dataView && type ?
+        { dataView && cols ?
             percentageYAxis ? 
               <Chart height={450} width={600} data={dataView} scale={cols} padding='auto'>
                 <Axis

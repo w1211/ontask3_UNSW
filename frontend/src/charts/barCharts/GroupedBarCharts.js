@@ -9,7 +9,7 @@ import { filterData, sortByColName, generateCountPercentField, isInt } from '../
 import { track } from "bizcharts";
 track(false);
 
-class GroupedBarChart extends React.Component {
+class GroupedBarCharts extends React.Component {
   constructor(props){
     super(props);
     this.state = {
@@ -197,4 +197,4 @@ class GroupedBarChart extends React.Component {
   }
 }
 
-export default GroupedBarChart;
+export default GroupedBarCharts;
