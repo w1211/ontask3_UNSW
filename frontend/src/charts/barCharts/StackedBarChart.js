@@ -89,8 +89,7 @@ class StackedBarChart extends React.Component {
 
     return(
       <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
-        { dataView ?
-            percentageYAxis ? 
+        { dataView && cols && percentageYAxis &&
             <Chart height={450} width={600} data={dataView} scale={cols} padding='auto'>
               <Axis name={colNameSelected} title={colNameSelected}
                     label={ type!=='number' && (filterCols.length===0? childrenOptions.length>10 : filterCols.length>10) ? 
@@ -103,7 +102,8 @@ class StackedBarChart extends React.Component {
               <Tooltip crosshairs={false} position={'top'} inPlot={false}/>
               <Geom type='intervalStack' position={colNameSelected+"*percent"} color={groupByCol}/>
             </Chart>
-          :
+        }
+        { dataView && cols && !percentageYAxis &&
             <Chart height={450} width={600} data={dataView} scale={cols} padding='auto'>
               <Axis name={colNameSelected} title={colNameSelected}
                     label={ type!=='number' && (filterCols.length===0 ? childrenOptions.length>10 : filterCols.length>10) ? 
@@ -116,9 +116,8 @@ class StackedBarChart extends React.Component {
               <Tooltip crosshairs={false} position={'top'} inPlot={false}/>
               <Geom type='intervalStack' position={colNameSelected+"*count"} color={groupByCol}/>
             </Chart>
-        :
-          <Spin size="large" />
         }
+        { !dataView && <Spin size="large" /> }
       </div>
     );
   }

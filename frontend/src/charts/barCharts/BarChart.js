@@ -13,7 +13,7 @@ class BarChart extends React.Component {
   constructor(props){
     super(props);
     this.state = {
-      dataView:null
+      dataView: null
     };
   }
 
@@ -65,35 +65,37 @@ class BarChart extends React.Component {
 
     if(percentageYAxis){
       cols['percent'] = {
+        alias: 'Percent',
         max: 1,
         formatter: val => {
           val = parseFloat(val * 100).toFixed(1) + '%';
           return val;
-      }}
+      }};
     }
     else{
       cols['count'] = {
+        alias: 'Count',
         min: 0
       };
     }
       
     return(
       <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
-        { dataView && cols ?
-            percentageYAxis ? 
-              <Chart height={450} width={600} data={dataView} scale={cols} padding='auto'>
-                <Axis
-                  name={colNameSelected} title={{offset:50}}
-                  label={ type!=='number' && dataView.rows.length>10 ? 
-                              {offset:5, autoRotate:false, textStyle:{rotate:90, textAlign:'start'}}
-                              :
-                              {autoRotate:true}}
-                />
-                <Axis title={{offset:70}} name= {"percent"} autoRotate={true} label={{autoRotate:false}} />
-                <Tooltip/>
-                <Geom type="interval" position={colNameSelected+"*percent"} />
-              </Chart>
-            :
+        { dataView && cols && percentageYAxis &&
+          <Chart height={450} width={600} data={dataView} scale={cols} padding='auto'>
+            <Axis
+              name={colNameSelected} title={{offset:50}}
+              label={ type!=='number' && dataView.rows.length>10 ? 
+                          {offset:5, autoRotate:false, textStyle:{rotate:90, textAlign:'start'}}
+                          :
+                          {autoRotate:true}}
+            />
+            <Axis title={{offset:70}} name= {"percent"} autoRotate={true} label={{autoRotate:false}} />
+            <Tooltip/>
+            <Geom type="interval" position={colNameSelected+"*percent"} />
+          </Chart>
+        }
+        { dataView && cols && !percentageYAxis &&
               <Chart height={450} width={600} data={dataView} scale={cols} padding='auto'>
                 <Axis name={colNameSelected} title={{offset:50}} autoRotate={true}
                       label={ type!=='number' && dataView.rows.length>10 ? 
@@ -101,13 +103,12 @@ class BarChart extends React.Component {
                               :
                               {autoRotate:true}}
                 />
-                <Axis title={"Count"} name= {"count"} />
+                <Axis title={{offset:70}} name= {"count"} />
                 <Tooltip/>
                 <Geom type="interval" position={colNameSelected+"*count"} />
               </Chart>
-          :
-            <Spin size="large" />
         }
+        { !dataView && <Spin size="large" />}
       </div>
     )
   }

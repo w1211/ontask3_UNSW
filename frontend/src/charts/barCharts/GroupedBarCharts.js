@@ -140,8 +140,7 @@ class GroupedBarCharts extends React.Component {
       
     return(
       <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'center'}}>
-        { dataView && type ?
-            percentageYAxis ? 
+        { dataView && cols && percentageYAxis && 
             <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'left'}}>
               {dataView.map((value, i)=>{
                 if(!visibleField || visibleField.includes(groupByCol +'-'+ keys[i].split('_').slice(1))){
@@ -166,7 +165,8 @@ class GroupedBarCharts extends React.Component {
               })
             }
             </div>
-            :
+        }
+        { dataView && cols && !percentageYAxis &&
             <div style={{display: 'flex', flexWrap: 'wrap', justifyContent:'left'}}>
               {dataView.map((value, i)=>{
                 if(!visibleField || visibleField.includes(groupByCol +'-'+ keys[i].split('_').slice(1))){
@@ -191,9 +191,8 @@ class GroupedBarCharts extends React.Component {
               })
             }
             </div>
-          :
-            <Spin size="large" />
         }
+        { !dataView && <Spin size="large" />}
       </div>
     )
   }

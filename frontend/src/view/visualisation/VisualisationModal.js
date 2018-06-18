@@ -19,7 +19,6 @@ class VisualisationModal extends React.Component {
   constructor(props) {
     super(props);
     const { dispatch } = props;
-    console.log("here in constructor");
     this.state = {
       chartType:"barChart", colNameSelected:null,
       interval:5, range:null, 
@@ -94,7 +93,7 @@ class VisualisationModal extends React.Component {
 
   render() {
     const { visualisation_visible, build, data, visualise, isRowWise } = this.props;
-    const { chartType, interval, groupByCol, onSameChart, percentageAxis } = this.state;
+    const { chartType, interval, groupByCol, onSameChart, percentageAxis, visibleField } = this.state;
     let { range, numBins, filterCols } = this.state;
 
     let type;
@@ -234,14 +233,14 @@ class VisualisationModal extends React.Component {
           </TreeSelect>
           </div>
       }
-      { !isRowWise && chartType !== "pieChart" && chartType !== "table" &&
-        <Checkbox checked={onSameChart} style={{marginLeft:15}} onChange={(value)=>{this.setState({onSameChart:value.target.checked})}}>On same chart</Checkbox>
-      }
       { !isRowWise && chartType === "barChart" &&
         <Checkbox checked={percentageAxis} style={{ marginLeft:15}} onChange={(value)=>{this.setState({percentageAxis:value.target.checked})}}>Show percentage</Checkbox>
       }
+      { !isRowWise && chartType !== "pieChart" && chartType !== "table" && groupByCol &&
+        <Checkbox checked={onSameChart} style={{marginLeft:15}} onChange={(value)=>{this.setState({onSameChart:value.target.checked})}}>On same chart</Checkbox>
+      }
       { isRowWise &&
-        <div>
+        <div style={{display:"flex", justifyContent:"left", alignItems: "center"}}>
           <h4>Columns: </h4>
           <Select
             style={{ width: 175, marginLeft:10, display:"flex"}}
@@ -284,7 +283,7 @@ class VisualisationModal extends React.Component {
       {chartType === "barChart" && groupByCol && !onSameChart &&
         <GroupedBarCharts
           show={visualisation_visible} data={data} type={type} percentageYAxis={percentageAxis} interval={interval} range={range}
-          colNameSelected={colNameSelected} groupByCol={groupByCol} filterCols={filterCols} numBins={numBins}
+          colNameSelected={colNameSelected} groupByCol={groupByCol} filterCols={filterCols} numBins={numBins} visibleField={visibleField}
         />
       }
       { chartType==="pieChart" && !groupByCol &&
