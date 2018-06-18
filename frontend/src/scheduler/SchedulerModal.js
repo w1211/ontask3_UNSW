@@ -6,6 +6,7 @@ import moment from 'moment';
 
 import formItemLayout from '../shared/FormItemLayout';
 import * as SchedulerActionCreators from './SchedulerActions';
+import { updateSchedule, deleteSchedule } from '../datasource/DatasourceActions';
 
 const FormItem = Form.Item;
 const Option = Select.Option;
@@ -18,11 +19,11 @@ class SchedulerModal extends React.Component {
     super(props);
     const { dispatch } = props;
 
-    this.boundActionCreators = bindActionCreators(SchedulerActionCreators, dispatch);
-  }
+    this.boundActionCreators = bindActionCreators({...SchedulerActionCreators, updateSchedule, deleteSchedule}, dispatch);
+  };
 
   handleOk = () => {
-    const { form, selectedId, schedule, onUpdate } = this.props;
+    const { form, selectedId, schedule } = this.props;
 
     form.validateFields((err, values) => {
       if (err) return;
@@ -30,9 +31,8 @@ class SchedulerModal extends React.Component {
       values.time = values.time.utc().format();
       if ('dayOfMonth' in values) values.dayOfMonth = values.dayOfMonth.format();
       const isCreate = schedule ? true : false;
-      onUpdate(selectedId, values, isCreate);
-    })
-
+      this.boundActionCreators.updateSchedule(selectedId, values, isCreate);
+    });
   };
 
   onCancel = () => { 
@@ -43,7 +43,7 @@ class SchedulerModal extends React.Component {
   };
 
   onDelete = () => {
-    const { selectedId, onDelete } = this.props;
+    const { selectedId } = this.props;
 
     confirm({
       title: 'Confirm schedule removal',
@@ -52,11 +52,10 @@ class SchedulerModal extends React.Component {
       okType: 'danger',
       cancelText: 'Cancel',
       onOk() {
-        onDelete(selectedId);
+        this.boundActionCreators.deleteSchedule(selectedId);
       }
     });
-
-  }
+  };
 
   // User can not select days before today, today and one year after
   disabledDate = (current) => {
@@ -64,7 +63,7 @@ class SchedulerModal extends React.Component {
       return true;
     };
     return false;
-  }
+  };
 
   render() {
     const { form, visible, schedule, allowFutureStart, error } = this.props;
