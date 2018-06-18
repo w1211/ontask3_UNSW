@@ -19,6 +19,7 @@ class VisualisationModal extends React.Component {
   constructor(props) {
     super(props);
     const { dispatch } = props;
+    console.log("here in constructor");
     this.state = {
       chartType:"barChart", colNameSelected:null,
       interval:5, range:null, 
@@ -283,7 +284,7 @@ class VisualisationModal extends React.Component {
       {chartType === "barChart" && groupByCol && !onSameChart &&
         <GroupedBarCharts
           show={visualisation_visible} data={data} type={type} percentageYAxis={percentageAxis} interval={interval} range={range}
-          colNameSelected={colNameSelected} groupByCol={groupByCol} filterCols={filterCols}
+          colNameSelected={colNameSelected} groupByCol={groupByCol} filterCols={filterCols} numBins={numBins}
         />
       }
       { chartType==="pieChart" && !groupByCol &&

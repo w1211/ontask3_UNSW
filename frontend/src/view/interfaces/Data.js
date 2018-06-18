@@ -46,7 +46,7 @@ class Data extends React.Component {
   };
 
   render() {
-    const { build, data, formFieldLoading } = this.props;
+    const { build, data, formFieldLoading, visualise } = this.props;
     const { sort, editable } = this.state;
 
     let columns = [];
@@ -94,7 +94,7 @@ class Data extends React.Component {
 
     return (
       <div className="dataManipulation">            
-        <VisualisationModal/>
+        {visualise && <VisualisationModal/>}
         
         <Table
           columns={orderedColumns}
@@ -111,11 +111,11 @@ class Data extends React.Component {
 
 const mapStateToProps = (state) => {
   const {
-    loading, error, build, data, selectedId, formFieldLoading
+    loading, error, build, data, selectedId, formFieldLoading, visualise
   } = state.view;
   
   return {
-    loading, error, build, data, selectedId, formFieldLoading
+    loading, error, build, data, selectedId, formFieldLoading, visualise
   };
 };
 

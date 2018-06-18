@@ -109,16 +109,18 @@ class GroupedBarCharts extends React.Component {
   }
 
   render(){
-    const { type, percentageYAxis, interval, range, colNameSelected, groupByCol, visibleField } = this.props;
+    const { type, percentageYAxis, interval, range, numBins, colNameSelected, groupByCol, visibleField } = this.props;
     const { dataView, maxCount, keys } = this.state;
     let cols={};
 
     if(type==="number"){
-      cols[colNameSelected] = {
-        tickInterval: interval,
+      cols[colNameSelected] = numBins>20 ? 
+       {max: isInt(range[1]/interval)?range[1]+interval:range[1],
+        min: range[0]}
+      :
+       {tickInterval: interval,
         max: isInt(range[1]/interval)?range[1]+interval:range[1],
-        min: range[0]
-      };
+        min: range[0]}
     };
 
     if(percentageYAxis){
