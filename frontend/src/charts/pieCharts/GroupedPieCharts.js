@@ -122,14 +122,13 @@ class GroupedPieCharts extends React.Component {
             dataView.map((value, i)=>{
               if(!visibleField || visibleField.includes(groupByCol +'-'+ keys[i].split('_').slice(1))){
                 return(
-                  <div key={i} style={{margin:5, width:300, hight:400, overflow:'scroll'}}>
+                  <div key={i} style={{margin:5, width:300, hight:400}}>
                   <p style={{paddingLeft:50}}>{keys[i].split('_').slice(1)}</p>
-                  <Chart forceFit hight={300} data={value} scale={cols}>
+                  <Chart forceFit height={300} data={value} scale={cols}>
                     <Coord type='theta' radius={0.75} />
                     <Axis name="percent" />
-                    <Legend name={colNameSelected} title={true} useHtml={true} dx={20} offsetY={-100}/>
-                    <Tooltip 
-                      showTitle={false} 
+                    <Tooltip
+                      showTitle={false}
                       itemTpl='<li>
                                 <span style="background-color:{color};" class="g2-tooltip-marker"></span>
                                 {name}: {value}
@@ -149,7 +148,7 @@ class GroupedPieCharts extends React.Component {
                         }]
                       }
                       style={{lineWidth: 1, stroke: '#fff'}}
-                    >
+                      >
                       <Label
                         content='percent'
                         formatter={(val, item) => {

@@ -67,9 +67,8 @@ class BarChart extends React.Component {
           <Chart height={450} width={600} data={dataView} scale={cols}>
             <Coord type='theta' radius={0.75} />
             <Axis name="percent" />
-            <Legend name={colNameSelected} title={true} useHtml={true} dx={20} offsetY={-10}/>
             <Tooltip 
-              showTitle={false} 
+              showTitle={false}
               itemTpl='<li>
                         <span style="background-color:{color};" class="g2-tooltip-marker"></span>
                         {name}: {value}
