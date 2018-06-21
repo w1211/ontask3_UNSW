@@ -1,0 +1,26 @@
+.app {
+  min-height: 100%;
+}
+.app .header {
+  line-height: 64px;
+  border-bottom: 1px solid #e8e8e8;
+  background: #fff;
+}
+.app .header .logo {
+  width: 120px;
+  height: 31px;
+  margin: 16px 28px 16px 0;
+  float: left;
+}
+.app .logout {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  float: right;
+}
+.app .navigation {
+  line-height: 62px;
+}
+.app .footer {
+  text-align: center;
+}

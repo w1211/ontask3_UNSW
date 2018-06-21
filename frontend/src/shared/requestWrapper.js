@@ -22,9 +22,9 @@ const requestWrapper = (parameters) => {
   })
   .then(response => {
     if (response.status === 401) {
-      // localStorage.removeItem('token');
-    }
-    if (response.status >= 400 && response.status < 600) {
+      localStorage.removeItem('token');
+      parameters.errorFn('Invalid credentials');
+    } else if (response.status >= 400 && response.status < 600) {
       response.json().then(error => {
         parameters.errorFn(error[0]);
       });
