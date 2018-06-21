@@ -3,7 +3,7 @@ import { Spin } from 'antd';
 import { Chart, Geom, Axis, Tooltip } from 'bizcharts';
 import { View } from '@antv/data-set';
 
-import { filterData, generateBoxPlot } from '../utils.js';
+import { filterData, generateBoxPlot, filterSelectedItem } from '../utils.js';
 
 // Disable diagnostic tracking of BizCharts
 import { track } from "bizcharts";
@@ -15,29 +15,6 @@ class GroupedBoxPlots extends React.Component {
     this.state = {
       dataView: null
     };
-  }
-
-  filterSelectedItem = (i, dataView, type, range, keys, colNameSelected, groupByCol, filterCols) => {
-    if(type === "number"){
-      dataView.transform({
-        type: 'filter',
-        callback(row) {
-          if('_'+row[groupByCol] === keys[i] && row[groupByCol] !=='' && row[colNameSelected] !=='' &&
-             row[colNameSelected] >= range[0] && row[colNameSelected] <= range[1]){
-            return row;
-          } ;
-      }});
-    }
-    else if(filterCols.length!==0){
-      dataView.transform({
-        type: 'filter',
-        callback(row) {
-          if('_'+row[groupByCol] === keys[i] && row[colNameSelected] !=='' &&
-             filterCols.indexOf(row[colNameSelected]) !== -1){
-            return row;
-          } ;
-      }});
-    }
   }
 
   getMaxCount = (dataView) => {
@@ -70,7 +47,7 @@ class GroupedBoxPlots extends React.Component {
 
       curDataView = new View().source(data);
       
-      this.filterSelectedItem(i, curDataView, type, range, keys, colNameSelected, groupByCol, filterCols);
+      filterSelectedItem(i, curDataView, type, range, keys, colNameSelected, groupByCol, filterCols);
 
       if(curDataView.rows.length===0){
         dataViews.push(curDataView);

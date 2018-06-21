@@ -116,3 +116,37 @@ export const generatePieChartLabel = (dataView, type, colNameSelected) => {
     }});
   }
 }
+
+export const filterSelectedItem = (i, dataView, type, range, keys, colNameSelected, groupByCol, filterCols) => {
+  if(type === "number"){
+    dataView.transform({
+      type: 'filter',
+      callback(row) {
+        if('_'+row[groupByCol] === keys[i] && row[groupByCol] !=='' && row[colNameSelected] !=='' &&
+           row[colNameSelected] >= range[0] && row[colNameSelected] <= range[1]){
+          return row;
+        } ;
+    }});
+  }
+  else{
+    if(filterCols.length!==0){
+      dataView.transform({
+        type: 'filter',
+        callback(row) {
+          if('_'+row[groupByCol] === keys[i] && row[colNameSelected] !=='' &&
+            filterCols.indexOf(row[colNameSelected]) !== -1){
+            return row;
+          } ;
+      }});
+    }
+    else{
+      dataView.transform({
+        type: 'filter',
+        callback(row) {
+          if('_'+row[groupByCol] === keys[i] && row[colNameSelected] !==''){
+            return row;
+          } ;
+      }});
+    }
+  }
+}

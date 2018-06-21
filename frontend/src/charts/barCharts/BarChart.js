@@ -1,6 +1,6 @@
 import React from 'react';
 import { Spin } from 'antd';
-import { Chart, Geom, Axis, Tooltip } from 'bizcharts';
+import { Chart, Geom, Axis, Tooltip, Guide } from 'bizcharts';
 import { View } from '@antv/data-set';
 
 import { filterData, sortByColName, generateCountPercentField, isInt } from '../utils.js';
@@ -48,8 +48,12 @@ class BarChart extends React.Component {
     }
   }
 
+  generateRowWiseMark(){
+
+  }
+
   render(){
-    const { type, percentageYAxis, interval, range, colNameSelected, numBins } = this.props;
+    const { type, percentageYAxis, interval, range, colNameSelected, numBins, record } = this.props;
     const { dataView } = this.state;
     let cols={};
 
