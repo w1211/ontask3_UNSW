@@ -96,17 +96,17 @@ class BarChart extends React.Component {
           </Chart>
         }
         { dataView && cols && !percentageYAxis &&
-              <Chart height={450} width={600} data={dataView} scale={cols} padding='auto'>
-                <Axis name={colNameSelected} title={{offset:50}} autoRotate={true}
-                      label={ type!=='number' && dataView.rows.length>10 ? 
-                              {offset:5, autoRotate:false, textStyle:{rotate:90, textAlign:'start'}}
-                              :
-                              {autoRotate:true}}
-                />
-                <Axis title={{offset:70}} name= {"count"} />
-                <Tooltip/>
-                <Geom type="interval" position={colNameSelected+"*count"} />
-              </Chart>
+          <Chart height={450} width={600} data={dataView} scale={cols} padding='auto'>
+            <Axis name={colNameSelected} title={{offset:50}} autoRotate={true}
+                  label={ type!=='number' && dataView.rows.length>10 ? 
+                          {offset:5, autoRotate:false, textStyle:{rotate:90, textAlign:'start'}}
+                          :
+                          {autoRotate:true}}
+            />
+            <Axis title={{offset:70}} name= {"count"} />
+            <Tooltip/>
+            <Geom type="interval" position={colNameSelected+"*count"} />
+          </Chart>
         }
         { !dataView && <Spin size="large" />}
       </div>

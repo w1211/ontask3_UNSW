@@ -132,7 +132,7 @@ class VisualisationModal extends React.Component {
           if (step.matching !== field && step.primary !== field) {
             const label = step.labels[field];
             let sublist = this.generateSubOptionList(field, data);
-            options.push({ type: step.types[field], label: field, value: 'group-'+field, children: sublist, key: ''+field+'-'+index});
+            options.push({ stepIndex, field, type: step.types[field], label: field, value: 'group-'+field, children: sublist, key: ''+field+'-'+index});
             if(label===colNameSelected){
               childrenOptions=sublist;
             }
@@ -141,7 +141,7 @@ class VisualisationModal extends React.Component {
         });
       };
     });
-    
+
     return (
       <Modal
         width={1000}
@@ -233,9 +233,6 @@ class VisualisationModal extends React.Component {
           </TreeSelect>
           </div>
       }
-      { !isRowWise && chartType === "barChart" &&
-        <Checkbox checked={percentageAxis} style={{ marginLeft:15}} onChange={(value)=>{this.setState({percentageAxis:value.target.checked})}}>Show percentage</Checkbox>
-      }
       { !isRowWise && chartType !== "pieChart" && chartType !== "table" && groupByCol &&
         <Checkbox checked={onSameChart} style={{marginLeft:15}} onChange={(value)=>{this.setState({onSameChart:value.target.checked})}}>On same chart</Checkbox>
       }
@@ -243,7 +240,7 @@ class VisualisationModal extends React.Component {
         <div style={{display:"flex", justifyContent:"left", alignItems: "center"}}>
           <h4>Columns: </h4>
           <Select
-            style={{ width: 175, marginLeft:10, display:"flex"}}
+            style={{ width: 175, marginLeft:10}}
             value={colNameSelected}
             onChange={
               (e) => {
@@ -253,19 +250,25 @@ class VisualisationModal extends React.Component {
                     stepIndex,
                     field,
                   },
-                  numBins:null,
-                  interval:5
+                  interval:5, range:null, 
+                  groupByCol:null, numBins:null, 
+                  visibleField:null, onSameChart:false, 
+                  percentageAxis:false, selections:null,
+                  filterCols:[]
                 });
               }
             }
           >
           {options.map((option, i) => {
             return(
-              <Option value={option.value} key={option.key}>{option.label}</Option>
+              <Option value={option.stepIndex+'_'+option.field} key={option.key}>{option.label}</Option>
             )
           })}
         </Select>
         </div>
+      }
+      { chartType === "barChart" &&
+        <Checkbox checked={percentageAxis} style={{ marginLeft:15}} onChange={(value)=>{this.setState({percentageAxis:value.target.checked})}}>Show percentage</Checkbox>
       }
       </div>
       { data && chartType === "barChart" && !groupByCol && !onSameChart &&
@@ -274,7 +277,7 @@ class VisualisationModal extends React.Component {
           colNameSelected={colNameSelected} filterCols={filterCols}
         />
       }
-      {chartType==="barChart" && groupByCol && onSameChart &&
+      { chartType==="barChart" && groupByCol && onSameChart &&
         <StackedBarChart 
           show={visualisation_visible} data={data} type={type} percentageYAxis={percentageAxis} interval={interval} range={range}
           colNameSelected={colNameSelected} groupByCol={groupByCol} filterCols={filterCols} childrenOptions={childrenOptions}
@@ -400,11 +403,11 @@ class VisualisationModal extends React.Component {
 
 const mapStateToProps = (state) => {
   const { 
-    visualisation_visible, error, build, data, visualise, isRowWise, record, containerId
+    visualisation_visible, error, build, data, visualise, isRowWise, containerId
   } = state.view;
   
   return { 
-    visualisation_visible, error, build, data, visualise, isRowWise, record, containerId
+    visualisation_visible, error, build, data, visualise, isRowWise, containerId
   };
 };
 
