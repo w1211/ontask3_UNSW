@@ -1,15 +1,12 @@
 import {
   OPEN_DATASOURCE_MODAL,
   CLOSE_DATASOURCE_MODAL,
-
   BEGIN_REQUEST_DATASOURCE,
   FAILURE_REQUEST_DATASOURCE,
   SUCCESS_REQUEST_DATASOURCE,
   SUCCESS_REQUEST_DATASOURCE_WITHOUT_CLOSE,
-  
   RECEIVE_SHEETNAMES
-} from './DatasourceActions';
-
+} from "./DatasourceActions";
 
 function datasource(state = {}, action) {
   switch (action.type) {
@@ -28,7 +25,7 @@ function datasource(state = {}, action) {
         selected: null,
         sheetnames: null
       });
-      
+
     case RECEIVE_SHEETNAMES:
       return Object.assign({}, state, {
         sheetnames: action.sheetnames
@@ -55,11 +52,11 @@ function datasource(state = {}, action) {
     case SUCCESS_REQUEST_DATASOURCE_WITHOUT_CLOSE:
       return Object.assign({}, state, {
         loading: false,
-        error: null,
+        error: null
       });
     default:
       return state;
   }
-};
+}
 
 export default datasource;
