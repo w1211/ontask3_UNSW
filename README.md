@@ -192,3 +192,46 @@ http {
 
 #### Adjusting workers/threads for backend
 1. To be added
+
+## Packages Used
+### Frontend Dependencies
+|Package Name|License|
+|---|---|
+|React.js|[MIT](https://github.com/facebook/react/blob/master/LICENSE)|
+|create-react-app|[MIT](https://github.com/facebook/create-react-app/blob/next/LICENSE)|
+|react-router|[MIT](https://github.com/ReactTraining/react-router/blob/master/LICENSE)|
+|react-redux|[MIT](https://github.com/reduxjs/redux/blob/master/LICENSE.md)|
+|redux-thunk|[MIT](https://github.com/reduxjs/redux-thunk/blob/master/LICENSE.md)|
+|Ant Design|[MIT](https://github.com/ant-design/ant-design/blob/master/LICENSE)|
+|BizCharts|[MIT](https://github.com/alibaba/BizCharts/blob/master/LICENSE)|
+|data-set|[MIT](https://github.com/antvis/data-set/blob/master/LICENSE)|
+|Draft.js|[BSD](https://github.com/facebook/draft-js/blob/master/LICENSE) + [Patent Grant](https://github.com/facebook/draft-js/blob/master/PATENTS)|
+|draftjs-to-html|[MIT](https://github.com/jpuri/draftjs-to-html/blob/master/LICENSE)|
+|html-to-draftjs|[MIT](https://github.com/jpuri/html-to-draftjs/blob/master/LICENSE)|
+|react-draft-wysiwyg|[MIT](https://github.com/jpuri/react-draft-wysiwyg/blob/master/LICENSE)|
+|react-dnd|[BSD](https://github.com/react-dnd/react-dnd/blob/master/LICENSE)|
+|react-draggable|[MIT](https://github.com/mzabriskie/react-draggable/blob/master/LICENSE)|
+|lodash|[MIT](https://github.com/lodash/lodash/blob/master/LICENSE)|
+|moment|[MIT](https://github.com/moment/moment/blob/develop/LICENSE)|
+|query-string|[MIT](https://github.com/sindresorhus/query-string/blob/master/license)|
+
+### Backend Dependencies
+|Package Name|License|
+|---|---|
+|Django|[BSD](https://github.com/django/django/blob/master/LICENSE)|
+|djangorestframework|[BSD](https://github.com/encode/django-rest-framework/blob/master/LICENSE.md)|
+|mongoengine|[MIT](https://github.com/MongoEngine/mongoengine/blob/master/LICENSE)|
+|django-rest-framework-mongoengine|[MIT](https://github.com/umutbozkurt/django-rest-framework-mongoengine/blob/master/LICENSE)|
+|django-cors-headers|[License](https://github.com/ottoyiu/django-cors-headers/blob/master/LICENSE)|
+|uWSGI|[GPL](https://github.com/unbit/uwsgi/blob/master/LICENSE)|
+|requests|[Apache](https://github.com/requests/requests/blob/master/LICENSE)|
+|SQLAlchemy|[MIT](https://github.com/zzzeek/sqlalchemy/blob/master/LICENSE)|
+|pymongo|[Apache](https://github.com/mher/pymongo/blob/master/LICENSE)|
+|pyjwt|[MIT](https://github.com/jpadilla/pyjwt/blob/master/LICENSE)|
+|boto3|[Apache](https://github.com/boto/boto3/blob/develop/LICENSE)|
+|celery|[BSD](https://github.com/celery/celery/blob/master/LICENSE)|
+|django-celery-beat|[BSD](https://github.com/celery/django-celery-beat/blob/master/LICENSE)|
+|circus|[Apache](https://github.com/circus-tent/circus/blob/master/LICENSE)|
+|cryptography|[Apache/BSD](https://github.com/pyca/cryptography/blob/master/LICENSE)|
+|python-dateutil|[Apache](https://github.com/dateutil/dateutil/blob/master/LICENSE)|
+|xlrd|[License](https://github.com/python-excel/xlrd/blob/master/LICENSE)|
