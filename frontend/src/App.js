@@ -1,10 +1,7 @@
 import React from "react";
-import {
-  BrowserRouter as Router,
-  Switch,
-  Route,
-  Redirect
-} from "react-router-dom";
+import { Switch, Route, Redirect } from "react-router-dom";
+import { withRouter } from "react-router";
+
 import { Layout, Menu, Button } from "antd";
 import queryString from "query-string";
 
@@ -29,14 +26,14 @@ const AuthenticatedRoute = ({
   hasToken,
   component: Component,
   ...routeProps
-}) => {console.log(routeProps); return (
+}) => (
   <Route
     {...routeProps}
     render={props =>
       hasToken ? <Component {...props} /> : <Redirect to="/" />
     }
   />
-)};
+);
 
 class App extends React.Component {
   state = { didLogin: false, didLogout: false };
@@ -58,7 +55,16 @@ class App extends React.Component {
   }
 
   render() {
+    const { location, history } = this.props;
     const hasToken = localStorage.getItem("token");
+
+    const pathName = location.pathname.slice(1);
+    let menuKey;
+    if (["about", "help", "contact"].includes(pathName)) {
+      menuKey = pathName;
+    } else {
+      menuKey = "dashboard";
+    }
 
     return (
       <Layout className="app">
@@ -71,76 +77,79 @@ class App extends React.Component {
           )}
           <Menu
             mode="horizontal"
-            defaultSelectedKeys={["1"]}
+            defaultSelectedKeys={[menuKey]}
             className="navigation"
+            onSelect={({ key }) =>
+              history.push(key === "dashboard" ? "/" : key)
+            }
           >
-            <Menu.Item key="1">Dashboard</Menu.Item>
-            <Menu.Item key="2">About</Menu.Item>
-            <Menu.Item key="3">Help</Menu.Item>
-            <Menu.Item key="4">Contact</Menu.Item>
+            <Menu.Item key="dashboard">Dashboard</Menu.Item>
+            <Menu.Item key="about">About</Menu.Item>
+            <Menu.Item key="help">Help</Menu.Item>
+            <Menu.Item key="contact">Contact</Menu.Item>
           </Menu>
         </Header>
-        <Router>
-          <Switch>
-            <Route
-              exact
-              path="/"
-              render={props => (
-                <Login
-                  {...props}
-                  hasToken={hasToken}
-                  onLogin={() => this.setState({ didLogin: true })}
-                />
-              )}
-            />
 
-            <AuthenticatedRoute
-              hasToken={hasToken}
-              path="/containers"
-              component={Container}
-            />
+        <Switch>
+          <Route
+            exact
+            path="/"
+            render={props => (
+              <Login
+                {...props}
+                hasToken={hasToken}
+                onLogin={() => this.setState({ didLogin: true })}
+              />
+            )}
+          />
 
-            <AuthenticatedRoute
-              hasToken={hasToken}
-              path="/datalab/:id?"
-              component={DataLab}
-            />
+          <AuthenticatedRoute
+            hasToken={hasToken}
+            path="/containers"
+            component={Container}
+          />
 
-            <AuthenticatedRoute
-              hasToken={hasToken}
-              path="/workflow/:id"
-              component={Workflow}
-            />
+          <AuthenticatedRoute
+            hasToken={hasToken}
+            path="/datalab/:id?"
+            component={DataLab}
+          />
 
-            <AuthenticatedRoute
-              hasToken={hasToken}
-              path="/staticPageHistoryStaff/:id"
-              component={StaticPageHistoryStaff}
-            />
+          <AuthenticatedRoute
+            hasToken={hasToken}
+            path="/workflow/:id"
+            component={Workflow}
+          />
 
-            <AuthenticatedRoute
-              hasToken={hasToken}
-              path="/staticPageHistoryStudent"
-              component={StaticPageHistoryStudent}
-            />
+          <AuthenticatedRoute
+            hasToken={hasToken}
+            path="/staticPageHistoryStaff/:id"
+            component={StaticPageHistoryStaff}
+          />
 
-            <AuthenticatedRoute
-              hasToken={hasToken}
-              path="/staticPageStudent"
-              component={StaticPageStudent}
-            />
+          <AuthenticatedRoute
+            hasToken={hasToken}
+            path="/staticPageHistoryStudent"
+            component={StaticPageHistoryStudent}
+          />
 
-            <AuthenticatedRoute
-              hasToken={hasToken}
-              path="/staticPageStaff"
-              component={StaticPageStaff}
-            />
-          </Switch>
-        </Router>
+          <AuthenticatedRoute
+            hasToken={hasToken}
+            path="/staticPageStudent"
+            component={StaticPageStudent}
+          />
+
+          <AuthenticatedRoute
+            hasToken={hasToken}
+            path="/staticPageStaff"
+            component={StaticPageStaff}
+          />
+        </Switch>
+
         <Footer className="footer">© OnTask Project 2018</Footer>
       </Layout>
     );
   }
 }
 
-export default App;
+export default withRouter(App);
