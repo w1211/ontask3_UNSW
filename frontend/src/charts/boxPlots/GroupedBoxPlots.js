@@ -139,6 +139,7 @@ class GroupedBoxPlots extends React.Component {
                     </div>
                   );
                 }
+                return null
               })
             }
             </div>

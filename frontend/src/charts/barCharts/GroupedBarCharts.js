@@ -162,6 +162,7 @@ class GroupedBarCharts extends React.Component {
                     </div>
                     );
                 }
+                return null
               })
             }
             </div>
@@ -188,6 +189,7 @@ class GroupedBarCharts extends React.Component {
                     </div>
                   );
                 }
+                return null
               })
             }
             </div>

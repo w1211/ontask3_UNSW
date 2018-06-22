@@ -1,6 +1,6 @@
 import React from 'react';
 import { Spin } from 'antd';
-import { Chart, Geom, Axis, Legend, Coord, Tooltip, Label } from 'bizcharts';
+import { Chart, Geom, Axis, Coord, Tooltip, Label } from 'bizcharts';
 import { View } from '@antv/data-set';
 
 import { filterData, sortByColName, generateCountPercentField, generatePieChartLabel } from '../utils.js';

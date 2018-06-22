@@ -1,6 +1,6 @@
 import React from 'react';
 import { Spin } from 'antd';
-import { Chart, Geom, Axis, Tooltip, Legend, Coord, Label } from 'bizcharts';
+import { Chart, Geom, Axis, Tooltip, Coord, Label } from 'bizcharts';
 import { View } from '@antv/data-set';
 
 import { filterData, isInt, generateCountPercentField, generatePieChartLabel } from '../utils.js';
@@ -160,6 +160,7 @@ class GroupedPieCharts extends React.Component {
                   </div>
                 );
               }
+              return null
             })
           :
             <Spin size="large" />
