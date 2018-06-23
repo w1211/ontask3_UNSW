@@ -105,10 +105,11 @@ export const fetchView = (viewId) => dispatch => {
   requestWrapper(parameters);
 };
 
-export const openVisualisationModal = (visualise, isRowWise) => ({
+export const openVisualisationModal = (visualise, isRowWise, record) => ({
   type: OPEN_VISUALISATION_MODAL,
   visualise,
-  isRowWise
+  isRowWise,
+  record
 })
 
 export const closeVisualisationModal = () =>({

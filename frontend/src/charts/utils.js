@@ -150,3 +150,17 @@ export const filterSelectedItem = (i, dataView, type, range, keys, colNameSelect
     }
   }
 }
+
+export const findMaxCountPercent = (dataView) => {
+  let maxCount=0;
+  let maxPercent=0;
+
+  for(let row of dataView.rows){
+    if(row['count']>maxCount){
+      maxCount=row['count'];
+      maxPercent=row['percent'];
+    }
+  }
+
+  return [maxCount, maxPercent]
+}

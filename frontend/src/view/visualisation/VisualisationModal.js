@@ -92,7 +92,7 @@ class VisualisationModal extends React.Component {
   }
 
   render() {
-    const { visualisation_visible, build, data, visualise, isRowWise } = this.props;
+    const { visualisation_visible, build, data, visualise, isRowWise, record } = this.props;
     const { chartType, interval, groupByCol, onSameChart, percentageAxis, visibleField } = this.state;
     let { range, numBins, filterCols } = this.state;
 
@@ -274,7 +274,7 @@ class VisualisationModal extends React.Component {
       { data && chartType === "barChart" && !groupByCol && !onSameChart &&
         <BarChart
           show={visualisation_visible} data={data} type={type} percentageYAxis={percentageAxis} interval={interval} range={range} numBins={numBins}
-          colNameSelected={colNameSelected} filterCols={filterCols}
+          colNameSelected={colNameSelected} filterCols={filterCols} record={record} isRowWise={isRowWise}
         />
       }
       { chartType==="barChart" && groupByCol && onSameChart &&
@@ -403,11 +403,11 @@ class VisualisationModal extends React.Component {
 
 const mapStateToProps = (state) => {
   const { 
-    visualisation_visible, error, build, data, visualise, isRowWise, containerId
+    visualisation_visible, error, build, data, visualise, isRowWise, containerId, record
   } = state.view;
   
   return { 
-    visualisation_visible, error, build, data, visualise, isRowWise, containerId
+    visualisation_visible, error, build, data, visualise, isRowWise, containerId, record
   };
 };
 
