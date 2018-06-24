@@ -48,7 +48,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                 '$unwind': '$container'
             }, {
                 '$match': {
-                    'container.owner': self.request.user.id
+                    'container.owner': self.request.user.email
                 }
             }
         ]

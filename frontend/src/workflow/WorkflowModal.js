@@ -1,88 +1,113 @@
-import React from 'react';
-import { bindActionCreators } from 'redux';
-import { connect } from 'react-redux';
-import { Modal, Form, Input, Alert, Select } from 'antd';
+import React from "react";
+import { withRouter } from "react-router";
+import { bindActionCreators } from "redux";
+import { connect } from "react-redux";
+import { Modal, Form, Input, Alert, Select } from "antd";
+import _ from "lodash";
 
-import * as WorkflowActionCreators from './WorkflowActions';
+import * as WorkflowActionCreators from "./WorkflowActions";
 
-import formItemLayout from '../shared/FormItemLayout';
+import formItemLayout from "../shared/FormItemLayout";
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
 const Option = Select.Option;
 
-
 class WorkflowModal extends React.Component {
   constructor(props) {
     super(props);
     const { dispatch } = props;
-    
-    this.boundActionCreators = bindActionCreators(WorkflowActionCreators, dispatch)
+
+    this.boundActionCreators = bindActionCreators(
+      WorkflowActionCreators,
+      dispatch
+    );
+
+    this.state = { loading: false, error: null };
   }
 
   handleOk = () => {
-    const { form, containerId, history } = this.props;
-    
-    form.validateFields((err, values) => {
+    const { form, data, closeModal, history } = this.props;
+    const { containerId } = data;
+
+    form.validateFields((err, payload) => {
       if (err) return;
-      this.boundActionCreators.createWorkflow(containerId, values, history);
+
+      this.boundActionCreators.createAction({
+        containerId,
+        payload,
+        onError: error => this.setState({ loading: false, error }),
+        onSuccess: (action) => {
+          this.setState({ loading: false, error: null });
+          form.resetFields();
+          closeModal();
+          // Redirect to workflow interface
+          history.push({ pathname: `/workflow/${action.id}` });
+        }
+      });
     });
-  }
+  };
+
+  handleCancel = () => {
+    const { form, closeModal } = this.props;
+
+    this.setState({ loading: null, error: null });
+    form.resetFields();
+    closeModal();
+  };
 
   render() {
-    const { dispatch, visible, loading, error, form, views } = this.props;
+    const { visible, form, data } = this.props;
+    const { loading, error } = this.state;
+
+    const dataLabs = _.get(data, 'dataLabs', []);
 
     return (
       <Modal
         visible={visible}
-        title='Create action'
-        okText='Create'
-        onCancel={() => { form.resetFields(); dispatch(this.boundActionCreators.closeWorkflowModal()); }}
-        onOk={() => { this.handleOk() }}
+        title="Create action"
+        okText="Create"
+        onCancel={this.handleCancel}
+        onOk={this.handleOk}
         confirmLoading={loading}
       >
         <Form layout="horizontal">
           <FormItem {...formItemLayout} label="Name">
-            {form.getFieldDecorator('name', {
-              rules: [{ required: true, message: 'Name is required' }]
-            })(
-              <Input/>
-            )}
+            {form.getFieldDecorator("name", {
+              rules: [{ required: true, message: "Name is required" }]
+            })(<Input />)}
           </FormItem>
+
           <FormItem {...formItemLayout} label="Description">
-            {form.getFieldDecorator('description', {
-              rules: [{ required: true, message: 'Description is required' }]
-            })(
-              <TextArea rows={4}/>
-            )}
+            {form.getFieldDecorator("description")(<TextArea rows={4} />)}
           </FormItem>
+
           <FormItem {...formItemLayout} label="DataLab">
-            {form.getFieldDecorator('view', {
-              rules: [{ required: true, message: 'DataLab is required' }]
+            {form.getFieldDecorator("view", {
+              rules: [{ required: true, message: "DataLab is required" }]
             })(
               <Select>
-                { views && views.map((view, i) => {
-                  return <Option value={view.id} key={i}>{view.name}</Option>
-                })}
+                {dataLabs &&
+                  dataLabs.map((dataLab, i) => {
+                    return (
+                      <Option value={dataLab.id} key={i}>
+                        {dataLab.name}
+                      </Option>
+                    );
+                  })}
               </Select>
             )}
           </FormItem>
-          { error && <Alert message={error} type="error"/>}
+
+          {error && <Alert message={error} type="error" />}
         </Form>
       </Modal>
     );
-  };
-
-};
-
-const mapStateToProps = (state) => {
-  const {
-    visible, loading, error, containerId, views
-  } = state.workflow;
-  
-  return {
-    visible, loading, error, containerId, views
-  };
+  }
 }
 
-export default connect(mapStateToProps)(Form.create()(WorkflowModal))
+export default _.flow(
+  withRouter,
+  connect(),
+  Form.create()
+)(WorkflowModal);

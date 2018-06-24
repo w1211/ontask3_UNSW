@@ -21,12 +21,12 @@
 }
 
 /* Containers list */
-.container .container_list .container_header_buttons_wrapper {
+.container .container_list .header_buttons {
   float: right;
   margin-right: 10px;
   margin-top: -5px;
 }
-.container .container_list .container_header_button {
+.container .container_list button {
   display: inline-flex;
   align-items: center;
   vertical-align: middle;
@@ -78,4 +78,11 @@
 }
 .container .container_list .add:hover {
   border-color: #1890ff;
+}
+.container .container_list .clear {
+  float: right;
+}
+.container .container_list .shared {
+  color: #9E9E9E;
+  margin-right: 10px;
 }

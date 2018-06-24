@@ -8,6 +8,7 @@ import * as ContainerActionCreators from "./ContainerActions";
 
 import ContainerModal from "./ContainerModal";
 import ContainerList from "./ContainerList";
+import ContainerShare from "./ContainerShare";
 import DatasourceModal from "../datasource/DatasourceModal";
 import WorkflowModal from "../workflow/WorkflowModal";
 import SchedulerModal from "../scheduler/SchedulerModal";
@@ -25,14 +26,46 @@ class Container extends React.Component {
       ContainerActionCreators,
       dispatch
     );
+
+    this.state = {
+      container: { visible: false, selected: null },
+      datasource: { visible: false, selected: null, data: {} },
+      action: { visible: false, selected: null, data: {} },
+      sharing: { visible: false, selected: null }
+    };
   }
 
   componentDidMount() {
     this.boundActionCreators.fetchContainers();
   }
 
+  openModal = ({ type, selected, data }) => {
+    // Opens a model of the specified type
+    // Type is one of ['container', 'datasource', 'action', sharing']
+    // E.g. create/edit container, modify sharing permissions of a container
+    this.setState({
+      [type]: {
+        visible: true,
+        selected,
+        data
+      }
+    });
+  };
+
+  closeModal = type => {
+    // Close the model of the specified type, and clear the parameters
+    this.setState({
+      [type]: {
+        visible: false,
+        selected: null,
+        data: {}
+      }
+    });
+  };
+
   render() {
-    const { dispatch, isFetching, containers, history } = this.props;
+    const { isFetching, containers } = this.props;
+    const { container, datasource, action, sharing } = this.state;
 
     return (
       <div className="container">
@@ -53,9 +86,7 @@ class Container extends React.Component {
               ) : (
                 <div>
                   <Button
-                    onClick={() => {
-                      dispatch(this.boundActionCreators.openContainerModal());
-                    }}
+                    onClick={() => this.openModal({ type: "container" })}
                     type="primary"
                     icon="plus"
                     size="large"
@@ -64,15 +95,30 @@ class Container extends React.Component {
                     New container
                   </Button>
 
-                  <ContainerModal />
+                  <ContainerModal
+                    {...container}
+                    closeModal={() => this.closeModal("container")}
+                  />
+
+                  <DatasourceModal
+                    {...datasource}
+                    closeModal={() => this.closeModal("datasource")}
+                  />
+
+                  <WorkflowModal
+                    {...action}
+                    closeModal={() => this.closeModal("action")}
+                  />
+
+                  <ContainerShare
+                    {...sharing}
+                    closeModal={() => this.closeModal("sharing")}
+                  />
+
+                  <SchedulerModal />
 
                   {containers && containers.length > 0 ? (
-                    <div>
-                      <WorkflowModal history={history} />
-                      <DatasourceModal />
-                      <SchedulerModal />
-                      <ContainerList />
-                    </div>
+                    <ContainerList openModal={this.openModal} />
                   ) : (
                     <h2>
                       <Icon type="info-circle-o" className="info_icon" />

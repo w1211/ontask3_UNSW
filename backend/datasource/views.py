@@ -43,7 +43,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
                 '$unwind': '$container'
             }, {
                 '$match': {
-                    'container.owner': self.request.user.id
+                    'container.owner': self.request.user.email
                 }
             }
         ]
@@ -119,6 +119,8 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         # This is sufficient, as we can assume that all rows have the same keys
         fields = list(data[0].keys())
 
+        print(connection)
+
         serializer.save(
             connection = connection,
             data = data,
@@ -175,6 +177,8 @@ class DataSourceViewSet(viewsets.ModelViewSet):
                     connection['password'] = bytes(datasource['connection']['password'], encoding="UTF-8")
 
                 data = retrieve_sql_data(connection)
+
+        print(connection)
 
         if data:
             # Identify the field names from the keys of the first row of the data
