@@ -5,6 +5,9 @@ import requestWrapper from "../shared/requestWrapper";
 
 import { fetchContainers } from "../container/ContainerActions";
 
+export const START_FETCHING = "START_FETCHING";
+export const FINISH_FETCHING = "FINISH_FETCHING";
+
 export const OPEN_WORKFLOW_MODAL = "OPEN_WORKFLOW_MODAL";
 export const CLOSE_WORKFLOW_MODAL = "CLOSE_WORKFLOW_MODAL";
 
@@ -121,14 +124,16 @@ const receiveWorkflow = (workflow, editorState) => ({
   editorState
 });
 
-export const fetchWorkflow = workflowId => dispatch => {
+
+
+export const fetchAction = actionId => dispatch => {
+  dispatch({ type: START_FETCHING });
+
   const parameters = {
-    initialFn: () => {
-      dispatch(requestWorkflow());
-    },
-    url: `/workflow/${workflowId}/retrieve_workflow/`,
+    url: `/workflow/${actionId}/retrieve_workflow/`,
     method: "GET",
     errorFn: error => {
+      dispatch({ type: FINISH_FETCHING });
       console.log(error);
     },
     successFn: workflow => {
@@ -145,9 +150,10 @@ export const fetchWorkflow = workflowId => dispatch => {
         editorState = EditorState.createEmpty();
       }
 
-      dispatch(receiveWorkflow(workflow, editorState));
+      dispatch({ type: FINISH_FETCHING, workflow, editorState });
     }
   };
+
   requestWrapper(parameters);
 };
 
@@ -262,7 +268,7 @@ export const updateFilter = (workflowId, payload) => dispatch => {
     },
     successFn: () => {
       dispatch(successRequestModal());
-      dispatch(fetchWorkflow(workflowId));
+      dispatch(fetchAction(workflowId));
       notification["success"]({
         message: "Filter updated",
         description: "The filter was successfully updated."
@@ -418,7 +424,7 @@ export const createConditionGroup = (workflowId, payload) => dispatch => {
     },
     successFn: response => {
       dispatch(successRequestModal());
-      dispatch(fetchWorkflow(workflowId));
+      dispatch(fetchAction(workflowId));
       notification["success"]({
         message: "Condition group created",
         description: "The condition group was successfully created."
@@ -447,7 +453,7 @@ export const updateConditionGroup = (
     },
     successFn: response => {
       dispatch(successRequestModal());
-      dispatch(fetchWorkflow(workflowId));
+      dispatch(fetchAction(workflowId));
       notification["success"]({
         message: "Condition group updated",
         description: "The condition group was successfully updated."
@@ -471,7 +477,7 @@ export const deleteConditionGroup = (workflowId, index) => dispatch => {
     },
     successFn: response => {
       dispatch(successRequestModal());
-      dispatch(fetchWorkflow(workflowId));
+      dispatch(fetchAction(workflowId));
       notification["success"]({
         message: "Condition group deleted",
         description: "The condition group was successfully deleted."
@@ -513,7 +519,7 @@ export const updateContent = (workflowId, payload) => dispatch => {
     },
     successFn: response => {
       dispatch(successUpdateContent());
-      dispatch(fetchWorkflow(workflowId));
+      dispatch(fetchAction(workflowId));
       notification["success"]({
         message: "Content saved",
         description: "The content was successfully saved."
@@ -575,7 +581,7 @@ export const sendEmail = (workflowId, payload, isSchedule) => dispatch => {
     },
     successFn: response => {
       dispatch(successRequestWorkflow());
-      dispatch(fetchWorkflow(workflowId));
+      dispatch(fetchAction(workflowId));
       notification["success"]({
         message: `Emails ${isSchedule ? "scheduled" : "sent"}`,
         description: `The emails were successfully ${
@@ -602,7 +608,7 @@ export const updateSchedule = ({
     errorFn: onError,
     successFn: () => {
       onSuccess();
-      dispatch(fetchWorkflow(selected));
+      dispatch(fetchAction(selected));
       notification["success"]({
         message: `Schedule ${isCreate ? "created" : "updated"}`,
         description: `The schedule was successfully ${
@@ -627,7 +633,7 @@ export const deleteSchedule = ({
     errorFn: onError,
     successFn: () => {
       onSuccess();
-      dispatch(fetchWorkflow(selected));
+      dispatch(fetchAction(selected));
       notification["success"]({
         message: "Schedule deleted",
         description: "The schedule was successfully deleted."
@@ -649,7 +655,7 @@ export const updateEmailSettings = (workflowId, payload) => dispatch => {
     },
     successFn: () => {
       dispatch(successRequestWorkflow());
-      dispatch(fetchWorkflow(workflowId));
+      dispatch(fetchAction(workflowId));
       notification["success"]({
         message: "Email settings updated",
         description: "The email settings were successfully updated."

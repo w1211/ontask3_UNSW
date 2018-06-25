@@ -1,26 +1,9 @@
-/* Container root component */
-.container .wrapper {
-  padding: 0 50px;
-}
-.container .breadcrumbs {
-  margin: 16px 0;
-}
-.container .layout {
-  padding: 24px 0;
-  background: #fff;
-}
-.container .content {
-  padding: 0 24px;
-  min-height: 280px;
-}
 .container .create_container {
   margin-bottom: 20px;
 }
 .container .info_icon {
   margin-right: 10px;
 }
-
-/* Containers list */
 .container .container_list .header_buttons {
   float: right;
   margin-right: 10px;
