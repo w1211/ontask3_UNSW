@@ -57,7 +57,7 @@ class BarChart extends React.Component {
   componentWillReceiveProps(nextProps){
     const { percentageYAxis } = this.props;
 
-    if(percentageYAxis===nextProps.percentageYAxis && this.props!==nextProps && nextProps.show){
+    if(nextProps.isRowWise || (percentageYAxis===nextProps.percentageYAxis && this.props!==nextProps && nextProps.show)){
 
       this.generateBarChart(nextProps.data, nextProps.type, nextProps.interval, nextProps.range, nextProps.colNameSelected,
                             nextProps.filterCols, nextProps.record, nextProps.isRowWise, nextProps.percentageYAxis);
@@ -69,7 +69,7 @@ class BarChart extends React.Component {
     const { dataView, markHeight, maxCountPercent } = this.state;
     
     let cols={};
-    let top = markHeight && maxCountPercent && markHeight+(percentageYAxis ? maxCountPercent[1]*0.08 : maxCountPercent[0]*0.08);
+    let top = markHeight && maxCountPercent && markHeight+(percentageYAxis ? maxCountPercent[1]*0.05 : maxCountPercent[0]*0.05);
 
     if(type==='number'){
       cols[colNameSelected] = numBins>20 ? 
@@ -110,8 +110,20 @@ class BarChart extends React.Component {
             />
             <Axis title={{offset:70}} name= {"percent"} autoRotate={true} label={{autoRotate:false}} />
             <Tooltip/>
-            <Geom />
             <Geom type="interval" position={colNameSelected+"*percent"} />
+            {isRowWise && record &&
+              <Guide>
+                <Guide.Line top={true} start={[record[colNameSelected], markHeight]} end={[record[colNameSelected], top]}
+                      lineStyle={{stroke:'#000', lineDash:[2,0], lineWidth: 1 }}
+                />
+                <Guide.Text top= {true}
+                      position= {[record[colNameSelected],top]} 
+                      content= {"You are here"}
+                      style= {{ fill: '#666', fontSize: '12' }}
+                      offsetX= {-35} offsetY= {-10}
+                />
+              </Guide>
+            }
           </Chart>
         }
         { dataView && cols && !percentageYAxis &&
