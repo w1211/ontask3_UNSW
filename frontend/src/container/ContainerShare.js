@@ -67,8 +67,7 @@ class ContainerShare extends React.Component {
     const { visible, selected, form } = this.props;
     const { loading, error } = this.state;
 
-    const { getFieldDecorator, getFieldsValue, resetFields } = form;
-    const { sharing } = getFieldsValue();
+    const { getFieldDecorator, setFieldsValue } = form;
 
     return (
       <Modal
@@ -92,17 +91,14 @@ class ContainerShare extends React.Component {
               />
             )}
 
-            {sharing &&
-              sharing.length > 0 && (
-                <Button
-                  className="clear"
-                  size="small"
-                  onClick={() => resetFields("sharing")}
-                  onChange={e => this.validateEmail(e, "sharing")}
-                >
-                  Clear
-                </Button>
-              )}
+            <Button
+              className="clear"
+              size="small"
+              onClick={() => setFieldsValue({ sharing: [] })}
+              onChange={e => this.validateEmail(e, "sharing")}
+            >
+              Clear
+            </Button>
           </FormItem>
 
           {error && <Alert message={error} type="error" />}
