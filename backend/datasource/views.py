@@ -31,6 +31,8 @@ class DataSourceViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, DataSourcePermissions]
 
     def get_queryset(self):
+        request_user = self.request.user.email
+
         pipeline = [
             {
                 '$lookup': {
@@ -40,10 +42,11 @@ class DataSourceViewSet(viewsets.ModelViewSet):
                     'as': 'container'
                 }
             }, {
-                '$unwind': '$container'
-            }, {
                 '$match': {
-                    'container.owner': self.request.user.email
+                    '$or': [
+                        {'container.owner': request_user},
+                        {'container.sharing': {'$in': [request_user]}}
+                    ]
                 }
             }
         ]

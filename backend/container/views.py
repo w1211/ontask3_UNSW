@@ -24,7 +24,7 @@ from workflow.models import Workflow
 class ContainerViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
     serializer_class = ContainerSerializer
-    permission_classes = [ContainerPermissions, IsAuthenticated]
+    permission_classes = [IsAuthenticated, ContainerPermissions]
 
     def json_serial(self, obj):
         if isinstance(obj, (datetime, date)):

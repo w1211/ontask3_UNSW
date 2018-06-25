@@ -8,6 +8,7 @@ from django.http import JsonResponse
 import json
 
 from .serializers import ViewSerializer
+from .permissions import DataLabPermissions
 
 from .models import View
 # from workflow.models import Workflow
@@ -17,10 +18,30 @@ from datasource.models import DataSource
 class ViewViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
     serializer_class = ViewSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, DataLabPermissions]
 
     def get_queryset(self):
-        return View.objects.all()
+        request_user = self.request.user.email
+        
+        pipeline = [
+            {
+                '$lookup': {
+                    'from': 'container',
+                    'localField': 'container',
+                    'foreignField': '_id',
+                    'as': 'container'
+                }
+            }, {
+                '$match': {
+                    '$or': [
+                        {'container.owner': request_user},
+                        {'container.sharing': {'$in': [request_user]}}
+                    ]
+                }
+            }
+        ]
+        data_labs = list(View.objects.aggregate(*pipeline))
+        return View.objects.filter(id__in = [data_lab['_id'] for data_lab in data_labs])
 
     def perform_create(self, serializer):
         self.check_object_permissions(self.request, None)
@@ -81,7 +102,7 @@ class ViewViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, obj):
         self.check_object_permissions(self.request, obj)
 
-        # # Ensure that no workflow is currently using this view
+        # # Ensure that no action is currently using this data lab
         # queryset = Workflow.objects.filter(
         #     view = self.get_object()['id']
         # )
