@@ -1,13 +1,13 @@
 import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
-import { Form, Input, Select, Button, Alert, Spin, Icon, Checkbox, Tooltip, Row, Col} from 'antd';
+import { Form, Input, Select, Button, Alert, Spin, Icon, Tooltip, Row, Col} from 'antd';
 import { convertToRaw } from 'draft-js';
 import draftToHtml from 'draftjs-to-html';
 import moment from 'moment';
+import _ from 'lodash';
 
 import * as WorkflowActionCreators from '../WorkflowActions';
-import { openSchedulerModal } from '../../scheduler/SchedulerActions';
 
 import {narrowFormItemLayout} from '../../shared/FormItemLayout';
 
@@ -21,10 +21,12 @@ class Email extends React.Component {
     super(props);
     const { dispatch, workflow, editorState } = props;
 
-    this.boundActionCreators = bindActionCreators({
-      ...WorkflowActionCreators, openSchedulerModal}, dispatch);
+    this.boundActionCreators = bindActionCreators(WorkflowActionCreators, dispatch);
 
-    this.state = { index: 0 };
+    this.state = { 
+      index: 0,
+      scheduler: { visible: false, selected: null, data: {} }
+    };
 
     if (workflow) {
       const currentContent = editorState.getCurrentContent();
@@ -76,9 +78,18 @@ class Email extends React.Component {
     });
   }
 
+  openScheduleModal = () => {
+    const { workflow } = this.props;
+
+    this.setState({
+      scheduler: { visible: true, selected: workflow.id, data: { schedule: workflow.schedule } }
+    });
+  }
+
   render() {
     const { workflow, loading, error, form, previewLoading, previewContent } = this.props;
-    
+    const { scheduler } = this.state;
+
     let options = [];
     workflow && workflow.view.steps.forEach(step => {
       if (step.type === 'datasource') {
@@ -93,10 +104,12 @@ class Email extends React.Component {
     return (
       <div>
         <SchedulerModal
+          {...scheduler}
           onUpdate={this.boundActionCreators.updateSchedule}
           onDelete={this.boundActionCreators.deleteSchedule}
-          allowFutureStart={true}
+          closeModal={() => this.setState({ scheduler: { visible: false, selected: null, data: {} } })}
         />
+
         <Form layout="horizontal">
           <div>
           { workflow && workflow.schedule ?
@@ -105,17 +118,17 @@ class Email extends React.Component {
                   <div style={{ backgroundColor: "#fafafa", padding: '1em 3em', margin: '1em 0', border: "1px dashed #e9e9e9", borderRadius: '5px', display: 'block' }}>
                     <div style={{textAlign:"right"}}>
                     <Tooltip title="Update current schedule">
-                      <Button shape="circle" icon="edit" size="small" onClick={this.onUpdate}/>
+                      <Button shape="circle" icon="edit" size="small" onClick={this.openScheduleModal}/>
                       </Tooltip>
                       </div>
-                    <Row>
+                    {_.get(workflow, 'schedule.startTime') && <Row>
                         <Col style={{textAlign:"right", marginBottom:5}} xs={{ span: 24 }} sm={{ span: 5 }} ><h4>Start Time:</h4> </Col>
                         <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }} >{moment(workflow.schedule.startTime).format("YYYY/MM/DD HH:mm:ss")}</Col>
-                    </Row>
-                    <Row>
+                    </Row>}
+                    {_.get(workflow, 'schedule.endTime') && <Row>
                         <Col style={{textAlign:"right", marginBottom:5}} xs={{ span: 24 }} sm={{ span: 5 }} ><h4>End Time: </h4></Col>
                         <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }}>{moment(workflow.schedule.endTime).format("YYYY/MM/DD HH:mm:ss")}</Col>
-                    </Row>
+                    </Row>}
                     <Row>
                         <Col style={{textAlign:"right", marginBottom:5}} xs={{ span: 24 }} sm={{ span: 5 }}><h4>Time: </h4></Col>
                         <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }}>{moment(workflow.schedule.time).format("HH:mm")}</Col>
@@ -131,7 +144,7 @@ class Email extends React.Component {
                     { workflow.schedule.frequency === "weekly" && 
                     <Row gutter={8}>
                         <Col style={{textAlign:"right", marginBottom:5}} xs={{ span: 24 }} sm={{ span: 5 }} ><h4>DayOfWeek: </h4></Col>
-                        <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }}>{workflow.schedule.dayOfWeek.map((day,i)=><span>{day} </span>)}</Col>
+                        <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }}>{workflow.schedule.dayOfWeek.map((day,i)=><span key={i}>{day} </span>)}</Col>
                     </Row>
                     }
                     { workflow.schedule.frequency === "monthly" && 
@@ -143,15 +156,7 @@ class Email extends React.Component {
                   </div>
                 </div>
               :
-                <div style={{ maxWidth: 700 }}>
-                  <FormItem {...narrowFormItemLayout} label="Scheduled task">
-                    {form.getFieldDecorator('schedule.enabled', {
-                      initialValue: workflow && workflow.schedule
-                    })(
-                      <Checkbox onChange={this.onChange} checked={workflow && workflow.schedule ? true : false}/>
-                    )}
-                  </FormItem>
-                </div>
+                <Button icon="schedule" onClick={this.openScheduleModal}>Schedule email sending</Button>
               }
             </div>
 

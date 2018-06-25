@@ -4,7 +4,6 @@ import { notification } from "antd";
 import requestWrapper from "../shared/requestWrapper";
 
 import { fetchContainers } from "../container/ContainerActions";
-import * as SchedulerActions from "../scheduler/SchedulerActions";
 
 export const OPEN_WORKFLOW_MODAL = "OPEN_WORKFLOW_MODAL";
 export const CLOSE_WORKFLOW_MODAL = "CLOSE_WORKFLOW_MODAL";
@@ -590,19 +589,20 @@ export const sendEmail = (workflowId, payload, isSchedule) => dispatch => {
   requestWrapper(parameters);
 };
 
-export const updateSchedule = (workflowId, payload, isCreate) => dispatch => {
+export const updateSchedule = ({
+  selected,
+  payload,
+  onError,
+  onSuccess,
+  isCreate
+}) => dispatch => {
   const parameters = {
-    initialFn: () => {
-      dispatch(SchedulerActions.beginRequestScheduler());
-    },
-    url: `/workflow/${workflowId}/update_schedule/`,
+    url: `/workflow/${selected}/update_schedule/`,
     method: "PATCH",
-    errorFn: error => {
-      dispatch(SchedulerActions.failureRequestScheduler(error));
-    },
+    errorFn: onError,
     successFn: () => {
-      dispatch(SchedulerActions.successRequestScheduler());
-      dispatch(fetchWorkflow(workflowId));
+      onSuccess();
+      dispatch(fetchWorkflow(selected));
       notification["success"]({
         message: `Schedule ${isCreate ? "created" : "updated"}`,
         description: `The schedule was successfully ${
@@ -610,31 +610,29 @@ export const updateSchedule = (workflowId, payload, isCreate) => dispatch => {
         }.`
       });
     },
-    payload: payload,
-    isNotJSON: false
+    payload
   };
+
   requestWrapper(parameters);
 };
 
-export const deleteSchedule = workflowId => dispatch => {
+export const deleteSchedule = ({
+  selected,
+  onError,
+  onSuccess
+}) => dispatch => {
   const parameters = {
-    initialFn: () => {
-      dispatch(SchedulerActions.beginRequestScheduler());
-    },
-    url: `/workflow/${workflowId}/delete_schedule/`,
+    url: `/workflow/${selected}/delete_schedule/`,
     method: "PATCH",
-    errorFn: error => {
-      dispatch(SchedulerActions.failureRequestScheduler(error));
-    },
+    errorFn: onError,
     successFn: () => {
-      dispatch(SchedulerActions.successRequestScheduler());
-      dispatch(fetchWorkflow(workflowId));
+      onSuccess();
+      dispatch(fetchWorkflow(selected));
       notification["success"]({
         message: "Schedule deleted",
         description: "The schedule was successfully deleted."
       });
-    },
-    isNotJSON: false
+    }
   };
   requestWrapper(parameters);
 };

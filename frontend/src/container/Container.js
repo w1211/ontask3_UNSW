@@ -5,6 +5,10 @@ import { Link } from "react-router-dom";
 import { Layout, Breadcrumb, Icon, Button, Spin } from "antd";
 
 import * as ContainerActionCreators from "./ContainerActions";
+import {
+  updateSchedule,
+  deleteSchedule
+} from "../datasource/DatasourceActions";
 
 import ContainerModal from "./ContainerModal";
 import ContainerList from "./ContainerList";
@@ -23,13 +27,14 @@ class Container extends React.Component {
     const { dispatch } = props;
 
     this.boundActionCreators = bindActionCreators(
-      ContainerActionCreators,
+      { ...ContainerActionCreators, updateSchedule, deleteSchedule },
       dispatch
     );
 
     this.state = {
       container: { visible: false, selected: null },
       datasource: { visible: false, selected: null, data: {} },
+      scheduler: { visible: false, selected: null, data: {} },
       action: { visible: false, selected: null, data: {} },
       sharing: { visible: false, selected: null }
     };
@@ -65,7 +70,7 @@ class Container extends React.Component {
 
   render() {
     const { isFetching, containers } = this.props;
-    const { container, datasource, action, sharing } = this.state;
+    const { container, datasource, scheduler, action, sharing } = this.state;
 
     return (
       <div className="container">
@@ -115,7 +120,12 @@ class Container extends React.Component {
                     closeModal={() => this.closeModal("sharing")}
                   />
 
-                  <SchedulerModal />
+                  <SchedulerModal
+                    {...scheduler}
+                    onUpdate={this.boundActionCreators.updateSchedule}
+                    onDelete={this.boundActionCreators.deleteSchedule}
+                    closeModal={() => this.closeModal("scheduler")}
+                  />
 
                   {containers && containers.length > 0 ? (
                     <ContainerList openModal={this.openModal} />

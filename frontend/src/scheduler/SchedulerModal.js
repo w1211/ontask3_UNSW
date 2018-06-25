@@ -1,132 +1,198 @@
-import React from 'react';
-import { bindActionCreators } from 'redux';
-import { connect } from 'react-redux';
-import { Modal, Form, Input, Alert, Select, DatePicker, Button, TimePicker } from 'antd';
-import moment from 'moment';
+import React from "react";
+import {
+  Modal,
+  Form,
+  Input,
+  Alert,
+  Select,
+  DatePicker,
+  Button,
+  TimePicker
+} from "antd";
+import moment from "moment";
 
-import formItemLayout from '../shared/FormItemLayout';
-import * as SchedulerActionCreators from './SchedulerActions';
-import { updateSchedule, deleteSchedule } from '../datasource/DatasourceActions';
+import formItemLayout from "../shared/FormItemLayout";
 
 const FormItem = Form.Item;
 const Option = Select.Option;
 const confirm = Modal.confirm;
-const { RangePicker } = DatePicker;
-
 
 class SchedulerModal extends React.Component {
-  constructor(props) {
-    super(props);
-    const { dispatch } = props;
-
-    this.boundActionCreators = bindActionCreators({...SchedulerActionCreators, updateSchedule, deleteSchedule}, dispatch);
-  };
+  state = { updateLoading: false, deleteLoading: false, error: null };
 
   handleOk = () => {
-    const { form, selectedId, schedule } = this.props;
+    const { form, onUpdate, selected, data, closeModal } = this.props;
+    const { schedule } = data;
 
-    form.validateFields((err, values) => {
+    form.validateFields((err, payload) => {
       if (err) return;
 
-      values.time = values.time.utc().format();
-      if ('dayOfMonth' in values) values.dayOfMonth = values.dayOfMonth.format();
-      const isCreate = schedule ? true : false;
-      this.boundActionCreators.updateSchedule(selectedId, values, isCreate);
+      // Format the time fields to be in UTC
+      ["time", "startTime", "endTime", "dayOfMonth"].forEach(field => {
+        if (field in payload && payload[field])
+          payload[field] = payload[field].utc();
+      });
+
+      this.setState({ updateLoading: true, error: null });
+
+      onUpdate({
+        selected,
+        payload,
+        isCreate: !schedule,
+        onError: error => this.setState({ updateLoading: false, error }),
+        onSuccess: () => {
+          this.setState({ updateLoading: false, error: null });
+          form.resetFields();
+          closeModal();
+        }
+      });
     });
   };
 
-  onCancel = () => { 
-    const { form } = this.props;
-    
-    form.resetFields(); 
-    this.boundActionCreators.closeSchedulerModal(); 
+  handleCancel = () => {
+    const { form, closeModal } = this.props;
+
+    this.setState({ deleteLoading: false, updateLoading: false, error: null });
+    form.resetFields();
+    closeModal();
   };
 
-  onDelete = () => {
-    const { selectedId } = this.props;
+  handleDelete = () => {
+    const { form, selected, onDelete, closeModal } = this.props;
 
     confirm({
-      title: 'Confirm schedule removal',
-      content: 'Are you sure you want to remove the schedule?',
-      okText: 'Yes, remove',
-      okType: 'danger',
-      cancelText: 'Cancel',
-      onOk() {
-        this.boundActionCreators.deleteSchedule(selectedId);
+      title: "Confirm schedule removal",
+      content: "Are you sure you want to remove the schedule?",
+      okText: "Yes, remove",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk: () => {
+        this.setState({ deleteLoading: true, error: null });
+
+        onDelete({
+          selected,
+          onError: error => this.setState({ deleteLoading: false, error }),
+          onSuccess: () => {
+            this.setState({ deleteLoading: false, error: null });
+            form.resetFields();
+            closeModal();
+          }
+        });
       }
     });
   };
 
   // User can not select days before today, today and one year after
-  disabledDate = (current) => {
-    if (current < moment().startOf('day') || current > moment().add(1,'y')) {
+  disabledDate = current => {
+    if (current < moment().startOf("day") || current > moment().add(1, "y")) {
       return true;
-    };
+    }
     return false;
   };
 
   render() {
-    const { form, visible, schedule, allowFutureStart, error } = this.props;
-    const { getFieldDecorator } = form;
-    
-    return(
+    const { visible, data, form } = this.props;
+    const { updateLoading, deleteLoading, error } = this.state;
+    const { schedule } = data;
+
+    const { getFieldDecorator, getFieldValue } = form;
+
+    return (
       <Modal
-        title={ schedule ? 'Update schedule' : 'Create schedule' }
+        title={schedule ? "Update schedule" : "Create schedule"}
         visible={visible}
-        onCancel={this.onCancel}
-        footer = { schedule ? [
-          <Button key="cancel" onClick={this.onCancel}>Cancel</Button>, 
-          <Button key="delete" type="danger" onClick={this.onDelete}>Delete</Button>, 
-          <Button key="update" type="primary" onClick={this.handleOk}>Update</Button>
-        ] : [
-          <Button key="cancel" onClick={this.onCancel}>Cancel</Button>, 
-          <Button key="create" type="primary" onClick={this.handleOk}>Create</Button>
-        ] }
+        onCancel={this.handleCancel}
+        footer={
+          schedule
+            ? [
+                <Button key="cancel" onClick={this.handleCancel}>
+                  Cancel
+                </Button>,
+
+                <Button
+                  key="delete"
+                  type="danger"
+                  onClick={this.handleDelete}
+                  loading={deleteLoading}
+                >
+                  Delete
+                </Button>,
+
+                <Button
+                  key="update"
+                  type="primary"
+                  onClick={this.handleOk}
+                  loading={updateLoading}
+                >
+                  Update
+                </Button>
+              ]
+            : [
+                <Button key="cancel" onClick={this.handleCancel}>
+                  Cancel
+                </Button>,
+
+                <Button
+                  key="create"
+                  type="primary"
+                  onClick={this.handleOk}
+                  loading={updateLoading}
+                >
+                  Create
+                </Button>
+              ]
+        }
       >
         <Form layout="horizontal">
           <FormItem {...formItemLayout} label="Time">
-            { getFieldDecorator('time', {
-                initialValue: schedule ? moment.utc(schedule.time).local() : null,
-                rules: [{ required: true, message: 'Time is required' }]
-            })(
-              <TimePicker format={'HH:mm'}/>
-            )}
+            {getFieldDecorator("time", {
+              initialValue: schedule ? moment.utc(schedule.time).local() : null,
+              rules: [{ required: true, message: "Time is required" }]
+            })(<TimePicker format={"HH:mm"} />)}
           </FormItem>
-          
+
           <FormItem {...formItemLayout} label="Frequency">
-            { getFieldDecorator('frequency', {
-              initialValue: schedule ? schedule.frequency : 'daily',
-              rules: [{ required: true, message: 'Frequency is required' }]
+            {getFieldDecorator("frequency", {
+              initialValue: schedule ? schedule.frequency : null,
+              rules: [{ required: true, message: "Frequency is required" }]
             })(
-              <Select style={{ maxWidth: 250 }}>
+              <Select>
                 <Option value="daily">Daily</Option>
                 <Option value="weekly">Weekly</Option>
                 <Option value="monthly">Monthly</Option>
               </Select>
             )}
           </FormItem>
-        
-          { form.getFieldValue('frequency') === "daily" &&
+
+          {getFieldValue("frequency") === "daily" && (
             <FormItem {...formItemLayout} label="When">
-              { getFieldDecorator('dayFrequency', {
-                initialValue: schedule ? schedule.dayFrequency.toString() : null,
+              {getFieldDecorator("dayFrequency", {
+                initialValue:
+                  schedule && schedule.dayFrequency
+                    ? schedule.dayFrequency.toString()
+                    : null,
                 rules: [
-                  { required: true, message: 'When is required' },
-                  { pattern: '^[1-9][0-9]*$', message: 'Must be an integer' }
+                  { required: true, message: "When is required" },
+                  { pattern: "^[1-9][0-9]*$", message: "Must be an integer" }
                 ]
               })(
-                <Input style={{ maxWidth: 250 }} addonBefore='Every' addonAfter={form.getFieldValue('dayFrequency') > 1 ? 'days' : 'day' }/>
+                <Input
+                  addonBefore="Every"
+                  addonAfter={
+                    form.getFieldValue("dayFrequency") > 1 ? "days" : "day"
+                  }
+                />
               )}
             </FormItem>
-          }
+          )}
 
-          { form.getFieldValue('frequency') === "weekly" &&
+          {getFieldValue("frequency") === "weekly" && (
             <FormItem {...formItemLayout} label="When">
-              { getFieldDecorator('dayOfWeek', {
-                initialValue: schedule ? schedule.dayOfWeek : undefined,
-                rules: [{ required: true, message: 'When is required' }]
+              {getFieldDecorator("dayOfWeek", {
+                initialValue: schedule ? schedule.dayOfWeek : [],
+                rules: [{ required: true, message: "When is required" }]
               })(
-                <Select mode="multiple" style={{ maxWidth: 250 }}>
+                <Select mode="multiple">
                   <Option value="mon">Monday</Option>
                   <Option value="tue">Tuesday</Option>
                   <Option value="wed">Wednesday</Option>
@@ -137,49 +203,43 @@ class SchedulerModal extends React.Component {
                 </Select>
               )}
             </FormItem>
-          }
+          )}
 
-          { form.getFieldValue('frequency') === "monthly" &&
+          {getFieldValue("frequency") === "monthly" && (
             <FormItem {...formItemLayout} label="When">
-              { getFieldDecorator('dayOfMonth', {
-                initialValue: schedule && schedule.dayOfMonth ? moment(schedule.dayOfMonth) : null,
-                rules: [{ required: true, message: 'When is required' }]
-              })(
-                <DatePicker style={{ maxWidth: 250 }} format={'DD'}/>
-              )}
+              {getFieldDecorator("dayOfMonth", {
+                initialValue:
+                  schedule && schedule.dayOfMonth
+                    ? moment.utc(schedule.dayOfMonth).local()
+                    : null,
+                rules: [{ required: true, message: "When is required" }]
+              })(<DatePicker format={"Do"} />)}
             </FormItem>
-          }
+          )}
 
-          { allowFutureStart &&
-            <FormItem {...formItemLayout} label="Active between">
-              { form.getFieldDecorator('dateRange', {
-                initialValue: schedule ? [moment(schedule.startTime),moment(schedule.endTime)] : null
-              })(
-                <RangePicker 
-                  showTime 
-                  style={{ minWidth:"100%" }} 
-                  disabledDate={this.disabledDate}
-                  format="YYYY/MM/DD HH:mm:ss"
-                />
-              )}
-            </FormItem>
-          }
+          <FormItem {...formItemLayout} label="Active from">
+            {getFieldDecorator("startTime", {
+              initialValue:
+                schedule && schedule.startTime
+                  ? moment.utc(schedule.startTime).local()
+                  : undefined
+            })(<DatePicker showTime format="DD/MM/YYYY HH:mm" />)}
+          </FormItem>
 
-          { error && <Alert message={error} type="error"/>}
+          <FormItem {...formItemLayout} label="Active to">
+            {getFieldDecorator("endTime", {
+              initialValue:
+                schedule && schedule.endTime
+                  ? moment.utc(schedule.endTime).local()
+                  : undefined
+            })(<DatePicker showTime format="DD/MM/YYYY HH:mm" />)}
+          </FormItem>
+
+          {error && <Alert message={error} type="error" />}
         </Form>
       </Modal>
-    )
+    );
   }
 }
 
-const mapStateToProps = (state) => {
-    const {
-      visible, selectedId, schedule, error
-    } = state.scheduler;
-    
-    return {
-      visible, selectedId, schedule, error
-    };
-}
-
-export default connect(mapStateToProps)(Form.create()(SchedulerModal))
+export default Form.create()(SchedulerModal);

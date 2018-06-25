@@ -1,7 +1,6 @@
 import { notification } from "antd";
 import requestWrapper from "../shared/requestWrapper";
 import { fetchContainers } from "../container/ContainerActions";
-import * as SchedulerActions from "../scheduler/SchedulerActions";
 
 export const fetchSheetnames = ({
   file,
@@ -129,18 +128,19 @@ export const deleteDatasource = ({ datasourceId, onFinish }) => dispatch => {
   requestWrapper(parameters);
 };
 
-export const updateSchedule = (datasourceId, payload, isCreate) => dispatch => {
+export const updateSchedule = ({
+  selected,
+  payload,
+  onError,
+  onSuccess,
+  isCreate
+}) => dispatch => {
   const parameters = {
-    initialFn: () => {
-      dispatch(SchedulerActions.beginRequestScheduler());
-    },
-    url: `/datasource/${datasourceId}/update_schedule/`,
+    url: `/datasource/${selected}/update_schedule/`,
     method: "PATCH",
-    errorFn: error => {
-      dispatch(SchedulerActions.failureRequestScheduler(error));
-    },
+    errorFn: onError,
     successFn: () => {
-      dispatch(SchedulerActions.successRequestScheduler());
+      onSuccess();
       dispatch(fetchContainers());
       notification["success"]({
         message: `Schedule ${isCreate ? "created" : "updated"}`,
@@ -149,31 +149,29 @@ export const updateSchedule = (datasourceId, payload, isCreate) => dispatch => {
         }.`
       });
     },
-    payload: payload,
-    isNotJSON: false
+    payload
   };
+
   requestWrapper(parameters);
 };
 
-export const deleteSchedule = datasourceId => dispatch => {
+export const deleteSchedule = ({
+  selected,
+  onError,
+  onSuccess
+}) => dispatch => {
   const parameters = {
-    initialFn: () => {
-      dispatch(SchedulerActions.beginRequestScheduler());
-    },
-    url: `/datasource/${datasourceId}/delete_schedule/`,
+    url: `/datasource/${selected}/delete_schedule/`,
     method: "PATCH",
-    errorFn: error => {
-      dispatch(SchedulerActions.failureRequestScheduler(error));
-    },
+    errorFn: onError,
     successFn: () => {
-      dispatch(SchedulerActions.successRequestScheduler());
+      onSuccess();
       dispatch(fetchContainers());
       notification["success"]({
         message: "Schedule deleted",
         description: "The schedule was successfully deleted."
       });
-    },
-    isNotJSON: false
+    }
   };
   requestWrapper(parameters);
 };

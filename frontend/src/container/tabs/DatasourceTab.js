@@ -117,10 +117,13 @@ class DatasourceTab extends React.Component {
                   <Button
                     icon="calendar"
                     onClick={() => {
-                      this.boundActionCreators.openSchedulerModal(
-                        datasource.id,
-                        datasource.schedule
-                      );
+                      openModal({
+                        type: "scheduler",
+                        selected: datasource.id,
+                        data: {
+                          schedule: datasource.schedule
+                        }
+                      });
                     }}
                   />
                 </Tooltip>
