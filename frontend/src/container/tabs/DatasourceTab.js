@@ -3,7 +3,6 @@ import { bindActionCreators } from "redux";
 import { connect } from "react-redux";
 import { Input, Icon, Tooltip, Button, Card, Modal } from "antd";
 
-import * as ContainerActionCreators from "../ContainerActions";
 import { deleteDatasource } from "../../datasource/DatasourceActions";
 
 const { Meta } = Card;
@@ -15,7 +14,7 @@ class DatasourceTab extends React.Component {
     const { dispatch } = props;
 
     this.boundActionCreators = bindActionCreators(
-      { ...ContainerActionCreators, deleteDatasource },
+      { deleteDatasource },
       dispatch
     );
 
@@ -133,9 +132,7 @@ class DatasourceTab extends React.Component {
                   type="danger"
                   icon="delete"
                   loading={datasource.id in loading && loading[datasource.id]}
-                  onClick={() => {
-                    this.deleteDatasource(datasource.id);
-                  }}
+                  onClick={() => this.deleteDatasource(datasource.id)}
                 />
               </Tooltip>
             );

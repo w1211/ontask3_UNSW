@@ -4,7 +4,6 @@ import { connect } from "react-redux";
 import { Input, Icon, Tooltip, Button, Card, Modal } from "antd";
 import { Link } from "react-router-dom";
 
-import * as ContainerActionCreators from "../ContainerActions";
 import { deleteAction } from "../../workflow/WorkflowActions";
 
 const { Meta } = Card;
@@ -16,7 +15,7 @@ class ActionTab extends React.Component {
     const { dispatch } = props;
 
     this.boundActionCreators = bindActionCreators(
-      { ...ContainerActionCreators, deleteAction },
+      { deleteAction },
       dispatch
     );
 
@@ -91,9 +90,7 @@ class ActionTab extends React.Component {
                       type="danger"
                       icon="delete"
                       loading={action.id in loading && loading[action.id]}
-                      onClick={() => {
-                        this.deleteAction(action.id);
-                      }}
+                      onClick={() => this.deleteAction(action.id)}
                     />
                   </Tooltip>
                 ]}

@@ -1,10 +1,8 @@
-import { notification, Modal, message } from 'antd';
+import { notification, message } from 'antd';
 import requestWrapper from '../shared/requestWrapper';
 import { fetchContainers } from '../container/ContainerActions';
 import _ from 'lodash';
 import moment from 'moment';
-
-const confirm = Modal.confirm;
 
 
 export const BEGIN_REQUEST_VIEW = 'BEGIN_REQUEST_VIEW';
@@ -37,24 +35,19 @@ const failureRequestView = (error) => ({
   error
 });
 
-const successRequestView = () => ({
-  type: SUCCESS_REQUEST_VIEW
-});
-
-export const deleteView = (viewId) => dispatch => {
+export const deleteDataLab = ({ dataLabId, onFinish }) => dispatch => {
   const parameters = {
-    initialFn: () => { dispatch(beginRequestView()); },
-    url: `/view/${viewId}/`,
+    url: `/view/${dataLabId}/`,
     method: 'DELETE',
     errorFn: (error) => {
-      dispatch(failureRequestView()); // Don't pass in the error here since we don't need it stored in the state
+      onFinish()
       notification['error']({
         message: 'DataLab deletion failed',
         description: error
       });
     },
     successFn: () => {
-      dispatch(successRequestView());
+      onFinish()
       dispatch(fetchContainers());
       notification['success']({
         message: 'DataLab deleted',
@@ -63,16 +56,7 @@ export const deleteView = (viewId) => dispatch => {
     }
   }
 
-  confirm({
-    title: 'Confirm DataLab deletion',
-    content: 'Are you sure you want to delete this DataLab?',
-    okText: 'Continue with deletion',
-    okType: 'danger',
-    cancelText: 'Cancel',
-    onOk() {
-      requestWrapper(parameters);
-    }
-  });
+  requestWrapper(parameters);
 };
 
 const receiveView = (dataLab) => ({

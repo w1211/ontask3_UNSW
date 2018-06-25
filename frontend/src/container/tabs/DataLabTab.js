@@ -1,12 +1,13 @@
 import React from "react";
 import { bindActionCreators } from "redux";
 import { connect } from "react-redux";
-import { Input, Icon, Tooltip, Button, Card } from "antd";
+import { Input, Icon, Tooltip, Button, Card, Modal } from "antd";
 import { Link } from "react-router-dom";
 
-import * as ContainerActionCreators from "../ContainerActions";
+import { deleteDataLab } from "../../view/ViewActions";
 
 const { Meta } = Card;
+const confirm = Modal.confirm;
 
 class DataLabTab extends React.Component {
   constructor(props) {
@@ -14,16 +15,38 @@ class DataLabTab extends React.Component {
     const { dispatch } = props;
 
     this.boundActionCreators = bindActionCreators(
-      ContainerActionCreators,
+      { deleteDataLab },
       dispatch
     );
 
-    this.state = { filter: null };
+    this.state = { filter: null, loading: {} };
   }
+
+  deleteDataLab = dataLabId => {
+    confirm({
+      title: "Confirm DataLab deletion",
+      content: "Are you sure you want to delete this DataLab?",
+      okText: "Continue with deletion",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk: () => {
+        this.setState({
+          loading: { [dataLabId]: true }
+        });
+
+        this.boundActionCreators.deleteDataLab({
+          dataLabId,
+          onFinish: () => {
+            this.setState({ loading: { [dataLabId]: false } });
+          }
+        });
+      }
+    });
+  };
 
   render() {
     const { containerId, dataLabs } = this.props;
-    const { filter } = this.state;
+    const { filter, loading } = this.state;
 
     return (
       <div className="tab">
@@ -67,9 +90,8 @@ class DataLabTab extends React.Component {
                     <Button
                       type="danger"
                       icon="delete"
-                      onClick={() => {
-                        this.boundActionCreators.deleteView(dataLab.id);
-                      }}
+                      loading={dataLab.id in loading && loading[dataLab.id]}
+                      onClick={() => this.deleteDataLab(dataLab.id)}
                     />
                   </Tooltip>
                 ]}
