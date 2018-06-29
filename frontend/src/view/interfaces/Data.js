@@ -83,9 +83,12 @@ class Data extends React.Component {
   
         orderedColumns.unshift({
           title: 'Action', fixed: 'left', dataIndex: 0, key: 0,
-          render: () => (
+          render: (index, value) => (
             <a>
-              <Icon type="area-chart" onClick={() => this.boundActionCreators.openVisualisationModal(defaultVisualisation, true)}/>
+              <Icon 
+                type="area-chart" 
+                onClick={() => {this.boundActionCreators.openVisualisationModal(defaultVisualisation, true, value);}}
+              />
             </a>
           )
         });

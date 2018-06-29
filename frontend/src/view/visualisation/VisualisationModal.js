@@ -24,7 +24,7 @@ class VisualisationModal extends React.Component {
       interval:5, range:null, 
       groupByCol:null, numBins:null, 
       visibleField:null, onSameChart:false, 
-      percentageAxis:false, selections:null,
+      percentageAxis:false, selections:[],
       filterCols:[]
     };
     this.boundActionCreators = bindActionCreators(ViewActionCreators, dispatch);
@@ -38,10 +38,14 @@ class VisualisationModal extends React.Component {
     this.boundActionCreators.closeVisualisationModal(); 
   };
 
-  handleSubmit = () => {
+  handleSubmit = (colNameSelected) => {
     const { selectedId } = this.props;
-    const { chartType, numBins, range} = this.state;
-    this.boundActionCreators.updateVisualisationChart(selectedId, chartType, numBins, range[0], range[1]);
+    const { chartType, interval, range, groupByCol, 
+            numBins, visibleField, onSameChart, percentageAxis, selections, filterCols } = this.state;
+            
+    this.boundActionCreators.updateVisualisationChart(selectedId, 
+          { chartType, colNameSelected, interval, range, groupByCol, 
+            numBins, visibleField, onSameChart, percentageAxis, selections, filterCols});
   };
 
   getMaxCount = (dv) => {
@@ -92,7 +96,7 @@ class VisualisationModal extends React.Component {
   }
 
   render() {
-    const { visualisation_visible, build, data, visualise, isRowWise } = this.props;
+    const { visualisation_visible, build, data, visualise, isRowWise, record } = this.props;
     const { chartType, interval, groupByCol, onSameChart, percentageAxis, visibleField } = this.state;
     let { range, numBins, filterCols } = this.state;
 
@@ -132,7 +136,7 @@ class VisualisationModal extends React.Component {
           if (step.matching !== field && step.primary !== field) {
             const label = step.labels[field];
             let sublist = this.generateSubOptionList(field, data);
-            options.push({ type: step.types[field], label: field, value: 'group-'+field, children: sublist, key: ''+field+'-'+index});
+            options.push({ stepIndex, field, type: step.types[field], label: field, value: 'group-'+field, children: sublist, key: ''+field+'-'+index});
             if(label===colNameSelected){
               childrenOptions=sublist;
             }
@@ -141,14 +145,14 @@ class VisualisationModal extends React.Component {
         });
       };
     });
-    
+
     return (
       <Modal
         width={1000}
         visible={visualisation_visible}
         title={'Visualisation'}
         onCancel={this.handleCancel}
-        onOk={this.handleSubmit}
+        onOk={()=>{this.handleSubmit(colNameSelected)}}
         okText="Save"
         cancelText="Close"
       >
@@ -174,7 +178,7 @@ class VisualisationModal extends React.Component {
                 this.setState({
                   groupByCol: null,
                   visibleField: null,
-                  selections: null,
+                  selections: [],
                   onSameChart: false
                 });
               }
@@ -233,9 +237,6 @@ class VisualisationModal extends React.Component {
           </TreeSelect>
           </div>
       }
-      { !isRowWise && chartType === "barChart" &&
-        <Checkbox checked={percentageAxis} style={{ marginLeft:15}} onChange={(value)=>{this.setState({percentageAxis:value.target.checked})}}>Show percentage</Checkbox>
-      }
       { !isRowWise && chartType !== "pieChart" && chartType !== "table" && groupByCol &&
         <Checkbox checked={onSameChart} style={{marginLeft:15}} onChange={(value)=>{this.setState({onSameChart:value.target.checked})}}>On same chart</Checkbox>
       }
@@ -243,7 +244,7 @@ class VisualisationModal extends React.Component {
         <div style={{display:"flex", justifyContent:"left", alignItems: "center"}}>
           <h4>Columns: </h4>
           <Select
-            style={{ width: 175, marginLeft:10, display:"flex"}}
+            style={{ width: 175, marginLeft:10}}
             value={colNameSelected}
             onChange={
               (e) => {
@@ -253,28 +254,34 @@ class VisualisationModal extends React.Component {
                     stepIndex,
                     field,
                   },
-                  numBins:null,
-                  interval:5
+                  interval:5, range:null, 
+                  groupByCol:null, numBins:null, 
+                  visibleField:null, onSameChart:false, 
+                  percentageAxis:false, selections:[],
+                  filterCols:[]
                 });
               }
             }
           >
           {options.map((option, i) => {
             return(
-              <Option value={option.value} key={option.key}>{option.label}</Option>
+              <Option value={option.stepIndex+'_'+option.field} key={option.key}>{option.label}</Option>
             )
           })}
         </Select>
         </div>
       }
+      { chartType === "barChart" &&
+        <Checkbox checked={percentageAxis} style={{ marginLeft:15}} onChange={(value)=>{this.setState({percentageAxis:value.target.checked})}}>Show percentage</Checkbox>
+      }
       </div>
       { data && chartType === "barChart" && !groupByCol && !onSameChart &&
         <BarChart
           show={visualisation_visible} data={data} type={type} percentageYAxis={percentageAxis} interval={interval} range={range} numBins={numBins}
-          colNameSelected={colNameSelected} filterCols={filterCols}
+          colNameSelected={colNameSelected} filterCols={filterCols} record={record} isRowWise={isRowWise}
         />
       }
-      {chartType==="barChart" && groupByCol && onSameChart &&
+      { chartType==="barChart" && groupByCol && onSameChart &&
         <StackedBarChart 
           show={visualisation_visible} data={data} type={type} percentageYAxis={percentageAxis} interval={interval} range={range}
           colNameSelected={colNameSelected} groupByCol={groupByCol} filterCols={filterCols} childrenOptions={childrenOptions}
@@ -400,11 +407,11 @@ class VisualisationModal extends React.Component {
 
 const mapStateToProps = (state) => {
   const { 
-    visualisation_visible, error, build, data, visualise, isRowWise, record, containerId
+    visualisation_visible, error, build, data, visualise, isRowWise, selectedId, record
   } = state.view;
   
   return { 
-    visualisation_visible, error, build, data, visualise, isRowWise, record, containerId
+    visualisation_visible, error, build, data, visualise, isRowWise, selectedId, record
   };
 };
 

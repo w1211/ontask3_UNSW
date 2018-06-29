@@ -56,9 +56,23 @@ class Module(EmbeddedDocument):
     datasource = EmbeddedDocumentField(DatasourceModule)
     form = EmbeddedDocumentField(FormModule)
 
+class Chart(EmbeddedDocument):
+    chartType = StringField(choices=('barChart', 'pieChart', 'boxPlot', 'table'), required=True)
+    colNameSelected = StringField(required=True)
+    interval = FloatField(null=True)
+    range = ListField(FloatField(), null=True)
+    groupByCol = StringField(null=True)
+    numBins = IntField(null=True)
+    visibleField = StringField(null=True)
+    onSameChart = BooleanField(null=True)
+    percentageAxis = BooleanField(null=True)
+    selections = ListField(StringField())
+    filterCols = ListField(StringField())
+
 class View(Document):
     container = ReferenceField(Container, required=True, reverse_delete_rule=2) # Cascade delete if container is deleted
     name = StringField(required=True)
     steps = EmbeddedDocumentListField(Module)
     data = ListField(DictField())
     order = EmbeddedDocumentListField(Column)
+    charts = EmbeddedDocumentListField(Chart)
