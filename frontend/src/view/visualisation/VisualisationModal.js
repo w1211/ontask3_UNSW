@@ -24,7 +24,7 @@ class VisualisationModal extends React.Component {
       interval:5, range:null, 
       groupByCol:null, numBins:null, 
       visibleField:null, onSameChart:false, 
-      percentageAxis:false, selections:null,
+      percentageAxis:false, selections:[],
       filterCols:[]
     };
     this.boundActionCreators = bindActionCreators(ViewActionCreators, dispatch);
@@ -38,10 +38,14 @@ class VisualisationModal extends React.Component {
     this.boundActionCreators.closeVisualisationModal(); 
   };
 
-  handleSubmit = () => {
+  handleSubmit = (colNameSelected) => {
     const { selectedId } = this.props;
-    const { chartType, numBins, range} = this.state;
-    this.boundActionCreators.updateVisualisationChart(selectedId, chartType, numBins, range[0], range[1]);
+    const { chartType, interval, range, groupByCol, 
+            numBins, visibleField, onSameChart, percentageAxis, selections, filterCols } = this.state;
+            
+    this.boundActionCreators.updateVisualisationChart(selectedId, 
+          { chartType, colNameSelected, interval, range, groupByCol, 
+            numBins, visibleField, onSameChart, percentageAxis, selections, filterCols});
   };
 
   getMaxCount = (dv) => {
@@ -148,7 +152,7 @@ class VisualisationModal extends React.Component {
         visible={visualisation_visible}
         title={'Visualisation'}
         onCancel={this.handleCancel}
-        onOk={this.handleSubmit}
+        onOk={()=>{this.handleSubmit(colNameSelected)}}
         okText="Save"
         cancelText="Close"
       >
@@ -174,7 +178,7 @@ class VisualisationModal extends React.Component {
                 this.setState({
                   groupByCol: null,
                   visibleField: null,
-                  selections: null,
+                  selections: [],
                   onSameChart: false
                 });
               }
@@ -253,7 +257,7 @@ class VisualisationModal extends React.Component {
                   interval:5, range:null, 
                   groupByCol:null, numBins:null, 
                   visibleField:null, onSameChart:false, 
-                  percentageAxis:false, selections:null,
+                  percentageAxis:false, selections:[],
                   filterCols:[]
                 });
               }
@@ -403,11 +407,11 @@ class VisualisationModal extends React.Component {
 
 const mapStateToProps = (state) => {
   const { 
-    visualisation_visible, error, build, data, visualise, isRowWise, containerId, record
+    visualisation_visible, error, build, data, visualise, isRowWise, selectedId, record
   } = state.view;
   
   return { 
-    visualisation_visible, error, build, data, visualise, isRowWise, containerId, record
+    visualisation_visible, error, build, data, visualise, isRowWise, selectedId, record
   };
 };
 

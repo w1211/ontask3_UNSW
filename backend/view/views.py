@@ -270,3 +270,21 @@ class ViewViewSet(viewsets.ModelViewSet):
 
         serializer = ViewSerializer(instance=view)
         return JsonResponse(serializer.data)
+
+    @detail_route(methods=['patch'])
+    def update_chart(self, request, id=None):
+        view = View.objects.get(id=id)
+        self.check_object_permissions(self.request, view)
+
+        charts = view['charts']
+
+        for i in range(len(charts)):
+            charts[i] = json.loads(charts[i].to_json())
+
+        charts.append(request.data)
+
+        serializer = ViewSerializer(instance=view, data={'charts': charts}, partial=True)
+        serializer.is_valid()
+        serializer.save()
+
+        return JsonResponse(serializer.data)
