@@ -258,6 +258,18 @@ class ViewViewSet(viewsets.ModelViewSet):
 
         return JsonResponse(response)
 
+    @list_route(methods=['post'])
+    def check_uniqueness(self, request):
+        partial_build = self.request.data['partialBuild']
+        primary_key = self.request.data['primaryKey']
+
+        data = self.combine_data(partial_build)
+
+        all_records = [item[primary_key] for item in data]
+        unique_records = set(all_records)
+
+        return JsonResponse({'isUnique': len(all_records) == len(unique_records)})
+
     @detail_route(methods=['patch'])
     def update_form_values(self, request, id=None):
         view = View.objects.get(id=id)

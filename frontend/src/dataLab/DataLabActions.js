@@ -105,6 +105,9 @@ export const addModule = mod => (dispatch, getState) => {
   const { dataLab } = getState();
   let build = Object.assign({}, dataLab.build);
 
+  // TEMPORARY: only allow form or datasource modules to be added
+  if (!["datasource", "form"].includes(mod.type)) return;
+
   // Force the first module to be a datasource
   if (build.steps.length === 0 && mod.type !== "datasource") {
     message.error("The first module of a DataLab must be a datasource.");
@@ -167,6 +170,27 @@ export const checkForDiscrepencies = ({ stepIndex, onFinish }) => (
     errorFn: error => console.log(error),
     successFn: result => onFinish(result),
     payload: { partialBuild, checkModule }
+  };
+
+  requestWrapper(parameters);
+};
+
+export const checkForUniqueness = ({ stepIndex, primaryKey, onFinish }) => (
+  dispatch,
+  getState
+) => {
+  const { dataLab } = getState();
+  let build = Object.assign({}, dataLab.build);
+
+  // Extract the build up until (and not including) the form module
+  const partialBuild = build.steps.slice(0, stepIndex);
+
+  const parameters = {
+    url: `/view/check_uniqueness/`,
+    method: "POST",
+    errorFn: error => console.log(error),
+    successFn: result => onFinish(result),
+    payload: { partialBuild, primaryKey }
   };
 
   requestWrapper(parameters);
@@ -302,6 +326,8 @@ const cleanupBuild = (build, datasources) => {
     }
 
     if (step.type === "form") {
+      delete step.datasource;
+
       if (_.get(step, "form.activeFrom"))
         step.form.activeFrom = moment.utc(step.form.activeFrom);
       if (_.get(step, "form.activeTo"))

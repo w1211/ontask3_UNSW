@@ -130,9 +130,12 @@ class DatasourceModule extends React.Component {
 
   handleFieldsChange = e => {
     const { stepIndex, hasDependency } = this.props;
-    const { currentStep, usedLabels } = this.state;
+    const { currentStep, usedLabels, editing } = this.state;
 
     const fields = currentStep.fields;
+
+    // Don't allow fields to be added whilst in editing mode
+    if (editing.isEditing) return;
 
     // Add all fields utility was clicked
     if (e.slice(-1)[0] === "_all") {

@@ -112,9 +112,22 @@
 }
 
 /* DataLab module styles */
+.dataLab .module {
+  width: 350px;
+}
+.dataLab .module .field {
+  width: 100%;
+}
+.dataLab .module .error {
+  color: #f5222d;
+}
 .dataLab .module .title {
   display: flex;
   align-items: center;
+}
+.dataLab .module .title .title_icon {
+  font-size: 150%;
+  margin-right: 5px;
 }
 .dataLab .module .title .step_number {
   position: absolute;
@@ -128,23 +141,17 @@
   justify-content: center;
   align-items: center;
 }
+
+/* Datasource module styles */
+.dataLab .module .datasource {
+  border-color: #BBDEFB;
+}
 .dataLab .module .datasource .title .step_number {
   background: #BBDEFB;
 }
 .dataLab .module .datasource .title .title_icon {
   color: #BBDEFB;
-  font-size: 150%;
-  margin-right: 5px;
 }
-.dataLab .module .datasource {
-  border-color: #BBDEFB;
-  width: 350px;
-}
-.dataLab .module .form .title .step_number {
-  background: #D1C4E9;
-}
-
-/* Datasource module styles */
 .dataLab .module .datasource .select i {
   display: none;
 }
@@ -204,6 +211,48 @@
   bottom: 20px;
 }
 
+/* Form module styles */
+.dataLab .module .form {
+  border-color: #D1C4E9;
+}
+.dataLab .module .form .title .step_number {
+  background: #D1C4E9;
+}
+.dataLab .module .form .title .title_icon {
+  color: #D1C4E9;
+}
+.dataLab .module .form .added_fields {
+  font-size: 14px;
+  margin: 8px 0;
+}
+
+/* Form field modal styles */
+.formField .field_label {
+  display: inline;
+}
+.formField .field_label i {
+  margin-left: 5px;
+}
+.formField .field {
+  width: 100%;
+}
+.formField .option {
+  display: flex;
+}
+.formField .option > *:not(:last-child) {
+  margin-right: 5px;
+}
+
+
+
+/*  */
+.dataLab .ant-form-item-control:not(.has-error) .fields-select.ant-select-disabled .ant-select-selection {
+  border-color: #d9d9d9;
+  box-shadow: none;
+}
+
+
+
 .dataLab .form .fields > div {
   background: white;
   cursor: default;
@@ -216,15 +265,6 @@
 .dataLab .form .fields .ant-select-selection__choice:hover { 
   border-color: #40a9ff;
 }
-
-/*  */
-.dataLab .ant-form-item-control:not(.has-error) .fields-select.ant-select-disabled .ant-select-selection {
-  border-color: #d9d9d9;
-  box-shadow: none;
-}
-
-
-
 
 
 

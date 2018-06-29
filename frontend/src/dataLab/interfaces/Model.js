@@ -113,23 +113,13 @@ class Model extends React.Component {
     return relatedSteps.length > 0;
   };
 
-  openFormFieldModal = (stepIndex, field) => {
-    this.setState({ formField: { visible: true, stepIndex, field } });
+  openModal = (type, props) => {
+    this.setState({ [type]: { visible: true, ...props } });
   };
 
-  closeFormFieldModal = () => {
+  closeModal = type => {
     this.setState({
-      formField: { visible: false, stepIndex: null, field: null }
-    });
-  };
-
-  openDiscrepenciesModal = (props) => {
-    this.setState({ discrepencies: { visible: true, ...props } });
-  };
-
-  closeDiscrepenciesModal = () => {
-    this.setState({
-      discrepencies: { visible: false, stepIndex: null, field: null }
+      [type]: { visible: false }
     });
   };
 
@@ -211,7 +201,9 @@ class Model extends React.Component {
                   usedDatasources={usedDatasources}
                   hasDependency={this.hasDependency}
                   validate={this.validate}
-                  openDiscrepenciesModal={this.openDiscrepenciesModal}
+                  openDiscrepenciesModal={props =>
+                    this.openModal("discrepencies", props)
+                  }
                 />
               )}
 
@@ -219,7 +211,10 @@ class Model extends React.Component {
                 <FormModule
                   stepIndex={index}
                   usedLabels={usedLabels}
-                  openFormFieldModal={this.openFormFieldModal}
+                  validate={this.validate}
+                  openFormFieldModal={props =>
+                    this.openModal("formField", props)
+                  }
                 />
               )}
             </div>
@@ -230,13 +225,13 @@ class Model extends React.Component {
 
         <DiscrepenciesModal
           {...discrepencies}
-          closeDiscrepenciesModal={this.closeDiscrepenciesModal}
+          closeDiscrepenciesModal={() => this.closeModal("discrepencies")}
         />
 
         <FormFieldModal
           {...formField}
-          closeFormFieldModal={this.closeFormFieldModal}
           hasDependency={this.hasDependency}
+          closeFormFieldModal={() => this.closeModal("formField")}
         />
 
         <Button
