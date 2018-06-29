@@ -4,7 +4,7 @@ import { connect } from "react-redux";
 import { Input, Icon, Tooltip, Button, Card, Modal } from "antd";
 import { Link } from "react-router-dom";
 
-import { deleteDataLab } from "../../view/ViewActions";
+import { deleteDataLab } from "../../dataLab/DataLabActions";
 
 const { Meta } = Card;
 const confirm = Modal.confirm;

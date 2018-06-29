@@ -11,7 +11,7 @@ import { requestToken } from "./auth/AuthActions";
 
 import Login from "./auth/Login";
 import Container from "./container/Container";
-import DataLab from "./view/DataLab";
+import DataLab from "./dataLab/DataLab";
 import Workflow from "./workflow/Workflow";
 import StaticPageStudent from "./staticPage/StaticPageStudent";
 import StaticPageStaff from "./staticPage/StaticPageStaff";

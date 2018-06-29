@@ -1,5 +1,7 @@
 from rest_framework import permissions
 
+from container.models import Container
+
 
 class DataLabPermissions(permissions.BasePermission):
     # Permissions for a given data lab are inherited from its parent container

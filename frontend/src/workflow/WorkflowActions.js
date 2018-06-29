@@ -114,18 +114,6 @@ export const deleteAction = ({ actionId, onFinish }) => dispatch => {
   requestWrapper(parameters);
 };
 
-const requestWorkflow = () => ({
-  type: REQUEST_WORKFLOW
-});
-
-const receiveWorkflow = (workflow, editorState) => ({
-  type: RECEIVE_WORKFLOW,
-  workflow,
-  editorState
-});
-
-
-
 export const fetchAction = actionId => dispatch => {
   dispatch({ type: START_FETCHING });
 

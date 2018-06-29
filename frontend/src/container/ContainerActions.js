@@ -25,6 +25,11 @@ export const changeContainerTab = key => ({
 });
 
 export const fetchContainers = accordionKey => dispatch => {
+  // isFetching is specifically set as a redux state variable instead of a local state
+  // variable. This is because fetchContainers() is called from action generators used by
+  // many different child components of the root Container component. Therefore we avoid
+  // the need to pass in a setState() function to all of these child components that modify
+  // the isFetching boolean in the root Container component.
   dispatch({ type: START_FETCHING });
 
   const parameters = {

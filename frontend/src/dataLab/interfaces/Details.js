@@ -3,7 +3,7 @@ import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { Table, Icon, Checkbox, Select } from 'antd';
 
-import * as ViewActionCreators from '../ViewActions';
+import * as DataLabActionCreators from '../DataLabActions';
 
 import components from '../draggable/Column';
 
@@ -15,7 +15,7 @@ class Details extends React.Component {
     super(props);
     const { dispatch } = props;
     
-    this.boundActionCreators = bindActionCreators(ViewActionCreators, dispatch);
+    this.boundActionCreators = bindActionCreators(DataLabActionCreators, dispatch);
   };
 
   moveRow = (dragIndex, hoverIndex) => {
@@ -131,7 +131,7 @@ class Details extends React.Component {
 const mapStateToProps = (state) => {
   const {
     loading, error, build, datasources, selectedId
-  } = state.view;
+  } = state.dataLab;
   
   return {
     loading, error, build, datasources, selectedId

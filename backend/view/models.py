@@ -18,7 +18,7 @@ class Option(EmbeddedDocument):
     label = StringField(required=True)
     value = StringField(required=True)
 
-class Field(EmbeddedDocument):
+class FormField(EmbeddedDocument):
     name = StringField(required=True)
     type = StringField(required=True)
     textDisplay = StringField(null=True)
@@ -40,19 +40,19 @@ class DatasourceModule(EmbeddedDocument):
     matching = StringField(null=True)
     fields = ListField(StringField())
     labels = DictField()
-    types = DictField()
+    types = DictField()    
+    discrepencies = EmbeddedDocumentField(Discrepencies)
 
 class FormModule(EmbeddedDocument):
     primary = StringField(required=True)
     name = StringField(required=True)
     activeFrom = DateTimeField(null=True)
     activeTo = DateTimeField(null=True)
-    fields = EmbeddedDocumentListField(Field, required=True)
+    fields = EmbeddedDocumentListField(FormField, required=True)
     data = ListField(DictField())
     
 class Module(EmbeddedDocument):
     type = StringField(choices=('datasource', 'computed', 'form'), required=True)
-    discrepencies = EmbeddedDocumentField(Discrepencies)
     datasource = EmbeddedDocumentField(DatasourceModule)
     form = EmbeddedDocumentField(FormModule)
 

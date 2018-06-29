@@ -5,7 +5,7 @@ import { Icon, Tooltip } from 'antd';
 import flow from 'lodash/flow';
 import { connect } from 'react-redux';
 
-import { addModule } from '../ViewActions';
+import { addModule } from '../DataLabActions';
 
 
 const dropTarget = {	
@@ -45,7 +45,7 @@ class Add extends Component {
 		return connectDropTarget(
 			<div>
 				<Tooltip placement="right" title="Drag and drop a component here in order to add it to the DataLab">
-					<div className={`add item ${hovered && type}`}>
+					<div className={`add_module ${hovered && type}`}>
 						<Icon type="plus"/>
 						<span>Add Module</span>
 					</div>

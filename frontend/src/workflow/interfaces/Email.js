@@ -73,7 +73,6 @@ class Email extends React.Component {
 
     form.validateFields((err, values) => {
       if (err) return;
-      console.log(values);
       this.boundActionCreators.updateEmailSettings(workflow.id, values);
     });
   }
