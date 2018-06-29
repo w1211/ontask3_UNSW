@@ -206,7 +206,8 @@ class ViewViewSet(viewsets.ModelViewSet):
                 # Populate the data map before merging in this form module's data
                 for item in data:
                     if module['primary'] in item:
-                        data_map[module['primary']].append(item)
+                        match_value = item[module['primary']]
+                        data_map[match_value].append(item)
 
                 # Update keys in the data map with this form's data
                 for item in module['data']:
