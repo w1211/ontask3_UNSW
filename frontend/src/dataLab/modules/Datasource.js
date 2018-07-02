@@ -115,7 +115,7 @@ class DatasourceModule extends React.Component {
     currentStep.fields.forEach(field => {
       if (hasDependency(stepIndex, field)) {
         message.error(
-          `'${field}' cannot be removed as it is being used as a matching field.`
+          `'${field}' cannot be removed as another module depends on it.`
         );
       } else {
         this.boundActionCreators.updateBuild({
@@ -177,7 +177,7 @@ class DatasourceModule extends React.Component {
 
       if (hasDependency(stepIndex, field)) {
         message.error(
-          `'${field}' cannot be removed as it is being used as a matching field.`
+          `'${field}' cannot be removed as another module depends on it.`
         );
       } else {
         this.boundActionCreators.updateBuild({
@@ -210,7 +210,7 @@ class DatasourceModule extends React.Component {
 
     if (hasDependency(stepIndex, field)) {
       message.error(
-        "This field cannot be renamed as it is being used as a matching field."
+        `'${field}' cannot be renamed as another module depends on it.`
       );
       return;
     }

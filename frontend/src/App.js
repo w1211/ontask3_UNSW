@@ -80,7 +80,7 @@ class App extends React.Component {
             defaultSelectedKeys={[menuKey]}
             className="navigation"
             onSelect={({ key }) =>
-              history.push(key === "dashboard" ? "/" : key)
+              history.push(key === "dashboard" ? "/" : `/${key}`)
             }
           >
             <Menu.Item key="dashboard">Dashboard</Menu.Item>

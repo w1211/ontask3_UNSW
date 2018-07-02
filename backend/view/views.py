@@ -185,7 +185,7 @@ class ViewViewSet(viewsets.ModelViewSet):
                     else:
                         # If the primary discrepency setting is set to True, then the user wants to keep
                         # the record even with values missing for the previous modules
-                        if 'discrepencies' in module and module['discrepencies'].get('primary'):
+                        if 'discrepencies' in module and 'primary' in module['discrepencies'] and module['discrepencies']['primary']:
                             new_record = {}
                             for field, value in item.items():
                                 if field in fields:
@@ -194,7 +194,7 @@ class ViewViewSet(viewsets.ModelViewSet):
 
                 # If the matching discrepency setting is set to True, then the user wants to keep
                 # any records whose matching keys do not exist in this datasource module.
-                if not module.get('discrepencies', {}).get('matching'):
+                if not ('discrepencies' in module and 'matching' in module['discrepencies'] and module['discrepencies']['matching']):
                     primary_records = {item.get(module['primary']) for item in datasource.data}
                     matching_records = {item.get(module['matching']) for item in data}
                     for record in matching_records - primary_records:
@@ -353,3 +353,93 @@ class ViewViewSet(viewsets.ModelViewSet):
 
         serializer = ViewSerializer(instance=view)
         return JsonResponse(serializer.data)
+
+    @detail_route(methods=['post'])
+    def retrieve_form(self, request, id=None):
+        data_lab = View.objects.get(id=id)
+        self.check_object_permissions(self.request, data_lab)
+
+        request_user = request.user.email
+
+        module_index = int(request.data['moduleIndex'])
+        form_module = data_lab.steps[module_index]['form']
+        web_form = form_module['webForm']
+
+        if not web_form['active']:
+            return JsonResponse({'error': 'This form is currently not accessible'})
+
+        columns = [form_module['primary']] + web_form['visibleFields'] + [field['name']
+                                                                          for field in form_module['fields']]
+
+        data = []
+        permission_field = web_form['permission']
+        editable_records = []
+        for (index, item) in enumerate(data_lab.data):
+            record = {field: item.get(field) for field in columns}
+            record['key'] = index
+            data.append(record)
+            if item.get(permission_field) == request_user:
+                editable_records.append(item[form_module['primary']])
+
+        if len(editable_records) == 0:
+            return JsonResponse({'error': 'You are not authorized to access this form'})
+
+        if not web_form['showAll']:
+            filtered_data = []
+            for (index, item) in enumerate(data):
+                if data_lab.data[index].get(permission_field) == request_user:
+                    filtered_data.append(item)
+            data = filtered_data
+
+        serializer = ViewSerializer(instance=data_lab)
+        editable_fields = serializer.data['steps'][module_index]['form']['fields']
+
+        response = {
+            'name': form_module.name,
+            'primary_key': form_module['primary'],
+            'editable_records': editable_records,
+            'columns': columns,
+            'data': data,
+            'editable_fields': editable_fields,
+            'layout': web_form['layout']
+        }
+
+        return JsonResponse(response)
+
+    @detail_route(methods=['patch'])
+    def update_table_form(self, request, id=None):
+        view = View.objects.get(id=id)
+        self.check_object_permissions(self.request, view)
+
+        request_user = request.user.email
+
+        module_index = int(request.data['moduleIndex'])
+        values = request.data['data'] if 'data' in request.data else []
+
+        form = view.steps[module_index].form
+        form_data_map = {item[form.primary]: item for item in form.data if form.primary in item}
+        web_form = form['webForm']
+
+        datalab_data_map = {item[form.primary]: item for item in view.data if form.primary in item}
+
+        permission_field = web_form['permission']
+        for item in values:
+            if form.primary in item and datalab_data_map[item[form.primary]][permission_field] == request_user:
+                primary_value = item[form.primary]
+                for field in form.fields:
+                    field = field.name
+                    if primary_value in form_data_map:
+                        form_data_map[primary_value].update({field: item[field]})
+                    else:
+                        form_data_map[primary_value] = {form.primary: primary_value, field: item[field]}
+
+        form_data = [value for value in form_data_map.values()]
+
+        kw = {f'set__steps__{module_index}__form__data': form_data}
+        View.objects(id=id).update(**kw)
+
+        view.reload()
+        data = self.combine_data(view.steps)
+        View.objects(id=id).update(set__data=data)
+
+        return self.retrieve_form(request, id)

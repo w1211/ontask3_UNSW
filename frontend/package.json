@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "@antv/data-set": "^0.8.7",
-    "antd": "^3.5.4",
+    "antd": "^3.6.4",
     "bizcharts": "^3.1.5",
     "draft-js": "^0.10.5",
     "draftjs-to-html": "^0.8.2",

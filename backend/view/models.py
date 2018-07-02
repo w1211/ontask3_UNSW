@@ -34,6 +34,13 @@ class FormField(EmbeddedDocument):
     interval = FloatField(null=True)
     numberDisplay = StringField(null=True)
 
+class WebForm(EmbeddedDocument):
+    permission = StringField(required=True)
+    visibleFields = ListField(StringField())
+    layout = StringField(choices=('vertical', 'table'), default='vertical')
+    showAll = BooleanField(default=False)
+    active = BooleanField(default=False)
+
 class DatasourceModule(EmbeddedDocument):
     id = StringField(required=True)
     primary = StringField(required=True)
@@ -49,6 +56,7 @@ class FormModule(EmbeddedDocument):
     activeFrom = DateTimeField(null=True)
     activeTo = DateTimeField(null=True)
     fields = EmbeddedDocumentListField(FormField, required=True)
+    webForm = EmbeddedDocumentField(WebForm)
     data = ListField(DictField())
     
 class Module(EmbeddedDocument):

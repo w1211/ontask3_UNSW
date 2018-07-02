@@ -526,6 +526,35 @@ export const updateFieldType = (dataLabId, payload) => (dispatch, getState) => {
   requestWrapper(parameters);
 };
 
+export const fetchForm = ({ dataLabId, moduleIndex, onFinish }) => {
+  const parameters = {
+    url: `/view/${dataLabId}/retrieve_form/`,
+    method: "POST",
+    errorFn: error => console.log(error),
+    successFn: result => onFinish(result),
+    payload: { moduleIndex }
+  };
+
+  requestWrapper(parameters);
+};
+
+export const updateDataTableForm = ({ dataLabId, payload, onFinish }) => {
+  const parameters = {
+    url: `/view/${dataLabId}/update_table_form/`,
+    method: "PATCH",
+    errorFn: error => {
+      console.log(error);
+    },
+    successFn: form => {
+      onFinish(form);
+      message.success("Form successfully updated.");
+    },
+    payload
+  };
+
+  requestWrapper(parameters);
+};
+
 export const openVisualisationModal = (visualise, isRowWise) => ({
   type: OPEN_VISUALISATION_MODAL,
   visualise,

@@ -225,6 +225,12 @@
   font-size: 14px;
   margin: 8px 0;
 }
+.dataLab .module .form .form_tab {
+  padding: 0 24px 24px;
+}
+.dataLab .module .form .web_form .field_label {
+  margin-left: 5px;
+}
 
 /* Form field modal styles */
 .formField .field_label {

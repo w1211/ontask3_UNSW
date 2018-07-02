@@ -12,9 +12,7 @@ import * as DataLabActionCreators from "./DataLabActions";
 
 import "./DataLab.css";
 
-import Model from "./interfaces/Model";
-import Details from "./interfaces/Details";
-import Data from "./interfaces/Data";
+import { Model, Details, Data, WebForm } from "./interfaces";
 
 const { Content } = Layout;
 const RadioButton = Radio.Button;
@@ -29,26 +27,36 @@ class DataLab extends React.Component {
       DataLabActionCreators,
       dispatch
     );
+
+    this.state = { route: null, isForm: false };
   }
 
   componentDidMount() {
     const { match, location, history } = this.props;
 
-    if (location.state && "containerId" in location.state) {
-      // User pressed "Create DataLab", as the containerId is only set in the
-      // location state when the navigation occurs
-      this.boundActionCreators.fetchDatasources(location.state.containerId);
-    } else if (match.params.id) {
-      this.boundActionCreators.fetchDataLab(match.params.id);
+    const route = location.pathname.split("/");
+    const isForm = route[route.length - 2] === "form";
+    
+    if (isForm) {
+      this.setState({ isForm: true });
     } else {
-      // The user must have cold-loaded the URL, so we have no container to reference
-      // Therefore redirect the user back to the container list
-      history.push("/containers");
+      if (location.state && "containerId" in location.state) {
+        // User pressed "Create DataLab", as the containerId is only set in the
+        // location state when the navigation occurs
+        this.boundActionCreators.fetchDatasources(location.state.containerId);
+      } else if (match.params.id) {
+        this.boundActionCreators.fetchDataLab(match.params.id);
+      } else {
+        // The user must have cold-loaded the URL, so we have no container to reference
+        // Therefore redirect the user back to the container list
+        history.push("/containers");
+      }
     }
   }
 
   render() {
     const { isFetching, selectedId, match, history, location } = this.props;
+    const { isForm } = this.state;
 
     return (
       <div className="dataLab">
@@ -65,29 +73,32 @@ class DataLab extends React.Component {
 
           <Layout className="layout">
             <Content className="content">
-              <div className="heading">
-                <h1>{`${selectedId ? "Update" : "Create"} DataLab`}</h1>
-                <Link to="/containers">
-                  <Icon type="arrow-left" />
-                  <span>Back to containers</span>
-                </Link>
-              </div>
-
-              {selectedId && (
-                <div className="actions">
-                  <RadioGroup
-                    size="large"
-                    onChange={e =>
-                      history.push(`${match.url}/${e.target.value}`)
-                    }
-                    value={location.pathname.split("/").slice(-1)[0]}
-                  >
-                    <RadioButton value="data">Data</RadioButton>
-                    <RadioButton value="details">Details</RadioButton>
-                    <RadioButton value="model">Model</RadioButton>
-                  </RadioGroup>
+              {!isForm && (
+                <div className="heading">
+                  <h1>{`${selectedId ? "Update" : "Create"} DataLab`}</h1>
+                  <Link to="/containers">
+                    <Icon type="arrow-left" />
+                    <span>Back to containers</span>
+                  </Link>
                 </div>
               )}
+
+              {selectedId &&
+                !isForm && (
+                  <div className="actions">
+                    <RadioGroup
+                      size="large"
+                      onChange={e =>
+                        history.push(`${match.url}/${e.target.value}`)
+                      }
+                      value={location.pathname.split("/").slice(-1)[0]}
+                    >
+                      <RadioButton value="data">Data</RadioButton>
+                      <RadioButton value="details">Details</RadioButton>
+                      <RadioButton value="model">Model</RadioButton>
+                    </RadioGroup>
+                  </div>
+                )}
 
               {isFetching ? (
                 <Spin size="large" />
@@ -97,6 +108,12 @@ class DataLab extends React.Component {
                   <Route path={`${match.url}/model`} component={Model} />
                   <Route path={`${match.url}/details`} component={Details} />
                   <Route path={`${match.url}/data`} component={Data} />
+                  <Route
+                    path={`${match.url}/form/:moduleIndex`}
+                    render={props => (
+                      <WebForm {...props} dataLabId={match.params.id} />
+                    )}
+                  />
                 </Switch>
               )}
             </Content>

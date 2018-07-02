@@ -105,7 +105,12 @@ class Model extends React.Component {
       if (step.type === "datasource")
         return _.get(step, "datasource.matching") === field;
 
-      if (step.type === "form") return _.get(step, "form.primary") === field;
+      if (step.type === "form")
+        return [
+          _.get(step, "form.primary") === field,
+          _.get(step, "form.webForm.permission") === field,
+          _.get(step, "form.webForm.visibleFields").includes(field)
+        ].includes(true);
 
       return false;
     });
