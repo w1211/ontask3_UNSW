@@ -1,18 +1,14 @@
 import React from "react";
-import { Button, Form, Input, Spin, Table, Alert } from "antd";
-import _ from "lodash";
+import { Button, Spin, Table } from "antd";
 import moment from "moment";
 
 import * as DataLabActions from "../DataLabActions";
 
 import EditableField from "../data-manipulation/EditableField";
 
-const FormItem = Form.Item;
-
 class WebForm extends React.Component {
   constructor(props) {
     super(props);
-    const { dispatch } = props;
 
     this.state = {
       isFetching: true
@@ -83,7 +79,7 @@ class WebForm extends React.Component {
   };
 
   componentDidMount() {
-    const { match, location, dataLabId } = this.props;
+    const { match, dataLabId } = this.props;
     const { moduleIndex } = match.params;
 
     DataLabActions.fetchForm({
