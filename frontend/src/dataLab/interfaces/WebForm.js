@@ -57,6 +57,7 @@ class WebForm extends React.Component {
       render: (text, record, index) => {
         const field = form.editable_fields.find(field => field.name === column);
         if (field) {
+          text = this.generateText(field, text, record);
           return form.editable_records.includes(record[form.primary_key]) ? (
             <EditableField
               field={field}
@@ -68,7 +69,7 @@ class WebForm extends React.Component {
               }}
             />
           ) : (
-            this.generateText(field, text, record)
+            text
           );
         } else {
           return text;
