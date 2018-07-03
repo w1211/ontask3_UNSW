@@ -203,9 +203,17 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         self.check_object_permissions(self.request, obj)
 
         # Ensure that no view is currently using this datasource
-        # queryset = View.objects.filter(columns__match = { "datasource": obj.id })
-        # if queryset.count():
-        #     raise ValidationError('This datasource is being used by a view')
+
+        pipeline = [
+            { "$unwind": "$steps" }, 
+            { "$match": { 
+                "steps.datasource.id": str(obj.id)
+            }}
+        ]
+        data_labs = list(View.objects.aggregate(*pipeline))
+        if len(data_labs):
+            raise ValidationError('This datasource is being used by a data lab')
+
         self.delete_schedule(self.request, obj.id)
         obj.delete()
 
