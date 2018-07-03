@@ -231,6 +231,16 @@
 .dataLab .module .form .web_form .field_label {
   margin-left: 5px;
 }
+.dataLab .web_form .single_record {
+  max-width: 500px;
+}
+.dataLab .web_form .single_record .form_field {
+  display: flex;
+  margin: 5px 0;
+}
+.dataLab .web_form .single_record button {
+  margin-top: 20px;
+}
 
 /* Form field modal styles */
 .formField .field_label {

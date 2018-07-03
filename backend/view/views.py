@@ -376,7 +376,6 @@ class ViewViewSet(viewsets.ModelViewSet):
         editable_records = []
         for (index, item) in enumerate(data_lab.data):
             record = {field: item.get(field) for field in columns}
-            record['key'] = index
             data.append(record)
             if item.get(permission_field) == request_user:
                 editable_records.append(item[form_module['primary']])

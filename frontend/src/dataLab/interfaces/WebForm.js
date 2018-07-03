@@ -1,10 +1,12 @@
 import React from "react";
-import { Button, Spin, Table } from "antd";
+import { Button, Spin, Table, Select, Divider } from "antd";
 import moment from "moment";
 
 import * as DataLabActions from "../DataLabActions";
 
 import EditableField from "../data-manipulation/EditableField";
+
+const Option = Select.Option;
 
 class WebForm extends React.Component {
   constructor(props) {
@@ -14,6 +16,40 @@ class WebForm extends React.Component {
       isFetching: true
     };
   }
+
+  componentDidMount() {
+    const { match, dataLabId } = this.props;
+    const { moduleIndex } = match.params;
+
+    DataLabActions.fetchForm({
+      dataLabId,
+      moduleIndex,
+      onFinish: form => {
+        if ("error" in form) {
+          this.setState({ isFetching: false, error: form.error });
+        } else {
+          const columns =
+            form.layout === "table" && this.generateDataTableColumns(form);
+          this.setState({ isFetching: false, form, columns });
+        }
+      }
+    });
+  }
+
+  handleSubmit = data => {
+    const { match, dataLabId } = this.props;
+    const { moduleIndex } = match.params;
+
+    this.setState({ loading: true });
+
+    DataLabActions.updateDataTableForm({
+      dataLabId,
+      payload: { moduleIndex, data },
+      onFinish: form => {
+        this.setState({ loading: false, form });
+      }
+    });
+  };
 
   generateText = (field, text, record) => {
     let label;
@@ -50,14 +86,16 @@ class WebForm extends React.Component {
     return label ? label : text;
   };
 
-  generateColumns = form => {
+  generateDataTableColumns = form => {
     const columns = form.columns.map(column => ({
       title: column,
       dataIndex: column,
       render: (text, record, index) => {
         const field = form.editable_fields.find(field => field.name === column);
+
         if (field) {
           text = this.generateText(field, text, record);
+
           return form.editable_records.includes(record[form.primary_key]) ? (
             <EditableField
               field={field}
@@ -79,34 +117,50 @@ class WebForm extends React.Component {
     return columns;
   };
 
-  componentDidMount() {
-    const { match, dataLabId } = this.props;
-    const { moduleIndex } = match.params;
+  generateSingleRecordColumns = (singleRecordIndex, hasPermission) => {
+    const { form } = this.state;
 
-    DataLabActions.fetchForm({
-      dataLabId,
-      moduleIndex,
-      onFinish: form => {
-        if ("error" in form) {
-          this.setState({ isFetching: false, error: form.error });
-        } else {
-          const columns = form.layout === "table" && this.generateColumns(form);
-          this.setState({ isFetching: false, form, columns });
+    const columns = [
+      {
+        title: "Field",
+        dataIndex: "field"
+      },
+      {
+        title: "Value",
+        dataIndex: "value",
+        render: (text, record) => {
+          const editableField = form.editable_fields.find(
+            field => field.name === record.field
+          );
+
+          return editableField && hasPermission ? (
+            <EditableField
+              field={editableField}
+              value={form.data[singleRecordIndex][record.field]}
+              isColumnEdit={true}
+              onChange={e => {
+                form.data[singleRecordIndex][record.field] = e;
+                this.setState({ form });
+              }}
+            />
+          ) : (
+            text
+          );
         }
       }
-    });
-  }
+    ];
+
+    return columns;
+  };
 
   DataTable = () => {
-    const { match, dataLabId } = this.props;
     const { columns, form, loading } = this.state;
-    const { moduleIndex } = match.params;
 
     return (
       <div>
         <Table
           columns={columns}
-          dataSource={form.data}
+          dataSource={form.data.map((record, i) => ({ ...record, key: i }))}
           pagination={{
             showSizeChanger: true,
             pageSizeOptions: ["10", "25", "50", "100"]
@@ -117,17 +171,7 @@ class WebForm extends React.Component {
           type="primary"
           size="large"
           loading={loading}
-          onClick={() => {
-            this.setState({ loading: true });
-
-            DataLabActions.updateDataTableForm({
-              dataLabId,
-              payload: { moduleIndex, data: form.data },
-              onFinish: form => {
-                this.setState({ loading: false, form });
-              }
-            });
-          }}
+          onClick={() => this.handleSubmit(form.data)}
         >
           Save form
         </Button>
@@ -135,8 +179,82 @@ class WebForm extends React.Component {
     );
   };
 
+  changeActiveRecord = singleRecordIndex => {
+    const { form } = this.state;
+
+    if (singleRecordIndex === undefined) {
+      this.setState({
+        singleRecordIndex,
+        hasPermission: null,
+        data: null,
+        columns: null
+      });
+      return;
+    }
+
+    const hasPermission = form.editable_records.includes(
+      form.data[singleRecordIndex][form.primary_key]
+    );
+
+    const data = Object.keys(form.data[singleRecordIndex]).map((field, i) => ({
+      field,
+      value: form.data[singleRecordIndex][field],
+      key: i
+    }));
+
+    const columns = this.generateSingleRecordColumns(
+      singleRecordIndex,
+      hasPermission
+    );
+
+    this.setState({ singleRecordIndex, hasPermission, data, columns });
+  };
+
   SingleRecord = () => {
-    return <div>single record</div>;
+    const { form, singleRecordIndex, columns, data, loading } = this.state;
+
+    return (
+      <div className="single_record">
+        <Select
+          showSearch
+          allowClear
+          placeholder="Choose a record"
+          onChange={this.changeActiveRecord}
+          filterOption={(input, option) =>
+            option.props.children.toLowerCase().indexOf(input.toLowerCase()) >=
+            0
+          }
+        >
+          {form.data.map((record, index) => (
+            <Option key={index}>{record[form.primary_key]}</Option>
+          ))}
+        </Select>
+
+        <Divider />
+
+        {singleRecordIndex ? (
+          <div>
+            <Table
+              bordered
+              columns={columns}
+              dataSource={data}
+              pagination={false}
+            />
+
+            <Button
+              type="primary"
+              size="large"
+              loading={loading}
+              onClick={() => this.handleSubmit([form.data[singleRecordIndex]])}
+            >
+              Save form
+            </Button>
+          </div>
+        ) : (
+          <div>Get started by choosing a record to edit.</div>
+        )}
+      </div>
+    );
   };
 
   render() {
