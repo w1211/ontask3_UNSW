@@ -555,38 +555,48 @@ export const updateDataTableForm = ({ dataLabId, payload, onFinish }) => {
   requestWrapper(parameters);
 };
 
-export const openVisualisationModal = (visualise, isRowWise) => ({
+
+export const openVisualisationModal = (visualise, isRowWise, record) => ({
   type: OPEN_VISUALISATION_MODAL,
   visualise,
-  isRowWise
-});
+  isRowWise,
+  record
+})
 
-export const closeVisualisationModal = () => ({
+export const closeVisualisationModal = () =>({
   type: CLOSE_VISUALISATION_MODAL
-});
+})
 
-export const updateVisualisationChart = (
-  viewId,
-  chartType,
-  numCols,
-  rangeMin,
-  rangeMax
-) => dispatch => {
+export const updateVisualisationChart = (viewId, chartParams) => (dispatch, getState) => {
+  const { dataLab } = getState();
+  const datasources = dataLab.datasources;
+
   const parameters = {
-    // initialFn: () => { dispatch(beginRequestView()); },
     // The 'retrieve_view' endpoint includes the datasources from the view's container, as 'datasources' in the response object
     // The datasources are used in the 'add imported column' interface of the view
     url: `/view/${viewId}/update_chart/`,
-    method: "PATCH",
-    errorFn: error => {
-      // dispatch(failureRequestView(error));
+    method: 'PATCH',
+    errorFn: (error) => { 
+      console.log(error);
     },
-    successFn: () => {
-      notification["success"]({
-        message: "Chart successfully saved",
-        description: "This chart were successfully saved."
+    successFn: (dataLab) => {
+      notification['success']({
+        message: 'Chart successfully saved',
+        description: 'This chart were successfully saved.'
       });
-    }
-  };
+
+      dataLab.steps.forEach(step => {
+        if (step.type === 'form') {
+          if (step.form.activeFrom) step.form.activeFrom = moment(step.form.activeFrom);
+          if (step.form.activeTo) step.form.activeTo = moment(step.form.activeTo);
+        };
+      });
+      
+      dataLab.datasources = datasources;
+      dispatch(closeVisualisationModal());
+      dispatch(storeDataLab(dataLab));
+    },
+    payload: chartParams
+  }
   requestWrapper(parameters);
 };

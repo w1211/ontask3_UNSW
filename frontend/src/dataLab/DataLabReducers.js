@@ -32,11 +32,12 @@ function dataLab(state = {}, action) {
         datasources: action.datasources
       });
 
-    case OPEN_VISUALISATION_MODAL:
+      case OPEN_VISUALISATION_MODAL:
       return Object.assign({}, state, {
         visualisation_visible: true,
         visualise: action.visualise,
-        isRowWise: action.isRowWise
+        isRowWise: action.isRowWise,
+        record: action.record
       });
     case CLOSE_VISUALISATION_MODAL:
       return Object.assign({}, state, {

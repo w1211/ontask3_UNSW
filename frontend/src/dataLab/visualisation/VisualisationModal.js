@@ -408,7 +408,7 @@ class VisualisationModal extends React.Component {
 const mapStateToProps = (state) => {
   const { 
     visualisation_visible, error, build, data, visualise, isRowWise, selectedId, record
-  } = state.view;
+  } = state.dataLab;
   
   return { 
     visualisation_visible, error, build, data, visualise, isRowWise, selectedId, record

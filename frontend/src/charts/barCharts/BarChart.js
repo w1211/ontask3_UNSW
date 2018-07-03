@@ -1,6 +1,6 @@
 import React from 'react';
 import { Spin } from 'antd';
-import { Chart, Geom, Axis, Tooltip, Guide, Line, Text } from 'bizcharts';
+import { Chart, Geom, Axis, Tooltip, Guide } from 'bizcharts';
 import { View } from '@antv/data-set';
 
 import { filterData, sortByColName, generateCountPercentField, isInt, findMaxCountPercent } from '../utils.js';
