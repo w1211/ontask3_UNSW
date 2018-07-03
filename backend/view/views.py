@@ -106,8 +106,8 @@ class ViewViewSet(viewsets.ModelViewSet):
         # Ensure that no action is currently using this data lab
         actions = Workflow.objects(view=obj.id)
         if len(actions):
-            raise ValidationError('This datasource is being used by a data lab')
-            
+            raise ValidationError('This DataLab is being used by an action')
+
         obj.delete()
 
     @detail_route(methods=['get'])

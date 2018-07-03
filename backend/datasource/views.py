@@ -211,7 +211,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         ]
         data_labs = list(View.objects.aggregate(*pipeline))
         if len(data_labs):
-            raise ValidationError('This datasource is being used by a data lab')
+            raise ValidationError('This datasource is being used by a DataLab')
 
         self.delete_schedule(self.request, obj.id)
         obj.delete()
