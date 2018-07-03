@@ -12,7 +12,7 @@ from .permissions import DataLabPermissions
 
 from .models import View
 from datasource.models import DataSource
-
+from workflow.models import Workflow
 
 class ViewViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
@@ -103,13 +103,11 @@ class ViewViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, obj):
         self.check_object_permissions(self.request, obj)
 
-        # # Ensure that no action is currently using this data lab
-        # queryset = Workflow.objects.filter(
-        #     view = self.get_object()['id']
-        # )
-        # if queryset.count():
-        #     raise ValidationError('This view is being used by a workflow')
-
+        # Ensure that no action is currently using this data lab
+        actions = Workflow.objects(view=obj.id)
+        if len(actions):
+            raise ValidationError('This datasource is being used by a data lab')
+            
         obj.delete()
 
     @detail_route(methods=['get'])

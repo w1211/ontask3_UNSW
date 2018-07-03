@@ -202,8 +202,7 @@ class DataSourceViewSet(viewsets.ModelViewSet):
          # Ensure that the request.user is the owner of the object
         self.check_object_permissions(self.request, obj)
 
-        # Ensure that no view is currently using this datasource
-
+        # Ensure that no data lab is currently using this datasource
         pipeline = [
             { "$unwind": "$steps" }, 
             { "$match": { 
