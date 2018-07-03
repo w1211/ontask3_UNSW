@@ -36,6 +36,8 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, WorkflowPermissions]
 
     def get_queryset(self):
+        request_user = self.request.user.email
+
         pipeline = [
             {
                 '$lookup': {
@@ -45,10 +47,11 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                     'as': 'container'
                 }
             }, {
-                '$unwind': '$container'
-            }, {
                 '$match': {
-                    'container.owner': self.request.user.id
+                    '$or': [
+                        {'container.owner': request_user},
+                        {'container.sharing': {'$in': [request_user]}}
+                    ]
                 }
             }
         ]
@@ -245,19 +248,36 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         return JsonResponse(serializer.data)
 
-    @detail_route(methods=['put'])
-    def create_schedule(self, request, id=None):
-        workflow = Workflow.objects.get(id=id)
-        self.check_object_permissions(self.request, workflow)
-        updated_schedule = defaultdict(str)
-        updated_schedule['startDate'] = dateutil.parser.parse(request.data['RangePicker'][0])
-        updated_schedule['endDate'] = dateutil.parser.parse(request.data['RangePicker'][1])
-        updated_schedule['time'] = dateutil.parser.parse(request.data['TimePicker'])
-        updated_schedule['frequency'] = int(request.data['Frequency'])
-        serializer = WorkflowSerializer(instance=workflow, data={'schedule': updated_schedule}, partial=True)
-        serializer.is_valid()
-        serializer.save()
-        return JsonResponse(serializer.data)
+    @detail_route(methods=['patch'])
+    def update_schedule(self, request, id=None):
+        action = Workflow.objects.get(id=id)
+        arguments = json.dumps({ "workflow_id": id })
+
+        # If a schedule already exists for this action, then delete it
+        if 'schedule' in action and 'taskName' in action['schedule']:
+            remove_scheduled_task(action['schedule']['taskName'])
+
+        if 'schedule' in action and 'asyncTasks' in action['schedule']:
+            remove_async_task(action['schedule']['asyncTasks'])
+
+        action.update(unset__schedule=1)
+
+        #create updated schedule tasks
+        task_name, async_tasks = create_scheduled_task('workflow_send_email', request.data, arguments)
+
+        if task_name:
+            schedule = request.data
+            schedule['taskName'] = task_name
+            schedule['asyncTasks'] = async_tasks
+            serializer = WorkflowSerializer(action, data={
+                'schedule': schedule
+            }, partial=True)
+
+            serializer.is_valid()
+            serializer.save()
+            return JsonResponse({ "success":True }, safe=False)
+        else:
+            return JsonResponse({ "success": False }, safe=False)
 
     @detail_route(methods=['put'])
     def send_email(self, request, id=None):
@@ -402,31 +422,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         workflow.update(unset__schedule=1)
 
         return JsonResponse({ "success": True })
-
-    @detail_route(methods=['patch'])
-    def update_schedule(self, request, id=None):
-        workflow = Workflow.objects.get(id=id)
-
-        # clean previous schedule related tasks
-        if 'schedule' in workflow and 'taskName' in workflow['schedule']:
-            remove_scheduled_task(workflow['schedule']['taskName'])
-        # else remove async starter task
-        if 'schedule' in workflow and 'asyncTasks' in workflow['schedule']:
-            remove_async_task(workflow['schedule']['asyncTasks'])
-
-        workflow.update(unset__schedule=1)
-
-        #save updated schedule
-        schedule = request.data
-        schedule['startTime'] = request.data['dateRange'][0]
-        schedule['endTime'] = request.data['dateRange'][1]
-
-        serializer = WorkflowSerializer(workflow, data={
-            'schedule': schedule
-        }, partial=True)
-        serializer.is_valid()
-        serializer.save()
-        return JsonResponse({ "success":True }, safe=False)
 
     @detail_route(methods=['patch'])
     def update_email_settings(self, request, id=None):

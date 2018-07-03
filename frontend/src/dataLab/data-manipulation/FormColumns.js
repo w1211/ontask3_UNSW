@@ -1,6 +1,7 @@
 import React from 'react';
 import { Icon, Menu, Dropdown, message, Tooltip, Modal, Popover, Button } from 'antd';
 import moment from 'moment';
+import _ from "lodash";
 
 import EditableField from './EditableField';
 
@@ -167,7 +168,7 @@ const formColumns = (step, stepIndex, sort, editable, onEdit, confirmEdit, openV
     const visualise = { stepIndex, field: label };
 
     const title = isPrimary ? label : <Title visualise={visualise} label={truncatedLabel} editable={editable} onEdit={onEdit} confirmEdit={confirmEdit} openVisualisation={openVisualisation} isActive={isActive} loading={formFieldLoading}/>;
-
+    
     columns.push({
       stepIndex,
       field: label,
@@ -180,9 +181,10 @@ const formColumns = (step, stepIndex, sort, editable, onEdit, confirmEdit, openV
         return a.localeCompare(b);
       },
       sortOrder: sort && sort.field === label && sort.order,
-      render: (text, record) => renderFormField(stepIndex, currentStep.primary, field, text, record, editable, onEdit, confirmEdit, isActive, formFieldLoading)
-    });
-
+      render: (text, record) => {
+          return renderFormField(stepIndex, currentStep.primary, field, _.get(editable, `values[${record[currentStep.primary]}]`, null) !== null ? editable.values[record[currentStep.primary]] : text, record, editable, onEdit, confirmEdit, isActive, formFieldLoading)
+        }
+      });
   });
 
   return columns;

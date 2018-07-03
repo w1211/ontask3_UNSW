@@ -1,47 +1,55 @@
-const requestWrapper = (parameters) => {
-  if (parameters.initialFn) parameters.initialFn();
+const requestWrapper = ({
+  initialFn,
+  isUnauthenticated,
+  method,
+  payload,
+  isNotJSON,
+  url,
+  errorFn,
+  successFn
+}) => {
+  if (initialFn) initialFn();
 
-  let fetchInit = { 
-    headers: { }
+  let options = {
+    method,
+    headers: {}
   };
 
-  if (!parameters.isUnauthenticated) {
-    fetchInit.headers.Authorization = `Token ${localStorage.getItem('token')}`;
+  if (!isUnauthenticated) {
+    options.headers.Authorization = `Token ${localStorage.getItem("token")}`;
   }
 
-  if (parameters.payload) {
-    if (!parameters.isNotJSON) {
-      parameters.payload = JSON.stringify(parameters.payload);
-      fetchInit.headers['Content-Type'] = 'application/json';
+  if (payload) {
+    if (!isNotJSON) {
+      payload = JSON.stringify(payload);
+      options.headers["Content-Type"] = "application/json";
     }
-    fetchInit.body = parameters.payload;
+    options.body = payload;
   }
-  fetch(`${process.env.REACT_APP_API_DOMAIN}${parameters.url}`, {
-    method: parameters.method,
-    ...fetchInit
-  })
-  .then(response => {
-    if (response.status === 401) {
-      localStorage.removeItem('token');
-      parameters.errorFn('Invalid credentials');
-    } else if (response.status >= 400 && response.status < 600) {
-      response.json().then(error => {
-        parameters.errorFn(error[0]);
-      });
-    } else {
-      if (response.status === 204) { // Api call was a DELETE, therefore response is empty
-        parameters.successFn();
+
+  fetch(`${process.env.REACT_APP_API_DOMAIN}${url}`, options)
+    .then(response => {
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        errorFn("Invalid credentials");
+      } else if (response.status >= 400 && response.status < 600) {
+        response.json().then(error => {
+          errorFn(error[0]);
+        });
       } else {
-        response.json().then(response => {
-          parameters.successFn(response);
-        });  
+        if (response.status === 204) {
+          // Api call was a DELETE, therefore response is empty
+          successFn();
+        } else {
+          response.json().then(response => {
+            successFn(response);
+          });
+        }
       }
-    }
-  })
-  .catch(error => {
-    parameters.errorFn('Failed to contact server. Please try again.');
-  });
-
+    })
+    .catch(() => {
+      errorFn("Failed to contact server. Please try again.");
+    });
 };
 
 export default requestWrapper;

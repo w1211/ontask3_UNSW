@@ -30,7 +30,7 @@ class Module extends Component {
 		const { isDragging, connectDragSource, type, label, icon } = this.props;
 
 		return connectDragSource(
-			<div className={`item ${type} ${isDragging ? 'dragging' : ''}`}>
+			<div className={`module ${type} ${isDragging ? 'dragging' : ''}`}>
 				<Icon type={icon}/>
 				<span>{label}</span>
 			</div>

@@ -24,3 +24,21 @@
 .app .footer {
   text-align: center;
 }
+
+.app .wrapper {
+  padding: 0 50px;
+}
+.app .breadcrumbs {
+  margin: 16px 0;
+}
+.app .layout {
+  padding: 24px 0;
+  background: #fff;
+}
+.app .content {
+  padding: 0 24px;
+  min-height: 280px;
+}
+.app .content_body {
+  background: #fff;
+}

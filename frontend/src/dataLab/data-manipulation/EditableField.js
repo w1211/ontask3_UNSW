@@ -18,6 +18,9 @@ const EditableField = ({ field, value, onChange, onOk, isColumnEdit }) => {
     };
   };
 
+  if (value === true) value = 'True';
+  if (value === false) value = 'False';
+
   let component;
 
   switch (type) {
@@ -28,7 +31,7 @@ const EditableField = ({ field, value, onChange, onOk, isColumnEdit }) => {
             <Input.TextArea
               autoFocus={!isColumnEdit} 
               onKeyPress={onKeyPress} 
-              defaultValue={value} 
+              value={value} 
               onChange={(e) => onChange(e.target.value)}
               rows="5"
               maxLength={field.maxLength}
@@ -39,7 +42,7 @@ const EditableField = ({ field, value, onChange, onOk, isColumnEdit }) => {
             <Input 
               autoFocus={!isColumnEdit} 
               onKeyPress={onKeyPress} 
-              defaultValue={value} 
+              value={value} 
               onChange={(e) => onChange(e.target.value)}
               maxLength={field.maxLength}
             />
@@ -49,7 +52,7 @@ const EditableField = ({ field, value, onChange, onOk, isColumnEdit }) => {
         if (field.listStyle === 'dropdown') {
           component = (
             <Select 
-              defaultValue={value ? value : []}
+              value={value ? value : []}
               mode={field.multiSelect ? 'multiple' : 'default'}
               onChange={(e) => onChange(e)}
               allowClear={true}
@@ -64,7 +67,7 @@ const EditableField = ({ field, value, onChange, onOk, isColumnEdit }) => {
           if (field.multiSelect) {
             component = (
               <CheckboxGroup
-                defaultValue={value && value instanceof Array ? value : []}
+                value={value && value instanceof Array ? value : []}
                 onChange={(e) => { onChange(e); }}
                 options={field.options.map(option => ({ label: option.label, value: option.value }))}
                 style={{ display: 'flex', flexDirection: field.alignment === 'vertical' ? 'column' : 'row'}}
@@ -73,7 +76,7 @@ const EditableField = ({ field, value, onChange, onOk, isColumnEdit }) => {
           } else {
             component = (
               <RadioGroup
-                defaultValue={value ? value : []}
+                value={value ? value : []}
                 onChange={(e) => onChange(e.target.value)}
                 style={{ display: 'flex', flexDirection: field.alignment === 'vertical' ? 'column' : 'row'}}
               >
@@ -93,7 +96,7 @@ const EditableField = ({ field, value, onChange, onOk, isColumnEdit }) => {
           <Slider
             range
             autoFocus={!isColumnEdit} 
-            defaultValue={value instanceof Array && value.length === 2 ? value : [0, null]} 
+            value={value instanceof Array && value.length === 2 ? value : [0, null]} 
             onChange={(e) => onChange(e)}
             min={field.minimum}
             max={field.maximum}
@@ -107,7 +110,7 @@ const EditableField = ({ field, value, onChange, onOk, isColumnEdit }) => {
         component = (
           <Select 
             autoFocus={!isColumnEdit} 
-            defaultValue={value} 
+            value={value} 
             onChange={(e) => onChange(e)}
             style={{ width: '100%' }}
           >
@@ -118,7 +121,7 @@ const EditableField = ({ field, value, onChange, onOk, isColumnEdit }) => {
         component = (
           <InputNumber 
             autoFocus={!isColumnEdit} 
-            defaultValue={value instanceof Array ? null : value} 
+            value={value instanceof Array ? null : value} 
             onChange={(e) => onChange(e)}
             min={field.minimum !== undefined && field.minimum !== null ? field.minimum : -Infinity}
             max={field.maximum !== undefined && field.maximum !== null ? field.maximum : Infinity}
@@ -132,7 +135,7 @@ const EditableField = ({ field, value, onChange, onOk, isColumnEdit }) => {
     case 'date':
       component = (
         <DatePicker 
-          defaultValue={value ? moment(value) : null} 
+          value={value ? moment(value) : null} 
           onChange={(e) => onChange(e ? moment.utc(e).format() : null)}
         />
       );
@@ -141,7 +144,7 @@ const EditableField = ({ field, value, onChange, onOk, isColumnEdit }) => {
     case 'checkbox':
       component = (
         <Checkbox 
-          defaultChecked={value === 'True'} 
+          checked={value === 'True'} 
           onChange={(e) => { onChange(e.target.checked) }}
         />
       );

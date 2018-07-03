@@ -6,7 +6,7 @@ import { View as dataView} from '@antv/data-set';
 import { BarChart, BoxPlot, PieChart, StackedBarChart, GroupedBarCharts, GroupedBoxPlots, StackedBoxPlot,
          GroupedPieCharts, TableChart, GroupedTables } from '../../charts/charts';
 
-import * as ViewActionCreators from '../ViewActions';
+import * as DataLabActionCreators from '../DataLabActions';
 
 // Disable diagnostic tracking of BizCharts
 import { track } from "bizcharts";
@@ -27,7 +27,7 @@ class VisualisationModal extends React.Component {
       percentageAxis:false, selections:[],
       filterCols:[]
     };
-    this.boundActionCreators = bindActionCreators(ViewActionCreators, dispatch);
+    this.boundActionCreators = bindActionCreators(DataLabActionCreators, dispatch);
   };
 
   isInt = (n) => {

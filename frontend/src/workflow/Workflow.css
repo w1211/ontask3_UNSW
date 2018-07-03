@@ -1,29 +1,25 @@
 .workflow .editor {
-  border: 1px solid #F1F1F1;
+  border: 1px solid #f1f1f1;
   padding: 0 10px;
   min-height: 300px;
   max-height: 300px;
   overflow-y: scroll;
   transition: border 0.2s linear;
 }
-
-/* Padding fix for toolbar modals in content editor */
 .workflow .editor-wrapper {
   max-width: 1200px;
 }
-
+/* Padding fix for toolbar buttons in content editor */
 .workflow .editor-wrapper * {
   box-sizing: initial !important;
 }
-
+/* End padding fix */
 .workflow .conditionGroupBtn button:first-child {
   cursor: move;
 }
-
 .workflow .isInside {
-  border-color: #9E9E9E;
+  border-color: #9e9e9e;
 }
-
 .workflow .previewLoading {
   display: flex;
   justify-content: center;

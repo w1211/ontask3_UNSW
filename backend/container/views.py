@@ -24,21 +24,24 @@ from workflow.models import Workflow
 class ContainerViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
     serializer_class = ContainerSerializer
-    permission_classes = [ContainerPermissions, IsAuthenticated]
+    permission_classes = [IsAuthenticated, ContainerPermissions]
 
     def json_serial(self, obj):
         if isinstance(obj, (datetime, date)):
             return obj.isoformat()
         if isinstance(obj, ObjectId):
             return str(obj)
-            
+
     def get_queryset(self):
+        request_user = self.request.user.email
         return Container.objects.filter(
-            Q(owner = self.request.user.id) | Q(sharing__readOnly__contains = self.request.user.id) | Q(sharing__readWrite__contains = self.request.user.id)
+            Q(owner=request_user) | Q(sharing__contains=request_user)
         )
 
     @list_route(methods=['get'])
     def retrieve_containers(self, request):
+        request_user = self.request.user.email
+
         # Retrieve containers owned by or shared with the current user, including the associated workflows & data sources
         # Consumed by the containers list interface
         # Perform a lookup on each container object so that we can attach its associated workflows & data sources
@@ -46,9 +49,8 @@ class ContainerViewSet(viewsets.ModelViewSet):
             {
                 '$match': {
                     '$or': [
-                        { 'owner': self.request.user.id },
-                        { 'sharing.readOnly': { '$in': [self.request.user.id] } },
-                        { 'sharing.readWrite': { '$in': [self.request.user.id] } }
+                        {'owner': request_user},
+                        {'sharing': {'$in': [request_user]}}
                     ]
                 }
             },
@@ -57,7 +59,7 @@ class ContainerViewSet(viewsets.ModelViewSet):
                     # The collection name in MongoDB for datasources is data_source
                     # When using a DRF serializer, as we do in the backend, DRF handles this mapping for us
                     # Given that we are interfacing directly with MongoDB in this aggregate lookup, we must use the correct collection name
-                    'from': 'data_source', 
+                    'from': 'data_source',
                     'localField': '_id',
                     'foreignField': 'container',
                     'as': 'datasources'
@@ -89,17 +91,10 @@ class ContainerViewSet(viewsets.ModelViewSet):
                     'workflows.details': 0,
                     'workflows.content': 0,
                     'view.container': 0
-                },
+                }
             }
         ]
         containers_after_query = list(Container.objects.aggregate(*pipeline))
-
-        # Limit the data of each datasource to only the first 10 record
-        # The first record of each datasource's data is used to guess the type each field when creating a view
-        # The 10 records of each datasource is to build the data preview in the views interface 
-        for container in containers_after_query:
-            for datasource in container['datasources']:
-                datasource['data'] = datasource['data'][:10]
 
         containers_after_dump = dumps(containers_after_query, default=self.json_serial)
 
@@ -114,27 +109,41 @@ class ContainerViewSet(viewsets.ModelViewSet):
         # We cannot take advantage of MongoEngine's inbuilt "unique_with" attribute in the Container model
         # Because we are not sending the owner attribute in the request body (rather, it is provided by the request.user)
         queryset = Container.objects.filter(
-            owner = self.request.user.id,
-            code = self.request.data['code']
+            owner=self.request.user.email,
+            code=self.request.data['code']
         )
         if queryset.count():
             raise ValidationError('A container with this code already exists')
-        serializer.save(owner=self.request.user.id)
+        serializer.save(owner=self.request.user.email)
 
     def perform_update(self, serializer):
-        self.check_object_permissions(self.request, self.get_object())
-        queryset = Container.objects.filter(
-            # We only want to check against the documents that are not the document being updated
-            # I.e. only include objects in the filter that do not have the same id as the current object
-            # id != self.kwargs.get(self.lookup_field) is syntactically incorrect
-            # So instead we are making use of a query operator [field]__ne (i.e. field not equal to)
-            # Refer to http://docs.mongoengine.org/guide/querying.html#query-operators for more information
-            id__ne = self.kwargs.get(self.lookup_field), # Get the id of the object from the url route as defined by the lookup_field
-            owner = self.request.user.id,
-            code = self.request.data['code']
-        )
-        if queryset.count():
-            raise ValidationError('A container with this code already exists')
+        container = self.get_object()
+        self.check_object_permissions(self.request, container)
+
+        # Ensure that the owner cannot be changed by a malicious payload
+        if 'owner' in self.request.data:
+            del self.request.data['owner']
+
+        # Ensure that only the owner can edit sharing permissions
+        if self.request.user.email != container.owner and 'sharing' in self.request.data:
+            del self.request.data['sharing']
+
+        # If we are editing an actual container, as opposed to editing the sharing permissions of a container
+        if 'code' in self.request.data:
+            queryset = Container.objects.filter(
+                # We only want to check against the documents that are not the document being updated
+                # I.e. only include objects in the filter that do not have the same id as the current object
+                # id != self.kwargs.get(self.lookup_field) is syntactically incorrect
+                # So instead we are making use of a query operator [field]__ne (i.e. field not equal to)
+                # Refer to http://docs.mongoengine.org/guide/querying.html#query-operators for more information
+                # Get the id of the object from the url route as defined by the lookup_field
+                id__ne=self.kwargs.get(self.lookup_field),
+                owner=self.request.user.email,
+                code=self.request.data['code']
+            )
+            if queryset.count():
+                raise ValidationError('A container with this code already exists')
+
         serializer.save()
 
     def perform_destroy(self, obj):
@@ -143,18 +152,18 @@ class ContainerViewSet(viewsets.ModelViewSet):
 
         # The delete function cascades down datasources & matrices
         # This is done via the container field of the datasource & workflow models
-        obj.delete()        
+        obj.delete()
 
         # TODO fix bug https://stackoverflow.com/questions/32513388/how-would-i-override-the-perform-destroy-method-in-django-rest-framework
 
-    #retrieve all workflows owned by current user
+    # retrieve all workflows owned by current user
     @list_route(methods=['get'])
     def retrieve_workflows(self, request):
         pipeline = [
             {
                 '$match': {
                     '$or': [
-                        { 'owner': self.request.user.id }
+                        {'owner': self.request.user.id}
                     ]
                 }
             },
@@ -207,3 +216,19 @@ class ContainerViewSet(viewsets.ModelViewSet):
         workflows = [mongo_to_dict(workflow) for workflow in workflows]
 
         return JsonResponse(workflows, safe=False)
+
+    @detail_route(methods=['post'])
+    def surrender_access(self, request, id=None):
+        '''Revoke the requesting user's access to the given container'''
+        container = Container.objects.get(id=id)
+
+        sharing = container.sharing
+        user = request.user.email
+
+        if user in sharing:
+            sharing.remove(request.user.email)
+
+
+        container.save(sharing=sharing)
+
+        return JsonResponse({"success": True})

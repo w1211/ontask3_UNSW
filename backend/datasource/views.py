@@ -31,6 +31,8 @@ class DataSourceViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, DataSourcePermissions]
 
     def get_queryset(self):
+        request_user = self.request.user.email
+
         pipeline = [
             {
                 '$lookup': {
@@ -40,10 +42,11 @@ class DataSourceViewSet(viewsets.ModelViewSet):
                     'as': 'container'
                 }
             }, {
-                '$unwind': '$container'
-            }, {
                 '$match': {
-                    'container.owner': self.request.user.id
+                    '$or': [
+                        {'container.owner': request_user},
+                        {'container.sharing': {'$in': [request_user]}}
+                    ]
                 }
             }
         ]
@@ -119,6 +122,8 @@ class DataSourceViewSet(viewsets.ModelViewSet):
         # This is sufficient, as we can assume that all rows have the same keys
         fields = list(data[0].keys())
 
+        print(connection)
+
         serializer.save(
             connection = connection,
             data = data,
@@ -175,6 +180,8 @@ class DataSourceViewSet(viewsets.ModelViewSet):
                     connection['password'] = bytes(datasource['connection']['password'], encoding="UTF-8")
 
                 data = retrieve_sql_data(connection)
+
+        print(connection)
 
         if data:
             # Identify the field names from the keys of the first row of the data

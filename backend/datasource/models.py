@@ -18,6 +18,8 @@ class Connection(EmbeddedDocument):
     fileName = fields.StringField()
 
 class Schedule(EmbeddedDocument):
+    startTime = fields.DateTimeField()
+    endTime = fields.DateTimeField()    
     time = fields.DateTimeField(required=True)
     frequency = fields.StringField(required=True, choices=('daily', 'weekly', 'monthly'))
     dayFrequency = fields.IntField(min_value=1) # I.e. every n days

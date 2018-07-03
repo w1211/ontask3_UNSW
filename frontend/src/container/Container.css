@@ -1,32 +1,15 @@
-/* Container root component */
-.container .wrapper {
-  padding: 0 50px;
-}
-.container .breadcrumbs {
-  margin: 16px 0;
-}
-.container .layout {
-  padding: 24px 0;
-  background: #fff;
-}
-.container .content {
-  padding: 0 24px;
-  min-height: 280px;
-}
 .container .create_container {
   margin-bottom: 20px;
 }
 .container .info_icon {
   margin-right: 10px;
 }
-
-/* Containers list */
-.container .container_list .container_header_buttons_wrapper {
+.container .container_list .header_buttons {
   float: right;
   margin-right: 10px;
   margin-top: -5px;
 }
-.container .container_list .container_header_button {
+.container .container_list .header_buttons button {
   display: inline-flex;
   align-items: center;
   vertical-align: middle;
@@ -78,4 +61,11 @@
 }
 .container .container_list .add:hover {
   border-color: #1890ff;
+}
+.container .container_list .clear {
+  float: right;
+}
+.container .container_list .shared {
+  color: #9E9E9E;
+  margin-right: 10px;
 }

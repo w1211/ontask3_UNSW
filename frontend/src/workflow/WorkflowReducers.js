@@ -1,12 +1,10 @@
 import {
-  OPEN_WORKFLOW_MODAL,
-  CLOSE_WORKFLOW_MODAL,
+  START_FETCHING,
+  FINISH_FETCHING,
+
   BEGIN_REQUEST_WORKFLOW,
   FAILURE_REQUEST_WORKFLOW,
   SUCCESS_REQUEST_WORKFLOW,
-
-  REQUEST_WORKFLOW,
-  RECEIVE_WORKFLOW,
 
   BEGIN_REQUEST_MODAL,
   FAILURE_REQUEST_MODAL,
@@ -40,21 +38,6 @@ import _ from 'lodash';
 
 function workflow(state = {}, action) {
   switch (action.type) {
-    case OPEN_WORKFLOW_MODAL:
-      return Object.assign({}, state, {
-        visible: true,
-        containerId: action.containerId,
-        views: action.views
-      });
-    case CLOSE_WORKFLOW_MODAL:
-      return Object.assign({}, state, {
-        visible: false,
-        error: null,
-        loading: false,
-        containerId: null,
-        views: null
-      });
-
     case BEGIN_REQUEST_WORKFLOW:
       return Object.assign({}, state, {
         loading: true
@@ -72,11 +55,11 @@ function workflow(state = {}, action) {
         containerId: null
       });
 
-    case REQUEST_WORKFLOW:
+    case START_FETCHING:
       return Object.assign({}, state, {
         isFetching: true
       });
-    case RECEIVE_WORKFLOW:
+    case FINISH_FETCHING:
       return Object.assign({}, state, {
         isFetching: false,
         workflow: action.workflow,

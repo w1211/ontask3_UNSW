@@ -1,25 +1,15 @@
-import { notification, Modal } from "antd";
+import { notification } from "antd";
 import requestWrapper from "../shared/requestWrapper";
 
-const confirm = Modal.confirm;
+export const START_FETCHING = "START_FETCHING";
+export const FINISH_FETCHING = "FINISH_FETCHING";
+export const STORE_CONTAINERS = "STORE_CONTAINERS";
 
-export const REQUEST_CONTAINERS = "REQUEST_CONTAINERS";
-export const RECEIVE_CONTAINERS = "RECEIVE_CONTAINERS";
 export const CHANGE_CONTAINER_ACCORDION = "CHANGE_CONTAINER_ACCORDION";
 export const CHANGE_CONTAINER_TAB = "CHANGE_CONTAINER_TAB";
 
-export const OPEN_CONTAINER_MODAL = "OPEN_CONTAINER_MODAL";
-export const CLOSE_CONTAINER_MODAL = "CLOSE_CONTAINER_MODAL";
-export const BEGIN_REQUEST_CONTAINER = "BEGIN_REQUEST_CONTAINER";
-export const FAILURE_REQUEST_CONTAINER = "FAILURE_CREATE_CONTAINER";
-export const SUCCESS_REQUEST_CONTAINER = "SUCCESS_CREATE_CONTAINER";
-
-const requestContainers = () => ({
-  type: REQUEST_CONTAINERS
-});
-
-const receiveContainers = (containers, accordionKey) => ({
-  type: RECEIVE_CONTAINERS,
+const storeContainers = (containers, accordionKey) => ({
+  type: STORE_CONTAINERS,
   containers,
   accordionKey
 });
@@ -35,110 +25,92 @@ export const changeContainerTab = key => ({
 });
 
 export const fetchContainers = accordionKey => dispatch => {
+  // isFetching is specifically set as a redux state variable instead of a local state
+  // variable. This is because fetchContainers() is called from action generators used by
+  // many different child components of the root Container component. Therefore we avoid
+  // the need to pass in a setState() function to all of these child components that modify
+  // the isFetching boolean in the root Container component.
+  dispatch({ type: START_FETCHING });
+
   const parameters = {
-    initialFn: () => {
-      dispatch(requestContainers());
-    },
     url: `/container/retrieve_containers/`,
     method: "GET",
     errorFn: error => {
+      dispatch({ type: FINISH_FETCHING });
       console.error(error);
     },
     successFn: containers => {
-      dispatch(receiveContainers(containers, accordionKey));
+      dispatch({ type: FINISH_FETCHING });
+      dispatch(storeContainers(containers, accordionKey));
     }
   };
 
   requestWrapper(parameters);
 };
 
-export const openContainerModal = selected => ({
-  type: OPEN_CONTAINER_MODAL,
-  selected
-});
-
-export const closeContainerModal = () => ({
-  type: CLOSE_CONTAINER_MODAL
-});
-
-const beginRequestContainer = () => ({
-  type: BEGIN_REQUEST_CONTAINER
-});
-
-const failureRequestContainer = error => ({
-  type: FAILURE_REQUEST_CONTAINER,
-  error
-});
-
-const successRequestContainer = () => ({
-  type: SUCCESS_REQUEST_CONTAINER
-});
-
-export const createContainer = payload => (dispatch, getState) => {
-  const { containers } = getState();
+export const createContainer = ({ payload, onError, onSuccess }) => (
+  dispatch,
+  getState
+) => {
+  const { containers } = getState().containers;
   // Determine what index the newly created container would have
   // And set this index as the currently active accordion key
-  const numberOfContainers = containers.containers.length;
+  const numberOfContainers = containers.length;
 
   const parameters = {
-    initialFn: () => {
-      dispatch(beginRequestContainer());
-    },
     url: `/container/`,
     method: "POST",
-    errorFn: error => {
-      dispatch(failureRequestContainer(error));
-    },
-    successFn: () => {
-      dispatch(successRequestContainer());
+    errorFn: onError,
+    successFn: container => {
+      onSuccess();
       dispatch(fetchContainers(numberOfContainers));
       notification["success"]({
         message: "Container created",
         description: "The container was successfully created."
       });
     },
-    payload: payload
+    payload
   };
 
   requestWrapper(parameters);
 };
 
-export const updateContainer = (containerId, payload) => dispatch => {
+export const updateContainer = ({
+  containerId,
+  payload,
+  onError,
+  onSuccess
+}) => dispatch => {
   const parameters = {
-    initialFn: () => {
-      dispatch(beginRequestContainer());
-    },
     url: `/container/${containerId}/`,
-    method: "PUT",
-    errorFn: error => {
-      dispatch(failureRequestContainer(error));
-    },
+    method: "PATCH",
+    errorFn: onError,
     successFn: () => {
-      dispatch(successRequestContainer());
+      onSuccess();
       dispatch(fetchContainers());
       notification["success"]({
         message: "Container updated",
         description: "The container was successfully updated."
       });
     },
-    payload: payload
+    payload
   };
 
   requestWrapper(parameters);
 };
 
-export const deleteContainer = containerId => dispatch => {
+export const deleteContainer = ({ containerId, onFinish }) => dispatch => {
   const parameters = {
-    initialFn: () => {
-      dispatch(beginRequestContainer());
-    },
     url: `/container/${containerId}/`,
     method: "DELETE",
-    errorFn: error => {
-      dispatch(failureRequestContainer(error));
+    errorFn: () => {
+      notification["error"]({
+        message: "Failed deletion",
+        description: "The container was not deleted."
+      });
     },
     successFn: () => {
-      dispatch(successRequestContainer());
+      onFinish();
       dispatch(fetchContainers());
       notification["success"]({
         message: "Container deleted",
@@ -148,15 +120,23 @@ export const deleteContainer = containerId => dispatch => {
     }
   };
 
-  confirm({
-    title: "Confirm container deletion",
-    content:
-      "All associated datasources, views and workflows will be irrevocably deleted with the container.",
-    okText: "Continue with deletion",
-    okType: "danger",
-    cancelText: "Cancel",
-    onOk() {
-      requestWrapper(parameters);
+  requestWrapper(parameters);
+};
+
+export const surrenderAccess = ({ containerId, onFinish }) => dispatch => {
+  const parameters = {
+    url: `/container/${containerId}/surrender_access/`,
+    method: "POST",
+    errorFn: onFinish,
+    successFn: () => {
+      onFinish();
+      dispatch(fetchContainers());
+      notification["success"]({
+        message: "Surrendered access",
+        description: "You no longer have access to the container."
+      });
     }
-  });
+  };
+
+  requestWrapper(parameters);
 };

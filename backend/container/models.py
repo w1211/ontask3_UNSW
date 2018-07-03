@@ -1,13 +1,11 @@
-from mongoengine import Document, EmbeddedDocument, fields
+from mongoengine import Document, EmbeddedDocument
+from mongoengine.fields import ListField, StringField, IntField, EmbeddedDocumentField
 
-class Sharing(EmbeddedDocument):
-    readOnly = fields.ListField(fields.IntField()) # List of user ids
-    readWrite = fields.ListField(fields.IntField()) # List of user ids
 
 class Container(Document):
-    owner = fields.IntField()
-    sharing = fields.EmbeddedDocumentField(Sharing, default=Sharing)
-    code = fields.StringField(required=True)
-    school = fields.StringField(null=True)
-    faculty = fields.StringField(null=True)
-    description = fields.StringField(required=True)
+    owner = StringField()  # User's email
+    sharing = ListField(StringField())  # List of user emails
+    code = StringField(required=True)
+    school = StringField(null=True)
+    faculty = StringField(null=True)
+    description = StringField(null=True)

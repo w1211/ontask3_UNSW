@@ -1,0 +1,362 @@
+/* Root component styles */
+.dataLab .heading {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+}
+.dataLab .model {
+  padding-right: 180px;
+}
+.dataLab .actions {
+  margin-bottom: 20px;
+}
+.dataLab .name {
+  max-width: 350px;
+  margin-bottom: 20px;
+}
+
+/* Model component styles */
+.dataLab .build {
+  margin: 25px 0;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+.dataLab .build .module {
+  margin: 0 25px 25px 0;
+  position: relative;
+}
+.dataLab .module_toolbox {
+  position: fixed;
+  top: 0;
+  right: 75px;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  text-align: center;
+}
+.dataLab .module_toolbox .wrapper {
+  background: #fafafa;
+  padding: 20px;
+  border: 1px solid #d9d9d9;
+  border-radius: 5px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  text-align: center;
+}
+.dataLab .module_toolbox .wrapper > div {
+  cursor: move;
+  width: 100px;
+  min-height: 100px;
+}
+.dataLab .module_toolbox .module, 
+.dataLab .add_module {
+  width: 175px;
+  min-height: 175px;
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  border-radius: 4px;
+  padding: 15px;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  color: #777;
+}
+.dataLab .module_toolbox .module i, 
+.dataLab .add_module i {
+  font-size: 32px;
+}
+.dataLab .module_toolbox .module span, 
+.dataLab .add_module span {
+  margin-top: 10px;
+}
+.dataLab .add_module {
+  background-color: #fafafa;
+  border: 1px dashed #d9d9d9;
+  transition: border 0.5s;
+}
+.dataLab .module_toolbox .datasource, 
+.dataLab .add_module.datasource {
+  background-color: rgba(227,242,253, 0.20);
+  border: 1px solid #BBDEFB;
+}
+.dataLab .module_toolbox .datasource i {
+  color: #BBDEFB;
+}
+.dataLab .module_toolbox .form, 
+.dataLab .add_module.form {
+  background-color: rgba(237,231,246, 0.20);
+  border: 1px solid #D1C4E9;
+}
+.dataLab .module_toolbox .form i {
+  color: #D1C4E9;
+}
+.dataLab .module_toolbox .computed, 
+.dataLab .add_module.computed {
+  background-color: rgba(232,245,233, 0.20);
+  border: 1px solid #C8E6C9;
+}
+.dataLab .module_toolbox .computed i {
+  color: #C8E6C9;
+}
+.dataLab .dragging {
+  opacity: 0.35;
+  border-style: dashed;
+  cursor: move;
+}
+
+/* DataLab module styles */
+.dataLab .module {
+  width: 350px;
+}
+.dataLab .module .field {
+  width: 100%;
+}
+.dataLab .module .error {
+  color: #f5222d;
+}
+.dataLab .module .title {
+  display: flex;
+  align-items: center;
+}
+.dataLab .module .title .title_icon {
+  font-size: 150%;
+  margin-right: 5px;
+}
+.dataLab .module .title .step_number {
+  position: absolute;
+  top: -15px;
+  left: -15px;
+  border-radius: 50%;
+  width: 35px;
+  height: 35px;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Datasource module styles */
+.dataLab .module .datasource {
+  border-color: #BBDEFB;
+}
+.dataLab .module .datasource .title .step_number {
+  background: #BBDEFB;
+}
+.dataLab .module .datasource .title .title_icon {
+  color: #BBDEFB;
+}
+.dataLab .module .datasource .select i {
+  display: none;
+}
+.dataLab .module .datasource .editing_field i {
+  cursor: pointer;
+  margin-left: 5px;
+  color: rgba(0, 0, 0, 0.65);
+}
+.dataLab .module .datasource .editing_field i:hover {
+  color: #1890ff;
+}
+.dataLab .module .datasource .editing_input {
+  display: flex;
+}
+.dataLab .module .datasource .editing_input .actions {
+  display: flex;
+  text-align: right;
+}
+.dataLab .module .datasource .normal_field i {
+  opacity: 0;
+  margin-left: 5px;
+  transition: opacity 0.1s ease-out;
+  font-weight: 300;
+}
+.dataLab .module .datasource .normal_field:hover i {
+  opacity: 1;
+}
+/* Hide the tick icon that appears on the select option during editing mode */
+.dataLab .module .datasource .editing_field:after {
+  content: none !important;
+  display: none !important;
+}
+/* Override the 'disabled' cursor on the select option during editing mode */
+.dataLab .module .datasource .editing_field.ant-select-dropdown-menu-item-disabled {
+  cursor: default;
+}
+/* Darker background for the '...N more fields selected' tag */
+.dataLab .module .datasource .select .ant-select-selection__choice__disabled {
+  background: #E0E0E0;
+}
+
+/* Discrepencies modal styles */
+.discrepencies .title {
+  display: inline-flex;
+  align-items: center;
+}
+.discrepencies .title i {
+  margin-right: 5px;
+  color: #faad14;
+  font-size: 150%;
+}
+.discrepencies .conflict {
+  position: relative;
+}
+.discrepencies .conflict .options {
+  position: absolute;
+  bottom: 20px;
+}
+
+/* Form module styles */
+.dataLab .module .form {
+  border-color: #D1C4E9;
+}
+.dataLab .module .form .title .step_number {
+  background: #D1C4E9;
+}
+.dataLab .module .form .title .title_icon {
+  color: #D1C4E9;
+}
+.dataLab .module .form .added_fields {
+  font-size: 14px;
+  margin: 8px 0;
+}
+.dataLab .module .form .form_tab {
+  padding: 0 24px 24px;
+}
+.dataLab .module .form .web_form .field_label {
+  margin-left: 5px;
+}
+.dataLab .web_form .single_record {
+  max-width: 500px;
+}
+.dataLab .web_form .single_record .form_field {
+  display: flex;
+  margin: 5px 0;
+}
+.dataLab .web_form .single_record button {
+  margin-top: 20px;
+}
+
+/* Form field modal styles */
+.formField .field_label {
+  display: inline;
+}
+.formField .field_label i {
+  margin-left: 5px;
+}
+.formField .field {
+  width: 100%;
+}
+.formField .option {
+  display: flex;
+}
+.formField .option > *:not(:last-child) {
+  margin-right: 5px;
+}
+
+
+
+/*  */
+.dataLab .ant-form-item-control:not(.has-error) .fields-select.ant-select-disabled .ant-select-selection {
+  border-color: #d9d9d9;
+  box-shadow: none;
+}
+
+
+
+.dataLab .form .fields > div {
+  background: white;
+  cursor: default;
+}
+.dataLab .form .fields .ant-select-selection__choice { 
+  background-color: #fafafa;
+  color: rgba(0, 0, 0, 0.65);
+  cursor: pointer;
+}
+.dataLab .form .fields .ant-select-selection__choice:hover { 
+  border-color: #40a9ff;
+}
+
+
+
+
+
+
+
+
+.dataLab .ant-form-item {
+  margin: 0;
+  width: 100%;
+}
+
+.dataLab .ant-select {
+  width: 100%;
+}
+
+
+
+
+.dataManipulation .form-field i, .dataManipulation .editable-field i {
+  cursor: pointer;
+  font-size: 16px;
+}
+.dataManipulation .form-field i:hover, .dataManipulation .editable-field i:hover {
+  color: #40a9ff;
+}
+.dataManipulation .form-field .button {
+  opacity: 0;
+  transition: opacity 0.1s ease-out;
+}
+.dataManipulation .editable-field:hover .button,
+.dataManipulation .form-field:hover .button {
+  opacity: 1;
+}
+.dataManipulation .editable-field {
+  display: flex;
+  align-items: center;
+}
+.dataManipulation .editable-field .button, .dataManipulation .column-header-icons .button {
+  margin-left: 5px;
+}
+.dataManipulation .column-header.form {
+  color: #9C27B0;
+}
+.dataManipulation .column-header.datasource {
+  color: #2196F3;
+}
+/* The following are for ensuring that column headers stay on a single line */
+.dataManipulation .ant-table-thead > tr > th {
+  word-break: normal;
+}
+.dataManipulation .ant-table-thead > tr > th > span {
+  display: flex;
+  align-items: center;
+}
+
+.dataLab .details .from {
+  display: flex;
+  align-items: center;
+}
+
+.dataLab .details .from i {
+  font-size: 125%;
+  margin-right: 5px;
+}
+.dataLab .details .datasourceIcon {
+  color: #BBDEFB;
+}
+.dataLab .details .formIcon {
+  color: #D1C4E9;
+}
+
+.dataLab .details  tr.drop-over-downward td {
+  border-bottom: 2px dashed #1890ff;
+}
+.dataLab .details  tr.drop-over-upward td {
+  border-top: 2px dashed #1890ff;
+}

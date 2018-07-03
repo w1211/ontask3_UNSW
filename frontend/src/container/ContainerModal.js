@@ -2,6 +2,7 @@ import React from "react";
 import { bindActionCreators } from "redux";
 import { connect } from "react-redux";
 import { Modal, Form, Input, Alert } from "antd";
+import _ from "lodash";
 
 import * as ContainerActionCreators from "./ContainerActions";
 
@@ -19,82 +20,90 @@ class ContainerModal extends React.Component {
       ContainerActionCreators,
       dispatch
     );
+
+    this.state = { loading: null, error: null };
   }
 
   handleOk = () => {
-    const { form, selected } = this.props;
+    const { form, selected, closeModal } = this.props;
 
-    form.validateFields((err, values) => {
+    form.validateFields((err, payload) => {
       if (err) return;
 
-      if (selected) {
-        this.boundActionCreators.updateContainer(selected.id, values);
-      } else {
-        this.boundActionCreators.createContainer(values);
-      }
+      this.setState({ loading: true });
+
+      const callFn = selected ? 'updateContainer' : 'createContainer';
+      this.boundActionCreators[callFn]({
+        containerId: selected && selected.id,
+        payload,
+        onError: error => this.setState({ loading: false, error }),
+        onSuccess: () => {
+          this.setState({ loading: false, error: null });
+          form.resetFields();
+          closeModal();
+        }
+      });
     });
+
+  };
+
+  handleCancel = () => {
+    const { form, closeModal } = this.props;
+
+    this.setState({ loading: null, error: null });
+    form.resetFields();
+    closeModal();
   };
 
   render() {
-    const { dispatch, selected, visible, loading, error, form } = this.props;
+    const { visible, selected, form } = this.props;
+    const { loading, error } = this.state;
+
+    const { getFieldDecorator } = form;
 
     return (
       <Modal
         visible={visible}
         title={selected ? "Update container" : "Create container"}
         okText={selected ? "Update" : "Create"}
-        onCancel={() => {
-          form.resetFields();
-          dispatch(this.boundActionCreators.closeContainerModal());
-        }}
+        onCancel={this.handleCancel}
         onOk={this.handleOk}
         confirmLoading={loading}
       >
         <Form layout="horizontal">
           <FormItem {...formItemLayout} label="Code">
-            {form.getFieldDecorator("code", {
+            {getFieldDecorator("code", {
               initialValue: selected ? selected.code : null,
               rules: [{ required: true, message: "Code is required" }]
             })(<Input />)}
           </FormItem>
 
           <FormItem {...formItemLayout} label="School">
-            {form.getFieldDecorator("school", {
+            {getFieldDecorator("school", {
               initialValue: selected ? selected.school : null
             })(<Input />)}
           </FormItem>
 
           <FormItem {...formItemLayout} label="Faculty">
-            {form.getFieldDecorator("faculty", {
+            {getFieldDecorator("faculty", {
               initialValue: selected ? selected.faculty : null
             })(<Input />)}
           </FormItem>
 
           <FormItem {...formItemLayout} label="Description">
-            {form.getFieldDecorator("description", {
-              initialValue: selected ? selected.description : null,
-              rules: [{ required: true, message: "Description is required" }]
+            {getFieldDecorator("description", {
+              initialValue: selected ? selected.description : null
             })(<TextArea rows={4} />)}
           </FormItem>
 
-          {error && (
-            <Alert style={{ marginTop: 10 }} message={error} type="error" />
-          )}
+          {error && <Alert message={error} type="error" />}
         </Form>
       </Modal>
     );
-  };
-};
+  }
+}
 
-const mapStateToProps = state => {
-  const { visible, loading, error, selected } = state.containers;
-
-  return {
-    visible,
-    loading,
-    error,
-    selected
-  };
-};
-
-export default connect(mapStateToProps)(Form.create()(ContainerModal));
+export default _.flow(
+  connect(),
+  Form.create()
+)(ContainerModal);
