@@ -81,7 +81,7 @@ class ViewViewSet(viewsets.ModelViewSet):
 
         # Check for any removed fields and remove from order list
         for item in order:
-            step = steps[item['stepIndex']] if item['stepIndex'] in steps else None
+            step = steps[item['stepIndex']] if item['stepIndex'] < len(steps) else None
             fields = step[step['type']]['fields'] if step else []
             if step and step['type'] == 'form':
                 fields = [field['name'] for field in fields]
