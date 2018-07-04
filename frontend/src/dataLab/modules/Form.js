@@ -13,7 +13,8 @@ import {
   Modal,
   Tabs,
   Checkbox,
-  Switch
+  Switch,
+  Alert
 } from "antd";
 import { bindActionCreators } from "redux";
 import { connect } from "react-redux";
@@ -252,10 +253,29 @@ class FormModule extends React.Component {
 
   WebForm = () => {
     const { stepIndex, validate } = this.props;
-    const { currentStep, primaryKeys } = this.state;
+    const { currentStep, primaryKeys, didChangeActive } = this.state;
 
     return (
       <div className="form_tab web_form">
+        <FormItem>
+          <Switch
+            checked={_.get(currentStep, "webForm.active")}
+            onChange={e => {
+              this.boundActionCreators.updateBuild({
+                stepIndex,
+                field: "webForm.active",
+                value: e
+              });
+              this.setState({ didChangeActive: true });
+            }}
+          />
+          <span className="field_label">
+            {_.get(currentStep, "webForm.active")
+              ? "Web form enabled"
+              : "Web form disabled"}
+          </span>
+        </FormItem>
+
         <FormItem
           validateStatus={validate({ field: "webForm.permission", stepIndex })}
         >
@@ -369,30 +389,21 @@ class FormModule extends React.Component {
           </Tooltip>
         </FormItem>
 
-        <FormItem>
-          <Switch
-            checked={_.get(currentStep, "webForm.active")}
-            onChange={e =>
-              this.boundActionCreators.updateBuild({
-                stepIndex,
-                field: "webForm.active",
-                value: e
-              })
-            }
-          />
-          <span className="field_label">
-            {_.get(currentStep, "webForm.active")
-              ? "Web form accessible"
-              : "Web form not accessible"}
-          </span>
-        </FormItem>
+        {_.get(currentStep, "webForm.active") &&
+          didChangeActive && (
+            <Alert
+              showIcon
+              type="info"
+              message="The URL to the web form will be shown below after saving the model"
+            />
+          )}
       </div>
     );
   };
 
   render() {
-    const { build, stepIndex, validate } = this.props;
-    const { currentStep, tab } = this.state;
+    const { build, stepIndex, validate, selectedId } = this.props;
+    const { currentStep, tab, didChangeActive } = this.state;
 
     if (!currentStep) return null;
 
@@ -403,6 +414,19 @@ class FormModule extends React.Component {
       actions.push(
         <Tooltip title="Add field">
           <Icon type="plus" onClick={() => this.modifyFormField()} />
+        </Tooltip>
+      );
+
+    if (
+      tab === "webForm" &&
+      _.get(currentStep, "webForm.active") &&
+      !didChangeActive
+    )
+      actions.push(
+        <Tooltip title="Access URL">
+          <a href={`/datalab/${selectedId}/form/${stepIndex}`} target="_blank">
+            <Icon type="global" />
+          </a>
         </Tooltip>
       );
 
@@ -461,10 +485,11 @@ class FormModule extends React.Component {
 }
 
 const mapStateToProps = state => {
-  const { build } = state.dataLab;
+  const { build, selectedId } = state.dataLab;
 
   return {
-    build
+    build,
+    selectedId
   };
 };
 

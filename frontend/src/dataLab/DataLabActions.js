@@ -287,7 +287,11 @@ const isBuildValid = build => {
         activeTo:
           form.activeFrom &&
           form.activeTo &&
-          form.activeTo.isBefore(step.form.activeFrom)
+          form.activeTo.isBefore(step.form.activeFrom),
+        webForm: {
+          permission: _.get(form, "webForm.active") && !_.get(form, "webForm.permission"),
+          layout: _.get(form, "webForm.active") && !_.get(form, "webForm.layout")
+        }
       };
     }
   });

@@ -95,20 +95,16 @@ class WebForm extends React.Component {
 
         if (field) {
           text = this.generateText(field, text, record);
-
-          return form.editable_records.includes(record[form.primary_key]) ? (
-            <EditableField
-              field={field}
-              value={text}
-              isColumnEdit={true}
-              onChange={e => {
-                form.data[index][column] = e;
-                this.setState({ form });
-              }}
-            />
-          ) : (
-            text
-          );
+          
+          return <EditableField
+            field={field}
+            value={text}
+            isColumnEdit={true}
+            onChange={e => {
+              form.data[index][column] = e;
+              this.setState({ form });
+            }}
+          />
         } else {
           return text;
         }
@@ -117,7 +113,7 @@ class WebForm extends React.Component {
     return columns;
   };
 
-  generateSingleRecordColumns = (singleRecordIndex, hasPermission) => {
+  generateSingleRecordColumns = (singleRecordIndex) => {
     const { form } = this.state;
 
     const columns = [
@@ -133,7 +129,7 @@ class WebForm extends React.Component {
             field => field.name === record.field
           );
 
-          return editableField && hasPermission ? (
+          return editableField ? (
             <EditableField
               field={editableField}
               value={form.data[singleRecordIndex][record.field]}
@@ -144,8 +140,8 @@ class WebForm extends React.Component {
               }}
             />
           ) : (
-            text
-          );
+              text
+            );
         }
       }
     ];
@@ -185,16 +181,11 @@ class WebForm extends React.Component {
     if (singleRecordIndex === undefined) {
       this.setState({
         singleRecordIndex,
-        hasPermission: null,
         data: null,
         columns: null
       });
       return;
     }
-
-    const hasPermission = form.editable_records.includes(
-      form.data[singleRecordIndex][form.primary_key]
-    );
 
     const data = Object.keys(form.data[singleRecordIndex]).map((field, i) => ({
       field,
@@ -203,11 +194,10 @@ class WebForm extends React.Component {
     }));
 
     const columns = this.generateSingleRecordColumns(
-      singleRecordIndex,
-      hasPermission
+      singleRecordIndex
     );
 
-    this.setState({ singleRecordIndex, hasPermission, data, columns });
+    this.setState({ singleRecordIndex, data, columns });
   };
 
   SingleRecord = () => {
@@ -251,8 +241,8 @@ class WebForm extends React.Component {
             </Button>
           </div>
         ) : (
-          <div>Get started by choosing a record to edit.</div>
-        )}
+            <div>Get started by choosing a record to edit.</div>
+          )}
       </div>
     );
   };
@@ -270,12 +260,12 @@ class WebForm extends React.Component {
             <h2>{error}</h2>
           </div>
         ) : (
-          <div>
-            <h1>{form.name}</h1>
-            {form.layout === "table" && this.DataTable()}
-            {form.layout === "vertical" && this.SingleRecord()}
-          </div>
-        )}
+              <div>
+                <h1>{form.name}</h1>
+                {form.layout === "table" && this.DataTable()}
+                {form.layout === "vertical" && this.SingleRecord()}
+              </div>
+            )}
       </div>
     );
   }
