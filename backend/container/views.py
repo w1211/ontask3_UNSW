@@ -1,24 +1,18 @@
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
-from rest_framework.decorators import detail_route, list_route, permission_classes
+from rest_framework.decorators import detail_route, list_route
 from rest_framework.permissions import IsAuthenticated
 
 from django.http import JsonResponse
-import json
-import re
-from bson import ObjectId
-from datetime import date, datetime
-from json import dumps
 from mongoengine.queryset.visitor import Q
 
 from .serializers import ContainerSerializer
 from .models import Container
 from .permissions import ContainerPermissions
 
-from datasource.models import DataSource
-from scheduler.backend_utils import mongo_to_dict
-
-from workflow.models import Workflow
+from datasource.models import Datasource
+from datasource.serializers import DatasourceSerializer
+from audit.serializers import AuditSerializer
 
 
 class ContainerViewSet(viewsets.ModelViewSet):
@@ -26,25 +20,113 @@ class ContainerViewSet(viewsets.ModelViewSet):
     serializer_class = ContainerSerializer
     permission_classes = [IsAuthenticated, ContainerPermissions]
 
-    def json_serial(self, obj):
-        if isinstance(obj, (datetime, date)):
-            return obj.isoformat()
-        if isinstance(obj, ObjectId):
-            return str(obj)
-
     def get_queryset(self):
         request_user = self.request.user.email
+
         return Container.objects.filter(
             Q(owner=request_user) | Q(sharing__contains=request_user)
         )
 
-    @list_route(methods=['get'])
-    def retrieve_containers(self, request):
+    def perform_create(self, serializer):
         request_user = self.request.user.email
 
-        # Retrieve containers owned by or shared with the current user, including the associated workflows & data sources
-        # Consumed by the containers list interface
-        # Perform a lookup on each container object so that we can attach its associated workflows & data sources
+        # We are manually checking that the combination of (owner, code) is unique.
+        # We cannot take advantage of MongoEngine's inbuilt "unique_with" attribute
+        # in the Container model, because we are not sending the owner attribute in
+        # the request body (rather, it is provided by the request.user).
+        queryset = Container.objects.filter(
+            owner=request_user,
+            code=self.request.data['code']
+        )
+        if queryset.count():
+            raise ValidationError('A container with this code already exists')
+
+        container = serializer.save(owner=request_user)
+
+        audit = AuditSerializer(data={
+            'model': 'container',
+            'document': str(container.id),
+            'action': 'create',
+            'user': request_user
+        })
+        audit.is_valid()
+        audit.save()
+
+    def perform_update(self, serializer):
+        container = self.get_object()
+        request_user = self.request.user.email
+
+        self.check_object_permissions(self.request, container)
+
+        # Ensure that the owner cannot be changed by a malicious payload
+        if 'owner' in self.request.data:
+            del self.request.data['owner']
+
+        # Ensure that only the owner can edit sharing permissions
+        if request_user != container.owner and 'sharing' in self.request.data:
+            del self.request.data['sharing']
+
+        # If we are editing an actual container, as opposed to editing the sharing permissions of a container
+        if 'code' in self.request.data:
+            queryset = Container.objects.filter(
+                # We only want to check against the documents that are not the document being updated
+                # I.e. only include objects in the filter that do not have the same id as the current object
+                # We are making use of a MongoEngine query operator [field]__ne (i.e. field not equal to)
+                # Refer to http://docs.mongoengine.org/guide/querying.html#query-operators for more information
+                id__ne=container.id,
+                owner=request_user,
+                code=self.request.data['code']
+            )
+            if queryset.count():
+                raise ValidationError(
+                    'A container with this code already exists')
+
+        serializer.save()
+
+        # Identify the changes made to the container
+        diff = {}
+        for field in container:
+            old_value = container[field]
+            new_value = serializer.instance[field]
+            if old_value != new_value:
+                diff[field] = {'from': old_value, 'to': new_value}
+
+        # If changes were detected, add a record to the audit collection
+        if len(diff.keys()):
+            audit = AuditSerializer(data={
+                'model': 'container',
+                'document': str(container.id),
+                'action': 'edit',
+                'user': request_user,
+                'diff': diff
+            })
+            audit.is_valid()
+            audit.save()
+
+    def perform_destroy(self, container):
+        request_user = self.request.user.email
+
+        self.check_object_permissions(self.request, container)
+
+        container.delete()
+
+        audit = AuditSerializer(data={
+            'model': 'container',
+            'document': str(container.id),
+            'action': 'delete',
+            'user': request_user
+        })
+        audit.is_valid()
+        audit.save()
+
+    @list_route(methods=['get'])
+    def retrieve_containers(self, request):
+        '''Retrieve containers owner by or shared with the current user, including 
+        the container's associated datasources, data labs and actions'''
+        request_user = request.user.email
+
+        # Retrieve containers owned by or shared with the current user,
+        # including the associated datasources, data labs and actions
         pipeline = [
             {
                 '$match': {
@@ -56,10 +138,7 @@ class ContainerViewSet(viewsets.ModelViewSet):
             },
             {
                 '$lookup': {
-                    # The collection name in MongoDB for datasources is data_source
-                    # When using a DRF serializer, as we do in the backend, DRF handles this mapping for us
-                    # Given that we are interfacing directly with MongoDB in this aggregate lookup, we must use the correct collection name
-                    'from': 'data_source',
+                    'from': 'datasource',
                     'localField': '_id',
                     'foreignField': 'container',
                     'as': 'datasources'
@@ -82,140 +161,55 @@ class ContainerViewSet(viewsets.ModelViewSet):
                 }
             },
             {
-                # Exclude fields that are not used in the containers component
+                # Whereas other fields are excluded in the container serializer,
+                # nested fields that we want to exclude are specified here via a projection
+                # because DRF MongoEngine incorrectly throws an error that the field, e.g.
+                # 'connection.password' does not exist in the datasource model - i.e. it
+                # looks for a field literally called 'connection.password' instead of treating
+                # it as a nested field belonging to an embedded document called 'connection'
                 '$project': {
-                    'datasources.container': 0,
                     'datasources.connection.password': 0,
-                    'workflows.container': 0,
-                    'workflows.conditionGroups': 0,
-                    'workflows.details': 0,
-                    'workflows.content': 0,
-                    'view.container': 0
+                    'views.steps.datasource': 0,
+                    'views.steps.form': 0
                 }
             }
         ]
-        containers_after_query = list(Container.objects.aggregate(*pipeline))
 
-        containers_after_dump = dumps(containers_after_query, default=self.json_serial)
+        containers = Container.objects.aggregate(*pipeline)
 
-        # Convert the queryset response into a string so that we can transform
-        # To remove the underscore from "id" key values
-        # For better consistency in field names
-        containers = str(containers_after_dump).replace('"_id":', '"id":')
-        return JsonResponse(json.loads(containers), safe=False)
+        # DRF serialize the containers so that can be sent in the HTTP response as JSON
+        serialized_containers = []
+        for container in containers:
+            # MongoDB queries return document ids as '_id', whereas DRF is expecting 'id'
+            # Therefore perform a simple mapping of '_id' to 'id'
+            container['id'] = container.pop('_id')
 
-    def perform_create(self, serializer):
-        # We are manually checking that the combination of (owner, code) is unique
-        # We cannot take advantage of MongoEngine's inbuilt "unique_with" attribute in the Container model
-        # Because we are not sending the owner attribute in the request body (rather, it is provided by the request.user)
-        queryset = Container.objects.filter(
-            owner=self.request.user.email,
-            code=self.request.data['code']
-        )
-        if queryset.count():
-            raise ValidationError('A container with this code already exists')
-        serializer.save(owner=self.request.user.email)
+            for datasource in container['datasources']:
+                datasource['id'] = datasource.pop('_id')
 
-    def perform_update(self, serializer):
-        container = self.get_object()
-        self.check_object_permissions(self.request, container)
+            for view in container['views']:
+                view['id'] = view.pop('_id')
 
-        # Ensure that the owner cannot be changed by a malicious payload
-        if 'owner' in self.request.data:
-            del self.request.data['owner']
+            for workflow in container['workflows']:
+                workflow['id'] = workflow.pop('_id')
 
-        # Ensure that only the owner can edit sharing permissions
-        if self.request.user.email != container.owner and 'sharing' in self.request.data:
-            del self.request.data['sharing']
+            serialized_containers.append(ContainerSerializer(container).data)
 
-        # If we are editing an actual container, as opposed to editing the sharing permissions of a container
-        if 'code' in self.request.data:
-            queryset = Container.objects.filter(
-                # We only want to check against the documents that are not the document being updated
-                # I.e. only include objects in the filter that do not have the same id as the current object
-                # id != self.kwargs.get(self.lookup_field) is syntactically incorrect
-                # So instead we are making use of a query operator [field]__ne (i.e. field not equal to)
-                # Refer to http://docs.mongoengine.org/guide/querying.html#query-operators for more information
-                # Get the id of the object from the url route as defined by the lookup_field
-                id__ne=self.kwargs.get(self.lookup_field),
-                owner=self.request.user.email,
-                code=self.request.data['code']
-            )
-            if queryset.count():
-                raise ValidationError('A container with this code already exists')
-
-        serializer.save()
-
-    def perform_destroy(self, obj):
-         # Ensure that the request.user is the owner of the object
-        self.check_object_permissions(self.request, obj)
-
-        # The delete function cascades down datasources & matrices
-        # This is done via the container field of the datasource & workflow models
-        obj.delete()
-
-        # TODO fix bug https://stackoverflow.com/questions/32513388/how-would-i-override-the-perform-destroy-method-in-django-rest-framework
-
-    # retrieve all workflows owned by current user
-    @list_route(methods=['get'])
-    def retrieve_workflows(self, request):
-        pipeline = [
-            {
-                '$match': {
-                    '$or': [
-                        {'owner': self.request.user.id}
-                    ]
-                }
-            },
-            {
-                '$lookup': {
-                    'from': 'workflow',
-                    'localField': '_id',
-                    'foreignField': 'container',
-                    'as': 'workflows'
-                }
-            },
-            {
-                # Exclude fields that are not used in the containers component
-                '$project': {
-                    'workflows.container': 0,
-                    'workflows.conditionGroups': 0,
-                    'workflows.details': 0,
-                    'workflows.content': 0
-                },
-            }
-        ]
-        containers_after_dump = dumps(list(Container.objects.aggregate(*pipeline)), default=self.json_serial)
-        # Convert the queryset response into a string so that we can transform
-        # To remove the underscore from "id" key values
-        # For better consistency in field names
-        containers = str(containers_after_dump).replace('"_id":', '"id":')
-        return JsonResponse(json.loads(containers), safe=False)
+        return JsonResponse({'containers': serialized_containers})
 
     @detail_route(methods=['get'])
     def retrieve_datasources(self, request, id=None):
         '''Retrieve all datasources associated with the given container'''
         container = Container.objects.get(id=id)
+
         self.check_object_permissions(self.request, container)
 
-        datasources = DataSource.objects(container=id).only('id', 'name', 'fields', 'data')
-        for datasource in datasources:
-            datasource['data'] = datasource['data'][:1]
-        datasources = [mongo_to_dict(datasource) for datasource in datasources]
+        datasources = Datasource.objects(container=id).only(
+            'id', 'name', 'fields')
+        serialized_datasources = [DatasourceSerializer(
+            datasource).data for datasource in datasources]
 
-        return JsonResponse(datasources, safe=False)
-
-    @detail_route(methods=['get'])
-    def retrieve_workflows(self, request, id=None):
-        '''Retrieve all workflows associated with the given container'''
-        container = Container.objects.get(id=id)
-        self.check_object_permissions(self.request, container)
-
-        workflows = Workflow.objects(container=id).only('id', 'name')
-
-        workflows = [mongo_to_dict(workflow) for workflow in workflows]
-
-        return JsonResponse(workflows, safe=False)
+        return JsonResponse({'datasources': serialized_datasources})
 
     @detail_route(methods=['post'])
     def surrender_access(self, request, id=None):
@@ -223,12 +217,20 @@ class ContainerViewSet(viewsets.ModelViewSet):
         container = Container.objects.get(id=id)
 
         sharing = container.sharing
-        user = request.user.email
+        request_user = request.user.email
 
-        if user in sharing:
-            sharing.remove(request.user.email)
+        if request_user in sharing:
+            sharing.remove(request_user)
 
+            container.save(sharing=sharing)
 
-        container.save(sharing=sharing)
+            audit = AuditSerializer(data={
+                'model': 'container',
+                'document': str(container.id),
+                'action': 'surrender_access',
+                'user': request_user
+            })
+            audit.is_valid()
+            audit.save()
 
-        return JsonResponse({"success": True})
+        return JsonResponse({"success": 1})

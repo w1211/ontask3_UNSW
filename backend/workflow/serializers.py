@@ -1,7 +1,7 @@
 from rest_framework_mongoengine import serializers
 
 from .models import Workflow
-from datasource.serializers import DataSourceSerializer
+from datasource.serializers import DatasourceSerializer
 
 class WorkflowSerializer(serializers.DocumentSerializer):
     class Meta:
@@ -11,7 +11,7 @@ class WorkflowSerializer(serializers.DocumentSerializer):
 # This serializer is only used by the retrieve workflow function, 
 # so that we can also show the related datasources and populate the view of the workflow
 class RetrieveWorkflowSerializer(serializers.DocumentSerializer):
-    datasources = DataSourceSerializer(many=True, allow_null=True, read_only=True)
+    datasources = DatasourceSerializer(many=True, allow_null=True, read_only=True)
 
     class Meta:
         model = Workflow

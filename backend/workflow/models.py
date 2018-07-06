@@ -1,6 +1,5 @@
 from mongoengine import Document, EmbeddedDocument, fields
 
-from datasource.models import DataSource
 from container.models import Container
 from view.models import View
 

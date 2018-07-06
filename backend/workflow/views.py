@@ -17,7 +17,7 @@ from .serializers import WorkflowSerializer, RetrieveWorkflowSerializer
 from .models import Workflow
 from .permissions import WorkflowPermissions
 
-from datasource.models import DataSource
+from datasource.models import Datasource
 from audit.models import Audit
 from audit.serializers import AuditSerializer
 from view.models import View

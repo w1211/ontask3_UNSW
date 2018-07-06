@@ -39,7 +39,8 @@ export const fetchContainers = accordionKey => dispatch => {
       dispatch({ type: FINISH_FETCHING });
       console.error(error);
     },
-    successFn: containers => {
+    successFn: response => {
+      const { containers } = response;
       dispatch({ type: FINISH_FETCHING });
       dispatch(storeContainers(containers, accordionKey));
     }

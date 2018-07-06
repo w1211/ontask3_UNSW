@@ -1,9 +1,9 @@
 from rest_framework_mongoengine import serializers
 
-from .models import DataSource
+from .models import Datasource
 
 
-class DataSourceSerializer(serializers.DocumentSerializer):
+class DatasourceSerializer(serializers.DocumentSerializer):
     class Meta:
-        model = DataSource
+        model = Datasource
         fields = '__all__'

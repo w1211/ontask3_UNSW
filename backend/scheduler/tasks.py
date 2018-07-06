@@ -66,7 +66,7 @@ def refresh_datasource_data(datasource_id):
     db = client[NOSQL_DATABASE['DB']]
     
     # Project only the connection details of the datasource, and exclude all other fields
-    datasource = db.data_source.find_one({ '_id': ObjectId(datasource_id) }, { 'connection': 1 })
+    datasource = db.datasource.find_one({ '_id': ObjectId(datasource_id) }, { 'connection': 1 })
 
     connection = datasource['connection']
 
@@ -79,7 +79,7 @@ def refresh_datasource_data(datasource_id):
 
     fields = list(data[0].keys())
     
-    db.data_source.update({ '_id': ObjectId(datasource_id) }, {
+    db.datasource.update({ '_id': ObjectId(datasource_id) }, {
         '$set': {
             'data': data,
             'fields': fields,

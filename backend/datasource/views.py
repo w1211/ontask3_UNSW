@@ -13,9 +13,9 @@ from xlrd import open_workbook
 from cryptography.fernet import Fernet
 from ontask.settings import SECRET_KEY, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION
 
-from .serializers import DataSourceSerializer
-from .models import DataSource
-from .permissions import DataSourcePermissions
+from .serializers import DatasourceSerializer
+from .models import Datasource
+from .permissions import DatasourcePermissions
 
 from container.models import Container
 from workflow.models import Workflow
@@ -27,8 +27,8 @@ from scheduler.backend_utils import create_scheduled_task, remove_scheduled_task
 
 class DataSourceViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
-    serializer_class = DataSourceSerializer
-    permission_classes = [IsAuthenticated, DataSourcePermissions]
+    serializer_class = DatasourceSerializer
+    permission_classes = [IsAuthenticated, DatasourcePermissions]
 
     def get_queryset(self):
         request_user = self.request.user.email

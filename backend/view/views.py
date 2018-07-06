@@ -11,7 +11,7 @@ from .serializers import ViewSerializer
 from .permissions import DataLabPermissions
 
 from .models import View
-from datasource.models import DataSource
+from datasource.models import Datasource
 from workflow.models import Workflow
 
 class ViewViewSet(viewsets.ModelViewSet):
@@ -117,7 +117,7 @@ class ViewViewSet(viewsets.ModelViewSet):
 
         serializer = ViewSerializer(instance=view)
 
-        datasources = DataSource.objects(container=view.container.id).only('id', 'name', 'fields', 'data')
+        datasources = Datasource.objects(container=view.container.id).only('id', 'name', 'fields', 'data')
         # Return only the first row of each datasource's data
         # To be used in guessing the type of a field when trying to add a new column to the view
         for datasource in datasources:
@@ -130,7 +130,7 @@ class ViewViewSet(viewsets.ModelViewSet):
     def combine_data(self, steps):
         # Initialize the dataset using the first module, which is always a datasource
         first_module = steps[0]['datasource']
-        datasource = DataSource.objects.get(id=first_module['id'])
+        datasource = Datasource.objects.get(id=first_module['id'])
         fields = first_module['fields']
         label_map = first_module['labels']
 

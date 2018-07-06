@@ -3,7 +3,7 @@ from rest_framework import permissions
 from container.models import Container
 
 
-class DataSourcePermissions(permissions.BasePermission):
+class DatasourcePermissions(permissions.BasePermission):
     # Permissions for a given data source are inherited from its parent container
     def has_object_permission(self, request, view, obj):
         request_user = request.user.email

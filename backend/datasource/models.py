@@ -28,7 +28,7 @@ class Schedule(EmbeddedDocument):
     taskName = fields.StringField() # The name of the celery task
     asyncTasks = fields.ListField(fields.StringField()) # Async tasks
 
-class DataSource(Document):
+class Datasource(Document):
     # Owner of the datasource can be determined from container.owner
     container = fields.ReferenceField(Container, required=True, reverse_delete_rule=2) # Cascade delete if container is deleted
     name = fields.StringField(required=True)

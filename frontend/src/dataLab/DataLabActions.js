@@ -92,7 +92,8 @@ export const fetchDatasources = containerId => dispatch => {
       dispatch({ type: FINISH_FETCHING });
       console.log(error);
     },
-    successFn: datasources => {
+    successFn: response => {
+      const { datasources } = response;
       dispatch({ type: FINISH_FETCHING });
       dispatch(storeDataLab({ datasources }));
     }

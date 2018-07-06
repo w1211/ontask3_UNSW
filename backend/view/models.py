@@ -3,7 +3,6 @@ from mongoengine.fields import StringField, DictField, ListField, EmbeddedDocume
                                 ReferenceField, BooleanField, EmbeddedDocumentField, DateTimeField, FloatField
 
 from container.models import Container
-from datasource.models import DataSource
 
 class Column(EmbeddedDocument):
     stepIndex = IntField()
