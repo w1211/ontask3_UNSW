@@ -154,7 +154,7 @@ class ViewViewSet(viewsets.ModelViewSet):
 
             if step['type'] == 'datasource':
                 module = step['datasource']
-                datasource = DataSource.objects.get(id=module['id'])
+                datasource = Datasource.objects.get(id=module['id'])
                 fields = module['fields']
                 label_map = module['labels']
 
@@ -229,7 +229,7 @@ class ViewViewSet(viewsets.ModelViewSet):
         check_module = self.request.data['checkModule']['datasource']
 
         data = self.combine_data(partial_build)
-        datasource = DataSource.objects.get(id=check_module['id'])
+        datasource = Datasource.objects.get(id=check_module['id'])
 
         primary_records = {item[check_module['primary']] for item in datasource.data}
         matching_records = {item[check_module['matching']]

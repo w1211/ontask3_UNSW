@@ -26,7 +26,7 @@ from collections import defaultdict
 
 from django.conf import settings
 
-from scheduler.backend_utils import *
+from scheduler.utils import *
 from .utils import *
 
 
@@ -78,7 +78,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         serializer = RetrieveWorkflowSerializer(instance=workflow)
 
-        datasources = DataSource.objects(container=workflow.container.id).only('id', 'name', 'fields')
+        datasources = Datasource.objects(container=workflow.container.id).only('id', 'name', 'fields')
         serializer.instance.datasources = datasources
 
         # if serializer.data['schedule']:
