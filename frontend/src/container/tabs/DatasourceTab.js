@@ -23,9 +23,8 @@ class DatasourceTab extends React.Component {
 
   deleteDatasource = datasourceId => {
     confirm({
-      title: "Confirm container deletion",
-      content:
-        "All associated datasources, views and workflows will be irrevocably deleted with the container.",
+      title: "Confirm datasource deletion",
+      content: "Are you sure you want to delete this datasource?",
       okText: "Continue with deletion",
       okType: "danger",
       cancelText: "Cancel",
