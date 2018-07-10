@@ -38,3 +38,4 @@ frontend/.env.*
 # Logs and temporary files
 logs/*
 tmp/*
+*.state.db
