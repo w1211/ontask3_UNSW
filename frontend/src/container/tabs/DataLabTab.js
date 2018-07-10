@@ -14,10 +14,7 @@ class DataLabTab extends React.Component {
     super(props);
     const { dispatch } = props;
 
-    this.boundActionCreators = bindActionCreators(
-      { deleteDataLab },
-      dispatch
-    );
+    this.boundActionCreators = bindActionCreators({ deleteDataLab }, dispatch);
 
     this.state = { filter: null, loading: {} };
   }
@@ -25,7 +22,8 @@ class DataLabTab extends React.Component {
   deleteDataLab = dataLabId => {
     confirm({
       title: "Confirm DataLab deletion",
-      content: "Are you sure you want to delete this DataLab?",
+      content:
+        "All associated actions will be irrevocably deleted with the DataLab.",
       okText: "Continue with deletion",
       okType: "danger",
       cancelText: "Cancel",

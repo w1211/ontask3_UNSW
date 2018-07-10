@@ -1,7 +1,7 @@
 from mongoengine import Document, EmbeddedDocument, fields
 
 from container.models import Container
-from view.models import View
+from datalab.models import Datalab
 
 # Condition groups
 class Formula(EmbeddedDocument):
@@ -42,7 +42,7 @@ class EmailSettings(EmbeddedDocument):
 # Workflow
 class Workflow(Document):
     container = fields.ReferenceField(Container, required=True, reverse_delete_rule=2) # Cascade delete if container is deleted
-    view = fields.ReferenceField(View, required=True, reverse_delete_rule=2) # Cascade delete if view is deleted
+    datalab = fields.ReferenceField(Datalab, required=True, reverse_delete_rule=2) # Cascade delete if view is deleted
     name = fields.StringField(required=True, unique_with='container')
     description = fields.StringField(null=True)
     filter = fields.EmbeddedDocumentField(Condition)

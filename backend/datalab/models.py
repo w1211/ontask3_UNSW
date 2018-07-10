@@ -1,21 +1,25 @@
 from mongoengine import Document, EmbeddedDocument
 from mongoengine.fields import StringField, DictField, ListField, EmbeddedDocumentListField, IntField, \
-                                ReferenceField, BooleanField, EmbeddedDocumentField, DateTimeField, FloatField
+    ReferenceField, BooleanField, EmbeddedDocumentField, DateTimeField, FloatField
 
 from container.models import Container
+
 
 class Column(EmbeddedDocument):
     stepIndex = IntField()
     field = StringField()
     visible = BooleanField(default=True)
 
+
 class Discrepencies(EmbeddedDocument):
     matching = BooleanField()
     primary = BooleanField()
 
+
 class Option(EmbeddedDocument):
     label = StringField(required=True)
     value = StringField(required=True)
+
 
 class FormField(EmbeddedDocument):
     name = StringField(required=True)
@@ -33,6 +37,7 @@ class FormField(EmbeddedDocument):
     interval = FloatField(null=True)
     numberDisplay = StringField(null=True)
 
+
 class WebForm(EmbeddedDocument):
     permission = StringField(required=True)
     visibleFields = ListField(StringField())
@@ -40,14 +45,16 @@ class WebForm(EmbeddedDocument):
     showAll = BooleanField(default=False)
     active = BooleanField(default=False)
 
+
 class DatasourceModule(EmbeddedDocument):
     id = StringField(required=True)
     primary = StringField(required=True)
     matching = StringField(null=True)
     fields = ListField(StringField())
     labels = DictField()
-    types = DictField()    
+    types = DictField()
     discrepencies = EmbeddedDocumentField(Discrepencies)
+
 
 class FormModule(EmbeddedDocument):
     primary = StringField(required=True)
@@ -57,14 +64,18 @@ class FormModule(EmbeddedDocument):
     fields = EmbeddedDocumentListField(FormField, required=True)
     webForm = EmbeddedDocumentField(WebForm)
     data = ListField(DictField())
-    
+
+
 class Module(EmbeddedDocument):
-    type = StringField(choices=('datasource', 'computed', 'form'), required=True)
+    type = StringField(
+        choices=('datasource', 'computed', 'form'), required=True)
     datasource = EmbeddedDocumentField(DatasourceModule)
     form = EmbeddedDocumentField(FormModule)
 
+
 class Chart(EmbeddedDocument):
-    chartType = StringField(choices=('barChart', 'pieChart', 'boxPlot', 'table'), required=True)
+    chartType = StringField(
+        choices=('barChart', 'pieChart', 'boxPlot', 'table'), required=True)
     colNameSelected = StringField(required=True)
     interval = FloatField(null=True)
     range = ListField(FloatField(), null=True)
@@ -76,8 +87,10 @@ class Chart(EmbeddedDocument):
     selections = ListField(StringField())
     filterCols = ListField(StringField())
 
-class View(Document):
-    container = ReferenceField(Container, required=True, reverse_delete_rule=2) # Cascade delete if container is deleted
+
+class Datalab(Document):
+    # Cascade delete if container is deleted
+    container = ReferenceField(Container, required=True, reverse_delete_rule=2)
     name = StringField(required=True)
     steps = EmbeddedDocumentListField(Module)
     data = ListField(DictField())

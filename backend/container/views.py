@@ -145,18 +145,18 @@ class ContainerViewSet(viewsets.ModelViewSet):
             },
             {
                 '$lookup': {
-                    'from': 'workflow',
+                    'from': 'datalab',
                     'localField': '_id',
                     'foreignField': 'container',
-                    'as': 'workflows'
+                    'as': 'datalabs'
                 }
             },
             {
                 '$lookup': {
-                    'from': 'view',
+                    'from': 'workflow',
                     'localField': '_id',
                     'foreignField': 'container',
-                    'as': 'views'
+                    'as': 'workflows'
                 }
             },
             {
@@ -168,8 +168,8 @@ class ContainerViewSet(viewsets.ModelViewSet):
                 # it as a nested field belonging to an embedded document called 'connection'
                 '$project': {
                     'datasources.connection.password': 0,
-                    'views.steps.datasource': 0,
-                    'views.steps.form': 0
+                    'datalabs.steps.datasource': 0,
+                    'datalabs.steps.form': 0
                 }
             }
         ]
@@ -186,8 +186,8 @@ class ContainerViewSet(viewsets.ModelViewSet):
             for datasource in container['datasources']:
                 datasource['id'] = datasource.pop('_id')
 
-            for view in container['views']:
-                view['id'] = view.pop('_id')
+            for datalab in container['datalabs']:
+                datalab['id'] = datalab.pop('_id')
 
             for workflow in container['workflows']:
                 workflow['id'] = workflow.pop('_id')

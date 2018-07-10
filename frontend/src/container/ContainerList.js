@@ -40,7 +40,7 @@ class ContainerList extends React.Component {
         >
           {containers.map((container, i) => {
             const numDatasources = _.get(container, "datasources.length", 0);
-            const numDataLabs = _.get(container, "views.length", 0);
+            const numDataLabs = _.get(container, "datalabs.length", 0);
             const numActions = _.get(container, "workflows.length", 0);
 
             return (
@@ -71,7 +71,7 @@ class ContainerList extends React.Component {
                   <TabPane tab={`DataLabs (${numDataLabs})`} key="2">
                     <DataLabTab
                       containerId={container.id}
-                      dataLabs={container.views}
+                      dataLabs={container.datalabs}
                       openModal={openModal}
                     />
                   </TabPane>

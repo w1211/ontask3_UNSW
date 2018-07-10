@@ -19,7 +19,7 @@ export const FINISH_REQUEST_FORM_FIELD = "FINISH_REQUEST_FORM_FIELD";
 
 export const deleteDataLab = ({ dataLabId, onFinish }) => dispatch => {
   const parameters = {
-    url: `/view/${dataLabId}/`,
+    url: `/datalab/${dataLabId}/`,
     method: "DELETE",
     errorFn: error => {
       onFinish();
@@ -58,13 +58,14 @@ export const fetchDataLab = dataLabId => dispatch => {
   dispatch({ type: START_FETCHING });
 
   const parameters = {
-    url: `/view/${dataLabId}/retrieve_view/`,
+    url: `/datalab/${dataLabId}/retrieve_datalab/`,
     method: "GET",
     errorFn: error => {
       dispatch({ type: FINISH_FETCHING });
       console.log(error);
     },
-    successFn: dataLab => {
+    successFn: response => {
+      const { dataLab } = response;
       // Convert DatePicker field timestamps to moment.js objects (required by DatePicker component)
       dataLab.steps.forEach(step => {
         if (step.type === "form") {
@@ -166,7 +167,7 @@ export const checkForDiscrepencies = ({ stepIndex, onFinish }) => (
     delete checkModule.datasource.discrepencies;
 
   const parameters = {
-    url: `/view/check_discrepencies/`,
+    url: `/datalab/check_discrepencies/`,
     method: "POST",
     errorFn: error => console.log(error),
     successFn: result => onFinish(result),
@@ -187,7 +188,7 @@ export const checkForUniqueness = ({ stepIndex, primaryKey, onFinish }) => (
   const partialBuild = build.steps.slice(0, stepIndex);
 
   const parameters = {
-    url: `/view/check_uniqueness/`,
+    url: `/datalab/check_uniqueness/`,
     method: "POST",
     errorFn: error => console.log(error),
     successFn: result => onFinish(result),
@@ -255,14 +256,6 @@ export const updateBuild = ({ stepIndex, field, value, isNotField }) => (
   });
 };
 
-const getType = str => {
-  // isNan() returns false if the input only contains numbers
-  if (!isNaN(str)) return "number";
-  const dateCheck = new Date(str);
-  if (isNaN(dateCheck.getTime())) return "text";
-  return "date";
-};
-
 const isBuildValid = build => {
   // Validate non-module fields
   build.errors.name = !build.name;
@@ -290,8 +283,10 @@ const isBuildValid = build => {
           form.activeTo &&
           form.activeTo.isBefore(step.form.activeFrom),
         webForm: {
-          permission: _.get(form, "webForm.active") && !_.get(form, "webForm.permission"),
-          layout: _.get(form, "webForm.active") && !_.get(form, "webForm.layout")
+          permission:
+            _.get(form, "webForm.active") && !_.get(form, "webForm.permission"),
+          layout:
+            _.get(form, "webForm.active") && !_.get(form, "webForm.layout")
         }
       };
     }
@@ -318,16 +313,6 @@ const cleanupBuild = (build, datasources) => {
         if (_.get(step, "datasource.discrepencies.primary") === null)
           delete step.datasource.discrepencies.primary;
       }
-
-      // Guess the type of each field added to this datasource module
-      const datasource = datasources.find(
-        datasource => datasource.id === step.datasource.id
-      );
-      const data = datasource.data[0];
-      step.datasource.fields.forEach(field => {
-        if (!_.get(step, `datasource.types[${field}]`))
-          step.datasource.types[field] = getType(data[field].toString());
-      });
     }
 
     if (step.type === "form") {
@@ -337,6 +322,12 @@ const cleanupBuild = (build, datasources) => {
         step.form.activeFrom = moment.utc(step.form.activeFrom);
       if (_.get(step, "form.activeTo"))
         step.form.activeTo = moment.utc(step.form.activeTo);
+
+      if (
+        !_.get(step, "form.webForm") ||
+        _.get(step, "form.webForm.active") === false
+      )
+        delete step.form.webForm;
     }
   });
 };
@@ -384,7 +375,7 @@ export const saveBuild = ({ containerId, onStart, onError, onSuccess }) => (
 
   // Perform save API call
   const parameters = {
-    url: selectedId ? `/view/${selectedId}/` : "/view/",
+    url: selectedId ? `/datalab/${selectedId}/` : "/datalab/",
     method: selectedId ? "PATCH" : "POST",
     errorFn: error => {
       onError();
@@ -423,7 +414,7 @@ export const updateFormValues = (dataLabId, payload, callback) => dispatch => {
     initialFn: () => {
       dispatch(beginRequestFormField());
     },
-    url: `/view/${dataLabId}/update_form_values/`,
+    url: `/datalab/${dataLabId}/update_form_values/`,
     method: "PATCH",
     errorFn: error => {
       dispatch(finishRequestFormField());
@@ -456,7 +447,7 @@ export const changeColumnOrder = (dataLabId, payload) => (
 
   const parameters = {
     initialFn: () => {},
-    url: `/view/${dataLabId}/change_column_order/`,
+    url: `/datalab/${dataLabId}/change_column_order/`,
     method: "PATCH",
     errorFn: error => {
       console.log(error);
@@ -485,7 +476,7 @@ export const changeColumnVisibility = (dataLabId, payload) => (
 
   const parameters = {
     initialFn: () => {},
-    url: `/view/${dataLabId}/change_column_visibility/`,
+    url: `/datalab/${dataLabId}/change_column_visibility/`,
     method: "PATCH",
     errorFn: error => {
       console.log(error);
@@ -511,7 +502,7 @@ export const updateFieldType = (dataLabId, payload) => (dispatch, getState) => {
 
   const parameters = {
     initialFn: () => {},
-    url: `/view/${dataLabId}/update_field_type/`,
+    url: `/datalab/${dataLabId}/update_field_type/`,
     method: "PATCH",
     errorFn: error => {
       console.log(error);
@@ -533,7 +524,7 @@ export const updateFieldType = (dataLabId, payload) => (dispatch, getState) => {
 
 export const fetchForm = ({ dataLabId, moduleIndex, onFinish }) => {
   const parameters = {
-    url: `/view/${dataLabId}/retrieve_form/`,
+    url: `/datalab/${dataLabId}/retrieve_form/`,
     method: "POST",
     errorFn: error => console.log(error),
     successFn: result => onFinish(result),
@@ -545,7 +536,7 @@ export const fetchForm = ({ dataLabId, moduleIndex, onFinish }) => {
 
 export const updateDataTableForm = ({ dataLabId, payload, onFinish }) => {
   const parameters = {
-    url: `/view/${dataLabId}/update_table_form/`,
+    url: `/datalab/${dataLabId}/update_table_form/`,
     method: "PATCH",
     errorFn: error => {
       console.log(error);
@@ -560,48 +551,52 @@ export const updateDataTableForm = ({ dataLabId, payload, onFinish }) => {
   requestWrapper(parameters);
 };
 
-
 export const openVisualisationModal = (visualise, isRowWise, record) => ({
   type: OPEN_VISUALISATION_MODAL,
   visualise,
   isRowWise,
   record
-})
+});
 
-export const closeVisualisationModal = () =>({
+export const closeVisualisationModal = () => ({
   type: CLOSE_VISUALISATION_MODAL
-})
+});
 
-export const updateVisualisationChart = (viewId, chartParams) => (dispatch, getState) => {
+export const updateVisualisationChart = (viewId, chartParams) => (
+  dispatch,
+  getState
+) => {
   const { dataLab } = getState();
   const datasources = dataLab.datasources;
 
   const parameters = {
     // The 'retrieve_view' endpoint includes the datasources from the view's container, as 'datasources' in the response object
     // The datasources are used in the 'add imported column' interface of the view
-    url: `/view/${viewId}/update_chart/`,
-    method: 'PATCH',
-    errorFn: (error) => { 
+    url: `/datalab/${viewId}/update_chart/`,
+    method: "PATCH",
+    errorFn: error => {
       console.log(error);
     },
-    successFn: (dataLab) => {
-      notification['success']({
-        message: 'Chart successfully saved',
-        description: 'This chart were successfully saved.'
+    successFn: dataLab => {
+      notification["success"]({
+        message: "Chart successfully saved",
+        description: "This chart were successfully saved."
       });
 
       dataLab.steps.forEach(step => {
-        if (step.type === 'form') {
-          if (step.form.activeFrom) step.form.activeFrom = moment(step.form.activeFrom);
-          if (step.form.activeTo) step.form.activeTo = moment(step.form.activeTo);
-        };
+        if (step.type === "form") {
+          if (step.form.activeFrom)
+            step.form.activeFrom = moment(step.form.activeFrom);
+          if (step.form.activeTo)
+            step.form.activeTo = moment(step.form.activeTo);
+        }
       });
-      
+
       dataLab.datasources = datasources;
       dispatch(closeVisualisationModal());
       dispatch(storeDataLab(dataLab));
     },
     payload: chartParams
-  }
+  };
   requestWrapper(parameters);
 };

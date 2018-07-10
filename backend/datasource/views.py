@@ -23,7 +23,7 @@ from scheduler.methods import create_scheduled_task, remove_scheduled_task, remo
 
 from audit.serializers import AuditSerializer
 from container.views import ContainerViewSet
-
+from datalab.models import Datalab
 
 class DatasourceViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
@@ -208,7 +208,7 @@ class DatasourceViewSet(viewsets.ModelViewSet):
                 "steps.datasource.id": str(datasource.id)
             }}
         ]
-        data_labs = list(View.objects.aggregate(*pipeline))
+        data_labs = list(Datalab.objects.aggregate(*pipeline))
         if len(data_labs):
             raise ValidationError('This datasource is being used by a DataLab')
 

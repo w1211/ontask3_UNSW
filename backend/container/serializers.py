@@ -2,7 +2,7 @@ from rest_framework_mongoengine import serializers
 
 from .models import Container
 from datasource.models import Datasource
-from view.models import View
+from datalab.models import Datalab
 from workflow.models import Workflow
 
 
@@ -12,9 +12,9 @@ class EmbeddedDatasourceSerializer(serializers.EmbeddedDocumentSerializer):
         fields = ['id', 'name', 'connection', 'schedule', 'lastUpdated']
 
 
-class EmbeddedViewSerializer(serializers.EmbeddedDocumentSerializer):
+class EmbeddedDatalabSerializer(serializers.EmbeddedDocumentSerializer):
     class Meta:
-        model = View
+        model = Datalab
         fields = ['id', 'name', 'steps']
 
 
@@ -27,7 +27,7 @@ class EmbeddedWorkflowSerializer(serializers.EmbeddedDocumentSerializer):
 class ContainerSerializer(serializers.DocumentSerializer):
     datasources = EmbeddedDatasourceSerializer(
         many=True, allow_null=True, read_only=True)
-    views = EmbeddedViewSerializer(
+    datalabs = EmbeddedDatalabSerializer(
         many=True, allow_null=True, read_only=True)
     workflows = EmbeddedWorkflowSerializer(
         many=True, allow_null=True, read_only=True)
