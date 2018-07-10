@@ -26,7 +26,8 @@ from collections import defaultdict
 
 from django.conf import settings
 
-from scheduler.utils import *
+from scheduler.methods import create_scheduled_task, remove_scheduled_task, remove_async_task
+from scheduler.utils import send_email
 from .utils import *
 
 
@@ -96,7 +97,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         updated_filter['name'] = 'filter'
 
         fields = []
-        for step in workflow.view.steps:
+        for step in workflow.datalab.steps:
             if step.type == 'datasource':
                 step = step.datasource
                 for field in step.fields:
@@ -116,7 +117,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                     raise ValidationError(f'Invalid formula: field \'{formula["field"]}\' does not exist in the DataLab')
 
             # Filter the data to store the number of records
-            filtered_data = evaluate_filter(workflow['view'], updated_filter)
+            filtered_data = evaluate_filter(workflow['datalab'], updated_filter)
             workflow.filtered_count = len(filtered_data)
         else:
             workflow.filtered_count = 0
@@ -297,7 +298,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         
         html = populate_content(workflow, workflow['content']['html'])
 
-        data = evaluate_filter(workflow['view'], workflow['filter'])
+        data = evaluate_filter(workflow['datalab'], workflow['filter'])
         failed_emails = False
 
         task_name = None
@@ -319,19 +320,19 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             #if only send email once-off
             for index, item in enumerate(data):
                 email_sent = send_email(item[field], subject, html[index], reply_to)
-                if not email_sent:
-                    failed_emails = True
-                else:
-                    serializer = AuditSerializer(data = {
-                        'workflowId': id, 
-                        'creator': self.request.user.email,
-                        # TODO: add reply-to
-                        'receiver': item[field], 
-                        'emailBody': html[index],
-                        'emailSubject': subject
-                    })
-                    serializer.is_valid()
-                    serializer.save() 
+                # if not email_sent:
+                #     failed_emails = True
+                # else:
+                #     serializer = AuditSerializer(data = {
+                #         'workflowId': id, 
+                #         'creator': self.request.user.email,
+                #         # TODO: add reply-to
+                #         'receiver': item[field], 
+                #         'emailBody': html[index],
+                #         'emailSubject': subject
+                #     })
+                #     serializer.is_valid()
+                #     serializer.save() 
             if failed_emails:
                 # TODO: Make these records identifiable, e.g. allow user to specify the primary key of the DataLab?
                 # And send back a list of the specific records that we failed to send an email to

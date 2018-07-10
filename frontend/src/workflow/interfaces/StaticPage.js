@@ -82,7 +82,7 @@ class StaticPage extends React.Component{
                 <Spin size="large" />
               :
                 <div 
-                  style={{ maxHeight: 500, overflow: 'scroll' }}
+                  style={{ maxHeight: 500 }}
                   dangerouslySetInnerHTML={{__html: previewContent && previewContent[this.state.index]}} 
                 />
               }

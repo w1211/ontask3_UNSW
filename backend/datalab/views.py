@@ -287,12 +287,15 @@ class DatalabViewSet(viewsets.ModelViewSet):
 
         kw = {f'set__steps__{step}__form__data': form_data}
         Datalab.objects(id=id).update(**kw)
-
         datalab.reload()
+
         data = combine_data(datalab.steps)
         Datalab.objects(id=id).update(set__data=data)
+        datalab.reload()
 
-        return JsonResponse({'data': data})
+        serializer = DatalabSerializer(instance=datalab)
+
+        return JsonResponse(serializer.data)
 
     @detail_route(methods=['patch'])
     def change_column_order(self, request, id=None):

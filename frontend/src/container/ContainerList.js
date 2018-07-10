@@ -79,7 +79,7 @@ class ContainerList extends React.Component {
                   <TabPane tab={`Actions (${numActions})`} key="3">
                     <ActionTab
                       containerId={container.id}
-                      dataLabs={container.views}
+                      dataLabs={container.datalabs}
                       actions={container.workflows}
                       openModal={openModal}
                     />

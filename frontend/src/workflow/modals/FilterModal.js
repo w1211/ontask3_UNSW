@@ -34,7 +34,7 @@ class FilterModal extends React.Component {
     if (!workflow) return null;
     
     let options = [];
-    workflow.view.steps.forEach(step => {
+    workflow.datalab.steps.forEach(step => {
       if (step.type === 'datasource') {
         step = step.datasource;
         step.fields.forEach(field => {

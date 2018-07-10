@@ -83,7 +83,7 @@ class WorkflowModal extends React.Component {
           </FormItem>
 
           <FormItem {...formItemLayout} label="DataLab">
-            {form.getFieldDecorator("view", {
+            {form.getFieldDecorator("datalab", {
               rules: [{ required: true, message: "DataLab is required" }]
             })(
               <Select>

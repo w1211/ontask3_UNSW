@@ -1,8 +1,13 @@
 from django_celery_beat.models import CrontabSchedule, IntervalSchedule
 
+import os
 import json
 from dateutil import parser
 from uuid import uuid4
+
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 from ontask.settings import SMTP
 
@@ -68,5 +73,6 @@ def send_email(recipient, subject, content, reply_to=None):
         s.quit()
         return True
 
-    except:
+    except Exception as err:
+        print(err)
         raise Exception("Error sending email")

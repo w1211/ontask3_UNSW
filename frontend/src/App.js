@@ -38,8 +38,14 @@ class App extends React.Component {
   };
 
   componentWillMount() {
+    const { location } = this.props;
+
+    const webForm =
+      location.pathname.split("/")[3] === "form" && location.pathname;
+
     this.setState({
-      hasToken: localStorage.getItem("token") ? true : false
+      hasToken: localStorage.getItem("token") ? true : false,
+      webForm
     });
 
     const oneTimeToken = queryString.parse(window.location.search).tkn;
@@ -71,7 +77,7 @@ class App extends React.Component {
 
   render() {
     const { location, history } = this.props;
-    const { hasToken } = this.state;
+    const { hasToken, webForm } = this.state;
 
     const pathName = location.pathname.slice(1);
     let menuKey;
@@ -87,20 +93,26 @@ class App extends React.Component {
       <Layout className="app">
         <Header className="header">
           <img src={logo} alt="OnTask" className="logo" />
+
           {hasToken && (
             <div className="logout">
               <Button icon="logout" onClick={this.logout} />
             </div>
           )}
+
           <Menu
             mode="horizontal"
             defaultSelectedKeys={[menuKey]}
             className="navigation"
             onSelect={({ key }) =>
-              history.push(key === "dashboard" ? "/" : `/${key}`)
+              history.push(
+                key === "dashboard" ? (webForm ? webForm : "/") : `/${key}`
+              )
             }
           >
-            <Menu.Item key="dashboard">Dashboard</Menu.Item>
+            <Menu.Item key="dashboard">
+              {webForm ? "Form" : "Dashboard"}
+            </Menu.Item>
             <Menu.Item key="about">About</Menu.Item>
             <Menu.Item key="help">Help</Menu.Item>
             <Menu.Item key="contact">Contact</Menu.Item>

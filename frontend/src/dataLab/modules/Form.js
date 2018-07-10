@@ -70,12 +70,12 @@ class FormModule extends React.Component {
     const { stepIndex, openFormFieldModal } = this.props;
     const { usedLabels } = this.state;
 
-    const updateBuild = (fieldName, value, isNotfield) => {
+    const updateBuild = (fieldName, value, isNotField) => {
       this.boundActionCreators.updateBuild({
         stepIndex,
         field: fieldName,
         value,
-        isNotfield
+        isNotField
       });
     };
 
@@ -132,6 +132,18 @@ class FormModule extends React.Component {
     } else {
       performCheck();
     }
+  };
+
+  handleDelete = () => {
+    confirm({
+      title: "Confirm form deletion",
+      content:
+        "If you remove this form module, all data belonging to the form will be permanently lost.",
+      okText: "Continue",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk: () => this.boundActionCreators.deleteModule()
+    });
   };
 
   Fields = () => {
@@ -436,7 +448,7 @@ class FormModule extends React.Component {
         <Tooltip title="Remove form">
           <Icon
             type="delete"
-            onClick={() => this.boundActionCreators.deleteModule()}
+            onClick={this.handleDelete}
           />
         </Tooltip>
       );

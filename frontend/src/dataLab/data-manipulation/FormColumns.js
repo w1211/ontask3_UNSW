@@ -182,7 +182,7 @@ const formColumns = (step, stepIndex, sort, editable, onEdit, confirmEdit, openV
       },
       sortOrder: sort && sort.field === label && sort.order,
       render: (text, record) => {
-          return renderFormField(stepIndex, currentStep.primary, field, _.get(editable, `values[${record[currentStep.primary]}]`, null) !== null ? editable.values[record[currentStep.primary]] : text, record, editable, onEdit, confirmEdit, isActive, formFieldLoading)
+          return renderFormField(stepIndex, currentStep.primary, field, _.get(editable, `values[${record[currentStep.primary]}]`, null) !== null && _.get(editable, 'field') === field.name ? editable.values[record[currentStep.primary]] : text, record, editable, onEdit, confirmEdit, isActive, formFieldLoading)
         }
       });
   });

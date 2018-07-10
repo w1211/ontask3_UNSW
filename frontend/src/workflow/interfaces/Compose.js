@@ -127,7 +127,7 @@ class Compose extends React.Component {
           />
         </h3>
         { workflow && workflow.filter && workflow.filter.formulas.length > 0 ?
-          `${workflow.filtered_count} records selected out of ${workflow.view.data.length} (${workflow.view.data.length - workflow.filtered_count} filtered out)`
+          `${workflow.filtered_count} records selected out of ${workflow.datalab.data.length} (${workflow.datalab.data.length - workflow.filtered_count} filtered out)`
         :
           'No filter is currently being applied' 
         }

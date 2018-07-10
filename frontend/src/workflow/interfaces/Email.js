@@ -90,7 +90,7 @@ class Email extends React.Component {
     const { scheduler } = this.state;
 
     let options = [];
-    workflow && workflow.view.steps.forEach(step => {
+    workflow && workflow.datalab.steps.forEach(step => {
       if (step.type === 'datasource') {
         step = step.datasource;
         step.fields.forEach(field => {
@@ -230,7 +230,7 @@ class Email extends React.Component {
                 <Spin size="large" />
               :
                 <div 
-                  style={{ maxHeight: 500, overflow: 'scroll' }}
+                  style={{ maxHeight: 500 }}
                   dangerouslySetInnerHTML={{__html: previewContent && previewContent[this.state.index]}} 
                 />
               }

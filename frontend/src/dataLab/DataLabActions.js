@@ -409,7 +409,13 @@ const finishRequestFormField = () => ({
   type: FINISH_REQUEST_FORM_FIELD
 });
 
-export const updateFormValues = (dataLabId, payload, callback) => dispatch => {
+export const updateFormValues = (dataLabId, payload, callback) => (
+  dispatch,
+  getState
+) => {
+  const { dataLab } = getState();
+  const datasources = dataLab.datasources;
+  
   const parameters = {
     initialFn: () => {
       dispatch(beginRequestFormField());
@@ -423,13 +429,11 @@ export const updateFormValues = (dataLabId, payload, callback) => dispatch => {
         description: error
       });
     },
-    successFn: response => {
+    successFn: dataLab => {
       dispatch(finishRequestFormField());
       message.success("Form successfully updated.");
-      dispatch({
-        type: REFRESH_DATA,
-        data: response.data
-      });
+      dataLab.datasources = datasources;
+      dispatch(storeDataLab(dataLab));
       callback();
     },
     payload

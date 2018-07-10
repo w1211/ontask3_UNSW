@@ -79,7 +79,7 @@ class Workflow extends React.Component {
                       </Link>
                     </Menu.Item>
 
-                    <Menu.Item key="static">
+                    <Menu.Item key="static" disabled>
                       <Link to={`${match.url}/static`}>
                         <Icon type="link" />
                         <span>Static page</span>

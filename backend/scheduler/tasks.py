@@ -102,11 +102,10 @@ def workflow_send_email(workflow_id):
     subject = workflow['emailSettings']['subject']
     reply_to = workflow['emailSettings']['replyTo']
 
-    workflow['view'] = db.view.find_one({'_id': ObjectId(workflow['view'])})
+    workflow['datalab'] = db.datalab.find_one({'_id': ObjectId(workflow['datalab'])})
 
-    html = list(value for key, value in populate_content(
-        workflow, workflow['content']['html']).items())
-    data = evaluate_filter(workflow['view'], workflow['filter'])
+    html = populate_content(workflow, workflow['content']['html'])
+    data = evaluate_filter(workflow['datalab'], workflow['filter'] if 'filter' in workflow else None)
 
     # primary_key = view['columns'][0]['field']
     # failed_emails = list()

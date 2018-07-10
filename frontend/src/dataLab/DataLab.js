@@ -36,7 +36,7 @@ class DataLab extends React.Component {
 
     const route = location.pathname.split("/");
     const isForm = route[route.length - 2] === "form";
-    
+
     if (isForm) {
       this.setState({ isForm: true });
     } else {
@@ -58,18 +58,22 @@ class DataLab extends React.Component {
     const { isFetching, selectedId, match, history, location } = this.props;
     const { isForm } = this.state;
 
+    const isWebForm = location.pathname.split("/")[3] === "form";
+
     return (
-      <div className="dataLab">
+      <div className={`dataLab ${isWebForm && 'is_web_form'}`}>
         <Content className="wrapper">
-          <Breadcrumb className="breadcrumbs">
-            <Breadcrumb.Item>
-              <Link to="/">Dashboard</Link>
-            </Breadcrumb.Item>
-            <Breadcrumb.Item>
-              <Link to="/containers">Containers</Link>
-            </Breadcrumb.Item>
-            <Breadcrumb.Item>DataLab</Breadcrumb.Item>
-          </Breadcrumb>
+          {!isWebForm && (
+            <Breadcrumb className="breadcrumbs">
+              <Breadcrumb.Item>
+                <Link to="/">Dashboard</Link>
+              </Breadcrumb.Item>
+              <Breadcrumb.Item>
+                <Link to="/containers">Containers</Link>
+              </Breadcrumb.Item>
+              <Breadcrumb.Item>DataLab</Breadcrumb.Item>
+            </Breadcrumb>
+          )}
 
           <Layout className="layout">
             <Content className="content">

@@ -89,14 +89,14 @@ def evaluate_condition_group(data, condition_group):
   return conditions_passed
 
 def validate_condition_group(workflow, condition_group):
-  data = evaluate_filter(workflow['view'], workflow['filter'])
+  data = evaluate_filter(workflow['datalab'], workflow['filter'] if 'filter' in workflow else None)
 
   fields = []
-  for step in workflow.view.steps:
-    if step.type == 'datasource':
-      step = step.datasource
-      for field in step.fields:
-        fields.append(step.labels[field])
+  for step in workflow['datalab']['steps']:
+    if step['type'] == 'datasource':
+      step = step['datasource']
+      for field in step['fields']:
+        fields.append(step['labels'][field])
 
   for condition in condition_group['conditions']:
     for formula in condition['formulas']:
@@ -132,7 +132,7 @@ def populate_field(match, item):
       return None
 
 def populate_content(workflow, content=None, zid=None):
-  filtered_data = evaluate_filter(workflow['view'], workflow['filter'])
+  filtered_data = evaluate_filter(workflow['datalab'], workflow['filter'] if 'filter' in workflow else None)
 
   condition_groups = workflow['conditionGroups']
   content = content if content else workflow['content']['plain']
