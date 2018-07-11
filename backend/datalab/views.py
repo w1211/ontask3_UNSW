@@ -409,7 +409,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
         form_module = datalab.steps[module_index]['form']
         web_form = form_module['webForm']
 
-        if not web_form['active']:
+        if not web_form or not web_form['active']:
             return JsonResponse({'error': 'This form is currently not accessible'})
 
         columns = [form_module['primary']] + web_form['visibleFields']

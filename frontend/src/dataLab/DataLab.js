@@ -61,7 +61,7 @@ class DataLab extends React.Component {
     const isWebForm = location.pathname.split("/")[3] === "form";
 
     return (
-      <div className={`dataLab ${isWebForm && 'is_web_form'}`}>
+      <div className={`dataLab ${isWebForm && "is_web_form"}`}>
         <Content className="wrapper">
           {!isWebForm && (
             <Breadcrumb className="breadcrumbs">
