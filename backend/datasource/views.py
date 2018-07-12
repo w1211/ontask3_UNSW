@@ -74,6 +74,9 @@ class DatasourceViewSet(viewsets.ModelViewSet):
                     bytes(connection['password'], encoding="UTF-8"))
                 data = retrieve_sql_data(connection)
 
+        if not len(data):
+            raise ValidationError('No data was returned from the datasource')
+
         # Identify the field names from the keys of the first row of the data
         # This is sufficient, as we can assume that all rows have the same keys
         fields = list(data[0].keys())

@@ -57,7 +57,7 @@ def retrieve_csv_data(file, delimiter):
     '''Generic service to retrieve data from a csv file with a given delimiter (comma by default)'''
     delimiter = ',' if delimiter is None else delimiter
 
-    file = file.read().decode('utf-8').split('\r\n')
+    file = file.read().decode('utf-8').splitlines()
     column_headers = file.pop(0).split(delimiter)
     modified_headers = set()
     for (index, header) in enumerate(column_headers):
