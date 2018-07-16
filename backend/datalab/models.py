@@ -1,6 +1,16 @@
 from mongoengine import Document, EmbeddedDocument
-from mongoengine.fields import StringField, DictField, ListField, EmbeddedDocumentListField, IntField, \
-    ReferenceField, BooleanField, EmbeddedDocumentField, DateTimeField, FloatField
+from mongoengine.fields import (
+    StringField,
+    DictField,
+    ListField,
+    EmbeddedDocumentListField,
+    IntField,
+    ReferenceField,
+    BooleanField,
+    EmbeddedDocumentField,
+    DateTimeField,
+    FloatField,
+)
 
 from container.models import Container
 
@@ -41,7 +51,7 @@ class FormField(EmbeddedDocument):
 class WebForm(EmbeddedDocument):
     permission = StringField(required=True)
     visibleFields = ListField(StringField())
-    layout = StringField(choices=('vertical', 'table'), default='vertical')
+    layout = StringField(choices=("vertical", "table"), default="vertical")
     showAll = BooleanField(default=False)
     active = BooleanField(default=False)
 
@@ -67,15 +77,15 @@ class FormModule(EmbeddedDocument):
 
 
 class Module(EmbeddedDocument):
-    type = StringField(
-        choices=('datasource', 'computed', 'form'), required=True)
+    type = StringField(choices=("datasource", "computed", "form"), required=True)
     datasource = EmbeddedDocumentField(DatasourceModule)
     form = EmbeddedDocumentField(FormModule)
 
 
 class Chart(EmbeddedDocument):
     chartType = StringField(
-        choices=('barChart', 'pieChart', 'boxPlot', 'table'), required=True)
+        choices=("barChart", "pieChart", "boxPlot", "table"), required=True
+    )
     colNameSelected = StringField(required=True)
     interval = FloatField(null=True)
     range = ListField(FloatField(), null=True)
