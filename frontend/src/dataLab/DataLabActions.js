@@ -43,13 +43,14 @@ export const deleteDataLab = ({ dataLabId, onFinish }) => dispatch => {
 
 const storeDataLab = dataLab => {
   // Convert DatePicker field timestamps to moment.js objects (required by DatePicker component)
-  dataLab.steps.forEach(step => {
-    if (step.type === "form") {
-      if (step.form.activeFrom)
-        step.form.activeFrom = moment(step.form.activeFrom);
-      if (step.form.activeTo) step.form.activeTo = moment(step.form.activeTo);
-    }
-  });
+  if ("steps" in dataLab)
+    dataLab.steps.forEach(step => {
+      if (step.type === "form") {
+        if (step.form.activeFrom)
+          step.form.activeFrom = moment(step.form.activeFrom);
+        if (step.form.activeTo) step.form.activeTo = moment(step.form.activeTo);
+      }
+    });
 
   return {
     type: STORE_DATALAB,
