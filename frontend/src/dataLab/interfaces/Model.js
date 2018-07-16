@@ -109,7 +109,7 @@ class Model extends React.Component {
         return [
           _.get(step, "form.primary") === field,
           _.get(step, "form.webForm.permission") === field,
-          _.get(step, "form.webForm.visibleFields").includes(field)
+          _.get(step, "form.webForm.visibleFields", []).includes(field)
         ].includes(true);
 
       return false;

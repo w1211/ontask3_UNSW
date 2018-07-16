@@ -41,18 +41,29 @@ export const deleteDataLab = ({ dataLabId, onFinish }) => dispatch => {
   requestWrapper(parameters);
 };
 
-const storeDataLab = dataLab => ({
-  type: STORE_DATALAB,
-  selectedId: dataLab.id,
-  build: {
-    name: dataLab.name,
-    steps: dataLab.steps ? dataLab.steps : [],
-    order: dataLab.order ? dataLab.order : [],
-    errors: { steps: [] }
-  },
-  data: dataLab.data ? dataLab.data : [],
-  datasources: dataLab.datasources
-});
+const storeDataLab = dataLab => {
+  // Convert DatePicker field timestamps to moment.js objects (required by DatePicker component)
+  dataLab.steps.forEach(step => {
+    if (step.type === "form") {
+      if (step.form.activeFrom)
+        step.form.activeFrom = moment(step.form.activeFrom);
+      if (step.form.activeTo) step.form.activeTo = moment(step.form.activeTo);
+    }
+  });
+
+  return {
+    type: STORE_DATALAB,
+    selectedId: dataLab.id,
+    build: {
+      name: dataLab.name,
+      steps: dataLab.steps ? dataLab.steps : [],
+      order: dataLab.order ? dataLab.order : [],
+      errors: { steps: [] }
+    },
+    data: dataLab.data ? dataLab.data : [],
+    datasources: dataLab.datasources
+  };
+};
 
 export const fetchDataLab = dataLabId => dispatch => {
   dispatch({ type: START_FETCHING });
@@ -66,15 +77,6 @@ export const fetchDataLab = dataLabId => dispatch => {
     },
     successFn: response => {
       const { dataLab } = response;
-      // Convert DatePicker field timestamps to moment.js objects (required by DatePicker component)
-      dataLab.steps.forEach(step => {
-        if (step.type === "form") {
-          if (step.form.activeFrom)
-            step.form.activeFrom = moment(step.form.activeFrom);
-          if (step.form.activeTo)
-            step.form.activeTo = moment(step.form.activeTo);
-        }
-      });
       dispatch({ type: FINISH_FETCHING });
       dispatch(storeDataLab(dataLab));
     }
@@ -292,16 +294,27 @@ const isBuildValid = build => {
     }
   });
 
-  const didError = [
-    build.errors.name,
-    ...build.errors.steps.map(step => Object.values(step).includes(true))
-  ].includes(true);
+  let didError = true && build.errors.name;
+  build.errors.steps.forEach(step =>
+    // Iterate over the fields of the module and see if any returned an error
+    Object.values(step).forEach(value => {
+      // If the field is an object (e.g. web form), then iterate over that object's fields
+      // and see if any returned an error. No need to do this recursively since there isn't
+      // any deeper levels of nesting.
+      if (Object(value) === value) {
+        if (Object.values(value).includes(true)) didError = true;
+      } else {
+        // Otherwise just simply check if the field returned an error
+        if (value) didError = true;
+      }
+    })
+  );
 
   return !didError;
 };
 
-const cleanupBuild = (build, datasources) => {
-  build.steps.forEach((step, stepIndex) => {
+const cleanupBuild = build => {
+  build.steps.forEach(step => {
     if (step.type === "datasource") {
       delete step.form;
 
@@ -371,7 +384,7 @@ export const saveBuild = ({ containerId, onStart, onError, onSuccess }) => (
   onStart();
 
   // Run custom functionality for each step depending on the module type
-  cleanupBuild(build, datasources);
+  cleanupBuild(build);
 
   // Perform save API call
   const parameters = {
@@ -415,7 +428,7 @@ export const updateFormValues = (dataLabId, payload, callback) => (
 ) => {
   const { dataLab } = getState();
   const datasources = dataLab.datasources;
-  
+
   const parameters = {
     initialFn: () => {
       dispatch(beginRequestFormField());
@@ -526,35 +539,6 @@ export const updateFieldType = (dataLabId, payload) => (dispatch, getState) => {
   requestWrapper(parameters);
 };
 
-export const fetchForm = ({ dataLabId, moduleIndex, onFinish }) => {
-  const parameters = {
-    url: `/datalab/${dataLabId}/retrieve_form/`,
-    method: "POST",
-    errorFn: error => console.log(error),
-    successFn: result => onFinish(result),
-    payload: { moduleIndex }
-  };
-
-  requestWrapper(parameters);
-};
-
-export const updateDataTableForm = ({ dataLabId, payload, onFinish }) => {
-  const parameters = {
-    url: `/datalab/${dataLabId}/update_table_form/`,
-    method: "PATCH",
-    errorFn: error => {
-      console.log(error);
-    },
-    successFn: form => {
-      onFinish(form);
-      message.success("Form successfully updated.");
-    },
-    payload
-  };
-
-  requestWrapper(parameters);
-};
-
 export const openVisualisationModal = (visualise, isRowWise, record) => ({
   type: OPEN_VISUALISATION_MODAL,
   visualise,
@@ -602,5 +586,63 @@ export const updateVisualisationChart = (viewId, chartParams) => (
     },
     payload: chartParams
   };
+  requestWrapper(parameters);
+};
+
+export const updateDataLabForm = ({ dataLabId, payload, onFinish }) => (
+  dispatch,
+  getState
+) => {
+  const { dataLab } = getState();
+  const datasources = dataLab.datasources;
+
+  const parameters = {
+    url: `/datalab/${dataLabId}/update_datalab_form/`,
+    method: "PATCH",
+    errorFn: error => {
+      notification["error"]({
+        message: "Failed to update form",
+        description: error
+      });
+      onFinish();
+    },
+    successFn: dataLab => {
+      message.success("Form successfully updated.");
+      dataLab.datasources = datasources;
+      dispatch(storeDataLab(dataLab));
+      onFinish();
+    },
+    payload
+  };
+
+  requestWrapper(parameters);
+};
+
+export const fetchForm = ({ payload, onFinish }) => dispatch => {
+  const parameters = {
+    url: `/datalab/retrieve_form/`,
+    method: "POST",
+    errorFn: error => console.log(error),
+    successFn: result => onFinish(result),
+    payload
+  };
+
+  requestWrapper(parameters);
+};
+
+export const updateWebForm = ({ payload, onFinish }) => dispatch => {
+  const parameters = {
+    url: `/datalab/update_web_form/`,
+    method: "PATCH",
+    errorFn: error => {
+      console.log(error);
+    },
+    successFn: form => {
+      onFinish(form);
+      message.success("Form successfully updated.");
+    },
+    payload
+  };
+
   requestWrapper(parameters);
 };

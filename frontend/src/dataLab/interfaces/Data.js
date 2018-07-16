@@ -1,12 +1,15 @@
 import React from "react";
 import { bindActionCreators } from "redux";
 import { connect } from "react-redux";
-import { Table, Icon } from "antd";
+import { Table, Icon, Menu, Dropdown, Popover, Tooltip, Button } from "antd";
+import moment from "moment";
+import _ from "lodash";
 
 import * as DataLabActionCreators from "../DataLabActions";
 
 import VisualisationModal from "../visualisation/VisualisationModal";
-import { DatasourceColumns, FormColumns } from "../data-manipulation";
+
+import EditableField from "../data-manipulation/EditableField";
 
 class Data extends React.Component {
   constructor(props) {
@@ -20,7 +23,9 @@ class Data extends React.Component {
 
     this.state = {
       sort: {},
-      editable: {}
+      editable: {},
+      edit: { field: null, primary: null },
+      saved: {}
     };
   }
 
@@ -37,7 +42,6 @@ class Data extends React.Component {
 
   initialiseColumns = () => {
     const { build } = this.props;
-    const { sort, editable } = this.state;
 
     if (!build) return [];
 
@@ -45,27 +49,9 @@ class Data extends React.Component {
     const columns = [];
     build.steps.forEach((step, stepIndex) => {
       if (step.type === "datasource")
-        columns.push(
-          ...DatasourceColumns({
-            step: step["datasource"],
-            stepIndex,
-            sort,
-            openVisualisation: this.boundActionCreators.openVisualisationModal
-          })
-        );
+        columns.push(...this.DatasourceColumns(stepIndex));
 
-      if (step.type === "form")
-        columns.push(
-          ...FormColumns({
-            step: step["form"],
-            stepIndex,
-            sort,
-            editable,
-            onEdit: this.onEdit,
-            confirmEdit: this.confirmEdit,
-            openVisualisation: this.boundActionCreators.openVisualisationModal
-          })
-        );
+      if (step.type === "form") columns.push(...this.FormColumns(stepIndex));
     });
 
     // Order the columns
@@ -118,25 +104,213 @@ class Data extends React.Component {
     return orderedColumns;
   };
 
+  handleHeaderClick = (e, stepIndex, field, primary) => {
+    switch (e.key) {
+      case "visualise":
+        this.boundActionCreators.openVisualisationModal({ stepIndex, field });
+        break;
+
+      case "edit":
+        this.setState({ edit: { field: field.name, primary } });
+        break;
+
+      default:
+        break;
+    }
+  };
+
+  TruncatedLabel = label =>
+    label.length > 15 ? (
+      <Popover content={label}>{`${label.slice(0, 15)}...`}</Popover>
+    ) : (
+      label
+    );
+
+  DatasourceColumns = stepIndex => {
+    const { build } = this.props;
+    const { sort } = this.state;
+
+    const step = build.steps[stepIndex]["datasource"];
+    const columns = [];
+
+    step.fields.forEach(field => {
+      const label = step.labels[field];
+      const truncatedLabel = this.TruncatedLabel(label);
+
+      const isPrimaryOrMatching = [step.matching, step.primary].includes(field);
+
+      const title = isPrimaryOrMatching ? (
+        truncatedLabel
+      ) : (
+        <div className="column_header">
+          <Dropdown
+            trigger={["click"]}
+            overlay={
+              <Menu onClick={e => this.handleHeaderClick(e, stepIndex, field)}>
+                <Menu.Item key="visualise">
+                  <Icon type="area-chart" style={{ marginRight: 5 }} />Visualise
+                </Menu.Item>
+              </Menu>
+            }
+          >
+            <a className="datasource">{label}</a>
+          </Dropdown>
+        </div>
+      );
+
+      columns.push({
+        stepIndex,
+        field,
+        dataIndex: label,
+        key: label,
+        sorter: (a, b) => {
+          a = label in a ? a[label] : "";
+          b = label in b ? b[label] : "";
+          return a.localeCompare(b);
+        },
+        sortOrder: sort && sort.field === label && sort.order,
+        title,
+        render: text => text
+      });
+    });
+
+    return columns;
+  };
+
+  FormColumns = stepIndex => {
+    const { build } = this.props;
+    const { sort, edit } = this.state;
+
+    const step = build.steps[stepIndex]["form"];
+    const columns = [];
+
+    let isActive = true;
+    if (step.activeFrom && !moment().isAfter(step.activeFrom)) isActive = false;
+    if (step.activeTo && !moment().isBefore(step.activeTo)) isActive = false;
+
+    step.fields.forEach(field => {
+      const label = field.name;
+      const truncatedLabel = this.TruncatedLabel(label);
+
+      const title = (
+        <div className="column_header">
+          <Dropdown
+            trigger={["click"]}
+            overlay={
+              <Menu
+                onClick={e =>
+                  this.handleHeaderClick(e, stepIndex, field, step.primary)
+                }
+              >
+                <Menu.Item key="edit" disabled={!isActive}>
+                  <Tooltip
+                    title={
+                      !isActive &&
+                      "This column cannot be edited as it belongs to a form that is no longer active"
+                    }
+                  >
+                    <Icon type="edit" style={{ marginRight: 5 }} />Enter data
+                  </Tooltip>
+                </Menu.Item>
+
+                <Menu.Item key="visualise">
+                  <Icon type="area-chart" style={{ marginRight: 5 }} />Visualise
+                </Menu.Item>
+              </Menu>
+            }
+          >
+            <a className="form">{truncatedLabel}</a>
+          </Dropdown>
+
+          {edit.field === field.name && (
+            <Tooltip title="Finish editing">
+              <Button
+                shape="circle"
+                className="button"
+                size="small"
+                icon="check"
+                style={{ marginLeft: 5 }}
+                onClick={() =>
+                  this.setState({ edit: { field: null, primary: null } })
+                }
+              />
+            </Tooltip>
+          )}
+        </div>
+      );
+
+      columns.push({
+        stepIndex,
+        field: label,
+        title,
+        dataIndex: label,
+        key: label,
+        sorter: (a, b) => {
+          a = label in a ? a[label] : "";
+          b = label in b ? b[label] : "";
+          return a.localeCompare(b);
+        },
+        sortOrder: sort && sort.field === label && sort.order,
+        render: (text, record) =>
+          this.renderFormField(stepIndex, field, text, record[step.primary])
+      });
+    });
+
+    return columns;
+  };
+
+  renderFormField = (stepIndex, field, text, primary) => {
+    const { edit } = this.state;
+    const value = _.get(edit, `values[${primary}]`, text);
+
+    return edit.field === field.name ? (
+      <div className="editable-field">
+        <EditableField
+          field={field}
+          value={value}
+          onChange={e =>
+            this.setState({
+              edit: _.merge(edit, { values: { [primary]: e } })
+            })
+          }
+          onOk={() => {
+            if (value !== text) {
+              const payload = { stepIndex, field: field.name, primary, value };
+              this.handleFormUpdate(payload);
+            }
+          }}
+        />
+      </div>
+    ) : (
+      text
+    );
+  };
+
+  handleFormUpdate = payload => {
+    const { selectedId } = this.props;
+    const { saved } = this.state;
+
+    this.boundActionCreators.updateDataLabForm({
+      dataLabId: selectedId,
+      payload,
+      onFinish: () => {
+        this.setState({ saved: { ...saved, [payload.primary]: true } }, () => {
+          setTimeout(
+            () =>
+              this.setState({ saved: { ...saved, [payload.primary]: false } }),
+            1500
+          );
+        });
+      }
+    });
+  };
+
   handleChange = (pagination, filter, sort) => {
     this.setState({ filter, sort });
   };
 
-  onEdit = e => {
-    this.setState({ editable: e });
-  };
-
-  confirmEdit = () => {
-    const { selectedId } = this.props;
-    const { editable } = this.state;
-
-    this.boundActionCreators.updateFormValues(selectedId, editable, () =>
-      this.setState({ editable: {} })
-    );
-  };
-
   render() {
-    const { visualisation } = this.state;
+    const { visualisation, edit, saved } = this.state;
 
     // Columns are initialised on every render, so that changes to the sort
     // in local state can be reflected in the table columns. Otherwise the
@@ -149,7 +323,7 @@ class Data extends React.Component {
     const tableData = this.initialiseData();
 
     return (
-      <div className="dataManipulation">
+      <div className="data_manipulation">
         <VisualisationModal
           {...visualisation}
           closeModal={() =>
@@ -166,6 +340,9 @@ class Data extends React.Component {
             showSizeChanger: true,
             pageSizeOptions: ["10", "25", "50", "100"]
           }}
+          rowClassName={record =>
+            edit.primary in record && saved[record[edit.primary]] ? "saved" : ""
+          }
         />
       </div>
     );
@@ -173,13 +350,12 @@ class Data extends React.Component {
 }
 
 const mapStateToProps = state => {
-  const { build, data, selectedId, formFieldLoading } = state.dataLab;
+  const { build, data, selectedId } = state.dataLab;
 
   return {
     build,
     data,
-    selectedId,
-    formFieldLoading
+    selectedId
   };
 };
 

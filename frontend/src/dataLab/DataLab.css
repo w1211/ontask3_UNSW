@@ -244,6 +244,9 @@
 .dataLab .web_form .single_record button {
   margin-top: 20px;
 }
+.dataLab .web_form .saved {
+  background: #E8F5E9;
+}
 
 /* Form field modal styles */
 .formField .field_label {
@@ -262,7 +265,22 @@
   margin-right: 5px;
 }
 
-
+/* Data component styles */
+.dataLab .data_manipulation .saved {
+  background: #E8F5E9;
+}
+.dataLab .data_manipulation .column_header {
+  display: inline-flex;
+}
+.dataLab .data_manipulation .column_header .datasource {
+  color: #2196F3;
+}
+.dataLab .data_manipulation .column_header .form {
+  color: #9C27B0;
+}
+.dataLab .data_manipulation .menu_icon {
+  margin-right: 5px;
+}
 
 /*  */
 .dataLab .ant-form-item-control:not(.has-error) .fields-select.ant-select-disabled .ant-select-selection {
@@ -303,11 +321,6 @@
 
 
 
-
-.dataManipulation .form-field i, .dataManipulation .editable-field i {
-  cursor: pointer;
-  font-size: 16px;
-}
 .dataManipulation .form-field i:hover, .dataManipulation .editable-field i:hover {
   color: #40a9ff;
 }
@@ -326,12 +339,7 @@
 .dataManipulation .editable-field .button, .dataManipulation .column-header-icons .button {
   margin-left: 5px;
 }
-.dataManipulation .column-header.form {
-  color: #9C27B0;
-}
-.dataManipulation .column-header.datasource {
-  color: #2196F3;
-}
+
 /* The following are for ensuring that column headers stay on a single line */
 .dataManipulation .ant-table-thead > tr > th {
   word-break: normal;
@@ -363,3 +371,4 @@
 .dataLab .details  tr.drop-over-upward td {
   border-top: 2px dashed #1890ff;
 }
+

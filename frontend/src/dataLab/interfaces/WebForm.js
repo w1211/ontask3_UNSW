@@ -1,8 +1,11 @@
 import React from "react";
-import { Button, Spin, Table, Select, Divider } from "antd";
+import { bindActionCreators } from "redux";
+import { connect } from "react-redux";
+import { Spin, Table, Select, Divider } from "antd";
 import moment from "moment";
+import _ from "lodash";
 
-import * as DataLabActions from "../DataLabActions";
+import * as DataLabActionCreators from "../DataLabActions";
 
 import EditableField from "../data-manipulation/EditableField";
 
@@ -11,45 +14,36 @@ const Option = Select.Option;
 class WebForm extends React.Component {
   constructor(props) {
     super(props);
+    const { dispatch } = props;
+
+    this.boundActionCreators = bindActionCreators(
+      DataLabActionCreators,
+      dispatch
+    );
 
     this.state = {
-      isFetching: true
+      isFetching: true,
+      edit: {},
+      saved: {}
     };
   }
 
   componentDidMount() {
-    const { match, dataLabId } = this.props;
+    const { match, dataLabId, showBreadcrumbs } = this.props;
     const { moduleIndex } = match.params;
 
-    DataLabActions.fetchForm({
-      dataLabId,
-      moduleIndex,
+    this.boundActionCreators.fetchForm({
+      payload: { dataLabId, moduleIndex },
       onFinish: form => {
         if ("error" in form) {
           this.setState({ isFetching: false, error: form.error });
         } else {
-          const columns =
-            form.layout === "table" && this.generateDataTableColumns(form);
-          this.setState({ isFetching: false, form, columns });
+          this.setState({ isFetching: false, form });
+          if (form.is_owner_or_shared) showBreadcrumbs();
         }
       }
     });
   }
-
-  handleSubmit = data => {
-    const { match, dataLabId } = this.props;
-    const { moduleIndex } = match.params;
-
-    this.setState({ loading: true });
-
-    DataLabActions.updateDataTableForm({
-      dataLabId,
-      payload: { moduleIndex, data },
-      onFinish: form => {
-        this.setState({ loading: false, form });
-      }
-    });
-  };
 
   generateText = (field, text, record) => {
     let label;
@@ -86,25 +80,34 @@ class WebForm extends React.Component {
     return label ? label : text;
   };
 
-  generateDataTableColumns = form => {
+  generateDataTableColumns = () => {
+    const { form, edit } = this.state;
+
     const columns = form.columns.map(column => ({
       title: column,
       dataIndex: column,
-      render: (text, record, index) => {
+      render: (text, record) => {
         const field = form.editable_fields.find(field => field.name === column);
 
         if (field) {
           text = this.generateText(field, text, record);
-          
-          return <EditableField
-            field={field}
-            value={text}
-            isColumnEdit={true}
-            onChange={e => {
-              form.data[index][column] = e;
-              this.setState({ form });
-            }}
-          />
+
+          const primary = record[form.primary_key];
+          const value = _.get(edit, `${primary}[${field.name}]`, text);
+
+          return (
+            <EditableField
+              field={field}
+              value={value}
+              onChange={e => {
+                this.onChange(e, primary, field.name);
+              }}
+              onOk={() => {
+                if (value === text) return;
+                this.onOk(primary, field.name, value);
+              }}
+            />
+          );
         } else {
           return text;
         }
@@ -113,8 +116,8 @@ class WebForm extends React.Component {
     return columns;
   };
 
-  generateSingleRecordColumns = (singleRecordIndex) => {
-    const { form } = this.state;
+  generateSingleRecordColumns = () => {
+    const { form, edit, singleRecordIndex } = this.state;
 
     const columns = [
       {
@@ -129,19 +132,24 @@ class WebForm extends React.Component {
             field => field.name === record.field
           );
 
+          const primary = form.data[singleRecordIndex][form.primary_key];
+          const value = _.get(edit, `${primary}[${record.field}]`, text);
+
           return editableField ? (
             <EditableField
               field={editableField}
-              value={form.data[singleRecordIndex][record.field]}
-              isColumnEdit={true}
+              value={value}
               onChange={e => {
-                form.data[singleRecordIndex][record.field] = e;
-                this.setState({ form });
+                this.onChange(e, primary, record.field);
+              }}
+              onOk={() => {
+                if (value === text) return;
+                this.onOk(primary, record.field, value);
               }}
             />
           ) : (
-              text
-            );
+            text
+          );
         }
       }
     ];
@@ -149,59 +157,68 @@ class WebForm extends React.Component {
     return columns;
   };
 
-  DataTable = () => {
-    const { columns, form, loading } = this.state;
+  onChange = (e, primary, field) => {
+    const { edit } = this.state;
 
-    return (
-      <div>
-        <Table
-          columns={columns}
-          dataSource={form.data.map((record, i) => ({ ...record, key: i }))}
-          pagination={{
-            showSizeChanger: true,
-            pageSizeOptions: ["10", "25", "50", "100"]
-          }}
-        />
-
-        <Button
-          type="primary"
-          size="large"
-          loading={loading}
-          onClick={() => this.handleSubmit(form.data)}
-        >
-          Save form
-        </Button>
-      </div>
-    );
+    const value = _.get(edit, primary, {});
+    value[field] = e;
+    this.setState({
+      edit: { ...edit, [primary]: value }
+    });
   };
 
-  changeActiveRecord = singleRecordIndex => {
-    const { form } = this.state;
+  onOk = (primary, field, value) => {
+    const { dataLabId, match } = this.props;
+    const { saved } = this.state;
+    const { moduleIndex } = match.params;
 
-    if (singleRecordIndex === undefined) {
-      this.setState({
-        singleRecordIndex,
-        data: null,
-        columns: null
-      });
-      return;
-    }
-
-    const data = Object.keys(form.data[singleRecordIndex]).map((field, i) => ({
+    const payload = {
+      dataLabId,
+      stepIndex: moduleIndex,
+      primary,
       field,
-      value: form.data[singleRecordIndex][field],
-      key: i
-    }));
+      value
+    };
 
-    const columns = this.generateSingleRecordColumns(
-      singleRecordIndex
+    this.boundActionCreators.updateWebForm({
+      payload,
+      onFinish: form => {
+        const value = _.get(saved, primary, {});
+        value[field] = true;
+        this.setState({ form, saved: { ...saved, [primary]: value } }, () => {
+          setTimeout(() => {
+            value[field] = false;
+            this.setState({ saved: { ...saved, [primary]: value } });
+          }, 1500);
+        });
+      }
+    });
+  };
+
+  DataTable = () => {
+    const { form, saved } = this.state;
+
+    return (
+      <Table
+        columns={this.generateDataTableColumns()}
+        dataSource={form.data.map((record, i) => ({ ...record, key: i }))}
+        pagination={{
+          showSizeChanger: true,
+          pageSizeOptions: ["10", "25", "50", "100"]
+        }}
+        rowClassName={record => {
+          const primary = record[form.primary_key];
+          return primary in saved &&
+            Object.values(saved[primary]).includes(true)
+            ? "saved"
+            : "";
+        }}
+      />
     );
-
-    this.setState({ singleRecordIndex, data, columns });
   };
 
   SingleRecord = () => {
-    const { form, singleRecordIndex, columns, data, loading } = this.state;
+    const { form, saved, singleRecordIndex } = this.state;
 
     return (
       <div className="single_record">
@@ -209,7 +226,7 @@ class WebForm extends React.Component {
           showSearch
           allowClear
           placeholder="Choose a record"
-          onChange={this.changeActiveRecord}
+          onChange={singleRecordIndex => this.setState({ singleRecordIndex })}
           filterOption={(input, option) =>
             option.props.children.toLowerCase().indexOf(input.toLowerCase()) >=
             0
@@ -223,26 +240,25 @@ class WebForm extends React.Component {
         <Divider />
 
         {singleRecordIndex ? (
-          <div>
-            <Table
-              bordered
-              columns={columns}
-              dataSource={data}
-              pagination={false}
-            />
-
-            <Button
-              type="primary"
-              size="large"
-              loading={loading}
-              onClick={() => this.handleSubmit([form.data[singleRecordIndex]])}
-            >
-              Save form
-            </Button>
-          </div>
+          <Table
+            bordered
+            columns={this.generateSingleRecordColumns()}
+            dataSource={Object.keys(form.data[singleRecordIndex]).map(
+              (field, i) => ({
+                field,
+                value: form.data[singleRecordIndex][field],
+                key: i
+              })
+            )}
+            pagination={false}
+            rowClassName={record => {
+              const primary = form.data[singleRecordIndex][form.primary_key];
+              return _.get(saved, `${primary}[${record.field}]`) ? "saved" : "";
+            }}
+          />
         ) : (
-            <div>Get started by choosing a record to edit.</div>
-          )}
+          <div>Get started by choosing a record to edit.</div>
+        )}
       </div>
     );
   };
@@ -260,15 +276,15 @@ class WebForm extends React.Component {
             <h2>{error}</h2>
           </div>
         ) : (
-              <div>
-                <h1>{form.name}</h1>
-                {form.layout === "table" && this.DataTable()}
-                {form.layout === "vertical" && this.SingleRecord()}
-              </div>
-            )}
+          <div>
+            <h1>{form.name}</h1>
+            {form.layout === "table" && this.DataTable()}
+            {form.layout === "vertical" && this.SingleRecord()}
+          </div>
+        )}
       </div>
     );
   }
 }
 
-export default WebForm;
+export default connect()(WebForm);

@@ -8,7 +8,7 @@ const RadioGroup = Radio.Group;
 const CheckboxGroup = Checkbox.Group;
 
 
-const EditableField = ({ field, value, onChange, onOk, isColumnEdit }) => {
+const EditableField = ({ field, value, onChange, onOk }) => {
   const type = field.type;
 
   const onKeyPress = (e) => {
@@ -29,7 +29,6 @@ const EditableField = ({ field, value, onChange, onOk, isColumnEdit }) => {
         if (field.textArea) {
           component = (
             <Input.TextArea
-              autoFocus={!isColumnEdit} 
               onKeyPress={onKeyPress} 
               value={value} 
               onChange={(e) => onChange(e.target.value)}
@@ -40,11 +39,11 @@ const EditableField = ({ field, value, onChange, onOk, isColumnEdit }) => {
         } else {
           component = (
             <Input 
-              autoFocus={!isColumnEdit} 
               onKeyPress={onKeyPress} 
               value={value} 
               onChange={(e) => onChange(e.target.value)}
               maxLength={field.maxLength}
+              onBlur={onOk}
             />
           );
         };
@@ -95,7 +94,6 @@ const EditableField = ({ field, value, onChange, onOk, isColumnEdit }) => {
         component = (
           <Slider
             range
-            autoFocus={!isColumnEdit} 
             value={value instanceof Array && value.length === 2 ? value : [0, null]} 
             onChange={(e) => onChange(e)}
             min={field.minimum}
@@ -109,7 +107,6 @@ const EditableField = ({ field, value, onChange, onOk, isColumnEdit }) => {
         const steps = _.range(field.minimum, (field.maximum + field.interval), field.interval);
         component = (
           <Select 
-            autoFocus={!isColumnEdit} 
             value={value} 
             onChange={(e) => onChange(e)}
             style={{ width: '100%' }}
@@ -120,7 +117,6 @@ const EditableField = ({ field, value, onChange, onOk, isColumnEdit }) => {
       } else {
         component = (
           <InputNumber 
-            autoFocus={!isColumnEdit} 
             value={value instanceof Array ? null : value} 
             onChange={(e) => onChange(e)}
             min={field.minimum !== undefined && field.minimum !== null ? field.minimum : -Infinity}

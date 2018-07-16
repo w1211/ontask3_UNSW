@@ -56,14 +56,12 @@ class DataLab extends React.Component {
 
   render() {
     const { isFetching, selectedId, match, history, location } = this.props;
-    const { isForm } = this.state;
-
-    const isWebForm = location.pathname.split("/")[3] === "form";
+    const { isForm, showBreadcrumbs } = this.state;
 
     return (
-      <div className={`dataLab ${isWebForm && "is_web_form"}`}>
+      <div className={`dataLab ${isForm && !showBreadcrumbs && "is_web_form"}`}>
         <Content className="wrapper">
-          {!isWebForm && (
+          {(!isForm || showBreadcrumbs) && (
             <Breadcrumb className="breadcrumbs">
               <Breadcrumb.Item>
                 <Link to="/">Dashboard</Link>
@@ -115,7 +113,13 @@ class DataLab extends React.Component {
                   <Route
                     path={`${match.url}/form/:moduleIndex`}
                     render={props => (
-                      <WebForm {...props} dataLabId={match.params.id} />
+                      <WebForm
+                        {...props}
+                        dataLabId={match.params.id}
+                        showBreadcrumbs={() =>
+                          this.setState({ showBreadcrumbs: true })
+                        }
+                      />
                     )}
                   />
                 </Switch>
