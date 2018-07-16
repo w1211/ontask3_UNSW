@@ -9,7 +9,7 @@ import json
 from .serializers import DatalabSerializer
 from .permissions import DatalabPermissions
 from .models import Datalab
-from .utils import combine_data, update_form_data, retrieve_form_data
+from .utils import bind_column_types, combine_data, update_form_data, retrieve_form_data
 
 from container.views import ContainerViewSet
 from datasource.models import Datasource
@@ -41,6 +41,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
             raise ValidationError("A DataLab with this name already exists")
 
         steps = self.request.data["steps"]
+        steps = bind_column_types(steps)
         data = combine_data(steps)
 
         order = []
@@ -49,7 +50,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
             for field in step[module_type]["fields"]:
                 order.append({"stepIndex": step_index, "field": field})
 
-        datalab = serializer.save(data=data, order=order)
+        datalab = serializer.save(steps=steps, data=data, order=order)
 
         audit = AuditSerializer(
             data={
@@ -76,6 +77,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
             raise ValidationError("A DataLab with this name already exists")
 
         steps = self.request.data["steps"]
+        steps = bind_column_types(steps)
         data = combine_data(steps)
 
         order = [
@@ -116,7 +118,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 if not already_exists:
                     order.append({"stepIndex": step_index, "field": field})
 
-        serializer.save(data=data, order=order)
+        serializer.save(steps=steps, data=data, order=order)
 
         # Identify the changes made to the datasource
         diff = {"steps": []}
@@ -440,8 +442,8 @@ class DatalabViewSet(viewsets.ModelViewSet):
 
         form_data = retrieve_form_data(
             datalab=datalab,
-            step = int(request.data["moduleIndex"]),
-            request_user=request_user
+            step=int(request.data["moduleIndex"]),
+            request_user=request_user,
         )
 
         return JsonResponse(form_data)
@@ -459,10 +461,12 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 field=request.data["field"],
                 primary=request.data["primary"],
                 value=request.data["value"],
-                request_user=request_user
+                request_user=request_user,
             )
         except:
-            return JsonResponse({"error": "You are not authorized to modify this record"})
+            return JsonResponse(
+                {"error": "You are not authorized to modify this record"}
+            )
 
         serializer = DatalabSerializer(instance=updated_datalab)
 
@@ -482,15 +486,17 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 primary=request.data["primary"],
                 value=request.data["value"],
                 request_user=request_user,
-                is_web_form=True
+                is_web_form=True,
             )
         except Exception:
-            return JsonResponse({"error": "You are not authorized to modify this record"})
+            return JsonResponse(
+                {"error": "You are not authorized to modify this record"}
+            )
 
         form_data = retrieve_form_data(
             datalab=datalab,
-            step = int(request.data["stepIndex"]),
-            request_user=request_user
+            step=int(request.data["stepIndex"]),
+            request_user=request_user,
         )
 
         return JsonResponse(form_data)

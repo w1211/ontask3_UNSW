@@ -6,6 +6,25 @@ from datasource.models import Datasource
 from audit.serializers import AuditSerializer
 
 
+def bind_column_types(steps):
+    for step in steps:
+        if step["type"] == "datasource":
+            step = step["datasource"]
+            datasource = None
+            
+            fields = step["fields"]
+            types = step["types"]
+
+            for field in fields:
+                if field not in types:
+                    if not datasource:
+                        datasource_id = step["id"]
+                        datasource = Datasource.objects.get(id=datasource_id)
+                    types[field] = datasource["types"][field]
+                    
+    return steps
+
+
 def combine_data(steps):
     # Initialize the dataset using the first module, which is always a datasource
     first_module = steps[0]["datasource"]
