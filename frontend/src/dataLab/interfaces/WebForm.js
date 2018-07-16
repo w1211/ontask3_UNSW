@@ -38,7 +38,16 @@ class WebForm extends React.Component {
         if ("error" in form) {
           this.setState({ isFetching: false, error: form.error });
         } else {
-          this.setState({ isFetching: false, form });
+          this.setState({
+            isFetching: false,
+            form,
+            // If there is only one record in the form data, then
+            // hide the primary key drop-down and simply show the form
+            // for this record. The most likely scenario is that this web
+            // form is for students, and each student only has access
+            // to their own record (based on the email they logged in with).
+            singleRecordIndex: form.data.length === 1 ? 0 : null
+          });
           if (form.is_owner_or_shared) showBreadcrumbs();
         }
       }
@@ -222,24 +231,31 @@ class WebForm extends React.Component {
 
     return (
       <div className="single_record">
-        <Select
-          showSearch
-          allowClear
-          placeholder="Choose a record"
-          onChange={singleRecordIndex => this.setState({ singleRecordIndex })}
-          filterOption={(input, option) =>
-            option.props.children.toLowerCase().indexOf(input.toLowerCase()) >=
-            0
-          }
-        >
-          {form.data.map((record, index) => (
-            <Option key={index}>{record[form.primary_key]}</Option>
-          ))}
-        </Select>
+        {form.data.length > 1 && (
+          <div>
+            <Select
+              showSearch
+              allowClear
+              placeholder="Choose a record"
+              onChange={singleRecordIndex =>
+                this.setState({ singleRecordIndex })
+              }
+              filterOption={(input, option) =>
+                option.props.children
+                  .toLowerCase()
+                  .indexOf(input.toLowerCase()) >= 0
+              }
+            >
+              {form.data.map((record, index) => (
+                <Option key={index}>{record[form.primary_key]}</Option>
+              ))}
+            </Select>
 
-        <Divider />
+            <Divider />
+          </div>
+        )}
 
-        {singleRecordIndex ? (
+        {singleRecordIndex !== null ? (
           <Table
             bordered
             columns={this.generateSingleRecordColumns()}
