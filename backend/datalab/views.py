@@ -461,8 +461,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 value=request.data["value"],
                 request_user=request_user
             )
-        except Exception as err:
-            print(err)
+        except:
             return JsonResponse({"error": "You are not authorized to modify this record"})
 
         serializer = DatalabSerializer(instance=updated_datalab)

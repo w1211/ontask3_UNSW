@@ -1,4 +1,5 @@
 from collections import defaultdict
+from datetime import datetime
 
 from .models import Datalab
 from datasource.models import Datasource
@@ -116,10 +117,19 @@ def update_form_data(
     datalab, step, field, primary, value, request_user, is_web_form=False
 ):
     form = datalab.steps[step].form
+    web_form = form["webForm"]
 
     datalab_data_map = {
         item[form.primary]: item for item in datalab.data if form.primary in item
     }
+
+    not_accessible = (
+        (is_web_form and not web_form or not web_form["active"])
+        or ("activeFrom" in form and form["activeFrom"] > datetime.utcnow())
+        or ("activeTo" in form and form["activeTo"] < datetime.utcnow())
+    )
+    if not_accessible:
+        raise Exception("Unauthorized")
 
     # Perform permission validation manually, as opposed to using the generic
     # data lab permissions schema. This is so that we can provide access to users
@@ -130,7 +140,6 @@ def update_form_data(
     has_access = is_owner or is_shared
 
     if not has_access:
-        web_form = form["webForm"]
         if is_web_form and web_form and web_form["active"]:
             permission_field = web_form["permission"]
             if web_form["showAll"]:
@@ -201,7 +210,12 @@ def retrieve_form_data(datalab, step, request_user):
     form = datalab["steps"][step]["form"]
     web_form = form["webForm"]
 
-    if not web_form or not web_form["active"]:
+    not_accessible = (
+        (not web_form or not web_form["active"])
+        or ("activeFrom" in form and form["activeFrom"] > datetime.utcnow())
+        or ("activeTo" in form and form["activeTo"] < datetime.utcnow())
+    )
+    if not_accessible:
         return {"error": "This form is currently not accessible"}
 
     columns = [form["primary"]] + web_form["visibleFields"]
