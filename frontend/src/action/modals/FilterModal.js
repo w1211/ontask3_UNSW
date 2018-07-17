@@ -3,7 +3,7 @@ import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { Modal, Form, Alert, Row, Tree, Select, Button, Input, Cascader } from 'antd';
 
-import * as WorkflowActionCreators from '../WorkflowActions';
+import * as ActionActionCreators from '../ActionActions';
 
 import panelLayout from '../../shared/panelLayout';
 import './QueryBuilder.css';
@@ -17,24 +17,24 @@ class FilterModal extends React.Component {
     super(props);
     const { dispatch } = props;
 
-    this.boundActionCreators = bindActionCreators(WorkflowActionCreators, dispatch);
+    this.boundActionCreators = bindActionCreators(ActionActionCreators, dispatch);
   }
 
   handleOk = () => {
-    const { form, workflow } = this.props;
+    const { form, action } = this.props;
     form.validateFields((err, values) => {
       if (err) return;
-      this.boundActionCreators.updateFilter(workflow.id, values);
+      this.boundActionCreators.updateFilter(action.id, values);
     })
   }
 
   render() {
-    const { filterModalVisible, form, formState, modalLoading, modalError, workflow } = this.props;
+    const { filterModalVisible, form, formState, modalLoading, modalError, action } = this.props;
 
-    if (!workflow) return null;
+    if (!action) return null;
     
     let options = [];
-    workflow.datalab.steps.forEach(step => {
+    action.datalab.steps.forEach(step => {
       if (step.type === 'datasource') {
         step = step.datasource;
         step.fields.forEach(field => {
@@ -162,11 +162,11 @@ const Field = ({ form, options, formula, i, formulaCount, deleteFormula }) => {
 
 const mapStateToProps = (state) => {
   const { 
-    filterModalVisible, workflow, formState, modalLoading, modalError
-  } = state.workflow;
+    filterModalVisible, action, formState, modalLoading, modalError
+  } = state.action;
   
   return { 
-    filterModalVisible, workflow, formState, modalLoading, modalError
+    filterModalVisible, action, formState, modalLoading, modalError
   }
 }
 
@@ -174,7 +174,7 @@ export default connect(mapStateToProps)(
   Form.create({
     onFieldsChange(props, payload) {
       const { dispatch } = props;
-      dispatch(WorkflowActionCreators.updateFormState(payload));
+      dispatch(ActionActionCreators.updateFormState(payload));
     },
     mapPropsToFields(props) {
       const { formState } = props;

@@ -143,7 +143,7 @@ def update_form_data(
     }
 
     not_accessible = (
-        (is_web_form and not web_form or not web_form["active"])
+        (is_web_form and not web_form or (web_form and not web_form["active"]))
         or ("activeFrom" in form and form["activeFrom"] > datetime.utcnow())
         or ("activeTo" in form and form["activeTo"] < datetime.utcnow())
     )

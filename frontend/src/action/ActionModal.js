@@ -5,7 +5,7 @@ import { connect } from "react-redux";
 import { Modal, Form, Input, Alert, Select } from "antd";
 import _ from "lodash";
 
-import * as WorkflowActionCreators from "./WorkflowActions";
+import * as ActionActionCreators from "./ActionActions";
 
 import formItemLayout from "../shared/FormItemLayout";
 
@@ -13,13 +13,13 @@ const FormItem = Form.Item;
 const { TextArea } = Input;
 const Option = Select.Option;
 
-class WorkflowModal extends React.Component {
+class ActionModal extends React.Component {
   constructor(props) {
     super(props);
     const { dispatch } = props;
 
     this.boundActionCreators = bindActionCreators(
-      WorkflowActionCreators,
+      ActionActionCreators,
       dispatch
     );
 
@@ -41,8 +41,8 @@ class WorkflowModal extends React.Component {
           this.setState({ loading: false, error: null });
           form.resetFields();
           closeModal();
-          // Redirect to workflow interface
-          history.push({ pathname: `/workflow/${action.id}` });
+          // Redirect to action interface
+          history.push({ pathname: `/action/${action.id}` });
         }
       });
     });
@@ -110,4 +110,4 @@ export default _.flow(
   withRouter,
   connect(),
   Form.create()
-)(WorkflowModal);
+)(ActionModal);

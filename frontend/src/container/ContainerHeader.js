@@ -24,7 +24,7 @@ class ContainerHeader extends React.Component {
     confirm({
       title: "Confirm container deletion",
       content:
-        "All associated datasources, views and workflows will be irrevocably deleted with the container.",
+        "All associated datasources, views and actions will be irrevocably deleted with the container.",
       okText: "Continue with deletion",
       okType: "danger",
       cancelText: "Cancel",

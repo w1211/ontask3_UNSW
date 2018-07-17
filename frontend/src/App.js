@@ -12,7 +12,7 @@ import { requestToken } from "./auth/AuthActions";
 import Login from "./auth/Login";
 import Container from "./container/Container";
 import DataLab from "./dataLab/DataLab";
-import Workflow from "./workflow/Workflow";
+import Action from "./action/Action";
 
 import "./App.css";
 
@@ -143,8 +143,8 @@ class App extends React.Component {
           })}
 
           {this.AuthenticatedRoute({
-            path: "/workflow/:id",
-            component: Workflow
+            path: "/action/:id",
+            component: Action
           })}
         </Switch>
 

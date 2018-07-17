@@ -6,7 +6,7 @@ import { Form, Button, Alert, Spin, Icon, Divider} from 'antd';
 import { convertToRaw } from 'draft-js';
 import draftToHtml from 'draftjs-to-html';
 
-import * as WorkflowActionCreators from '../WorkflowActions';
+import * as ActionActionCreators from '../ActionActions';
 
 
 class StaticPage extends React.Component{
@@ -14,7 +14,7 @@ class StaticPage extends React.Component{
     super(props);
     const { dispatch, workflow, editorState } = props;
 
-    this.boundActionCreators = bindActionCreators(WorkflowActionCreators, dispatch);
+    this.boundActionCreators = bindActionCreators(ActionActionCreators, dispatch);
 
     this.state = { index: 0 };
 

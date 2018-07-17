@@ -4,7 +4,7 @@ import { connect } from "react-redux";
 import { Input, Icon, Tooltip, Button, Card, Modal } from "antd";
 import { Link } from "react-router-dom";
 
-import { deleteAction } from "../../workflow/WorkflowActions";
+import { deleteAction } from "../../action/ActionActions";
 
 const { Meta } = Card;
 const confirm = Modal.confirm;
@@ -81,7 +81,7 @@ class ActionTab extends React.Component {
                 title={action.name}
                 actions={[
                   <Tooltip title="Edit action">
-                    <Link to={`/workflow/${action.id}`}>
+                    <Link to={`/action/${action.id}`}>
                       <Button icon="arrow-right" />
                     </Link>
                   </Tooltip>,

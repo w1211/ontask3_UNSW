@@ -31,12 +31,12 @@ import {
 
   // FAILURE_CREATE_SCHEDULE,
   // SUCCESS_CREATE_SCHEDULE,
-} from './WorkflowActions';
+} from './ActionActions';
 
 import _ from 'lodash';
 
 
-function workflow(state = {}, action) {
+function action(state = {}, action) {
   switch (action.type) {
     case BEGIN_REQUEST_WORKFLOW:
       return Object.assign({}, state, {
@@ -62,7 +62,7 @@ function workflow(state = {}, action) {
     case FINISH_FETCHING:
       return Object.assign({}, state, {
         isFetching: false,
-        workflow: action.workflow,
+        action: action.action,
         editorState: action.editorState
       });
 
@@ -173,4 +173,4 @@ function workflow(state = {}, action) {
   }
 };
 
-export default workflow;
+export default action;

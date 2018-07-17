@@ -124,10 +124,10 @@ export const fetchAction = actionId => dispatch => {
       dispatch({ type: FINISH_FETCHING });
       console.log(error);
     },
-    successFn: workflow => {
+    successFn: action => {
       let editorState = null;
-      if (workflow["content"]) {
-        const blocksFromHtml = htmlToDraft(workflow["content"]["html"]);
+      if (action["content"]) {
+        const blocksFromHtml = htmlToDraft(action["content"]["html"]);
         const { contentBlocks, entityMap } = blocksFromHtml;
         const contentState = ContentState.createFromBlockArray(
           contentBlocks,
@@ -138,7 +138,7 @@ export const fetchAction = actionId => dispatch => {
         editorState = EditorState.createEmpty();
       }
 
-      dispatch({ type: FINISH_FETCHING, workflow, editorState });
+      dispatch({ type: FINISH_FETCHING, action, editorState });
     }
   };
 
@@ -221,8 +221,8 @@ const validateFilterErrors = formState => {
 };
 
 export const addFormulaToFilter = () => (dispatch, getState) => {
-  const { workflow } = getState();
-  let formState = Object.assign({}, workflow.formState);
+  const { action } = getState();
+  let formState = Object.assign({}, action.formState);
 
   const hasError = validateFilterErrors(formState);
 
@@ -235,8 +235,8 @@ export const addFormulaToFilter = () => (dispatch, getState) => {
 };
 
 export const deleteFormulaFromFilter = formulaIndex => (dispatch, getState) => {
-  const { workflow } = getState();
-  let formState = Object.assign({}, workflow.formState);
+  const { action } = getState();
+  let formState = Object.assign({}, action.formState);
   formState.formulas.splice(formulaIndex, 1);
 
   validateFilterErrors(formState);
@@ -244,19 +244,19 @@ export const deleteFormulaFromFilter = formulaIndex => (dispatch, getState) => {
   dispatch(refreshFormState(formState));
 };
 
-export const updateFilter = (workflowId, payload) => dispatch => {
+export const updateFilter = (actionId, payload) => dispatch => {
   const parameters = {
     initialFn: () => {
       dispatch(beginRequestModal());
     },
-    url: `/workflow/${workflowId}/update_filter/`,
+    url: `/workflow/${actionId}/update_filter/`,
     method: "PUT",
     errorFn: error => {
       dispatch(failureRequestModal(error));
     },
     successFn: () => {
       dispatch(successRequestModal());
-      dispatch(fetchAction(workflowId));
+      dispatch(fetchAction(actionId));
       notification["success"]({
         message: "Filter updated",
         description: "The filter was successfully updated."
@@ -340,8 +340,8 @@ const validateConditionGroupErrors = formState => {
 };
 
 export const addConditionToConditionGroup = () => (dispatch, getState) => {
-  const { workflow } = getState();
-  let formState = Object.assign({}, workflow.formState);
+  const { action } = getState();
+  let formState = Object.assign({}, action.formState);
 
   const hasError = validateConditionGroupErrors(formState);
 
@@ -361,8 +361,8 @@ export const deleteConditionFromConditionGroup = conditionIndex => (
   dispatch,
   getState
 ) => {
-  const { workflow } = getState();
-  let formState = Object.assign({}, workflow.formState);
+  const { action } = getState();
+  let formState = Object.assign({}, action.formState);
   formState.conditions.splice(conditionIndex, 1);
 
   validateConditionGroupErrors(formState);
@@ -374,8 +374,8 @@ export const addFormulaToConditionGroup = conditionIndex => (
   dispatch,
   getState
 ) => {
-  const { workflow } = getState();
-  let formState = Object.assign({}, workflow.formState);
+  const { action } = getState();
+  let formState = Object.assign({}, action.formState);
 
   const hasError = validateConditionGroupErrors(formState);
 
@@ -391,8 +391,8 @@ export const deleteFormulaFromConditionGroup = (
   conditionIndex,
   formulaIndex
 ) => (dispatch, getState) => {
-  const { workflow } = getState();
-  let formState = Object.assign({}, workflow.formState);
+  const { action } = getState();
+  let formState = Object.assign({}, action.formState);
   formState.conditions[conditionIndex].formulas.splice(formulaIndex, 1);
 
   validateConditionGroupErrors(formState);
@@ -400,19 +400,19 @@ export const deleteFormulaFromConditionGroup = (
   dispatch(refreshFormState(formState));
 };
 
-export const createConditionGroup = (workflowId, payload) => dispatch => {
+export const createConditionGroup = (actionId, payload) => dispatch => {
   const parameters = {
     initialFn: () => {
       dispatch(beginRequestModal());
     },
-    url: `/workflow/${workflowId}/create_condition_group/`,
+    url: `/workflow/${actionId}/create_condition_group/`,
     method: "PUT",
     errorFn: error => {
       dispatch(failureRequestModal(error));
     },
     successFn: response => {
       dispatch(successRequestModal());
-      dispatch(fetchAction(workflowId));
+      dispatch(fetchAction(actionId));
       notification["success"]({
         message: "Condition group created",
         description: "The condition group was successfully created."
@@ -425,7 +425,7 @@ export const createConditionGroup = (workflowId, payload) => dispatch => {
 };
 
 export const updateConditionGroup = (
-  workflowId,
+  actionId,
   conditionGroup,
   payload
 ) => dispatch => {
@@ -434,14 +434,14 @@ export const updateConditionGroup = (
     initialFn: () => {
       dispatch(beginRequestModal());
     },
-    url: `/workflow/${workflowId}/update_condition_group/`,
+    url: `/workflow/${actionId}/update_condition_group/`,
     method: "PUT",
     errorFn: error => {
       dispatch(failureRequestModal(error));
     },
     successFn: response => {
       dispatch(successRequestModal());
-      dispatch(fetchAction(workflowId));
+      dispatch(fetchAction(actionId));
       notification["success"]({
         message: "Condition group updated",
         description: "The condition group was successfully updated."
@@ -453,19 +453,19 @@ export const updateConditionGroup = (
   requestWrapper(parameters);
 };
 
-export const deleteConditionGroup = (workflowId, index) => dispatch => {
+export const deleteConditionGroup = (actionId, index) => dispatch => {
   const parameters = {
     initialFn: () => {
       dispatch(beginRequestModal());
     },
-    url: `/workflow/${workflowId}/delete_condition_group/`,
+    url: `/workflow/${actionId}/delete_condition_group/`,
     method: "PUT",
     errorFn: error => {
       dispatch(failureRequestModal(error));
     },
     successFn: response => {
       dispatch(successRequestModal());
-      dispatch(fetchAction(workflowId));
+      dispatch(fetchAction(actionId));
       notification["success"]({
         message: "Condition group deleted",
         description: "The condition group was successfully deleted."
@@ -495,19 +495,19 @@ const successUpdateContent = () => ({
   type: SUCCESS_UPDATE_CONTENT
 });
 
-export const updateContent = (workflowId, payload) => dispatch => {
+export const updateContent = (actionId, payload) => dispatch => {
   const parameters = {
     initialFn: () => {
       dispatch(beginRequestContent());
     },
-    url: `/workflow/${workflowId}/update_content/`,
+    url: `/workflow/${actionId}/update_content/`,
     method: "PUT",
     errorFn: error => {
       dispatch(failureRequestContent(error));
     },
     successFn: response => {
       dispatch(successUpdateContent());
-      dispatch(fetchAction(workflowId));
+      dispatch(fetchAction(actionId));
       notification["success"]({
         message: "Content saved",
         description: "The content was successfully saved."
@@ -538,12 +538,12 @@ export const closePreviewContent = () => ({
   type: CLOSE_PREVIEW_CONTENT
 });
 
-export const previewContent = (workflowId, payload, showModal) => dispatch => {
+export const previewContent = (actionId, payload, showModal) => dispatch => {
   const parameters = {
     initialFn: () => {
       dispatch(beginRequestPreviewContent());
     },
-    url: `/workflow/${workflowId}/preview_content/`,
+    url: `/workflow/${actionId}/preview_content/`,
     method: "PUT",
     errorFn: error => {
       dispatch(failureRequestPreviewContent(error));
@@ -557,19 +557,19 @@ export const previewContent = (workflowId, payload, showModal) => dispatch => {
   requestWrapper(parameters);
 };
 
-export const sendEmail = (workflowId, payload, isSchedule) => dispatch => {
+export const sendEmail = (actionId, payload, isSchedule) => dispatch => {
   const parameters = {
     initialFn: () => {
       dispatch(beginRequestWorkflow());
     },
-    url: `/workflow/${workflowId}/send_email/`,
+    url: `/workflow/${actionId}/send_email/`,
     method: "PUT",
     errorFn: error => {
       dispatch(failureRequestWorkflow(error));
     },
     successFn: response => {
       dispatch(successRequestWorkflow());
-      dispatch(fetchAction(workflowId));
+      dispatch(fetchAction(actionId));
       notification["success"]({
         message: `Emails ${isSchedule ? "scheduled" : "sent"}`,
         description: `The emails were successfully ${
@@ -631,19 +631,19 @@ export const deleteSchedule = ({
   requestWrapper(parameters);
 };
 
-export const updateEmailSettings = (workflowId, payload) => dispatch => {
+export const updateEmailSettings = (actionId, payload) => dispatch => {
   const parameters = {
     initialFn: () => {
       dispatch(beginRequestWorkflow());
     },
-    url: `/workflow/${workflowId}/update_email_settings/`,
+    url: `/workflow/${actionId}/update_email_settings/`,
     method: "PATCH",
     errorFn: error => {
       dispatch(failureRequestWorkflow(error));
     },
     successFn: () => {
       dispatch(successRequestWorkflow());
-      dispatch(fetchAction(workflowId));
+      dispatch(fetchAction(actionId));
       notification["success"]({
         message: "Email settings updated",
         description: "The email settings were successfully updated."

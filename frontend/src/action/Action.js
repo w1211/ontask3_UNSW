@@ -5,23 +5,23 @@ import { Link } from "react-router-dom";
 import { Switch, Route, Redirect } from "react-router-dom";
 import { Layout, Breadcrumb, Icon, Spin, Menu } from "antd";
 
-import * as WorkflowActionCreators from "./WorkflowActions";
+import * as ActionActionCreators from "./ActionActions";
 
 import Compose from "./interfaces/Compose";
 import Email from "./interfaces/Email";
 import StaticPage from "./interfaces/StaticPage";
 
-import "./Workflow.css";
+import "./Action.css";
 
 const { Content, Sider } = Layout;
 
-class Workflow extends React.Component {
+class Action extends React.Component {
   constructor(props) {
     super(props);
     const { dispatch } = props;
 
     this.boundActionCreators = bindActionCreators(
-      WorkflowActionCreators,
+      ActionActionCreators,
       dispatch
     );
   }
@@ -32,10 +32,10 @@ class Workflow extends React.Component {
   }
 
   render() {
-    const { match, location, isFetching, workflow } = this.props;
+    const { match, location, isFetching, action } = this.props;
 
     return (
-      <div className="workflow">
+      <div className="action">
         <Content className="wrapper">
           <Breadcrumb className="breadcrumbs">
             <Breadcrumb.Item>
@@ -90,7 +90,7 @@ class Workflow extends React.Component {
                 </Sider>
 
                 <Content className="content">
-                  <h1>{workflow && workflow.name}</h1>
+                  <h1>{action && action.name}</h1>
 
                   {isFetching ? (
                     <Spin size="large" />
@@ -126,11 +126,11 @@ class Workflow extends React.Component {
 }
 
 const mapStateToProps = state => {
-  const { isFetching, workflow } = state.workflow;
+  const { isFetching, action } = state.action;
   return {
     isFetching,
-    workflow
+    action
   };
 };
 
-export default connect(mapStateToProps)(Workflow);
+export default connect(mapStateToProps)(Action);

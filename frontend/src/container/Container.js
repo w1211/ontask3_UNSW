@@ -14,7 +14,7 @@ import ContainerModal from "./ContainerModal";
 import ContainerList from "./ContainerList";
 import ContainerShare from "./ContainerShare";
 import DatasourceModal from "../datasource/DatasourceModal";
-import WorkflowModal from "../workflow/WorkflowModal";
+import ActionModal from "../action/ActionModal";
 import SchedulerModal from "../scheduler/SchedulerModal";
 
 import "./Container.css";
@@ -110,7 +110,7 @@ class Container extends React.Component {
                     closeModal={() => this.closeModal("datasource")}
                   />
 
-                  <WorkflowModal
+                  <ActionModal
                     {...action}
                     closeModal={() => this.closeModal("action")}
                   />

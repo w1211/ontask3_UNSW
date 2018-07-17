@@ -116,7 +116,7 @@ export const deleteContainer = ({ containerId, onFinish }) => dispatch => {
       notification["success"]({
         message: "Container deleted",
         description:
-          "The container and its associated datasources, views and workflows have been successfully deleted."
+          "The container and its associated datasources, DataLabs and actions have been successfully deleted."
       });
     }
   };

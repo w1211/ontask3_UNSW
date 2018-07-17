@@ -28,7 +28,7 @@ class StaticPageStaff extends React.Component {
             <div>
                 { error && <Alert message={error} type="error"/>}
                 {isWorkflowFound ?
-                    <Redirect to={"/workflow/"+workflowId}/>
+                    <Redirect to={"/action/"+workflowId}/>
                 :
                     <BindWorkflowForm containers={containers} onBind={this.boundActionCreators.bindWorkflow} linkId={linkId} bindWorkflowSuccess={bindWorkflowSuccess}/>
                 }

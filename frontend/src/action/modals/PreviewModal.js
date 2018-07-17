@@ -3,7 +3,7 @@ import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { Modal, Button, Icon } from 'antd';
 
-import * as WorkflowActionCreators from '../WorkflowActions';
+import * as ActionActionCreators from '../ActionActions';
 
 
 class PreviewModal extends React.Component {
@@ -12,7 +12,7 @@ class PreviewModal extends React.Component {
     super(props);
     const { dispatch } = props;
 
-    this.boundActionCreators = bindActionCreators(WorkflowActionCreators, dispatch);
+    this.boundActionCreators = bindActionCreators(ActionActionCreators, dispatch);
 
     this.state = { index: 0 };
   }
@@ -74,7 +74,7 @@ class PreviewModal extends React.Component {
 const mapStateToProps = (state) => {
   const { 
     previewModalVisible, previewContent
-  } = state.workflow;
+  } = state.action;
   
   return { 
     previewModalVisible, previewContent

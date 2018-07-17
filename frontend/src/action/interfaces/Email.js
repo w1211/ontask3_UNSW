@@ -7,7 +7,7 @@ import draftToHtml from 'draftjs-to-html';
 import moment from 'moment';
 import _ from 'lodash';
 
-import * as WorkflowActionCreators from '../WorkflowActions';
+import * as ActionActionCreators from '../ActionActions';
 
 import {narrowFormItemLayout} from '../../shared/FormItemLayout';
 
@@ -19,16 +19,16 @@ const Option = Select.Option;
 class Email extends React.Component {
   constructor(props) {
     super(props);
-    const { dispatch, workflow, editorState } = props;
+    const { dispatch, action, editorState } = props;
 
-    this.boundActionCreators = bindActionCreators(WorkflowActionCreators, dispatch);
+    this.boundActionCreators = bindActionCreators(ActionActionCreators, dispatch);
 
     this.state = { 
       index: 0,
       scheduler: { visible: false, selected: null, data: {} }
     };
 
-    if (workflow) {
+    if (action) {
       const currentContent = editorState.getCurrentContent();
       if (!currentContent.hasText()) return;
   
@@ -37,60 +37,60 @@ class Email extends React.Component {
         plain: currentContent.getPlainText()
       };
 
-      this.boundActionCreators.previewContent(workflow.id, payload, false);
+      this.boundActionCreators.previewContent(action.id, payload, false);
     }
   };
 
   handleSubmit = () => {
-    const { form, workflow } = this.props;
-    let isSchedule = (workflow.schedule) ? true: false;
+    const { form, action } = this.props;
+    let isSchedule = (action.schedule) ? true: false;
     
     form.validateFields((err, values) => {
       if (err) return;
-      this.boundActionCreators.sendEmail(workflow.id, values, isSchedule);
+      this.boundActionCreators.sendEmail(action.id, values, isSchedule);
     });
   };
 
   onChange = (checkValue) => {
-    const { workflow} = this.props;
+    const { action } = this.props;
     if(checkValue.target.checked){
-      this.boundActionCreators.openSchedulerModal(workflow.id, workflow.schedule);
+      this.boundActionCreators.openSchedulerModal(action.id, action.schedule);
     }
   }
 
   onDelete = () => {
-    const {workflow} = this.props;
-    this.boundActionCreators.deleteSchedule(workflow.id);
+    const {action} = this.props;
+    this.boundActionCreators.deleteSchedule(action.id);
   }
 
   onUpdate =() => {
-    const {workflow} = this.props;
-    this.boundActionCreators.openSchedulerModal(workflow.id, workflow.schedule);
+    const {action} = this.props;
+    this.boundActionCreators.openSchedulerModal(action.id, action.schedule);
   }
 
   updateEmailSettings=()=>{
-    const { form, workflow } = this.props;
+    const { form, action } = this.props;
 
     form.validateFields((err, values) => {
       if (err) return;
-      this.boundActionCreators.updateEmailSettings(workflow.id, values);
+      this.boundActionCreators.updateEmailSettings(action.id, values);
     });
   }
 
   openScheduleModal = () => {
-    const { workflow } = this.props;
+    const { action } = this.props;
 
     this.setState({
-      scheduler: { visible: true, selected: workflow.id, data: { schedule: workflow.schedule } }
+      scheduler: { visible: true, selected: action.id, data: { schedule: action.schedule } }
     });
   }
 
   render() {
-    const { workflow, loading, error, form, previewLoading, previewContent } = this.props;
+    const { action, loading, error, form, previewLoading, previewContent } = this.props;
     const { scheduler } = this.state;
 
     let options = [];
-    workflow && workflow.datalab.steps.forEach(step => {
+    action && action.datalab.steps.forEach(step => {
       if (step.type === 'datasource') {
         step = step.datasource;
         step.fields.forEach(field => {
@@ -111,7 +111,7 @@ class Email extends React.Component {
 
         <Form layout="horizontal">
           <div>
-          { workflow && workflow.schedule ?
+          { action && action.schedule ?
                 <div>
                   <h3 style={{marginBottom:"1em"}}>Current schedule</h3>
                   <div style={{ backgroundColor: "#fafafa", padding: '1em 3em', margin: '1em 0', border: "1px dashed #e9e9e9", borderRadius: '5px', display: 'block' }}>
@@ -120,36 +120,36 @@ class Email extends React.Component {
                       <Button shape="circle" icon="edit" size="small" onClick={this.openScheduleModal}/>
                       </Tooltip>
                       </div>
-                    {_.get(workflow, 'schedule.startTime') && <Row>
+                    {_.get(action, 'schedule.startTime') && <Row>
                         <Col style={{textAlign:"right", marginBottom:5}} xs={{ span: 24 }} sm={{ span: 5 }} ><h4>Start Time:</h4> </Col>
-                        <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }} >{moment(workflow.schedule.startTime).format("YYYY/MM/DD HH:mm:ss")}</Col>
+                        <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }} >{moment(action.schedule.startTime).format("YYYY/MM/DD HH:mm:ss")}</Col>
                     </Row>}
-                    {_.get(workflow, 'schedule.endTime') && <Row>
+                    {_.get(action, 'schedule.endTime') && <Row>
                         <Col style={{textAlign:"right", marginBottom:5}} xs={{ span: 24 }} sm={{ span: 5 }} ><h4>End Time: </h4></Col>
-                        <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }}>{moment(workflow.schedule.endTime).format("YYYY/MM/DD HH:mm:ss")}</Col>
+                        <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }}>{moment(action.schedule.endTime).format("YYYY/MM/DD HH:mm:ss")}</Col>
                     </Row>}
                     <Row>
                         <Col style={{textAlign:"right", marginBottom:5}} xs={{ span: 24 }} sm={{ span: 5 }}><h4>Time: </h4></Col>
-                        <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }}>{moment(workflow.schedule.time).format("HH:mm")}</Col>
+                        <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }}>{moment(action.schedule.time).format("HH:mm")}</Col>
                     </Row>
                     <Row>
                         <Col style={{textAlign:"right", marginBottom:5}} xs={{ span: 24 }} sm={{ span: 5 }}><h4>Frequency: </h4></Col>
-                        {workflow.schedule.frequency === "daily"?
-                          <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }} >Every {workflow.schedule.dayFrequency} {workflow.schedule.dayFrequency==="1"?"day":"days"}</Col>
+                        {action.schedule.frequency === "daily"?
+                          <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }} >Every {action.schedule.dayFrequency} {action.schedule.dayFrequency==="1"?"day":"days"}</Col>
                         :
-                          <Col style={{paddingLeft: 10}}>{workflow.schedule.frequency}</Col>
+                          <Col style={{paddingLeft: 10}}>{action.schedule.frequency}</Col>
                         }
                     </Row>
-                    { workflow.schedule.frequency === "weekly" && 
+                    { action.schedule.frequency === "weekly" && 
                     <Row gutter={8}>
                         <Col style={{textAlign:"right", marginBottom:5}} xs={{ span: 24 }} sm={{ span: 5 }} ><h4>DayOfWeek: </h4></Col>
-                        <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }}>{workflow.schedule.dayOfWeek.map((day,i)=><span key={i}>{day} </span>)}</Col>
+                        <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }}>{action.schedule.dayOfWeek.map((day,i)=><span key={i}>{day} </span>)}</Col>
                     </Row>
                     }
-                    { workflow.schedule.frequency === "monthly" && 
+                    { action.schedule.frequency === "monthly" && 
                     <Row gutter={8}>
                         <Col style={{textAlign:"right", marginBottom:5}} xs={{ span: 24 }} sm={{ span: 5 }} ><h4>DayOfMonth: </h4></Col>
-                        <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }}>{moment(workflow.schedule.dayOfMonth).format("DD")}</Col>
+                        <Col style={{paddingLeft: 10}} xs={{ span: 24 }} sm={{ span: 19 }}>{moment(action.schedule.dayOfMonth).format("DD")}</Col>
                     </Row>
                     }
                   </div>
@@ -163,7 +163,7 @@ class Email extends React.Component {
               <FormItem {...narrowFormItemLayout} label="Email field">
                 {form.getFieldDecorator('emailSettings.field', {
                   rules: [{ required: true, message: 'Email field is required' }],
-                  initialValue: workflow && workflow.emailSettings && workflow.emailSettings.field
+                  initialValue: action && action.emailSettings && action.emailSettings.field
                 })(
                   <Select>
                     { options.map((option, i) => {
@@ -176,7 +176,7 @@ class Email extends React.Component {
               <FormItem {...narrowFormItemLayout} label="Subject">
                 {form.getFieldDecorator('emailSettings.subject', {
                   rules: [{ required: true, message: 'Subject is required' }],
-                  initialValue: workflow && workflow.emailSettings && workflow.emailSettings.subject
+                  initialValue: action && action.emailSettings && action.emailSettings.subject
                 })(
                   <Input/>
                 )}
@@ -185,13 +185,13 @@ class Email extends React.Component {
               <FormItem {...narrowFormItemLayout} label="Reply-to">
                 {form.getFieldDecorator('emailSettings.replyTo', {
                   rules: [{ required: true, message: 'Reply-to is required' }],
-                  initialValue: workflow && workflow.emailSettings && workflow.emailSettings.replyTo ? workflow.emailSettings.replyTo : localStorage.email
+                  initialValue: action && action.emailSettings && action.emailSettings.replyTo ? action.emailSettings.replyTo : localStorage.email
                 })(
                   <Input/>
                 )}
               </FormItem>
               
-              { workflow && workflow.emailSettings &&
+              { action && action.emailSettings &&
                 <div style={{textAlign: "right"}}><Button loading={loading} onClick={this.updateEmailSettings}>Update</Button></div>
               }
             </div>
@@ -236,10 +236,10 @@ class Email extends React.Component {
               }
             </div>
         </Form>
-        {!(workflow && workflow.schedule && (workflow.schedule.taskName || workflow.schedule.asyncTasks.length!==0)) &&
+        {!(action && action.schedule && (action.schedule.taskName || action.schedule.asyncTasks.length!==0)) &&
           <div style={{ marginTop: '10px' }}>
             <Button loading={loading} type="primary" size="large" onClick={this.handleSubmit}> 
-              { workflow && workflow.schedule ? 
+              { action && action.schedule ? 
                 'Save'
               :
                 'Send once-off email'
@@ -256,10 +256,10 @@ class Email extends React.Component {
 
 const mapStateToProps = (state) => {
   const {
-    loading, error, workflow, editorState, previewLoading, previewContent
-  } = state.workflow;
+    loading, error, action, editorState, previewLoading, previewContent
+  } = state.action;
   return {
-    loading, error, workflow, editorState, previewLoading, previewContent
+    loading, error, action, editorState, previewLoading, previewContent
   };
 };
 
