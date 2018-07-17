@@ -22,8 +22,10 @@ function containers(state = {}, action) {
         // If an accordionKey is provided, then use it, and set the tabKey back to the first tab
         accordionKey: action.accordionKey
           ? action.accordionKey.toString()
-          : state.accordionKey,
-        tabKey: action.accordionKey ? "1" : state.tabKey
+          : state.accordionKey
+            ? state.accordionKey
+            : "0",
+        tabKey: action.accordionKey ? "1" : state.tabKey ? state.tabKey : "1"
       });
 
     case CHANGE_CONTAINER_ACCORDION:
