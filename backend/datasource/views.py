@@ -97,8 +97,11 @@ class DatasourceViewSet(viewsets.ModelViewSet):
         # Identify the field names from the keys of the first row of the data
         # This is sufficient, as we can assume that all rows have the same keys
         fields = list(data[0].keys())
+        types = guess_column_types(data)
 
-        datasource = serializer.save(connection=connection, data=data, fields=fields)
+        datasource = serializer.save(
+            connection=connection, data=data, fields=fields, types=types
+        )
 
         audit = AuditSerializer(
             data={
@@ -364,7 +367,8 @@ class DatasourceViewSet(viewsets.ModelViewSet):
 
         if len(unique_in_matching) == len(matching_fields):
             raise ValidationError(
-                "Matching field failed to match with the primary key. Are you sure the right matching field is set?"
+                "Matching field failed to match with the primary key. \
+                Are you sure the right matching field is set?"
             )
 
         if len(unique_in_matching) > 0:
