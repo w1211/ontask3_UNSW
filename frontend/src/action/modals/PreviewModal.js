@@ -1,84 +1,77 @@
-import React from 'react';
-import { bindActionCreators } from 'redux';
-import { connect } from 'react-redux';
-import { Modal, Button, Icon } from 'antd';
-
-import * as ActionActionCreators from '../ActionActions';
-
+import React from "react";
+import { Modal, Button, Icon } from "antd";
 
 class PreviewModal extends React.Component {
-    
   constructor(props) {
     super(props);
-    const { dispatch } = props;
-
-    this.boundActionCreators = bindActionCreators(ActionActionCreators, dispatch);
 
     this.state = { index: 0 };
   }
 
   handleClose = () => {
-    this.boundActionCreators.closePreviewContent();
-    this.setState({ index: 0 });
-  }
-  render() {
-      const { previewModalVisible, previewContent } = this.props;
-    
-      return (
-        <Modal
-          visible={previewModalVisible}
-          title={`Preview content: ${this.state.index + 1}`}
-          onCancel={this.handleClose}
-          footer={null}
-        >
-        { previewContent &&
-          <div style={{ display: 'flex', flexDirection: 'column'}}>
-            <Button.Group size="large" style={{ marginBottom: '10px', textAlign: 'center' }}>
-              <Button type="primary" disabled={this.state.index === 0 || previewContent.length === 0}
-                onClick={() => {
-                  this.setState(prevState => {
-                    return { index: prevState.index - 1 }
-                  })
-                }}
-              >
-                <Icon type="left" />Previous
-              </Button>
-              
-              <Button type="primary" disabled={this.state.index === previewContent.length - 1 || previewContent.length === 0}
-                onClick={() => {
-                  this.setState(prevState => {
-                    return { index: prevState.index + 1 }
-                  })
-                }}
-              >
-                Next<Icon type="right" />
-              </Button>
-            </Button.Group>
-            
-            { previewContent.length > 0 ?
-              <div style={{ padding: '10px', border: '1px solid #F1F1F1' }}
-                dangerouslySetInnerHTML={{__html: previewContent[this.state.index]}}
-              />
-            :
-              <div style={{ padding: '10px', border: '1px solid #F1F1F1', textAlign: 'center' }}>
-                After filtering, no results were returned from your view.
-              </div>
-            }
-          </div>
-        }
-        </Modal>
-      );
-    };
-  };
-  
-const mapStateToProps = (state) => {
-  const { 
-    previewModalVisible, previewContent
-  } = state.action;
-  
-  return { 
-    previewModalVisible, previewContent
-  };
-};
+    const { onClose } = this.props;
 
-export default connect(mapStateToProps)(PreviewModal);
+    this.setState({ index: 0 });
+    onClose();
+  };
+
+  render() {
+    const { preview } = this.props;
+    const { index } = this.state;
+
+    return (
+      <Modal
+        visible={preview.visible}
+        title={`Preview content: ${index + 1}`}
+        onCancel={this.handleClose}
+        footer={null}
+      >
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <Button.Group
+            size="large"
+            style={{ marginBottom: "10px", textAlign: "center" }}
+          >
+            <Button
+              type="primary"
+              disabled={index === 0 || preview.data.length === 0}
+              onClick={() => this.setState({ index: index - 1 })}
+            >
+              <Icon type="left" />Previous
+            </Button>
+
+            <Button
+              type="primary"
+              disabled={
+                index === preview.data.length - 1 || preview.data.length === 0
+              }
+              onClick={() => this.setState({ index: index + 1 })}
+            >
+              Next<Icon type="right" />
+            </Button>
+          </Button.Group>
+
+          {preview.data.length > 0 ? (
+            <div
+              style={{ padding: "10px", border: "1px solid #F1F1F1" }}
+              dangerouslySetInnerHTML={{
+                __html: preview.data[index]
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                padding: "10px",
+                border: "1px solid #F1F1F1",
+                textAlign: "center"
+              }}
+            >
+              After filtering, no results were returned from your view.
+            </div>
+          )}
+        </div>
+      </Modal>
+    );
+  }
+}
+
+export default PreviewModal;

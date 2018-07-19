@@ -24,15 +24,29 @@ class Action extends React.Component {
       ActionActionCreators,
       dispatch
     );
+
+    this.state = {
+      isFetching: true
+    };
   }
 
-  componentDidMount() {
+  componentWillMount() {
     const { match } = this.props;
-    this.boundActionCreators.fetchAction(match.params.id);
+
+    this.boundActionCreators.fetchAction({
+      actionId: match.params.id,
+      onError: () => this.setState({ isFetching: false }),
+      onSuccess: action => this.setState({ isFetching: false, action })
+    });
   }
+
+  updateAction = action => {
+    this.setState({ action });
+  };
 
   render() {
-    const { match, location, isFetching, action } = this.props;
+    const { match, location } = this.props;
+    const { isFetching, action } = this.state;
 
     return (
       <div className="action">
@@ -104,7 +118,13 @@ class Action extends React.Component {
 
                       <Route
                         path={`${match.url}/compose`}
-                        component={Compose}
+                        render={props => (
+                          <Compose
+                            {...props}
+                            action={action}
+                            updateAction={this.updateAction}
+                          />
+                        )}
                       />
 
                       <Route path={`${match.url}/email`} component={Email} />
@@ -125,12 +145,4 @@ class Action extends React.Component {
   }
 }
 
-const mapStateToProps = state => {
-  const { isFetching, action } = state.action;
-  return {
-    isFetching,
-    action
-  };
-};
-
-export default connect(mapStateToProps)(Action);
+export default connect()(Action);

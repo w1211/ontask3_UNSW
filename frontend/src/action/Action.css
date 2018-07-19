@@ -25,3 +25,14 @@
   justify-content: center;
   align-items: center;
 }
+
+.action .condition_block {
+  border: 1px dashed;
+  border-radius: 3px;
+  padding: 5px;
+  margin-bottom: 3px;
+}
+.action .condition_block .condition_name {
+  font-size: 12px;
+  font-weight: 300;
+}

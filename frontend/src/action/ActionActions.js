@@ -1,5 +1,3 @@
-import { EditorState, ContentState } from "draft-js";
-import htmlToDraft from "html-to-draftjs";
 import { notification } from "antd";
 import requestWrapper from "../shared/requestWrapper";
 
@@ -42,15 +40,6 @@ export const FAILURE_REQUEST_PREVIEW_CONTENT =
 export const SUCCESS_PREVIEW_CONTENT = "SUCCESS_PREVIEW_CONTENT";
 export const CLOSE_PREVIEW_CONTENT = "CLOSE_PREVIEW_CONTENT";
 
-export const openWorkflowModal = (containerId, views) => ({
-  type: OPEN_WORKFLOW_MODAL,
-  containerId,
-  views
-});
-
-export const closeWorkflowModal = () => ({
-  type: CLOSE_WORKFLOW_MODAL
-});
 
 const beginRequestWorkflow = () => ({
   type: BEGIN_REQUEST_WORKFLOW
@@ -114,49 +103,19 @@ export const deleteAction = ({ actionId, onFinish }) => dispatch => {
   requestWrapper(parameters);
 };
 
-export const fetchAction = actionId => dispatch => {
-  dispatch({ type: START_FETCHING });
-
+export const fetchAction = ({ actionId, onError, onSuccess }) => dispatch => {
   const parameters = {
     url: `/workflow/${actionId}/retrieve_workflow/`,
     method: "GET",
     errorFn: error => {
-      dispatch({ type: FINISH_FETCHING });
+      onError();
       console.log(error);
     },
-    successFn: action => {
-      let editorState = null;
-      if (action["content"]) {
-        const blocksFromHtml = htmlToDraft(action["content"]["html"]);
-        const { contentBlocks, entityMap } = blocksFromHtml;
-        const contentState = ContentState.createFromBlockArray(
-          contentBlocks,
-          entityMap
-        );
-        editorState = EditorState.createWithContent(contentState);
-      } else {
-        editorState = EditorState.createEmpty();
-      }
-
-      dispatch({ type: FINISH_FETCHING, action, editorState });
-    }
+    successFn: action => onSuccess(action)
   };
 
   requestWrapper(parameters);
 };
-
-const beginRequestModal = () => ({
-  type: BEGIN_REQUEST_MODAL
-});
-
-const failureRequestModal = error => ({
-  type: FAILURE_REQUEST_MODAL,
-  error
-});
-
-const successRequestModal = () => ({
-  type: SUCCESS_REQUEST_MODAL
-});
 
 const refreshFormState = payload => ({
   type: REFRESH_FORM_STATE,
@@ -244,19 +203,18 @@ export const deleteFormulaFromFilter = formulaIndex => (dispatch, getState) => {
   dispatch(refreshFormState(formState));
 };
 
-export const updateFilter = (actionId, payload) => dispatch => {
+export const updateFilter = ({
+  actionId,
+  payload,
+  onError,
+  onSuccess
+}) => dispatch => {
   const parameters = {
-    initialFn: () => {
-      dispatch(beginRequestModal());
-    },
     url: `/workflow/${actionId}/update_filter/`,
     method: "PUT",
-    errorFn: error => {
-      dispatch(failureRequestModal(error));
-    },
-    successFn: () => {
-      dispatch(successRequestModal());
-      dispatch(fetchAction(actionId));
+    errorFn: error => onError(error),
+    successFn: action => {
+      onSuccess(action);
       notification["success"]({
         message: "Filter updated",
         description: "The filter was successfully updated."
@@ -400,19 +358,18 @@ export const deleteFormulaFromConditionGroup = (
   dispatch(refreshFormState(formState));
 };
 
-export const createConditionGroup = (actionId, payload) => dispatch => {
+export const createConditionGroup = ({
+  actionId,
+  payload,
+  onError,
+  onSuccess
+}) => dispatch => {
   const parameters = {
-    initialFn: () => {
-      dispatch(beginRequestModal());
-    },
     url: `/workflow/${actionId}/create_condition_group/`,
     method: "PUT",
-    errorFn: error => {
-      dispatch(failureRequestModal(error));
-    },
-    successFn: response => {
-      dispatch(successRequestModal());
-      dispatch(fetchAction(actionId));
+    errorFn: error => onError(error),
+    successFn: action => {
+      onSuccess(action);
       notification["success"]({
         message: "Condition group created",
         description: "The condition group was successfully created."
@@ -424,24 +381,20 @@ export const createConditionGroup = (actionId, payload) => dispatch => {
   requestWrapper(parameters);
 };
 
-export const updateConditionGroup = (
+export const updateConditionGroup = ({
   actionId,
   conditionGroup,
-  payload
-) => dispatch => {
+  payload,
+  onError,
+  onSuccess
+}) => dispatch => {
   payload.originalName = conditionGroup.name;
   const parameters = {
-    initialFn: () => {
-      dispatch(beginRequestModal());
-    },
     url: `/workflow/${actionId}/update_condition_group/`,
     method: "PUT",
-    errorFn: error => {
-      dispatch(failureRequestModal(error));
-    },
-    successFn: response => {
-      dispatch(successRequestModal());
-      dispatch(fetchAction(actionId));
+    errorFn: error => onError(error),
+    successFn: action => {
+      onSuccess(action);
       notification["success"]({
         message: "Condition group updated",
         description: "The condition group was successfully updated."
@@ -453,19 +406,13 @@ export const updateConditionGroup = (
   requestWrapper(parameters);
 };
 
-export const deleteConditionGroup = (actionId, index) => dispatch => {
+export const deleteConditionGroup = ({ actionId, index, onSuccess }) => dispatch => {
   const parameters = {
-    initialFn: () => {
-      dispatch(beginRequestModal());
-    },
     url: `/workflow/${actionId}/delete_condition_group/`,
     method: "PUT",
-    errorFn: error => {
-      dispatch(failureRequestModal(error));
-    },
-    successFn: response => {
-      dispatch(successRequestModal());
-      dispatch(fetchAction(actionId));
+    errorFn: error => console.log(error),
+    successFn: action => {
+      onSuccess(action);
       notification["success"]({
         message: "Condition group deleted",
         description: "The condition group was successfully deleted."
@@ -482,32 +429,18 @@ export const updateEditorState = payload => ({
   payload
 });
 
-const beginRequestContent = () => ({
-  type: BEGIN_REQUEST_CONTENT
-});
-
-const failureRequestContent = error => ({
-  type: FAILURE_REQUEST_CONTENT,
-  error
-});
-
-const successUpdateContent = () => ({
-  type: SUCCESS_UPDATE_CONTENT
-});
-
-export const updateContent = (actionId, payload) => dispatch => {
+export const updateContent = ({
+  actionId,
+  payload,
+  onError,
+  onSuccess
+}) => dispatch => {
   const parameters = {
-    initialFn: () => {
-      dispatch(beginRequestContent());
-    },
     url: `/workflow/${actionId}/update_content/`,
     method: "PUT",
-    errorFn: error => {
-      dispatch(failureRequestContent(error));
-    },
-    successFn: response => {
-      dispatch(successUpdateContent());
-      dispatch(fetchAction(actionId));
+    errorFn: error => onError(error),
+    successFn: action => {
+      onSuccess(action);
       notification["success"]({
         message: "Content saved",
         description: "The content was successfully saved."
@@ -519,37 +452,21 @@ export const updateContent = (actionId, payload) => dispatch => {
   requestWrapper(parameters);
 };
 
-const beginRequestPreviewContent = () => ({
-  type: BEGIN_REQUEST_PREVIEW_CONTENT
-});
-
-const failureRequestPreviewContent = error => ({
-  type: FAILURE_REQUEST_PREVIEW_CONTENT,
-  error
-});
-
-const successPreviewContent = (preview, showModal) => ({
-  type: SUCCESS_PREVIEW_CONTENT,
-  preview,
-  showModal
-});
-
-export const closePreviewContent = () => ({
-  type: CLOSE_PREVIEW_CONTENT
-});
-
-export const previewContent = (actionId, payload, showModal) => dispatch => {
+export const previewContent = ({
+  actionId,
+  payload,
+  onError,
+  onSuccess
+}) => dispatch => {
   const parameters = {
-    initialFn: () => {
-      dispatch(beginRequestPreviewContent());
-    },
     url: `/workflow/${actionId}/preview_content/`,
     method: "PUT",
     errorFn: error => {
-      dispatch(failureRequestPreviewContent(error));
+      onError(error);
     },
-    successFn: preview => {
-      dispatch(successPreviewContent(preview, showModal));
+    successFn: response => {
+      const { populated_content } = response;
+      onSuccess(populated_content);
     },
     payload: payload
   };

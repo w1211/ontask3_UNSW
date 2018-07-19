@@ -33,34 +33,59 @@ class ConditionGroupModal extends React.Component {
       ActionActionCreators,
       dispatch
     );
+
+    this.state = { loading: false, error: null };
   }
 
   handleOk = () => {
-    const { form, action, conditionGroup } = this.props;
-    form.validateFields((err, values) => {
+    const {
+      form,
+      action,
+      conditionGroup,
+      updateAction,
+      closeModal
+    } = this.props;
+    form.validateFields((err, payload) => {
       if (err) return;
+
+      this.setState({ loading: true });
+
       if (conditionGroup) {
-        this.boundActionCreators.updateConditionGroup(
-          action.id,
+        this.boundActionCreators.updateConditionGroup({
+          actionId: action.id,
           conditionGroup,
-          values
-        );
+          payload,
+          onError: error => this.setState({ loading: false, error }),
+          onSuccess: action => {
+            updateAction(action);
+            this.handleClose();
+          }
+        });
       } else {
-        this.boundActionCreators.createConditionGroup(action.id, values);
+        this.boundActionCreators.createConditionGroup({
+          actionId: action.id,
+          payload,
+          onError: error => this.setState({ loading: false, error }),
+          onSuccess: action => {
+            updateAction(action);
+            this.handleClose();
+          }
+        });
       }
     });
   };
 
+  handleClose = () => {
+    const { closeModal } = this.props;
+
+    this.setState({ loading: false, error: null });
+    closeModal();
+  };
+
   render() {
-    const {
-      conditionGroupModalVisible,
-      form,
-      formState,
-      modalLoading,
-      modalError,
-      action,
-      conditionGroup
-    } = this.props;
+    const { form, formState, action, conditionGroup, visible } = this.props;
+
+    const { loading, error } = this.state;
 
     if (!action) return null;
 
@@ -92,7 +117,6 @@ class ConditionGroupModal extends React.Component {
         });
       }
       if (step.type === "form") {
-        
       }
     });
 
@@ -113,14 +137,14 @@ class ConditionGroupModal extends React.Component {
 
     return (
       <Modal
-        visible={conditionGroupModalVisible}
+        visible={visible}
         title={
           conditionGroup ? "Edit condition group" : "Create condition group"
         }
         okText={conditionGroup ? "Update" : "Create"}
-        onCancel={this.boundActionCreators.closeConditionGroupModal}
+        onCancel={this.handleClose}
         onOk={this.handleOk}
-        confirmLoading={modalLoading}
+        confirmLoading={loading}
       >
         <Form layout="horizontal">
           <FormItem {...FormItemLayout} label="Name">
@@ -143,7 +167,7 @@ class ConditionGroupModal extends React.Component {
             }
           />
 
-          {modalError && <Alert message={modalError} type="error" />}
+          {error && <Alert message={error} type="error" />}
           {hasError && (
             <Alert message="Formulas cannot be incomplete" type="error" />
           )}
@@ -357,22 +381,11 @@ const Field = ({
 };
 
 const mapStateToProps = state => {
-  const {
-    conditionGroupModalVisible,
-    action,
-    formState,
-    conditionGroup,
-    modalLoading,
-    modalError
-  } = state.action;
+  const { formState, conditionGroup } = state.action;
 
   return {
-    conditionGroupModalVisible,
-    action,
     formState,
-    conditionGroup,
-    modalLoading,
-    modalError
+    conditionGroup
   };
 };
 
