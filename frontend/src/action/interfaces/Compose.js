@@ -81,6 +81,28 @@ const addNewBlockAt = (
   return EditorState.push(editorState, newContent, "split-block");
 };
 
+const generateColours = size => {
+  let colours = new Array(size);
+
+  const sin_to_hex = (i, phase) => {
+    const sin = Math.sin((Math.PI / size) * 2 * i + phase);
+    const int = Math.floor(sin * 127) + 128;
+    const hex = int.toString(16);
+
+    return hex.length === 1 ? "0" + hex : hex;
+  };
+
+  for (var i = 0; i < size; i++) {
+    var red = sin_to_hex(i, (0 * Math.PI * 2) / 3); // 0   deg
+    var blue = sin_to_hex(i, (1 * Math.PI * 2) / 3); // 120 deg
+    var green = sin_to_hex(i, (2 * Math.PI * 2) / 3); // 240 deg
+
+    colours[i] = "#" + red + green + blue;
+  }
+
+  return colours;
+};
+
 class Compose extends React.Component {
   constructor(props) {
     super(props);
@@ -102,20 +124,25 @@ class Compose extends React.Component {
 
   static getDerivedStateFromProps(props, state) {
     const { action } = props;
-    const { editorState } = state;
+    const { editorState, colours } = state;
 
-    if (action && !editorState) {
-      let editorState;
-      if ("content" in action) {
+    const newState = {};
+
+    if (!action) return null;
+
+    if (!colours || action.conditionGroups.length > colours.length)
+      newState.colours = generateColours(action.conditionGroups.length);
+
+    if (!editorState) {
+      if (action["content"]) {
         const contentState = convertFromRaw(action.content);
-        editorState = EditorState.createWithContent(contentState);
+        newState.editorState = EditorState.createWithContent(contentState);
       } else {
-        editorState = EditorState.createEmpty();
+        newState.editorState = EditorState.createEmpty();
       }
-      return { editorState };
     }
 
-    return null;
+    return Object.keys(newState).length > 0 ? newState : null;
   }
 
   handleConditionGroupMenuClick = (e, conditionGroup, index) => {
@@ -154,19 +181,19 @@ class Compose extends React.Component {
     this.setState({ isInside: isInsideX && isInsideY ? true : false });
   }
 
-  stopDrag(conditionGroup) {
+  stopDrag(conditionGroup, index) {
     const { isInside, editorState } = this.state;
     if (!isInside) return;
 
     const selection = editorState.getSelection();
 
     let newEditorState = editorState;
-    conditionGroup.conditions.forEach(condition => {
+    conditionGroup.conditions.reverse().forEach(condition => {
       newEditorState = addNewBlockAt(
-        editorState,
+        newEditorState,
         selection.getAnchorKey(),
         "ConditionBlock",
-        new Map({ name: condition.name, group: conditionGroup.name })
+        new Map({ name: condition.name, group: index })
       );
     });
 
@@ -235,23 +262,20 @@ class Compose extends React.Component {
 
   ConditionBlock = props => {
     const { block } = props;
+    const { colours } = this.state;
+
     const data = block.getData();
 
     const name = data.get("name");
     const group = data.get("group");
 
-    const colourMap = { group_1: "#9FA8DA" };
-
     return (
-      <div
-        className="condition_block"
-        style={{ borderColor: colourMap[group] }}
-      >
+      <div className="condition_block" style={{ borderColor: colours[group] }}>
         <span
           contentEditable={false}
           readOnly
           className="condition_name"
-          style={{ color: colourMap[group] }}
+          style={{ color: colours[group] }}
         >
           If <strong>{name}</strong>:
         </span>
@@ -262,7 +286,14 @@ class Compose extends React.Component {
 
   render() {
     const { action, updateAction } = this.props;
-    const { editorState, preview, visible, contentLoading, error } = this.state;
+    const {
+      editorState,
+      preview,
+      visible,
+      contentLoading,
+      error,
+      colours
+    } = this.state;
 
     return (
       <div>
@@ -331,7 +362,7 @@ class Compose extends React.Component {
                     this.isInsideContent(e, this.editor);
                   }}
                   onStop={() => {
-                    this.stopDrag(conditionGroup);
+                    this.stopDrag(conditionGroup, i);
                   }}
                   onMouseDown={e => {
                     e.preventDefault();
@@ -354,10 +385,21 @@ class Compose extends React.Component {
                     }
                     className="conditionGroupBtn"
                     key={i}
-                    type="primary"
                     trigger={["click"]}
-                    style={{ marginRight: "5px", zIndex: 10 }}
+                    style={{
+                      marginRight: "5px",
+                      zIndex: 10
+                    }}
                   >
+                    <span
+                      style={{
+                        width: 9,
+                        height: 9,
+                        background: colours[i],
+                        marginRight: 5,
+                        display: "inline-block"
+                      }}
+                    />
                     {conditionGroup.name}
                   </Dropdown.Button>
                 </Draggable>

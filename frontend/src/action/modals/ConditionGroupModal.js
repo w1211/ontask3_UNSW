@@ -38,13 +38,7 @@ class ConditionGroupModal extends React.Component {
   }
 
   handleOk = () => {
-    const {
-      form,
-      action,
-      conditionGroup,
-      updateAction,
-      closeModal
-    } = this.props;
+    const { form, action, conditionGroup, updateAction } = this.props;
     form.validateFields((err, payload) => {
       if (err) return;
 
