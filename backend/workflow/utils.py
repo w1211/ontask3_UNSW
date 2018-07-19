@@ -135,6 +135,8 @@ def evaluate_condition_group(data, condition_group):
 def populate_content(datalab, filter, condition_groups, content, html):
     filtered_data = evaluate_filter(datalab["data"], filter)
 
+    html = html.splitlines()
+
     all_conditions_passed = dict()
     # Combine all conditions from each condition group into a single dict
     for condition_group in condition_groups:

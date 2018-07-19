@@ -257,7 +257,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         content = self.request.data["blockMap"]
         html = self.request.data["html"]
-        html = html.splitlines()
 
         populated_content = populate_content(
             workflow.datalab, workflow.filter, workflow.conditionGroups, content, html
@@ -272,7 +271,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         content = self.request.data["blockMap"]
         html = self.request.data["html"]
-        html = html.splitlines()
 
         # Run the populate content function to validate the provided content before saving it
         populate_content(

@@ -197,7 +197,7 @@ class Compose extends React.Component {
       );
     });
 
-    this.setState({ editorState: newEditorState });
+    this.setState({ editorState: newEditorState, isInside: false });
   }
 
   handleContent = fn => {
@@ -282,6 +282,29 @@ class Compose extends React.Component {
         <EditorBlock {...props} />
       </div>
     );
+  };
+
+  handleEditorStateChange = editorState => {
+    const currentContent = editorState.getCurrentContent();
+    const blockMap = convertToRaw(currentContent);
+
+    let requiresUpdate = false;
+
+    blockMap.blocks.forEach(block => {
+      if (block.type === "ConditionBlock" && !Object.keys(block.data).length) {
+        block.type = "unstyled";
+        requiresUpdate = true;
+      }
+    });
+
+    if (requiresUpdate) {
+      const contentState = convertFromRaw(blockMap);
+      this.setState({
+        editorState: EditorState.createWithContent(contentState)
+      });
+    } else {
+      this.setState({ editorState });
+    }
   };
 
   render() {
@@ -441,7 +464,7 @@ class Compose extends React.Component {
           }}
           blockRenderMap={this.extendedBlockRenderMap}
           blockRendererFn={this.blockRendererFn}
-          onEditorStateChange={editorState => this.setState({ editorState })}
+          onEditorStateChange={this.handleEditorStateChange}
         />
 
         <PreviewModal
