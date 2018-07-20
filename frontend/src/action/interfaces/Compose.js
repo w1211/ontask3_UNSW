@@ -204,9 +204,25 @@ class Compose extends React.Component {
     const { action, updateAction } = this.props;
     const { editorState, preview } = this.state;
 
+    let options = {
+      entityStyleFn: (entity) => {
+        const entityType = entity.get('type').toLowerCase();
+        if (entityType === 'link') {
+          const data = entity.getData();
+          return {
+            element: 'a',
+            attributes: {
+              href: data.url,
+              target: data.targetOption
+            }
+          };
+        }
+      },
+    };
+
     const currentContent = editorState.getCurrentContent();
     const blockMap = convertToRaw(currentContent);
-    const html = stateToHTML(currentContent);
+    const html = stateToHTML(currentContent, options);
 
     if (fn === "preview") {
       this.setState({ preview: { ...preview, loading: true } });

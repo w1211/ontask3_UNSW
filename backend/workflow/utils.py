@@ -135,6 +135,14 @@ def evaluate_condition_group(data, condition_group):
 def populate_content(datalab, filter, condition_groups, content, html):
     filtered_data = evaluate_filter(datalab["data"], filter)
 
+    # Any <br> tags in the html text will be followed by a newline (\n) character. This 
+    # comes from the implementation of the package used to convert the Draft.JS content 
+    # editor to html. We remove these \n characters as they break the way in which we map
+    # blocks to html lines.
+    html = html.replace("<br>\n", "<br>")
+    
+    # Split the html text by newline character, so that the blocks of the content can be
+    # mapped to the according html representaiton via the index of iteration
     html = html.splitlines()
 
     all_conditions_passed = dict()
@@ -150,7 +158,13 @@ def populate_content(datalab, filter, condition_groups, content, html):
     result = []
     for item in filtered_data:
         populated_content = ""
-        for index, block in enumerate(content["blocks"]):
+        # Ideally, each block in the content block map corresponds to each "line" of the 
+        # html text provided, where a "line" is given by some text and ending with a 
+        # newline character. However, some html elements are represented across multiple
+        # lines (e.g. <ol> and <ul>) so we need to manually adjust the index depending on
+        # the content provided
+        index = 0
+        for block in content["blocks"]:
             if block["type"] == "ConditionBlock":
                 condition_name = block["data"]["name"]
                 if not condition_name in all_conditions_passed:
@@ -158,11 +172,33 @@ def populate_content(datalab, filter, condition_groups, content, html):
                         "The condition '{0}' does not exist in any condition group for this action".format(
                             condition_name
                         )
-                    )                
+                    )
                 if item in all_conditions_passed[condition_name]:
                     populated_content += html[index]
             else:
+                # Ordered and un-ordered lists are represented across multiple lines in 
+                # the html string therefore we cannot simply use the block index to get 
+                # the relevant html. If the list is nested (i.e. includes some indented
+                # bullet points) then there will also be </li> tags on their own line
+                # that must be accounted for. This approach supports all levels of 
+                # nesting.
+                while html[index].strip() in [
+                    "<ul>",
+                    "</ul>",
+                    "<ol>",
+                    "</ol>",
+                    "</li>",
+                ]:
+                    # Add the line for the opening/closing tag, then increment the index 
+                    # and add the line that corresponds to the actual block content we 
+                    # are currently on
+                    populated_content += html[index]
+                    index += 1
+
                 populated_content += html[index]
+
+            index += 1
+
         result.append(populated_content)
 
     return result
