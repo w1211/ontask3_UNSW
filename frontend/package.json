@@ -4,10 +4,10 @@
   "private": true,
   "dependencies": {
     "@antv/data-set": "^0.8.9",
+    "@stevenphaedonos/draft-js-export-html": "^1.2.0",
     "antd": "^3.6.5",
     "bizcharts": "^3.1.10",
     "draft-js": "^0.10.5",
-    "draft-js-export-html": "^1.2.0",
     "draftjs-to-html": "^0.8.4",
     "lodash": "^4.17.10",
     "moment": "^2.22.2",

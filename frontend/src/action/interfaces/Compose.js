@@ -14,7 +14,7 @@ import {
 import Immutable from "immutable";
 import _ from "lodash";
 
-import { stateToHTML } from "draft-js-export-html";
+import { stateToHTML } from "@stevenphaedonos/draft-js-export-html";
 
 import { Editor } from "react-draft-wysiwyg";
 import Draggable from "react-draggable";
@@ -205,12 +205,12 @@ class Compose extends React.Component {
     const { editorState, preview } = this.state;
 
     let options = {
-      entityStyleFn: (entity) => {
-        const entityType = entity.get('type').toLowerCase();
-        if (entityType === 'link') {
+      entityStyleFn: entity => {
+        const entityType = entity.get("type").toLowerCase();
+        if (entityType === "link") {
           const data = entity.getData();
           return {
-            element: 'a',
+            element: "a",
             attributes: {
               href: data.url,
               target: data.targetOption
@@ -218,11 +218,21 @@ class Compose extends React.Component {
           };
         }
       },
+      inlineStyleFn: styles => {
+        const color = styles.find((value) => value.startsWith("color-"));
+        const fontFamily = styles.find((value) => value.startsWith("fontfamily-"));
+
+        const style = {};
+        if (color) style.color = color.replace('color-', '');
+        if (fontFamily) style.fontFamily = fontFamily.replace('fontfamily-', '');
+
+        if (Object.keys(styles).length) return { element: 'span', style };
+      },
     };
 
     const currentContent = editorState.getCurrentContent();
     const blockMap = convertToRaw(currentContent);
-    const html = stateToHTML(currentContent, options);
+    const html = stateToHTML(currentContent, options)
 
     if (fn === "preview") {
       this.setState({ preview: { ...preview, loading: true } });
