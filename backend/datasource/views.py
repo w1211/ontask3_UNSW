@@ -270,31 +270,43 @@ class DatasourceViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid()
 
-        # Identify the changes made to the datasource schedule
+        is_update = "schedule" in datasource and datasource["schedule"] is not None
+        requires_save = False
+
         diff = {}
-        for field in datasource["schedule"]:
-            old_value = datasource["schedule"][field]
-            new_value = serializer.validated_data["schedule"].get(field, old_value)
+        if is_update: 
+            # Identify the changes made to the datasource schedule
+            for field in datasource["schedule"]:
+                old_value = datasource["schedule"][field]
+                new_value = serializer.validated_data["schedule"].get(field, old_value)
 
-            # Strip timezone information from the new value if it is a datetime
-            # The db model does not include tz info, whereas the validated data does.
-            # Therefore even if the time is identical (both always in UTC), the
-            # comparison will produce a false negative
-            if type(new_value) == datetime:
-                new_value = new_value.replace(tzinfo=None)
+                # Strip timezone information from the new value if it is a datetime
+                # The db model does not include tz info, whereas the validated data does.
+                # Therefore even if the time is identical (both always in UTC), the
+                # comparison will produce a false negative
+                if type(new_value) == datetime:
+                    new_value = new_value.replace(tzinfo=None)
 
-            if old_value != new_value:
-                diff[field] = {"from": old_value, "to": new_value}
+                if old_value != new_value:
+                    diff[field] = {"from": old_value, "to": new_value}
 
-        # If changes were detected, then continue
-        if len(diff.keys()):
-            # If a schedule already exists for this datasource, then delete it
-            if "schedule" in datasource and "taskName" in datasource["schedule"]:
-                remove_scheduled_task(datasource["schedule"]["taskName"])
+            # If changes were detected, then continue
+            if len(diff.keys()):
+                diff["taskName"] = {"from": None, "to": None}
+                diff["asyncTasks"] = {"from": None, "to": None}
 
-            if "schedule" in datasource and "asyncTasks" in datasource["schedule"]:
-                remove_async_task(datasource["schedule"]["asyncTasks"])
+                # If a schedule already exists for this datasource, then delete it                
+                if "taskName" in datasource["schedule"]:
+                    remove_scheduled_task(datasource["schedule"]["taskName"])
+                    diff["taskName"]["from"] = datasource["schedule"]["taskName"]
 
+                if "asyncTasks" in datasource["schedule"]:
+                    remove_async_task(datasource["schedule"]["asyncTasks"])
+                    diff["asyncTasks"]["from"] = datasource["schedule"]["asyncTasks"]
+
+                requires_save = True
+
+        if not is_update or requires_save:
             # Create new schedule tasks
             arguments = json.dumps({"datasource_id": id})
             task_name, async_tasks = create_scheduled_task(
@@ -305,15 +317,21 @@ class DatasourceViewSet(viewsets.ModelViewSet):
             serializer.validated_data["schedule"]["asyncTasks"] = async_tasks
             serializer.save()
 
-            audit = AuditSerializer(
-                data={
-                    "model": "datasource",
-                    "document": str(datasource.id),
-                    "action": "update_schedule",
-                    "user": self.request.user.email,
-                    "diff": diff,
-                }
-            )
+            audit_data = {
+                "model": "datasource",
+                "document": str(datasource.id),
+                "user": self.request.user.email
+            }
+            
+            if is_update:
+                audit_data["action"] = "update_schedule"
+                diff["taskName"]["to"] = task_name
+                diff["asyncTasks"]["to"] = async_tasks
+                audit_data["diff"] = diff
+            else:
+                audit_data["action"] = "create_schedule"
+
+            audit = AuditSerializer(data=audit_data)
             audit.is_valid()
             audit.save()
 
