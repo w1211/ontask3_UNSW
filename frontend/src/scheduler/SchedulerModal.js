@@ -21,7 +21,14 @@ class SchedulerModal extends React.Component {
   state = { updateLoading: false, deleteLoading: false, error: null };
 
   handleOk = () => {
-    const { form, onUpdate, selected, data, closeModal } = this.props;
+    const {
+      form,
+      onUpdate,
+      selected,
+      data,
+      onSuccess,
+      closeModal
+    } = this.props;
     const { schedule } = data;
 
     form.validateFields((err, payload) => {
@@ -40,9 +47,10 @@ class SchedulerModal extends React.Component {
         payload,
         isCreate: !schedule,
         onError: error => this.setState({ updateLoading: false, error }),
-        onSuccess: () => {
+        onSuccess: response => {
           this.setState({ updateLoading: false, error: null });
           form.resetFields();
+          if (onSuccess) onSuccess(response);
           closeModal();
         }
       });
@@ -58,7 +66,7 @@ class SchedulerModal extends React.Component {
   };
 
   handleDelete = () => {
-    const { form, selected, onDelete, closeModal } = this.props;
+    const { form, selected, onDelete, onSuccess, closeModal } = this.props;
 
     confirm({
       title: "Confirm schedule removal",
@@ -72,9 +80,10 @@ class SchedulerModal extends React.Component {
         onDelete({
           selected,
           onError: error => this.setState({ deleteLoading: false, error }),
-          onSuccess: () => {
+          onSuccess: response => {
             this.setState({ deleteLoading: false, error: null });
             form.resetFields();
+            if (onSuccess) onSuccess(response);
             closeModal();
           }
         });

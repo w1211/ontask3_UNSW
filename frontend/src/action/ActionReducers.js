@@ -6,9 +6,7 @@ import {
   CLOSE_FILTER_MODAL,
 
   OPEN_CONDITION_GROUP_MODAL,
-  CLOSE_CONDITION_GROUP_MODAL,
-
-  UPDATE_EDITOR_STATE
+  CLOSE_CONDITION_GROUP_MODAL
 } from './ActionActions';
 
 import _ from 'lodash';
@@ -49,11 +47,6 @@ function action(state = {}, action) {
       return Object.assign({}, state, {
         formState: null,
         conditionGroup: null
-      });
-
-    case UPDATE_EDITOR_STATE:
-      return Object.assign({}, state, {
-        editorState: action.payload
       });
 
     default:

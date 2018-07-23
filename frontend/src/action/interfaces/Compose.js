@@ -247,7 +247,7 @@ class Compose extends React.Component {
 
     if (fn === "preview") {
       this.setState({ preview: { ...preview, loading: true } });
-      this.boundActionCreators.previewContent({
+      ActionActionCreators.previewContent({
         actionId: action.id,
         payload: { blockMap, html },
         onError: error =>

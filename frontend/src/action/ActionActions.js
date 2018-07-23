@@ -3,22 +3,7 @@ import requestWrapper from "../shared/requestWrapper";
 
 import { fetchContainers } from "../container/ContainerActions";
 
-export const START_FETCHING = "START_FETCHING";
-export const FINISH_FETCHING = "FINISH_FETCHING";
 
-export const OPEN_WORKFLOW_MODAL = "OPEN_WORKFLOW_MODAL";
-export const CLOSE_WORKFLOW_MODAL = "CLOSE_WORKFLOW_MODAL";
-
-export const BEGIN_REQUEST_WORKFLOW = "BEGIN_REQUEST_WORKFLOW";
-export const FAILURE_REQUEST_WORKFLOW = "FAILURE_REQUEST_WORKFLOW";
-export const SUCCESS_REQUEST_WORKFLOW = "SUCCESS_CREATE_WORKFLOW";
-
-export const REQUEST_WORKFLOW = "REQUEST_WORKFLOW";
-export const RECEIVE_WORKFLOW = "RECEIVE_WORKFLOW";
-
-export const BEGIN_REQUEST_MODAL = "BEGIN_REQUEST_MODAL";
-export const FAILURE_REQUEST_MODAL = "FAILURE_REQUEST_MODAL";
-export const SUCCESS_REQUEST_MODAL = "SUCCESS_REQUEST_MODAL";
 export const REFRESH_FORM_STATE = "REFRESH_FORM_STATE";
 export const UPDATE_FORM_STATE = "UPDATE_FORM_STATE";
 
@@ -28,31 +13,6 @@ export const CLOSE_FILTER_MODAL = "CLOSE_FILTER_MODAL";
 export const OPEN_CONDITION_GROUP_MODAL = "OPEN_CONDITION_GROUP_MODAL";
 export const CLOSE_CONDITION_GROUP_MODAL = "CLOSE_CONDITION_GROUP_MODAL";
 
-export const UPDATE_EDITOR_STATE = "UPDATE_EDITOR_STATE";
-
-export const BEGIN_REQUEST_CONTENT = "BEGIN_REQUEST_CONTENT";
-export const FAILURE_REQUEST_CONTENT = "FAILURE_REQUEST_CONTENT";
-export const SUCCESS_UPDATE_CONTENT = "SUCCESS_UPDATE_CONTENT";
-
-export const BEGIN_REQUEST_PREVIEW_CONTENT = "BEGIN_REQUEST_PREVIEW_CONTENT";
-export const FAILURE_REQUEST_PREVIEW_CONTENT =
-  "FAILURE_REQUEST_PREVIEW_CONTENT";
-export const SUCCESS_PREVIEW_CONTENT = "SUCCESS_PREVIEW_CONTENT";
-export const CLOSE_PREVIEW_CONTENT = "CLOSE_PREVIEW_CONTENT";
-
-
-const beginRequestWorkflow = () => ({
-  type: BEGIN_REQUEST_WORKFLOW
-});
-
-const failureRequestWorkflow = error => ({
-  type: FAILURE_REQUEST_WORKFLOW,
-  error
-});
-
-const successRequestWorkflow = () => ({
-  type: SUCCESS_REQUEST_WORKFLOW
-});
 
 export const createAction = ({
   containerId,
@@ -406,7 +366,11 @@ export const updateConditionGroup = ({
   requestWrapper(parameters);
 };
 
-export const deleteConditionGroup = ({ actionId, index, onSuccess }) => dispatch => {
+export const deleteConditionGroup = ({
+  actionId,
+  index,
+  onSuccess
+}) => dispatch => {
   const parameters = {
     url: `/workflow/${actionId}/delete_condition_group/`,
     method: "PUT",
@@ -423,11 +387,6 @@ export const deleteConditionGroup = ({ actionId, index, onSuccess }) => dispatch
 
   requestWrapper(parameters);
 };
-
-export const updateEditorState = payload => ({
-  type: UPDATE_EDITOR_STATE,
-  payload
-});
 
 export const updateContent = ({
   actionId,
@@ -452,12 +411,7 @@ export const updateContent = ({
   requestWrapper(parameters);
 };
 
-export const previewContent = ({
-  actionId,
-  payload,
-  onError,
-  onSuccess
-}) => dispatch => {
+export const previewContent = ({ actionId, payload, onError, onSuccess }) => {
   const parameters = {
     url: `/workflow/${actionId}/preview_content/`,
     method: "PUT",
@@ -474,27 +428,19 @@ export const previewContent = ({
   requestWrapper(parameters);
 };
 
-export const sendEmail = (actionId, payload, isSchedule) => dispatch => {
+export const sendEmail = ({ actionId, payload, onError, onSuccess }) => {
   const parameters = {
-    initialFn: () => {
-      dispatch(beginRequestWorkflow());
-    },
     url: `/workflow/${actionId}/send_email/`,
     method: "PUT",
-    errorFn: error => {
-      dispatch(failureRequestWorkflow(error));
-    },
-    successFn: response => {
-      dispatch(successRequestWorkflow());
-      dispatch(fetchAction(actionId));
+    errorFn: error => onError(error),
+    successFn: () => {
+      onSuccess();
       notification["success"]({
-        message: `Emails ${isSchedule ? "scheduled" : "sent"}`,
-        description: `The emails were successfully ${
-          isSchedule ? "scheduled" : "sent"
-        }.`
+        message: "Emails sent",
+        description: "The emails were successfully sent"
       });
     },
-    payload: payload
+    payload
   };
 
   requestWrapper(parameters);
@@ -506,14 +452,13 @@ export const updateSchedule = ({
   onError,
   onSuccess,
   isCreate
-}) => dispatch => {
+}) => {
   const parameters = {
     url: `/workflow/${selected}/update_schedule/`,
     method: "PATCH",
     errorFn: onError,
-    successFn: () => {
-      onSuccess();
-      dispatch(fetchAction(selected));
+    successFn: action => {
+      onSuccess(action);
       notification["success"]({
         message: `Schedule ${isCreate ? "created" : "updated"}`,
         description: `The schedule was successfully ${
@@ -531,14 +476,13 @@ export const deleteSchedule = ({
   selected,
   onError,
   onSuccess
-}) => dispatch => {
+}) => {
   const parameters = {
     url: `/workflow/${selected}/delete_schedule/`,
     method: "PATCH",
     errorFn: onError,
-    successFn: () => {
-      onSuccess();
-      dispatch(fetchAction(selected));
+    successFn: action => {
+      onSuccess(action);
       notification["success"]({
         message: "Schedule deleted",
         description: "The schedule was successfully deleted."
@@ -548,26 +492,24 @@ export const deleteSchedule = ({
   requestWrapper(parameters);
 };
 
-export const updateEmailSettings = (actionId, payload) => dispatch => {
+export const updateEmailSettings = ({
+  actionId,
+  payload,
+  onError,
+  onSuccess
+}) => {
   const parameters = {
-    initialFn: () => {
-      dispatch(beginRequestWorkflow());
-    },
     url: `/workflow/${actionId}/update_email_settings/`,
     method: "PATCH",
-    errorFn: error => {
-      dispatch(failureRequestWorkflow(error));
-    },
-    successFn: () => {
-      dispatch(successRequestWorkflow());
-      dispatch(fetchAction(actionId));
+    errorFn: error => onError(error),
+    successFn: action => {
+      onSuccess(action);
       notification["success"]({
         message: "Email settings updated",
         description: "The email settings were successfully updated."
       });
     },
-    payload: payload,
-    isNotJSON: false
+    payload
   };
   requestWrapper(parameters);
 };

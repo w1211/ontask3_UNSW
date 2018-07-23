@@ -127,7 +127,16 @@ class Action extends React.Component {
                         )}
                       />
 
-                      <Route path={`${match.url}/email`} component={Email} />
+                      <Route
+                        path={`${match.url}/email`}
+                        render={props => (
+                          <Email
+                            {...props}
+                            action={action}
+                            updateAction={this.updateAction}
+                          />
+                        )}
+                      />
 
                       <Route
                         path={`${match.url}/static`}

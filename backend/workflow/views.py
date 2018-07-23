@@ -285,113 +285,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         return self.retrieve_workflow(request, id=id)
 
-    @detail_route(methods=["patch"])
-    def update_schedule(self, request, id=None):
-        action = Workflow.objects.get(id=id)
-        arguments = json.dumps({"workflow_id": id})
-
-        # If a schedule already exists for this action, then delete it
-        if "schedule" in action and "taskName" in action["schedule"]:
-            remove_scheduled_task(action["schedule"]["taskName"])
-
-        if "schedule" in action and "asyncTasks" in action["schedule"]:
-            remove_async_task(action["schedule"]["asyncTasks"])
-
-        action.update(unset__schedule=1)
-
-        # create updated schedule tasks
-        task_name, async_tasks = create_scheduled_task(
-            "workflow_send_email", request.data, arguments
-        )
-
-        if task_name:
-            schedule = request.data
-            schedule["taskName"] = task_name
-            schedule["asyncTasks"] = async_tasks
-            serializer = WorkflowSerializer(
-                action, data={"schedule": schedule}, partial=True
-            )
-
-            serializer.is_valid()
-            serializer.save()
-            return JsonResponse({"success": True}, safe=False)
-        else:
-            return JsonResponse({"success": False}, safe=False)
-
-    @detail_route(methods=["put"])
-    def send_email(self, request, id=None):
-        workflow = Workflow.objects.get(id=id)
-        self.check_object_permissions(self.request, workflow)
-
-        if os.environ.get("ONTASK_DEMO") is not None:
-            raise ValidationError("Email sending is disabled in the demo")
-
-        # reject when email content is empty or string with only spaces
-        if not (workflow["content"] and workflow["content"]["plain"].strip()):
-            raise ValidationError("Email content can not be empty.")
-
-        field = request.data["emailSettings"]["field"]
-        subject = request.data["emailSettings"]["subject"]
-        reply_to = request.data["emailSettings"]["replyTo"]
-
-        html = populate_content(workflow, workflow["content"]["html"])
-
-        data = evaluate_filter(workflow["datalab"], workflow["filter"])
-        failed_emails = False
-
-        task_name = None
-        async_tasks = []
-
-        # if schedule email sending
-        if workflow["schedule"] and not workflow["schedule"]["taskName"]:
-            arguments = json.dumps({"workflow_id": id})
-            schedule = mongo_to_dict(workflow["schedule"])
-            task_name, async_tasks = create_scheduled_task(
-                "workflow_send_email", schedule, arguments
-            )
-            schedule["taskName"] = task_name
-            schedule["asyncTasks"] = async_tasks
-            # saving email settings
-            serializer = WorkflowSerializer(
-                instance=workflow,
-                data={
-                    "emailSettings": request.data["emailSettings"],
-                    "schedule": schedule,
-                },
-                partial=True,
-            )
-        else:
-            # if only send email once-off
-            for index, item in enumerate(data):
-                email_sent = send_email(item[field], subject, html[index], reply_to)
-                # if not email_sent:
-                #     failed_emails = True
-                # else:
-                #     serializer = AuditSerializer(data = {
-                #         'workflowId': id,
-                #         'creator': self.request.user.email,
-                #         # TODO: add reply-to
-                #         'receiver': item[field],
-                #         'emailBody': html[index],
-                #         'emailSubject': subject
-                #     })
-                #     serializer.is_valid()
-                #     serializer.save()
-            if failed_emails:
-                # TODO: Make these records identifiable, e.g. allow user to specify the primary key of the DataLab?
-                # And send back a list of the specific records that we failed to send an email to
-                raise ValidationError("Emails to the some records failed to send")
-                # raise ValidationError('Emails to the some records failed to send: ' + str(failed_emails).strip('[]').strip("'"))
-            serializer = WorkflowSerializer(
-                instance=workflow,
-                data={"emailSettings": request.data["emailSettings"]},
-                partial=True,
-            )
-
-        serializer.is_valid()
-        serializer.save()
-        workflow = Workflow.objects.get(id=id)
-        return JsonResponse({"success": "true"}, safe=False)
 
     # retrive email sending history and generate static page.
     @detail_route(methods=["get"])
@@ -447,7 +340,37 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         else:
             return JsonResponse({"mismatch": True})
 
-    # schedule realted
+    @detail_route(methods=["patch"])
+    def update_schedule(self, request, id=None):
+        action = Workflow.objects.get(id=id)
+        arguments = json.dumps({"workflow_id": id})
+
+        # If a schedule already exists for this action, then delete it
+        if "schedule" in action and "taskName" in action["schedule"]:
+            remove_scheduled_task(action["schedule"]["taskName"])
+
+        if "schedule" in action and "asyncTasks" in action["schedule"]:
+            remove_async_task(action["schedule"]["asyncTasks"])
+
+        action.update(unset__schedule=1)
+
+        # create updated schedule tasks
+        task_name, async_tasks = create_scheduled_task(
+            "workflow_send_email", request.data, arguments
+        )
+
+        schedule = request.data
+        schedule["taskName"] = task_name
+        schedule["asyncTasks"] = async_tasks
+        serializer = WorkflowSerializer(
+            action, data={"schedule": schedule}, partial=True
+        )
+
+        serializer.is_valid()
+        serializer.save()
+
+        return self.retrieve_workflow(request, id=id)
+
     @detail_route(methods=["patch"])
     def delete_schedule(self, request, id=None):
         workflow = Workflow.objects.get(id=id)
@@ -461,7 +384,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         workflow.update(unset__schedule=1)
 
-        return JsonResponse({"success": True})
+        return self.retrieve_workflow(request, id=id)
 
     @detail_route(methods=["patch"])
     def update_email_settings(self, request, id=None):
@@ -473,5 +396,62 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid()
         serializer.save()
-        return JsonResponse({"success": True}, safe=False)
 
+        return self.retrieve_workflow(request, id=id)
+
+    @detail_route(methods=["put"])
+    def send_email(self, request, id=None):
+        workflow = Workflow.objects.get(id=id)
+        self.check_object_permissions(self.request, workflow)
+
+        if os.environ.get("ONTASK_DEMO") is not None:
+            raise ValidationError("Email sending is disabled in the demo")
+
+        # reject when email content is empty or string with only spaces
+        if not workflow["html"] or not workflow["html"].strip():
+            raise ValidationError("Email content cannot be empty.")
+
+        field = request.data["emailSettings"]["field"]
+        subject = request.data["emailSettings"]["subject"]
+        reply_to = request.data["emailSettings"]["replyTo"]
+
+        data = evaluate_filter(workflow["datalab"]["data"], workflow["filter"])
+        populated_content = populate_content(
+            workflow.datalab,
+            workflow.filter,
+            workflow.conditionGroups,
+            workflow.content,
+            workflow.html,
+        )
+
+        failed_emails = False
+        # if only send email once-off
+        for index, item in enumerate(data):
+            email_sent = send_email(item[field], subject, populated_content[index], reply_to)
+            # if not email_sent:
+            #     failed_emails = True
+            # else:
+            #     serializer = AuditSerializer(data = {
+            #         'workflowId': id,
+            #         'creator': self.request.user.email,
+            #         # TODO: add reply-to
+            #         'receiver': item[field],
+            #         'emailBody': html[index],
+            #         'emailSubject': subject
+            #     })
+            #     serializer.is_valid()
+            #     serializer.save()
+        if failed_emails:
+            # TODO: Make these records identifiable, e.g. allow user to specify the primary key of the DataLab?
+            # And send back a list of the specific records that we failed to send an email to
+            raise ValidationError("Emails to the some records failed to send")
+            # raise ValidationError('Emails to the some records failed to send: ' + str(failed_emails).strip('[]').strip("'"))
+        serializer = WorkflowSerializer(
+            instance=workflow,
+            data={"emailSettings": request.data["emailSettings"]},
+            partial=True,
+        )
+
+        serializer.is_valid()
+        serializer.save()
+        return JsonResponse({"success": "true"}, safe=False)
