@@ -200,11 +200,10 @@ class Compose extends React.Component {
     this.setState({ editorState: newEditorState, isInside: false });
   }
 
-  handleContent = fn => {
-    const { action, updateAction } = this.props;
-    const { editorState, preview } = this.state;
+  getContent = () => {
+    const { editorState } = this.state;
 
-    let options = {
+    const options = {
       entityStyleFn: entity => {
         const entityType = entity.get("type").toLowerCase();
         if (entityType === "link") {
@@ -219,20 +218,32 @@ class Compose extends React.Component {
         }
       },
       inlineStyleFn: styles => {
-        const color = styles.find((value) => value.startsWith("color-"));
-        const fontFamily = styles.find((value) => value.startsWith("fontfamily-"));
+        const color = styles.find(value => value.startsWith("color-"));
+        const fontFamily = styles.find(value =>
+          value.startsWith("fontfamily-")
+        );
 
         const style = {};
-        if (color) style.color = color.replace('color-', '');
-        if (fontFamily) style.fontFamily = fontFamily.replace('fontfamily-', '');
+        if (color) style.color = color.replace("color-", "");
+        if (fontFamily)
+          style.fontFamily = fontFamily.replace("fontfamily-", "");
 
-        if (Object.keys(styles).length) return { element: 'span', style };
-      },
+        if (Object.keys(styles).length) return { element: "span", style };
+      }
     };
 
     const currentContent = editorState.getCurrentContent();
     const blockMap = convertToRaw(currentContent);
-    const html = stateToHTML(currentContent, options)
+    const html = stateToHTML(currentContent, options);
+
+    return { blockMap, html };
+  };
+
+  handleContent = fn => {
+    const { action, updateAction } = this.props;
+    const { preview } = this.state;
+
+    const { blockMap, html } = this.getContent();
 
     if (fn === "preview") {
       this.setState({ preview: { ...preview, loading: true } });
@@ -466,7 +477,6 @@ class Compose extends React.Component {
               "blockType",
               "fontSize",
               "fontFamily",
-              "textAlign",
               "colorPicker",
               "link",
               "history",
