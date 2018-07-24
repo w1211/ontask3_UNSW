@@ -22,3 +22,6 @@
   margin: 0;
   word-wrap: break-word;
 }
+.datasource .info {
+  margin-bottom: 10px;
+}

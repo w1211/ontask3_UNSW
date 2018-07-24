@@ -48,7 +48,7 @@ class DatasourceModal extends React.Component {
   handleOk = () => {
     const { form, selected, data, closeModal } = this.props;
     const { file, fileError } = this.state;
-    
+
     form.validateFields((err, payload) => {
       if (err || fileError) return;
 
@@ -195,6 +195,13 @@ class DatasourceModal extends React.Component {
             />
           )}
         </FormItem>
+
+        <Alert
+          className="info"
+          message="If your file is inside a folder, add the folder to the file name (e.g. 2018s1/class.csv)"
+          type="info"
+          showIcon
+        />
 
         <p>
           Please copy following policy to your bucket permission:
