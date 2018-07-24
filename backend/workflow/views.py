@@ -13,7 +13,7 @@ from json import dumps
 from datetime import date, datetime
 from bson import ObjectId
 
-from .serializers import WorkflowSerializer, RetrieveWorkflowSerializer
+from .serializers import WorkflowSerializer
 from .models import Workflow
 from .permissions import WorkflowPermissions
 
@@ -41,30 +41,13 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, WorkflowPermissions]
 
     def get_queryset(self):
-        request_user = self.request.user.email
+        # Get the containers this user owns or has access to
+        containers = ContainerViewSet.get_queryset(self)
 
-        pipeline = [
-            {
-                "$lookup": {
-                    "from": "container",
-                    "localField": "container",
-                    "foreignField": "_id",
-                    "as": "container",
-                }
-            },
-            {
-                "$match": {
-                    "$or": [
-                        {"container.owner": request_user},
-                        {"container.sharing": {"$in": [request_user]}},
-                    ]
-                }
-            },
-        ]
-        workflows = list(Workflow.objects.aggregate(*pipeline))
-        return Workflow.objects.filter(
-            id__in=[workflow["_id"] for workflow in workflows]
-        )
+        # Retrieve only the DataLabs that belong to these containers
+        actions = Workflow.objects(container__in=containers)
+
+        return actions
 
     def perform_create(self, serializer):
         self.check_object_permissions(self.request, None)
@@ -84,17 +67,13 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         workflow = Workflow.objects.get(id=id)
         self.check_object_permissions(self.request, workflow)
 
-        serializer = RetrieveWorkflowSerializer(instance=workflow)
+        serializer = WorkflowSerializer(instance=workflow)
 
         datasources = Datasource.objects(container=workflow.container.id).only(
             "id", "name", "fields"
         )
         serializer.instance.datasources = datasources
 
-        # if serializer.data['schedule']:
-        #     serializer.data['schedule']['startDate'] = dateutil.parser.parse(serializer.data['schedule']['startDate']).strftime('%Y-%m-%d')
-        #     serializer.data['schedule']['endDate'] = dateutil.parser.parse(serializer.data['schedule']['endDate']).strftime('%Y-%m-%d')
-        #     serializer.data['schedule']['time'] = dateutil.parser.parse(serializer.data['schedule']['time']).strftime('%H:%M')
         return JsonResponse(serializer.data, safe=False)
 
     @detail_route(methods=["put"])
@@ -258,11 +237,16 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         content = self.request.data["blockMap"]
         html = self.request.data["html"]
 
-        populated_content = populate_content(
-            workflow.datalab, workflow.filter, workflow.conditionGroups, content, html
+        populated_content, filtered_data = populate_content(
+            workflow.datalab,
+            workflow.filter,
+            workflow.conditionGroups,
+            content,
+            html,
+            should_include_data=True,
         )
 
-        return JsonResponse({"populated_content": populated_content})
+        return JsonResponse({"populatedContent": populated_content, "data": filtered_data})
 
     @detail_route(methods=["put"])
     def update_content(self, request, id=None):
@@ -284,7 +268,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         serializer.save()
 
         return self.retrieve_workflow(request, id=id)
-
 
     # retrive email sending history and generate static page.
     @detail_route(methods=["get"])
@@ -427,7 +410,9 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         failed_emails = False
         # if only send email once-off
         for index, item in enumerate(data):
-            email_sent = send_email(item[field], subject, populated_content[index], reply_to)
+            email_sent = send_email(
+                item[field], subject, populated_content[index], reply_to
+            )
             # if not email_sent:
             #     failed_emails = True
             # else:

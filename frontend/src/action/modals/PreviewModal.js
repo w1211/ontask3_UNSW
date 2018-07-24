@@ -18,10 +18,11 @@ class PreviewModal extends React.Component {
   render() {
     const { preview } = this.props;
     const { index } = this.state;
-
+    const { populatedContent, data, visible } = preview;
+    
     return (
       <Modal
-        visible={preview.visible}
+        visible={visible}
         title={`Preview content: ${index + 1}`}
         onCancel={this.handleClose}
         footer={null}
@@ -33,7 +34,7 @@ class PreviewModal extends React.Component {
           >
             <Button
               type="primary"
-              disabled={index === 0 || preview.data.length === 0}
+              disabled={index === 0 || populatedContent.length === 0}
               onClick={() => this.setState({ index: index - 1 })}
             >
               <Icon type="left" />Previous
@@ -42,7 +43,8 @@ class PreviewModal extends React.Component {
             <Button
               type="primary"
               disabled={
-                index === preview.data.length - 1 || preview.data.length === 0
+                index === populatedContent.length - 1 ||
+                populatedContent.length === 0
               }
               onClick={() => this.setState({ index: index + 1 })}
             >
@@ -50,11 +52,11 @@ class PreviewModal extends React.Component {
             </Button>
           </Button.Group>
 
-          {preview.data.length > 0 ? (
+          {populatedContent.length > 0 ? (
             <div
               style={{ padding: "10px", border: "1px solid #F1F1F1" }}
               dangerouslySetInnerHTML={{
-                __html: preview.data[index]
+                __html: populatedContent[index]
               }}
             />
           ) : (

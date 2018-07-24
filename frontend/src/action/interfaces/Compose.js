@@ -116,7 +116,12 @@ class Compose extends React.Component {
     this.state = {
       isInside: false,
       editorState: null,
-      preview: { visible: false, loading: false, data: [] },
+      preview: {
+        visible: false,
+        loading: false,
+        populatedContent: [],
+        data: []
+      },
       visible: { filter: false, conditionGroup: false },
       contentLoading: false
     };
@@ -252,16 +257,19 @@ class Compose extends React.Component {
         payload: { blockMap, html },
         onError: error =>
           this.setState({ preview: { ...preview, loading: false }, error }),
-        onSuccess: populatedContent =>
+        onSuccess: response => {
+          const { populatedContent, data } = response;
           this.setState({
             preview: {
               ...preview,
               visible: true,
               loading: false,
-              data: populatedContent
+              populatedContent,
+              data
             },
             error: null
-          })
+          });
+        }
       });
     } else if (fn === "submit") {
       this.setState({ contentLoading: true });
@@ -507,7 +515,12 @@ class Compose extends React.Component {
           preview={preview}
           onClose={() =>
             this.setState({
-              preview: { loading: false, visible: false, data: [] }
+              preview: {
+                loading: false,
+                visible: false,
+                populatedContent: [],
+                data: []
+              }
             })
           }
         />

@@ -3,7 +3,6 @@ import requestWrapper from "../shared/requestWrapper";
 
 import { fetchContainers } from "../container/ContainerActions";
 
-
 export const REFRESH_FORM_STATE = "REFRESH_FORM_STATE";
 export const UPDATE_FORM_STATE = "UPDATE_FORM_STATE";
 
@@ -12,7 +11,6 @@ export const CLOSE_FILTER_MODAL = "CLOSE_FILTER_MODAL";
 
 export const OPEN_CONDITION_GROUP_MODAL = "OPEN_CONDITION_GROUP_MODAL";
 export const CLOSE_CONDITION_GROUP_MODAL = "CLOSE_CONDITION_GROUP_MODAL";
-
 
 export const createAction = ({
   containerId,
@@ -418,11 +416,8 @@ export const previewContent = ({ actionId, payload, onError, onSuccess }) => {
     errorFn: error => {
       onError(error);
     },
-    successFn: response => {
-      const { populated_content } = response;
-      onSuccess(populated_content);
-    },
-    payload: payload
+    successFn: response => onSuccess(response),
+    payload
   };
 
   requestWrapper(parameters);
@@ -472,11 +467,7 @@ export const updateSchedule = ({
   requestWrapper(parameters);
 };
 
-export const deleteSchedule = ({
-  selected,
-  onError,
-  onSuccess
-}) => {
+export const deleteSchedule = ({ selected, onError, onSuccess }) => {
   const parameters = {
     url: `/workflow/${selected}/delete_schedule/`,
     method: "PATCH",
