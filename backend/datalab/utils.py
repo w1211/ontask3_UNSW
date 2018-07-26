@@ -83,6 +83,7 @@ def combine_data(steps):
                     # the record even with values missing for the previous modules
                     if (
                         "discrepencies" in module
+                        and module["discrepencies"] is not None
                         and "primary" in module["discrepencies"]
                         and module["discrepencies"]["primary"]
                     ):
@@ -95,7 +96,8 @@ def combine_data(steps):
             # If the matching discrepency setting is set to True, then the user wants to keep
             # any records whose matching keys do not exist in this datasource module.
             if not (
-                "discrepencies" in module
+                "discrepencies" in module 
+                and module["discrepencies"] is not None
                 and "matching" in module["discrepencies"]
                 and module["discrepencies"]["matching"]
             ):
