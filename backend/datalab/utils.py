@@ -11,7 +11,7 @@ def bind_column_types(steps):
         if step["type"] == "datasource":
             step = step["datasource"]
             datasource = None
-            
+
             fields = step["fields"]
             types = step["types"]
 
@@ -21,7 +21,7 @@ def bind_column_types(steps):
                         datasource_id = step["id"]
                         datasource = Datasource.objects.get(id=datasource_id)
                     types[field] = datasource["types"][field]
-                    
+
     return steps
 
 
@@ -96,7 +96,7 @@ def combine_data(steps):
             # If the matching discrepency setting is set to True, then the user wants to keep
             # any records whose matching keys do not exist in this datasource module.
             if not (
-                "discrepencies" in module 
+                "discrepencies" in module
                 and module["discrepencies"] is not None
                 and "matching" in module["discrepencies"]
                 and module["discrepencies"]["matching"]
@@ -146,8 +146,16 @@ def update_form_data(
 
     not_accessible = (
         (is_web_form and not web_form or (web_form and not web_form["active"]))
-        or ("activeFrom" in form and form["activeFrom"] > datetime.utcnow())
-        or ("activeTo" in form and form["activeTo"] < datetime.utcnow())
+        or (
+            "activeFrom" in form
+            and form["activeFrom"] is not None
+            and form["activeFrom"] > datetime.utcnow()
+        )
+        or (
+            "activeTo" in form
+            and form["activeTo"] is not None
+            and form["activeTo"] < datetime.utcnow()
+        )
     )
     if not_accessible:
         raise Exception("Unauthorized")
@@ -233,8 +241,16 @@ def retrieve_form_data(datalab, step, request_user):
 
     not_accessible = (
         (not web_form or not web_form["active"])
-        or ("activeFrom" in form and form["activeFrom"] > datetime.utcnow())
-        or ("activeTo" in form and form["activeTo"] < datetime.utcnow())
+        or (
+            "activeFrom" in form
+            and form["activeFrom"] is not None
+            and form["activeFrom"] > datetime.utcnow()
+        )
+        or (
+            "activeTo" in form
+            and form["activeTo"] is not None
+            and form["activeTo"] < datetime.utcnow()
+        )
     )
     if not_accessible:
         return {"error": "This form is currently not accessible"}
