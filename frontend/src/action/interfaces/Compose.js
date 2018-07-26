@@ -1,7 +1,17 @@
 import React from "react";
 import { bindActionCreators } from "redux";
 import { connect } from "react-redux";
-import { Button, Divider, Menu, Dropdown, Alert } from "antd";
+import {
+  Button,
+  Divider,
+  Menu,
+  Dropdown,
+  Alert,
+  Popconfirm,
+  Input,
+  Popover,
+  Tooltip
+} from "antd";
 
 import { Editor } from "slate-react";
 import Html from "slate-html-serializer";
@@ -97,19 +107,11 @@ class Compose extends React.Component {
         data: []
       },
       visible: { filter: false, conditionGroup: false },
-      contentLoading: false
+      contentLoading: false,
+      hyperlink: { label: null, url: null },
+      image: { src: null, alt: null }
     };
   }
-
-  hasMark = type => {
-    const { value } = this.state;
-    return value.activeMarks.some(mark => mark.type === type);
-  };
-
-  hasBlock = type => {
-    const { value } = this.state;
-    return value.blocks.some(node => node.type === type);
-  };
 
   renderMarkButton = (type, icon) => {
     const isActive = this.hasMark(type);
@@ -143,42 +145,16 @@ class Compose extends React.Component {
     );
   };
 
-  renderNode = props => {
-    const { colours } = this.state;
-    const { attributes, children, node } = props;
+  hasMark = type => {
+    const { value } = this.state;
+    return value.activeMarks.some(mark => mark.type === type);
+  };
 
-    switch (node.type) {
-      case "bulleted-list":
-        return <ul {...attributes}>{children}</ul>;
-      case "heading-one":
-        return <h1 {...attributes}>{children}</h1>;
-      case "heading-two":
-        return <h2 {...attributes}>{children}</h2>;
-      case "list-item":
-        return <li {...attributes}>{children}</li>;
-      case "numbered-list":
-        return <ol {...attributes}>{children}</ol>;
-      case "image":
-        const src = node.data.get("src");
-        const alt = node.data.get("alt");
-        return <img {...attributes} src={src} alt={alt} />;
-      case "condition":
-        const name = node.data.get("name");
-        const group = node.data.get("group");
-        return (
-          <div
-            className="condition_block"
-            style={{ borderColor: colours[group] }}
-          >
-            <div className="condition_name" style={{ color: colours[group] }}>
-              If <strong>{name}</strong>:
-            </div>
-            {children}
-          </div>
-        );
-      default:
-        return;
-    }
+  onClickMark = (event, type, data) => {
+    event.preventDefault();
+    const { value } = this.state;
+    const change = value.change().toggleMark({ type, data });
+    this.onChange(change);
   };
 
   renderMark = props => {
@@ -198,37 +174,9 @@ class Compose extends React.Component {
     }
   };
 
-  onKeyDown = (event, change) => {
-    if (event.key === "Enter" && !event.shiftKey) {
-      const { value } = change;
-      const { startBlock } = value;
-      if (startBlock.type !== "list-item")
-        return change.insertBlock("paragraph");
-    }
-
-    let mark;
-    if (isBoldHotkey(event)) {
-      mark = "bold";
-    } else if (isItalicHotkey(event)) {
-      mark = "italic";
-    } else if (isUnderlinedHotkey(event)) {
-      mark = "underlined";
-    } else if (isCodeHotkey(event)) {
-      mark = "code";
-    } else {
-      return;
-    }
-
-    event.preventDefault();
-    change.toggleMark(mark);
-    return true;
-  };
-
-  onClickMark = (event, type) => {
-    event.preventDefault();
+  hasBlock = type => {
     const { value } = this.state;
-    const change = value.change().toggleMark(type);
-    this.onChange(change);
+    return value.blocks.some(node => node.type === type);
   };
 
   onClickBlock = (event, type) => {
@@ -274,6 +222,101 @@ class Compose extends React.Component {
     }
 
     this.onChange(change);
+  };
+
+  renderNode = props => {
+    const { colours } = this.state;
+    const { attributes, children, node } = props;
+
+    switch (node.type) {
+      case "bulleted-list":
+        return <ul {...attributes}>{children}</ul>;
+      case "heading-one":
+        return <h1 {...attributes}>{children}</h1>;
+      case "heading-two":
+        return <h2 {...attributes}>{children}</h2>;
+      case "list-item":
+        return <li {...attributes}>{children}</li>;
+      case "numbered-list":
+        return <ol {...attributes}>{children}</ol>;
+      case "link":
+        let href = node.data.get("href");
+        if (!(href.startsWith("http://") || href.startsWith("https://")))
+          href = `//${href}`;
+        return (
+          <Popover
+            content={
+              <div>
+                {/* <Tooltip title="Edit link">
+                  <i
+                    style={{ cursor: "pointer", marginRight: 5 }}
+                    className="material-icons"
+                  >
+                    create
+                  </i>
+                </Tooltip> */}
+                <Tooltip title="Go to link">
+                  <a
+                    href={href}
+                    target="_blank"
+                    style={{ color: "rgba(0, 0, 0, 0.65)" }}
+                  >
+                    <i className="material-icons">public</i>
+                  </a>
+                </Tooltip>
+              </div>
+            }
+          >
+            <a {...attributes}>{children}</a>
+          </Popover>
+        );
+      case "image":
+        const src = node.data.get("src");
+        const alt = node.data.get("alt");
+        return <img {...attributes} src={src} alt={alt} style={{ maxWidth: "100%" }}/>;
+      case "condition":
+        const name = node.data.get("name");
+        const group = node.data.get("group");
+        return (
+          <div
+            className="condition_block"
+            style={{ borderColor: colours[group] }}
+          >
+            <div className="condition_name" style={{ color: colours[group] }}>
+              If <strong>{name}</strong>:
+            </div>
+            {children}
+          </div>
+        );
+      default:
+        return;
+    }
+  };
+
+  onKeyDown = (event, change) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      const { value } = change;
+      const { startBlock } = value;
+      if (startBlock.type !== "list-item")
+        return change.insertBlock("paragraph");
+    }
+
+    let mark;
+    if (isBoldHotkey(event)) {
+      mark = "bold";
+    } else if (isItalicHotkey(event)) {
+      mark = "italic";
+    } else if (isUnderlinedHotkey(event)) {
+      mark = "underlined";
+    } else if (isCodeHotkey(event)) {
+      mark = "code";
+    } else {
+      return;
+    }
+
+    event.preventDefault();
+    change.toggleMark(mark);
+    return true;
   };
 
   handleConditionGroupMenuClick = (e, conditionGroup, index) => {
@@ -385,7 +428,7 @@ class Compose extends React.Component {
     const rules = [
       {
         serialize(obj, children) {
-          if (obj.object === "block") {
+          if (["block", "inline"].includes(obj.object)) {
             switch (obj.type) {
               case "heading-one":
                 return <h1>{children}</h1>;
@@ -399,6 +442,20 @@ class Compose extends React.Component {
                 return <ul>{children}</ul>;
               case "list-item":
                 return <li>{children}</li>;
+              case "link":
+                return (
+                  <a href={obj.data.get("href")} target="_blank">
+                    {children}
+                  </a>
+                );
+              case "image":
+                return (
+                  <img
+                    src={obj.data.get("src")}
+                    alt={obj.data.get("alt")}
+                    style={{ maxWidth: "100%" }}
+                  />
+                );
               case "condition":
                 return <div>{children}</div>;
               default:
@@ -438,6 +495,112 @@ class Compose extends React.Component {
     });
 
     return [...output];
+  };
+
+  LinkButton = () => {
+    const { hyperlink, value } = this.state;
+    const change = value.change();
+
+    return (
+      <Popconfirm
+        icon={null}
+        title={
+          <div className="action_toolbar_popup">
+            <Input
+              placeholder="Label"
+              size="small"
+              onChange={e =>
+                this.setState({
+                  hyperlink: { ...hyperlink, label: e.target.value }
+                })
+              }
+              value={hyperlink.label}
+            />
+            <Input
+              placeholder="URL"
+              size="small"
+              onChange={e =>
+                this.setState({
+                  hyperlink: { ...hyperlink, url: e.target.value }
+                })
+              }
+              value={hyperlink.url}
+            />
+          </div>
+        }
+        onVisibleChange={visible => {
+          if (!visible)
+            this.setState({ hyperlink: { label: null, url: null } });
+        }}
+        onConfirm={() => {
+          change.insertInline({
+            type: "link",
+            data: { href: hyperlink.url },
+            nodes: [
+              {
+                object: "text",
+                leaves: [
+                  {
+                    text: hyperlink.label ? hyperlink.label : hyperlink.url
+                  }
+                ]
+              }
+            ]
+          });
+          this.onChange(change);
+        }}
+      >
+        <i className="material-icons">insert_link</i>
+      </Popconfirm>
+    );
+  };
+
+  ImageButton = () => {
+    const { image, value } = this.state;
+    const change = value.change();
+
+    return (
+      <Popconfirm
+        icon={null}
+        title={
+          <div className="action_toolbar_popup">
+            <Input
+              placeholder="Image URL"
+              size="small"
+              onChange={e =>
+                this.setState({
+                  image: { ...image, src: e.target.value }
+                })
+              }
+              value={image.src}
+            />
+            <Input
+              placeholder="Description/Alt tag"
+              size="small"
+              onChange={e =>
+                this.setState({
+                  image: { ...image, alt: e.target.value }
+                })
+              }
+              value={image.alt}
+            />
+          </div>
+        }
+        onVisibleChange={visible => {
+          if (!visible) this.setState({ image: { src: null, alt: null } });
+        }}
+        onConfirm={() => {
+          change.insertInline({
+            type: "image",
+            data: { src: image.src, alt: image.alt },
+            isVoid: true
+          });
+          this.onChange(change);
+        }}
+      >
+        <i className="material-icons">insert_photo</i>
+      </Popconfirm>
+    );
   };
 
   render() {
@@ -566,6 +729,8 @@ class Compose extends React.Component {
           {this.renderMarkButton("italic", "format_italic")}
           {this.renderMarkButton("underlined", "format_underlined")}
           {this.renderMarkButton("code", "code")}
+          {this.LinkButton()}
+          {this.ImageButton()}
           {this.renderBlockButton("heading-one", "looks_one")}
           {this.renderBlockButton("heading-two", "looks_two")}
           {this.renderBlockButton("paragraph", "short_text")}
@@ -622,6 +787,15 @@ class Compose extends React.Component {
             Save
           </Button>
         </div>
+
+        {/* <Button
+          onClick={() => {
+            console.log(value.toJSON());
+            console.log(this.generateHtml());
+          }}
+        >
+          Test
+        </Button> */}
 
         {error && (
           <Alert message={error} type="error" style={{ marginTop: "10px" }} />

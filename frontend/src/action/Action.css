@@ -40,6 +40,15 @@
   padding: 5px 0;
   border-bottom: 3px solid #eee;
 }
+.action_toolbar_popup {
+  max-width: 200px;
+}
+.action_toolbar_popup i {
+  display: none;
+}
+.action_toolbar_popup input {
+  margin-bottom: 5px;
+}
 .action .content_editor {
   padding: 10px 5px;
   min-height: 200px;
@@ -48,6 +57,15 @@
 .action .content_editor.isInside {
   border: 1px solid #E0E0E0;
   box-sizing: border-box;
+}
+
+/* Temporarily hide popover icon until next major Ant Design release
+  where they will introduce icon customisation */
+.ant-popover-message > .anticon {
+  display: none;
+}
+.ant-popover-message-title {
+  padding-left: 0 !important;
 }
 
 /* Email component styles */
