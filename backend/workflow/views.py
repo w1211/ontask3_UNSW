@@ -13,7 +13,7 @@ from json import dumps
 from datetime import date, datetime
 from bson import ObjectId
 
-from .serializers import WorkflowSerializer
+from .serializers import WorkflowSerializer, RetrieveWorkflowSerializer
 from .models import Workflow
 from .permissions import WorkflowPermissions
 
@@ -67,7 +67,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         workflow = Workflow.objects.get(id=id)
         self.check_object_permissions(self.request, workflow)
 
-        serializer = WorkflowSerializer(instance=workflow)
+        serializer = RetrieveWorkflowSerializer(instance=workflow)
 
         datasources = Datasource.objects(container=workflow.container.id).only(
             "id", "name", "fields"
