@@ -17,19 +17,37 @@
 .action .conditionGroupBtn button:first-child {
   cursor: move;
 }
-.action .isInside {
-  border-color: #9e9e9e;
-}
 
 .action .condition_block {
   border: 1px dashed;
   border-radius: 3px;
   padding: 5px;
-  margin-bottom: 3px;
+  margin: 5px 0;
 }
 .action .condition_block .condition_name {
   font-size: 12px;
   font-weight: 300;
+}
+.action .material-icons {
+  cursor: pointer;
+  color: #ccc;
+  margin-right: 10px;
+}
+.action .material-icons.active {
+  color: black;
+}
+.action .toolbar {
+  padding: 5px 0;
+  border-bottom: 3px solid #eee;
+}
+.action .content_editor {
+  padding: 10px 5px;
+  min-height: 200px;
+  border: 1px solid transparent;
+}
+.action .content_editor.isInside {
+  border: 1px solid #E0E0E0;
+  box-sizing: border-box;
 }
 
 /* Email component styles */

@@ -2,21 +2,14 @@ import React from "react";
 import { bindActionCreators } from "redux";
 import { connect } from "react-redux";
 import { Button, Divider, Menu, Dropdown, Alert } from "antd";
-import {
-  convertToRaw,
-  EditorState,
-  EditorBlock,
-  ContentBlock,
-  genKey,
-  DefaultDraftBlockRenderMap,
-  convertFromRaw
-} from "draft-js";
-import Immutable from "immutable";
+
+import { Editor } from "slate-react";
+import Html from "slate-html-serializer";
+import SoftBreak from "slate-soft-break";
+import { Value } from "slate";
+import { isKeyHotkey } from "is-hotkey";
+
 import _ from "lodash";
-
-import { stateToHTML } from "@stevenphaedonos/draft-js-export-html";
-
-import { Editor } from "react-draft-wysiwyg";
 import Draggable from "react-draggable";
 
 import * as ActionActionCreators from "../ActionActions";
@@ -26,60 +19,37 @@ import ConditionGroupModal from "../modals/ConditionGroupModal";
 import PreviewModal from "../modals/PreviewModal";
 
 import "react-draft-wysiwyg/dist/react-draft-wysiwyg.css";
-const { List, Map } = Immutable;
+import "material-design-icons/iconfont/material-icons.css";
 
-const addNewBlockAt = (
-  editorState,
-  pivotBlockKey,
-  newBlockType,
-  initialData = new Map({})
-) => {
-  const content = editorState.getCurrentContent();
-  const { blockMap } = content;
-  const block = blockMap.get(pivotBlockKey);
+const DEFAULT_NODE = "paragraph";
 
-  if (!block) {
-    throw new Error(
-      `The pivot key - ${pivotBlockKey} is not present in blockMap.`
-    );
+const plugins = [SoftBreak({ shift: true })];
+
+const initialValue = Value.fromJSON({
+  document: {
+    nodes: [
+      {
+        object: "block",
+        type: "paragraph",
+        nodes: [
+          {
+            object: "text",
+            leaves: [
+              {
+                text: ""
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
+});
 
-  const blocksBefore = blockMap.toSeq().takeUntil(v => v === block);
-  const blocksAfter = blockMap
-    .toSeq()
-    .skipUntil(v => v === block)
-    .rest();
-  const newBlockKey = genKey();
-
-  const newBlock = new ContentBlock({
-    key: newBlockKey,
-    type: newBlockType,
-    text: "",
-    depth: 0,
-    characterList: new List(),
-    data: initialData
-  });
-
-  const newBlockMap = blocksBefore
-    .concat([[pivotBlockKey, block], [newBlockKey, newBlock]], blocksAfter)
-    .toOrderedMap();
-
-  const selection = editorState.getSelection();
-
-  const newContent = content.merge({
-    blockMap: newBlockMap,
-    selectionBefore: selection,
-    selectionAfter: selection.merge({
-      anchorKey: newBlockKey,
-      anchorOffset: 0,
-      focusKey: newBlockKey,
-      focusOffset: 0,
-      isBackward: false
-    })
-  });
-
-  return EditorState.push(editorState, newContent, "split-block");
-};
+const isBoldHotkey = isKeyHotkey("mod+b");
+const isItalicHotkey = isKeyHotkey("mod+i");
+const isUnderlinedHotkey = isKeyHotkey("mod+u");
+const isCodeHotkey = isKeyHotkey("mod+`");
 
 const generateColours = size => {
   let colours = new Array(size);
@@ -106,7 +76,7 @@ const generateColours = size => {
 class Compose extends React.Component {
   constructor(props) {
     super(props);
-    const { dispatch } = props;
+    const { dispatch, action } = props;
 
     this.boundActionCreators = bindActionCreators(
       ActionActionCreators,
@@ -115,7 +85,11 @@ class Compose extends React.Component {
 
     this.state = {
       isInside: false,
-      editorState: null,
+      value:
+        "content" in action && action["content"]
+          ? Value.fromJSON(action["content"])
+          : initialValue,
+      colours: generateColours(action.conditionGroups.length),
       preview: {
         visible: false,
         loading: false,
@@ -127,28 +101,180 @@ class Compose extends React.Component {
     };
   }
 
-  static getDerivedStateFromProps(props, state) {
-    const { action } = props;
-    const { editorState, colours } = state;
+  hasMark = type => {
+    const { value } = this.state;
+    return value.activeMarks.some(mark => mark.type === type);
+  };
 
-    const newState = {};
+  hasBlock = type => {
+    const { value } = this.state;
+    return value.blocks.some(node => node.type === type);
+  };
 
-    if (!action) return null;
+  renderMarkButton = (type, icon) => {
+    const isActive = this.hasMark(type);
 
-    if (!colours || action.conditionGroups.length > colours.length)
-      newState.colours = generateColours(action.conditionGroups.length);
+    return (
+      <i
+        className={`material-icons ${isActive ? "active" : ""}`}
+        onMouseDown={event => this.onClickMark(event, type)}
+      >
+        {icon}
+      </i>
+    );
+  };
 
-    if (!editorState) {
-      if (action["content"]) {
-        const contentState = convertFromRaw(action.content);
-        newState.editorState = EditorState.createWithContent(contentState);
+  renderBlockButton = (type, icon) => {
+    let isActive = this.hasBlock(type);
+
+    if (["numbered-list", "bulleted-list"].includes(type)) {
+      const { value } = this.state;
+      const parent = value.document.getParent(value.blocks.first().key);
+      isActive = this.hasBlock("list-item") && parent && parent.type === type;
+    }
+
+    return (
+      <i
+        className={`material-icons ${isActive ? "active" : ""}`}
+        onMouseDown={event => this.onClickBlock(event, type)}
+      >
+        {icon}
+      </i>
+    );
+  };
+
+  renderNode = props => {
+    const { colours } = this.state;
+    const { attributes, children, node } = props;
+
+    switch (node.type) {
+      case "bulleted-list":
+        return <ul {...attributes}>{children}</ul>;
+      case "heading-one":
+        return <h1 {...attributes}>{children}</h1>;
+      case "heading-two":
+        return <h2 {...attributes}>{children}</h2>;
+      case "list-item":
+        return <li {...attributes}>{children}</li>;
+      case "numbered-list":
+        return <ol {...attributes}>{children}</ol>;
+      case "image":
+        const src = node.data.get("src");
+        const alt = node.data.get("alt");
+        return <img {...attributes} src={src} alt={alt} />;
+      case "condition":
+        const name = node.data.get("name");
+        const group = node.data.get("group");
+        return (
+          <div
+            className="condition_block"
+            style={{ borderColor: colours[group] }}
+          >
+            <div className="condition_name" style={{ color: colours[group] }}>
+              If <strong>{name}</strong>:
+            </div>
+            {children}
+          </div>
+        );
+      default:
+        return;
+    }
+  };
+
+  renderMark = props => {
+    const { children, mark, attributes } = props;
+
+    switch (mark.type) {
+      case "bold":
+        return <strong {...attributes}>{children}</strong>;
+      case "code":
+        return <code {...attributes}>{children}</code>;
+      case "italic":
+        return <em {...attributes}>{children}</em>;
+      case "underlined":
+        return <u {...attributes}>{children}</u>;
+      default:
+        return;
+    }
+  };
+
+  onKeyDown = (event, change) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      const { value } = change;
+      const { startBlock } = value;
+      if (startBlock.type !== "list-item")
+        return change.insertBlock("paragraph");
+    }
+
+    let mark;
+    if (isBoldHotkey(event)) {
+      mark = "bold";
+    } else if (isItalicHotkey(event)) {
+      mark = "italic";
+    } else if (isUnderlinedHotkey(event)) {
+      mark = "underlined";
+    } else if (isCodeHotkey(event)) {
+      mark = "code";
+    } else {
+      return;
+    }
+
+    event.preventDefault();
+    change.toggleMark(mark);
+    return true;
+  };
+
+  onClickMark = (event, type) => {
+    event.preventDefault();
+    const { value } = this.state;
+    const change = value.change().toggleMark(type);
+    this.onChange(change);
+  };
+
+  onClickBlock = (event, type) => {
+    event.preventDefault();
+    const { value } = this.state;
+    const change = value.change();
+    const { document } = value;
+
+    // Handle everything but list buttons.
+    if (type !== "bulleted-list" && type !== "numbered-list") {
+      const isActive = this.hasBlock(type);
+      const isList = this.hasBlock("list-item");
+
+      if (isList) {
+        change
+          .setBlocks(isActive ? DEFAULT_NODE : type)
+          .unwrapBlock("bulleted-list")
+          .unwrapBlock("numbered-list");
       } else {
-        newState.editorState = EditorState.createEmpty();
+        change.setBlocks(isActive ? DEFAULT_NODE : type);
+      }
+    } else {
+      // Handle the extra wrapping required for list buttons.
+      const isList = this.hasBlock("list-item");
+      const isType = value.blocks.some(block => {
+        return !!document.getClosest(block.key, parent => parent.type === type);
+      });
+
+      if (isList && isType) {
+        change
+          .setBlocks(DEFAULT_NODE)
+          .unwrapBlock("bulleted-list")
+          .unwrapBlock("numbered-list");
+      } else if (isList) {
+        change
+          .unwrapBlock(
+            type === "bulleted-list" ? "numbered-list" : "bulleted-list"
+          )
+          .wrapBlock(type);
+      } else {
+        change.setBlocks("list-item").wrapBlock(type);
       }
     }
 
-    return Object.keys(newState).length > 0 ? newState : null;
-  }
+    this.onChange(change);
+  };
 
   handleConditionGroupMenuClick = (e, conditionGroup, index) => {
     const { action, updateAction } = this.props;
@@ -171,8 +297,8 @@ class Compose extends React.Component {
     }
   };
 
-  isInsideContent(mouseEvent, editor) {
-    const contentEditor = editor.editorContainer.parentElement.parentElement.getBoundingClientRect();
+  isInsideContent(mouseEvent) {
+    const contentEditor = this.editor.getBoundingClientRect();
     const isInsideX =
       mouseEvent.clientX >= contentEditor.x &&
       mouseEvent.clientX <= contentEditor.x + contentEditor.width;
@@ -183,78 +309,42 @@ class Compose extends React.Component {
     // isInside flag is consumed by:
     //   The conditional css class on the content editor (darkens the border)
     //   Determining whether to add the dragged condition group to the content editor after drag stops
-    this.setState({ isInside: isInsideX && isInsideY ? true : false });
+    this.setState({ isInside: isInsideX && isInsideY });
   }
 
   stopDrag(conditionGroup, index) {
-    const { isInside, editorState } = this.state;
+    const { isInside, value } = this.state;
     if (!isInside) return;
 
-    const selection = editorState.getSelection();
-
-    let newEditorState = editorState;
+    const change = value.change();
     conditionGroup.conditions.reverse().forEach(condition => {
-      newEditorState = addNewBlockAt(
-        newEditorState,
-        selection.getAnchorKey(),
-        "ConditionBlock",
-        new Map({ name: condition.name, group: index })
-      );
+      change.insertBlock({
+        type: "condition",
+        data: {
+          name: condition.name,
+          group: index
+        }
+      });
     });
 
-    this.setState({ editorState: newEditorState, isInside: false });
+    this.setState({ isInside: false });
+    this.onChange(change);
   }
-
-  getContent = () => {
-    const { editorState } = this.state;
-
-    const options = {
-      entityStyleFn: entity => {
-        const entityType = entity.get("type").toLowerCase();
-        if (entityType === "link") {
-          const data = entity.getData();
-          return {
-            element: "a",
-            attributes: {
-              href: data.url,
-              target: data.targetOption
-            }
-          };
-        }
-      },
-      inlineStyleFn: styles => {
-        const color = styles.find(value => value.startsWith("color-"));
-        const fontFamily = styles.find(value =>
-          value.startsWith("fontfamily-")
-        );
-
-        const style = {};
-        if (color) style.color = color.replace("color-", "");
-        if (fontFamily)
-          style.fontFamily = fontFamily.replace("fontfamily-", "");
-
-        if (Object.keys(styles).length) return { element: "span", style };
-      }
-    };
-
-    const currentContent = editorState.getCurrentContent();
-    const blockMap = convertToRaw(currentContent);
-    const html = stateToHTML(currentContent, options);
-
-    return { blockMap, html };
-  };
 
   handleContent = fn => {
     const { action, updateAction } = this.props;
-    const { preview } = this.state;
+    const { preview, value } = this.state;
 
-    const { blockMap, html } = this.getContent();
+    const payload = {
+      blockMap: value.toJSON(),
+      html: this.generateHtml()
+    };
 
     if (fn === "preview") {
       this.setState({ preview: { ...preview, loading: true } });
       ActionActionCreators.previewContent({
         actionId: action.id,
-        payload: { blockMap, html },
+        payload,
         onError: error =>
           this.setState({ preview: { ...preview, loading: false }, error }),
         onSuccess: response => {
@@ -275,7 +365,7 @@ class Compose extends React.Component {
       this.setState({ contentLoading: true });
       this.boundActionCreators.updateContent({
         actionId: action.id,
-        payload: { blockMap, html },
+        payload,
         onError: error => this.setState({ contentLoading: false, error }),
         onSuccess: action => {
           this.setState({ contentLoading: false, error: null });
@@ -285,82 +375,81 @@ class Compose extends React.Component {
     }
   };
 
-  blockRendererFn = contentBlock => {
-    const type = contentBlock.getType();
-
-    if (type === "ConditionBlock") {
-      return {
-        component: this.ConditionBlock,
-        props: {}
-      };
-    }
+  onChange = ({ value }) => {
+    this.setState({ value });
   };
 
-  extendedBlockRenderMap = DefaultDraftBlockRenderMap.merge(
-    Immutable.Map({
-      ConditionBlock: {
-        element: "section",
-        wrapper: this.ConditionBlock
+  generateHtml = () => {
+    const { value } = this.state;
+
+    const rules = [
+      {
+        serialize(obj, children) {
+          if (obj.object === "block") {
+            switch (obj.type) {
+              case "heading-one":
+                return <h1>{children}</h1>;
+              case "heading-two":
+                return <h2>{children}</h2>;
+              case "paragraph":
+                return <p className={obj.data.get("className")}>{children}</p>;
+              case "numbered-list":
+                return <ol>{children}</ol>;
+              case "bulleted-list":
+                return <ul>{children}</ul>;
+              case "list-item":
+                return <li>{children}</li>;
+              case "condition":
+                return <div>{children}</div>;
+              default:
+                return;
+            }
+          }
+        }
+      },
+      {
+        serialize(obj, children) {
+          if (obj.object === "mark") {
+            switch (obj.type) {
+              case "bold":
+                return <strong>{children}</strong>;
+              case "italic":
+                return <em>{children}</em>;
+              case "underlined":
+                return <u>{children}</u>;
+              case "code":
+                return (
+                  <pre>
+                    <code>{children}</code>
+                  </pre>
+                );
+              default:
+                return;
+            }
+          }
+        }
       }
-    })
-  );
+    ];
 
-  ConditionBlock = props => {
-    const { block } = props;
-    const { colours } = this.state;
-
-    const data = block.getData();
-
-    const name = data.get("name");
-    const group = data.get("group");
-
-    return (
-      <div className="condition_block" style={{ borderColor: colours[group] }}>
-        <span
-          contentEditable={false}
-          readOnly
-          className="condition_name"
-          style={{ color: colours[group] }}
-        >
-          If <strong>{name}</strong>:
-        </span>
-        <EditorBlock {...props} />
-      </div>
-    );
-  };
-
-  handleEditorStateChange = editorState => {
-    const currentContent = editorState.getCurrentContent();
-    const blockMap = convertToRaw(currentContent);
-
-    let requiresUpdate = false;
-
-    blockMap.blocks.forEach(block => {
-      if (block.type === "ConditionBlock" && !Object.keys(block.data).length) {
-        block.type = "unstyled";
-        requiresUpdate = true;
-      }
+    const html = new Html({ rules });
+    const output = value.document.nodes.map(node => {
+      const pseudoValue = { document: { nodes: [node] } };
+      return html.serialize(pseudoValue);
     });
 
-    if (requiresUpdate) {
-      const contentState = convertFromRaw(blockMap);
-      this.setState({
-        editorState: EditorState.createWithContent(contentState)
-      });
-    } else {
-      this.setState({ editorState });
-    }
+    return [...output];
   };
 
   render() {
     const { action, updateAction } = this.props;
     const {
-      editorState,
       preview,
       visible,
       contentLoading,
       error,
-      colours
+      value,
+      colours,
+      isInside
     } = this.state;
 
     return (
@@ -426,15 +515,8 @@ class Compose extends React.Component {
                 <Draggable
                   key={i}
                   position={{ x: 0, y: 0 }}
-                  onDrag={e => {
-                    this.isInsideContent(e, this.editor);
-                  }}
-                  onStop={() => {
-                    this.stopDrag(conditionGroup, i);
-                  }}
-                  onMouseDown={e => {
-                    e.preventDefault();
-                  }} // Keeps the content editor in focus when user starts to drag a condition group
+                  onDrag={e => this.isInsideContent(e)}
+                  onStop={() => this.stopDrag(conditionGroup, i)}
                 >
                   <Dropdown.Button
                     overlay={
@@ -478,37 +560,30 @@ class Compose extends React.Component {
         <Divider dashed />
 
         <h3>Content</h3>
+
+        <div className="toolbar">
+          {this.renderMarkButton("bold", "format_bold")}
+          {this.renderMarkButton("italic", "format_italic")}
+          {this.renderMarkButton("underlined", "format_underlined")}
+          {this.renderMarkButton("code", "code")}
+          {this.renderBlockButton("heading-one", "looks_one")}
+          {this.renderBlockButton("heading-two", "looks_two")}
+          {this.renderBlockButton("paragraph", "short_text")}
+          {this.renderBlockButton("numbered-list", "format_list_numbered")}
+          {this.renderBlockButton("bulleted-list", "format_list_bulleted")}
+        </div>
         <Editor
-          toolbar={{
-            options: [
-              "inline",
-              "blockType",
-              "fontSize",
-              "fontFamily",
-              "colorPicker",
-              "link",
-              "history",
-              "list"
-            ],
-            inline: {
-              options: [
-                "bold",
-                "italic",
-                "underline",
-                "strikethrough",
-                "monospace"
-              ]
-            }
-          }}
-          wrapperClassName="editor-wrapper"
-          editorClassName={{ editor: true, isInside: this.state.isInside }}
-          editorState={editorState}
-          editorRef={el => {
-            this.editor = el;
-          }}
-          blockRenderMap={this.extendedBlockRenderMap}
-          blockRendererFn={this.blockRendererFn}
-          onEditorStateChange={this.handleEditorStateChange}
+          className={`content_editor ${isInside ? "isInside" : ""}`}
+          value={value}
+          onChange={this.onChange}
+          onKeyDown={this.onKeyDown}
+          renderNode={this.renderNode}
+          renderMark={this.renderMark}
+          renderEditor={props => (
+            <div ref={editor => (this.editor = editor)}>{props.children}</div>
+          )}
+          plugins={plugins}
+          placeholder={"Create content by entering text here"}
         />
 
         <PreviewModal

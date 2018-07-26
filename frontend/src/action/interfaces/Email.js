@@ -282,7 +282,7 @@ class Email extends React.Component {
                 </Button>
               </Button.Group>
               <span className="current_record">
-                Record {index + 1} of {preview.length}
+                Record {index + 1} of {preview.populatedContent.length}
               </span>
             </div>
           )}
@@ -294,7 +294,7 @@ class Email extends React.Component {
           ) : (
             <div
               style={{ maxHeight: 500 }}
-              dangerouslySetInnerHTML={{ __html: preview && preview[index] }}
+              dangerouslySetInnerHTML={{ __html: preview && preview.populatedContent[index] }}
             />
           )}
         </div>

@@ -73,7 +73,7 @@ class Workflow(Document):
     filtered_count = IntField(null=True)
     conditionGroups = EmbeddedDocumentListField(ConditionGroup)
     content = DictField(null=True)
-    html = StringField(null=True)
+    html = ListField(StringField())
     emailSettings = EmbeddedDocumentField(EmailSettings)
     schedule = EmbeddedDocumentField(Schedule, null=True, required=False)
     linkId = StringField(null=True)  # link_id is unique across workflow objects
