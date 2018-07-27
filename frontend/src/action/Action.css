@@ -18,6 +18,11 @@
   cursor: move;
 }
 
+.preview .ant-table td { 
+  white-space: nowrap; 
+  min-width: 100px;
+}
+
 .action .condition_block {
   border: 1px dashed;
   border-radius: 3px;

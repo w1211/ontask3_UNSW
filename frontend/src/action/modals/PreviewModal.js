@@ -1,5 +1,5 @@
 import React from "react";
-import { Modal, Button, Icon } from "antd";
+import { Modal, Button, Icon, Table } from "antd";
 
 class PreviewModal extends React.Component {
   constructor(props) {
@@ -19,13 +19,14 @@ class PreviewModal extends React.Component {
     const { preview } = this.props;
     const { index } = this.state;
     const { populatedContent, data, visible } = preview;
-    
+
     return (
       <Modal
         visible={visible}
         title={`Preview content: ${index + 1}`}
         onCancel={this.handleClose}
         footer={null}
+        className="preview"
       >
         <div style={{ display: "flex", flexDirection: "column" }}>
           <Button.Group
@@ -53,12 +54,29 @@ class PreviewModal extends React.Component {
           </Button.Group>
 
           {populatedContent.length > 0 ? (
-            <div
-              style={{ padding: "10px", border: "1px solid #F1F1F1" }}
-              dangerouslySetInnerHTML={{
-                __html: populatedContent[index]
-              }}
-            />
+            <div>
+              <h3>Data</h3>
+              <Table
+                size="small"
+                pagination={false}
+                dataSource={[{ ...data[index], key: 0 }]}
+                columns={Object.keys(data[index]).map(field => ({
+                  title: field,
+                  dataIndex: field,
+                  key: field
+                }))}
+                style={{ marginBottom: 15 }}
+                scroll={{ x: true }}
+              />
+
+              <h3>Content</h3>
+              <div
+                style={{ padding: "10px", border: "1px solid #F1F1F1" }}
+                dangerouslySetInnerHTML={{
+                  __html: populatedContent[index]
+                }}
+              />
+            </div>
           ) : (
             <div
               style={{
