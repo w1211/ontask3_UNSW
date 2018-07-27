@@ -241,6 +241,8 @@ class Compose extends React.Component {
     const { attributes, children, node } = props;
 
     switch (node.type) {
+      case "paragraph":
+        return <p {...attributes}>{children}</p>;
       case "bulleted-list":
         return <ul {...attributes}>{children}</ul>;
       case "heading-one":
