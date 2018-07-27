@@ -13,7 +13,7 @@ import {
   Tooltip
 } from "antd";
 
-import { Editor } from "slate-react";
+import { Editor, getEventTransfer } from "slate-react";
 import Html from "slate-html-serializer";
 import SoftBreak from "slate-soft-break";
 import { Value } from "slate";
@@ -111,6 +111,18 @@ class Compose extends React.Component {
       hyperlink: { label: null, url: null },
       image: { src: null, alt: null }
     };
+  }
+
+  componentDidUpdate(prevProps) {
+    const { action } = this.props;
+
+    if (
+      prevProps.action.conditionGroups.length < action.conditionGroups.length
+    ) {
+      this.setState({
+        colours: generateColours(action.conditionGroups.length)
+      });
+    }
   }
 
   renderMarkButton = (type, icon) => {
@@ -273,7 +285,14 @@ class Compose extends React.Component {
       case "image":
         const src = node.data.get("src");
         const alt = node.data.get("alt");
-        return <img {...attributes} src={src} alt={alt} style={{ maxWidth: "100%" }}/>;
+        return (
+          <img
+            {...attributes}
+            src={src}
+            alt={alt}
+            style={{ maxWidth: "100%" }}
+          />
+        );
       case "condition":
         const name = node.data.get("name");
         const group = node.data.get("group");
@@ -603,6 +622,14 @@ class Compose extends React.Component {
     );
   };
 
+  onPaste = (event, change) => {
+    const transfer = getEventTransfer(event);
+    console.log(transfer);
+    // const { document } = serializer.deserialize(transfer.text)
+    // change.insertFragment(document)
+    // return true
+  };
+
   render() {
     const { action, updateAction } = this.props;
     const {
@@ -749,6 +776,7 @@ class Compose extends React.Component {
           )}
           plugins={plugins}
           placeholder={"Create content by entering text here"}
+          onPaste={this.onPaste}
         />
 
         <PreviewModal
