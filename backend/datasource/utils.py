@@ -6,6 +6,7 @@ import csv
 import boto3
 import io
 import random
+import os
 from collections import defaultdict
 from dateutil import parser
 
@@ -127,15 +128,19 @@ def retrieve_file_from_s3(connection):
         raise Exception("Invalid connection settings")
 
     try:
-        # Connect to the specified bucket using the AWS credentials specified in the config
-        session = boto3.Session(
-            aws_access_key_id=AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-            region_name=AWS_REGION,
-        )
+        s3 = None
+        if os.environ.get('ONTASK_DEVELOPMENT'):
+            # Connect to the specified bucket using the AWS credentials specified in the config
+            session = boto3.Session(
+                aws_access_key_id=AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+                region_name=AWS_REGION,
+            )
+            # Get the specified file from the bucket
+            s3 = session.resource("s3")
+        else:
+            s3 = boto3.resource("s3")
 
-        # Get the specified file from the bucket
-        s3 = session.resource("s3")
         obj = s3.Object(bucket, file_name)
         file = obj.get()["Body"]
 
