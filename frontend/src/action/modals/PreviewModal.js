@@ -16,9 +16,9 @@ class PreviewModal extends React.Component {
   };
 
   render() {
-    const { preview } = this.props;
+    const { preview, data } = this.props;
     const { index } = this.state;
-    const { populatedContent, data, visible } = preview;
+    const { populatedContent, visible } = preview;
 
     return (
       <Modal

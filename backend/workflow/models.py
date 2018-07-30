@@ -70,7 +70,6 @@ class Workflow(Document):
     name = StringField(required=True, unique_with="container")
     description = StringField(null=True)
     filter = EmbeddedDocumentField(Condition)
-    filtered_count = IntField(null=True)
     conditionGroups = EmbeddedDocumentListField(ConditionGroup)
     content = DictField(null=True)
     html = ListField(StringField())

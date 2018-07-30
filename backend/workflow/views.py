@@ -74,7 +74,12 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         )
         serializer.instance.datasources = datasources
 
-        return JsonResponse(serializer.data, safe=False)
+        serializer.instance.unfiltered_data_length = len(workflow.datalab["data"])
+        filtered_data = evaluate_filter(workflow.datalab["data"], workflow.filter)
+        serializer.instance.datalab.data = filtered_data
+        serializer.instance.filtered_data_length = len(filtered_data)
+
+        return JsonResponse(serializer.data)
 
     @detail_route(methods=["put"])
     def update_filter(self, request, id=None):
@@ -105,12 +110,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                     raise ValidationError(
                         f'Invalid formula: field \'{formula["field"]}\' does not exist in the DataLab'
                     )
-
-            # Filter the data to store the number of records
-            filtered_data = evaluate_filter(workflow["datalab"]["data"], updated_filter)
-            workflow.filtered_count = len(filtered_data)
-        else:
-            workflow.filtered_count = 0
 
         # Update the filter
         serializer = WorkflowSerializer(
@@ -237,16 +236,15 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         content = self.request.data["blockMap"]
         html = self.request.data["html"]
 
-        populated_content, filtered_data = populate_content(
+        populated_content = populate_content(
             workflow.datalab,
             workflow.filter,
             workflow.conditionGroups,
             content,
             html,
-            should_include_data=True,
         )
 
-        return JsonResponse({"populatedContent": populated_content, "data": filtered_data})
+        return JsonResponse({"populatedContent": populated_content})
 
     @detail_route(methods=["put"])
     def update_content(self, request, id=None):

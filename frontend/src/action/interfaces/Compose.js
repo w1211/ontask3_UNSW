@@ -10,7 +10,8 @@ import {
   Popconfirm,
   Input,
   Popover,
-  Tooltip
+  Tooltip,
+  Table
 } from "antd";
 
 import { Editor, getEventTransfer } from "slate-react";
@@ -103,8 +104,7 @@ class Compose extends React.Component {
       preview: {
         visible: false,
         loading: false,
-        populatedContent: [],
-        data: []
+        populatedContent: []
       },
       visible: { filter: false, conditionGroup: false },
       contentLoading: false,
@@ -412,14 +412,13 @@ class Compose extends React.Component {
         onError: error =>
           this.setState({ preview: { ...preview, loading: false }, error }),
         onSuccess: response => {
-          const { populatedContent, data } = response;
+          const { populatedContent } = response;
           this.setState({
             preview: {
               ...preview,
               visible: true,
               loading: false,
-              populatedContent,
-              data
+              populatedContent
             },
             error: null
           });
@@ -660,11 +659,32 @@ class Compose extends React.Component {
         </h3>
 
         {_.get(action, "filter.formulas", []).length > 0
-          ? `${action.filtered_count} records selected out of ${
-              action.datalab.data.length
-            } (${action.datalab.data.length -
-              action.filtered_count} filtered out)`
+          ? `${action.filtered_data_length} records selected out of ${
+              action.unfiltered_data_length
+            } (${action.unfiltered_data_length -
+              action.filtered_data_length} filtered out)`
           : "No filter is currently being applied"}
+
+        {action.datalab.data.length > 0 && (
+          <div className="filter_results">
+            <Table
+              size="small"
+              scroll={{ x: true }}
+              pagination={{
+                pageSize: 5
+              }}
+              dataSource={action.datalab.data.map((item, i) => ({
+                ...item,
+                key: i
+              }))}
+              columns={Object.keys(action.datalab.data[0]).map(field => ({
+                title: field,
+                dataIndex: field,
+                key: field
+              }))}
+            />
+          </div>
+        )}
 
         <FilterModal
           action={action}
@@ -782,14 +802,14 @@ class Compose extends React.Component {
         />
 
         <PreviewModal
+          data={action.datalab.data}
           preview={preview}
           onClose={() =>
             this.setState({
               preview: {
                 loading: false,
                 visible: false,
-                populatedContent: [],
-                data: []
+                populatedContent: []
               }
             })
           }
