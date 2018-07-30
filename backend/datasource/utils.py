@@ -73,13 +73,10 @@ def retrieve_csv_data(file, delimiter):
 
     file = file.read().decode("utf-8").splitlines()
     column_headers = file.pop(0).split(delimiter)
-    modified_headers = set()
     for (index, header) in enumerate(column_headers):
         for char in [".", "$", '"', "'"]:
             if char in header:
-                new_header = header.replace(char, "")
-                modified_headers.add((header, new_header))
-                column_headers[index] = new_header
+                column_headers[index] = column_headers[index].replace(char, "")
 
     file = "\r\n".join(file)
     reader = csv.DictReader(
@@ -102,6 +99,12 @@ def retrieve_excel_data(file, sheetname):
 
     # Identify the header of each column
     fields = [sheet.cell(0, y).value for y in range(number_of_columns)]
+
+    # Remove illegal characters from column headers
+    for index, field in enumerate(fields):
+        for char in [".", "$", '"', "'"]:
+            if char in field:
+                fields[index] = fields[index].replace(char, "")
 
     # Initialize the list that will store the dicts which represent each row
     data = []
