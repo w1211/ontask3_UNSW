@@ -389,7 +389,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             raise ValidationError("Email sending is disabled in the demo")
 
         # reject when email content is empty or string with only spaces
-        if not workflow["html"] or not workflow["html"].strip():
+        if not workflow["html"]:
             raise ValidationError("Email content cannot be empty.")
 
         field = request.data["emailSettings"]["field"]

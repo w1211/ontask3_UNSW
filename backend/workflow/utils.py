@@ -132,7 +132,9 @@ def evaluate_condition_group(data, condition_group):
     return conditions_passed
 
 
-def populate_content(datalab, filter, condition_groups, content, html):
+def populate_content(
+    datalab, filter, condition_groups, content, html, should_include_data=False
+):
     filtered_data = evaluate_filter(datalab["data"], filter)
 
     all_conditions_passed = dict()
@@ -164,4 +166,7 @@ def populate_content(datalab, filter, condition_groups, content, html):
 
         result.append(populated_content)
 
+    if should_include_data:
+        return result, filtered_data
+        
     return result

@@ -274,7 +274,7 @@ class Email extends React.Component {
                 </Button>
 
                 <Button
-                  disabled={index === preview.length - 1}
+                  disabled={index === action.datalab.data.length - 1}
                   onClick={() => this.setState({ index: index + 1 })}
                 >
                   Next
@@ -282,7 +282,7 @@ class Email extends React.Component {
                 </Button>
               </Button.Group>
               <span className="current_record">
-                Record {index + 1} of {preview.populatedContent.length}
+                Record {index + 1} of {action.datalab.data.length}
               </span>
             </div>
           )}

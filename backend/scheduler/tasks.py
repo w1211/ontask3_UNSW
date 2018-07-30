@@ -103,14 +103,17 @@ def workflow_send_email(workflow_id):
     reply_to = workflow['emailSettings']['replyTo']
 
     workflow['datalab'] = db.datalab.find_one({'_id': ObjectId(workflow['datalab'])})
+    
+    populated_content, filtered_data = populate_content(
+        workflow['datalab'],
+        workflow['filter'],
+        workflow['conditionGroups'],
+        workflow['content'],
+        workflow['html'],
+        should_include_data=True
+    )
 
-    html = populate_content(workflow, workflow['content']['html'])
-    data = evaluate_filter(workflow['datalab'], workflow['filter'] if 'filter' in workflow else None)
-
-    # primary_key = view['columns'][0]['field']
-    # failed_emails = list()
-
-    for index, item in enumerate(data):
-        email_sent = send_email(item[field], subject, html[index], reply_to)
+    for index, item in enumerate(filtered_data):
+        email_sent = send_email(item[field], subject, populated_content[index], reply_to)
         print("sending email to %s" % item[field])
     return 'Email sent successfully'
