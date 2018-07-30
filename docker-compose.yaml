@@ -1,0 +1,73 @@
+version: '3'
+
+services:
+  rabbitmq:
+    restart: always
+    image: rabbitmq
+    environment:
+      - RABBITMQ_MNESIA_BASE=/data/rabbitmq
+    volumes: 
+      - ./data/rabbitmq:/data/rabbitmq
+
+  sql:
+    restart: always
+    image: postgres
+    environment:
+      - POSTGRES_DB=ontask
+      - POSTGRES_USER=ontask
+      - POSTGRES_PASSWORD=ontask
+      - PGDATA=/data/db
+    volumes:
+      - ./data/sql:/data/db
+
+  nosql:
+    restart: always
+    image: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./data/nosql:/data/db
+
+  backend:
+    restart: always
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/backend
+    environment:
+      - ONTASK_DEVELOPMENT=true
+    depends_on:
+      - sql
+      - nosql
+    command: uwsgi --ini uwsgi.ini --lazy-apps
+
+  celery:
+    restart: always
+    build: ./backend
+    environment:
+      - ONTASK_DEVELOPMENT=true
+    depends_on:
+      - rabbitmq
+      - backend
+    command: celery worker -A ontask --loglevel=INFO
+
+  celery_beat:
+    restart: always
+    build: ./backend
+    environment:
+      - ONTASK_DEVELOPMENT=true
+    depends_on:
+      - celery
+    command: celery -A ontask beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+
+  frontend:
+    restart: always
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/frontend
+    depends_on:
+      - backend
+    command: npm start

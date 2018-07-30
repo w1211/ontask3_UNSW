@@ -9,7 +9,7 @@ import * as ActionActionCreators from "./ActionActions";
 
 import Compose from "./interfaces/Compose";
 import Email from "./interfaces/Email";
-import StaticPage from "./interfaces/StaticPage";
+// import StaticPage from "./interfaces/StaticPage";
 
 import "./Action.css";
 
@@ -138,10 +138,10 @@ class Action extends React.Component {
                         )}
                       />
 
-                      <Route
+                      {/* <Route
                         path={`${match.url}/static`}
                         component={StaticPage}
-                      />
+                      /> */}
                     </Switch>
                   )}
                 </Content>

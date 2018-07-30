@@ -139,7 +139,6 @@ AUTH_USER_MODEL = 'authtools.User'
 # Default celery broker 
 # http://docs.celeryproject.org/en/latest/getting-started/brokers/rabbitmq.html
 
-CELERY_BROKER_URL = 'amqp://localhost'
 CELERY_TIMEZONE = 'UTC'
 CELERY_ENABLE_UTC = True
 TIME_ZONE = 'UTC'

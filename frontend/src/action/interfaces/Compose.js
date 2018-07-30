@@ -29,7 +29,6 @@ import FilterModal from "../modals/FilterModal";
 import ConditionGroupModal from "../modals/ConditionGroupModal";
 import PreviewModal from "../modals/PreviewModal";
 
-import "react-draft-wysiwyg/dist/react-draft-wysiwyg.css";
 import "material-design-icons/iconfont/material-icons.css";
 
 const DEFAULT_NODE = "paragraph";

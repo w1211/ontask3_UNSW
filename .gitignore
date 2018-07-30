@@ -38,3 +38,6 @@ frontend/.env.*
 logs/*
 tmp/*
 *.state.db
+
+# Data files for docker containers
+data/*
