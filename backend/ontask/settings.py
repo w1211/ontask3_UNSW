@@ -17,8 +17,25 @@ import mongoengine
 if os.environ.get('ONTASK_DEVELOPMENT') is not None:
     from config.dev import *
     DEBUG = True
+    CELERY_BROKER_URL = 'amqp://rabbitmq'
+    FRONTEND_DOMAIN = 'http://localhost:3000' # For whitelisting CORS and authentication
+    ALLOWED_HOSTS = ['localhost']
+    SQL_DATABASE = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'ontask',
+        'USER': 'ontask',
+        'PASSWORD': 'ontask',
+        'HOST': 'sql',
+        'PORT': '5432'
+    }
+    NOSQL_DATABASE = {
+        'HOST': 'nosql',
+        'DB': 'ontask'
+    }
+
 elif os.environ.get('ONTASK_DEMO') is not None:
     from config.demo import *
+
 else:
     from config.prod import *
 

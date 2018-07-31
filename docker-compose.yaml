@@ -40,7 +40,7 @@ services:
     depends_on:
       - sql
       - nosql
-    command: uwsgi --ini uwsgi.ini --lazy-apps
+    command: uwsgi --ini uwsgi.dev.ini --lazy-apps
 
   celery:
     restart: always

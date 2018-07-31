@@ -3,7 +3,7 @@
 source backend/virtualenv/bin/activate
 pip3 install -r backend/requirements.txt
 
-uwsgi --ini backend/uwsgi.ini
+uwsgi --ini backend/uwsgi.prod.ini
 
 if [ "$ONTASK_DEMO" = "true" ]
 then
