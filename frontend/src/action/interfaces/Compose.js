@@ -11,7 +11,8 @@ import {
   Input,
   Popover,
   Tooltip,
-  Table
+  Table,
+  Select
 } from "antd";
 
 import { Editor, getEventTransfer } from "slate-react";
@@ -294,6 +295,21 @@ class Compose extends React.Component {
             style={{ maxWidth: "100%" }}
           />
         );
+      case "attribute":
+        const field = node.data.get("field");
+        return (
+          <span
+            {...attributes}
+            style={{
+              display: "inline-block",
+              padding: "0 5px",
+              lineHeight: "1.25em",
+              background: "#eee"
+            }}
+          >
+            {field}
+          </span>
+        );
       case "condition":
         const name = node.data.get("name");
         const group = node.data.get("group");
@@ -475,6 +491,8 @@ class Compose extends React.Component {
                     style={{ maxWidth: "100%" }}
                   />
                 );
+              case "attribute":
+                return <attribute>{obj.data.get("field")}</attribute>
               case "condition":
                 return <div>{children}</div>;
               default:
@@ -628,6 +646,36 @@ class Compose extends React.Component {
     // const { document } = serializer.deserialize(transfer.text)
     // change.insertFragment(document)
     // return true
+  };
+
+  AttributeButton = () => {
+    const { action } = this.props;
+    const { value } = this.state;
+    const change = value.change();
+
+    return (
+      <Select
+        placeholder="Add a field"
+        size="small"
+        value={undefined}
+        onChange={field => {
+          change.insertInline({
+            type: "attribute",
+            data: { field },
+            isVoid: true
+          });
+          this.onChange(change);
+        }}
+        className="attribute_select"
+        dropdownMatchSelectWidth={false}
+      >
+        {action.datalab.order.map((item, i) => (
+          <Select.Option value={item.field} key={i}>
+            {item.field}
+          </Select.Option>
+        ))}
+      </Select>
+    );
   };
 
   render() {
@@ -784,6 +832,7 @@ class Compose extends React.Component {
           {this.renderBlockButton("paragraph", "short_text")}
           {this.renderBlockButton("numbered-list", "format_list_numbered")}
           {this.renderBlockButton("bulleted-list", "format_list_bulleted")}
+          {this.AttributeButton()}
         </div>
         <Editor
           className={`content_editor ${isInside ? "isInside" : ""}`}

@@ -47,6 +47,10 @@
 .action .toolbar {
   padding: 5px 0;
   border-bottom: 3px solid #eee;
+  display: flex;
+}
+.action .toolbar .attribute_select {
+  width: 125px;
 }
 .action_toolbar_popup {
   max-width: 200px;

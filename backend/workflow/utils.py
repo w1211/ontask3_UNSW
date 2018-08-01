@@ -131,6 +131,17 @@ def evaluate_condition_group(data, condition_group):
 
     return conditions_passed
 
+def populate_field(match, item):
+    field = match.group(1)
+    if field in item:
+        return str(item[field])
+    else:
+        return None
+
+def parse_content_line(line, item):
+    return re.sub(
+        r"<attribute>(.*?)</attribute>", lambda match: populate_field(match, item), line
+    )
 
 def populate_content(
     datalab, filter, condition_groups, content, html, should_include_data=False
@@ -160,9 +171,9 @@ def populate_content(
                         )
                     )
                 if item in all_conditions_passed[condition_name]:
-                    populated_content += html[index]
+                    populated_content += parse_content_line(html[index], item)
             else:
-                populated_content += html[index]
+                populated_content += parse_content_line(html[index], item)
 
         result.append(populated_content)
 
