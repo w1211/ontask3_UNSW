@@ -406,7 +406,7 @@ class FormModule extends React.Component {
             <Alert
               showIcon
               type="info"
-              message="The URL to the web form will be shown below after saving the model"
+              message="This web form will not be accessible until the DataLab is saved"
             />
           )}
       </div>

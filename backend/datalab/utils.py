@@ -242,9 +242,9 @@ def retrieve_form_data(datalab, step, request_user):
 
     # Convert the document to a format that is JSON serializable
     datalab = datalab.to_mongo()
-    
+
     form = datalab["steps"][step]["form"]
-    web_form = form["webForm"]
+    web_form = form["webForm"] if "webForm" in form else None
 
     not_accessible = (
         (not web_form or not web_form["active"])

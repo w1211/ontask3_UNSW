@@ -3,7 +3,16 @@ import { bindActionCreators } from "redux";
 import { connect } from "react-redux";
 import { Link } from "react-router-dom";
 import { Switch, Route } from "react-router-dom";
-import { Spin, Layout, Breadcrumb, Icon, Radio } from "antd";
+import {
+  Spin,
+  Layout,
+  Breadcrumb,
+  Icon,
+  Radio,
+  Dropdown,
+  Menu,
+  Button
+} from "antd";
 import { DragDropContext } from "react-dnd";
 import HTML5Backend from "react-dnd-html5-backend";
 import _ from "lodash";
@@ -55,8 +64,22 @@ class DataLab extends React.Component {
   }
 
   render() {
-    const { isFetching, selectedId, match, history, location } = this.props;
+    const {
+      isFetching,
+      selectedId,
+      match,
+      history,
+      location,
+      build
+    } = this.props;
     const { isForm, showBreadcrumbs } = this.state;
+
+    const webForms = [];
+    build &&
+      build.steps.forEach((step, stepIndex) => {
+        if (_.get(step, "form.webForm.active"))
+          webForms.push({ name: step.form.name, index: stepIndex });
+      });
 
     return (
       <div className={`dataLab ${isForm && !showBreadcrumbs && "is_web_form"}`}>
@@ -90,6 +113,7 @@ class DataLab extends React.Component {
                   <div className="actions">
                     <RadioGroup
                       size="large"
+                      style={{ marginRight: 15 }}
                       onChange={e =>
                         history.push(`${match.url}/${e.target.value}`)
                       }
@@ -99,6 +123,32 @@ class DataLab extends React.Component {
                       <RadioButton value="details">Details</RadioButton>
                       <RadioButton value="model">Model</RadioButton>
                     </RadioGroup>
+
+                    {webForms.length > 0 && (
+                      <Dropdown
+                        trigger={["click"]}
+                        overlay={
+                          <Menu>
+                            {webForms.map((form, i) => (
+                              <Menu.Item key={i}>
+                                <a
+                                  target="_blank"
+                                  href={`/datalab/${selectedId}/form/${
+                                    form.index
+                                  }`}
+                                >
+                                  {form.name}
+                                </a>
+                              </Menu.Item>
+                            ))}
+                          </Menu>
+                        }
+                      >
+                        <Button icon="global" size="large">
+                          Web forms ({webForms.length})
+                        </Button>
+                      </Dropdown>
+                    )}
                   </div>
                 )}
 
@@ -133,11 +183,12 @@ class DataLab extends React.Component {
 }
 
 const mapStateToProps = state => {
-  const { isFetching, selectedId } = state.dataLab;
+  const { isFetching, selectedId, build } = state.dataLab;
 
   return {
     isFetching,
-    selectedId
+    selectedId,
+    build
   };
 };
 
