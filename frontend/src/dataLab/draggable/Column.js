@@ -1,24 +1,24 @@
-import React from 'react';
-import { DragSource, DropTarget } from 'react-dnd';
+import React from "react";
+import { DragSource, DropTarget } from "react-dnd";
 
 function dragDirection(
   dragIndex,
   hoverIndex,
   initialClientOffset,
   clientOffset,
-  sourceClientOffset,
+  sourceClientOffset
 ) {
   const hoverMiddleY = (initialClientOffset.y - sourceClientOffset.y) / 2;
   const hoverClientY = clientOffset.y - sourceClientOffset.y;
   if (dragIndex < hoverIndex && hoverClientY > hoverMiddleY) {
-    return 'downward';
+    return "downward";
   }
   if (dragIndex > hoverIndex && hoverClientY < hoverMiddleY) {
-    return 'upward';
+    return "upward";
   }
 }
 
-let BodyRow = (props) => {
+let BodyRow = props => {
   const {
     isOver,
     connectDragSource,
@@ -30,7 +30,7 @@ let BodyRow = (props) => {
     initialClientOffset,
     ...restProps
   } = props;
-  const style = { ...restProps.style, cursor: 'move' };
+  const style = { ...restProps.style, cursor: "move" };
 
   let className = restProps.className;
   if (isOver && initialClientOffset) {
@@ -41,31 +41,25 @@ let BodyRow = (props) => {
       clientOffset,
       sourceClientOffset
     );
-    if (direction === 'downward') {
-      className += ' drop-over-downward';
+    if (direction === "downward") {
+      className += " drop-over-downward";
     }
-    if (direction === 'upward') {
-      className += ' drop-over-upward';
+    if (direction === "upward") {
+      className += " drop-over-upward";
     }
   }
 
   return connectDragSource(
-    connectDropTarget(
-      <tr
-        {...restProps}
-        className={className}
-        style={style}
-      />
-    )
+    connectDropTarget(<tr {...restProps} className={className} style={style} />)
   );
 };
 
 const rowSource = {
   beginDrag(props) {
     return {
-      index: props.index,
+      index: props.index
     };
-  },
+  }
 };
 
 const rowTarget = {
@@ -86,26 +80,26 @@ const rowTarget = {
     // but it's good here for the sake of performance
     // to avoid expensive index searches.
     monitor.getItem().index = hoverIndex;
-  },
+  }
 };
 
-BodyRow = DropTarget('row', rowTarget, (connect, monitor) => ({
+BodyRow = DropTarget("row", rowTarget, (connect, monitor) => ({
   connectDropTarget: connect.dropTarget(),
   isOver: monitor.isOver(),
-  sourceClientOffset: monitor.getSourceClientOffset(),
+  sourceClientOffset: monitor.getSourceClientOffset()
 }))(
-  DragSource('row', rowSource, (connect, monitor) => ({
+  DragSource("row", rowSource, (connect, monitor) => ({
     connectDragSource: connect.dragSource(),
     dragRow: monitor.getItem(),
     clientOffset: monitor.getClientOffset(),
-    initialClientOffset: monitor.getInitialClientOffset(),
+    initialClientOffset: monitor.getInitialClientOffset()
   }))(BodyRow)
 );
 
 const components = {
   body: {
-    row: BodyRow,
-  },
+    row: BodyRow
+  }
 };
 
 export default components;

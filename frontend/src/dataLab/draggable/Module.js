@@ -2,8 +2,8 @@ import React, { Component } from "react";
 import PropTypes from "prop-types";
 import { DragSource } from "react-dnd";
 import { Icon } from "antd";
-import flow from 'lodash/flow';
-import { connect } from 'react-redux';
+import flow from "lodash/flow";
+import { connect } from "react-redux";
 
 import { addModule } from "../DataLabActions";
 
@@ -30,7 +30,14 @@ class Module extends Component {
   };
 
   render() {
-    const { dispatch, isDragging, connectDragSource, type, label, icon } = this.props;
+    const {
+      dispatch,
+      isDragging,
+      connectDragSource,
+      type,
+      label,
+      icon
+    } = this.props;
 
     return connectDragSource(
       <div
@@ -45,6 +52,6 @@ class Module extends Component {
 }
 
 export default flow(
-	DragSource("module", dragSource, collect),
-	connect()
+  DragSource("module", dragSource, collect),
+  connect()
 )(Module);
