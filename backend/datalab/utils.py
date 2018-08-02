@@ -233,9 +233,16 @@ def retrieve_form_data(datalab, step, request_user):
     is_shared = request_user in datalab.container.sharing
     has_access = is_owner or is_shared
 
+    if (
+        step < 0
+        or step >= len(datalab["steps"])
+        or "form" not in datalab["steps"][step]
+    ):
+        return {"error": "This form does not exist"}
+
     # Convert the document to a format that is JSON serializable
     datalab = datalab.to_mongo()
-
+    
     form = datalab["steps"][step]["form"]
     web_form = form["webForm"]
 
