@@ -322,7 +322,6 @@ class FormFieldModal extends React.Component {
               })(
                 <RadioGroup>
                   <RadioButton value="input">Input</RadioButton>
-                  <RadioButton value="range">Range</RadioButton>
                   <RadioButton value="list">List</RadioButton>
                 </RadioGroup>
               )}

@@ -17,11 +17,6 @@
 .action .conditionGroupBtn button:first-child {
   cursor: move;
 }
-
-.action .ant-table td, .preview .ant-table td { 
-  white-space: nowrap; 
-  min-width: 100px;
-}
 .action .filter_results { 
   margin-top: 15px;
   margin-bottom: -15px;

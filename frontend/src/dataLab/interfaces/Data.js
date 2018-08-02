@@ -3,7 +3,6 @@ import { bindActionCreators } from "redux";
 import { connect } from "react-redux";
 import { Table, Icon, Menu, Dropdown, Popover, Tooltip, Button } from "antd";
 import moment from "moment";
-import _ from "lodash";
 
 import * as DataLabActionCreators from "../DataLabActions";
 
@@ -261,28 +260,19 @@ class Data extends React.Component {
 
   renderFormField = (stepIndex, field, text, primary) => {
     const { edit } = this.state;
-    const value = _.get(edit, `values[${primary}]`, text);
 
-    return edit.field === field.name ? (
+    return (
       <div className="editable-field">
         <EditableField
           field={field}
-          value={value}
-          onChange={e =>
-            this.setState({
-              edit: _.merge(edit, { values: { [primary]: e } })
-            })
-          }
-          onOk={() => {
-            if (value !== text) {
-              const payload = { stepIndex, field: field.name, primary, value };
-              this.handleFormUpdate(payload);
-            }
+          originalValue={text ? text : null}
+          editMode={edit.field === field.name}
+          onSave={value => {
+            const payload = { stepIndex, field: field.name, primary, value };
+            this.handleFormUpdate(payload);
           }}
         />
       </div>
-    ) : (
-      text
     );
   };
 
@@ -312,15 +302,15 @@ class Data extends React.Component {
   render() {
     const { visualisation, edit, saved } = this.state;
 
+    // Similarly, the table data is initialised on every render, so that
+    // changes to values in form columns can be reflected
+    const tableData = this.initialiseData();
+
     // Columns are initialised on every render, so that changes to the sort
     // in local state can be reflected in the table columns. Otherwise the
     // columns would ideally only be initialised when receiving the build
     // for the first time
     const orderedColumns = this.initialiseColumns();
-
-    // Similarly, the table data is initialised on every render, so that
-    // changes to values in form columns can be reflected
-    const tableData = this.initialiseData();
 
     return (
       <div className="data_manipulation">

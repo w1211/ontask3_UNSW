@@ -492,7 +492,7 @@ class Compose extends React.Component {
                   />
                 );
               case "attribute":
-                return <attribute>{obj.data.get("field")}</attribute>
+                return <attribute>{obj.data.get("field")}</attribute>;
               case "condition":
                 return <div>{children}</div>;
               default:
@@ -716,7 +716,7 @@ class Compose extends React.Component {
           <div className="filter_results">
             <Table
               size="small"
-              scroll={{ x: true }}
+              scroll={{ x: (action.datalab.order.length - 1) * 175 }}
               pagination={{
                 pageSize: 5
               }}
@@ -724,10 +724,10 @@ class Compose extends React.Component {
                 ...item,
                 key: i
               }))}
-              columns={Object.keys(action.datalab.data[0]).map(field => ({
-                title: field,
-                dataIndex: field,
-                key: field
+              columns={action.datalab.order.map(item => ({
+                title: item.field,
+                dataIndex: item.field,
+                key: item.field
               }))}
             />
           </div>
@@ -851,6 +851,7 @@ class Compose extends React.Component {
 
         <PreviewModal
           data={action.datalab.data}
+          order={action.datalab.order}
           preview={preview}
           onClose={() =>
             this.setState({

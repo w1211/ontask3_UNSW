@@ -16,7 +16,7 @@ class PreviewModal extends React.Component {
   };
 
   render() {
-    const { preview, data } = this.props;
+    const { preview, data, order } = this.props;
     const { index } = this.state;
     const { populatedContent, visible } = preview;
 
@@ -60,13 +60,13 @@ class PreviewModal extends React.Component {
                 size="small"
                 pagination={false}
                 dataSource={[{ ...data[index], key: 0 }]}
-                columns={Object.keys(data[index]).map(field => ({
-                  title: field,
-                  dataIndex: field,
-                  key: field
+                columns={order.map(item => ({
+                  title: item.field,
+                  dataIndex: item.field,
+                  key: item.field
                 }))}
                 style={{ marginBottom: 15 }}
-                scroll={{ x: true }}
+                scroll={{ x: (order.length - 1) * 175 }}
               />
 
               <h3>Content</h3>

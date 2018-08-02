@@ -318,7 +318,7 @@
   width: 100%;
 }
 
-.dataLab .ant-select {
+.dataLab .ant-select, .dataLab .ant-input-number, .dataLab .ant-calendar-picker {
   width: 100%;
 }
 

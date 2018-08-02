@@ -42,3 +42,6 @@
 .app .content_body {
   background: #fff;
 }
+.app .content .heading a {
+  width: fit-content;
+}
