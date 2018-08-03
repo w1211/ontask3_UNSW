@@ -33,6 +33,7 @@ backend/virtualenv
 # Frontend files
 frontend/node_modules
 frontend/.env.*
+frontend/build
 
 # Logs and temporary files
 logs/*
