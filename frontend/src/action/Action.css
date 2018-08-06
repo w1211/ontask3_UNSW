@@ -35,6 +35,7 @@
   cursor: pointer;
   color: #ccc;
   margin-right: 10px;
+  margin-bottom: 5px;
 }
 .action .material-icons.active {
   color: black;
@@ -43,6 +44,7 @@
   padding: 5px 0;
   border-bottom: 3px solid #eee;
   display: flex;
+  flex-wrap: wrap;
 }
 .action .toolbar .attribute_select {
   width: 125px;

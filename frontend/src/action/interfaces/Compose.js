@@ -15,6 +15,8 @@ import {
   Select
 } from "antd";
 
+import sanitizeHtml from "sanitize-html";
+
 import { Editor, getEventTransfer } from "slate-react";
 import Html from "slate-html-serializer";
 import SoftBreak from "slate-soft-break";
@@ -35,6 +37,205 @@ import "material-design-icons/iconfont/material-icons.css";
 const DEFAULT_NODE = "paragraph";
 
 const plugins = [SoftBreak({ shift: true })];
+
+const BLOCK_TAGS = {
+  p: "paragraph",
+  li: "list-item",
+  ul: "bulleted-list",
+  ol: "numbered-list",
+  blockquote: "quote",
+  pre: "code",
+  h1: "heading-one",
+  h2: "heading-two",
+  h3: "heading-three",
+  h4: "heading-four",
+  h5: "heading-five",
+  h6: "heading-six"
+};
+
+const MARK_TAGS = {
+  strong: "bold",
+  em: "italic",
+  u: "underlined",
+  s: "strikethrough",
+  code: "code",
+  span: "span"
+};
+
+const parseStyles = styles => {
+  return styles ? styles
+    .split(";")
+    .filter(style => style.split(":")[0] && style.split(":")[1])
+    .map(style => [
+      style
+        .split(":")[0]
+        .trim()
+        .replace(/-./g, c => c.substr(1).toUpperCase()),
+      style.split(":")[1].trim()
+    ])
+    .reduce(
+      (styleObj, style) => ({
+        ...styleObj,
+        [style[0]]: style[1]
+      }),
+      {}
+    ) : styles;
+  }
+
+const rules = [
+  {
+    serialize(obj, children) {
+      if (["block", "inline"].includes(obj.object)) {
+        switch (obj.type) {
+          case "heading-one":
+            return <h1>{children}</h1>;
+          case "heading-two":
+            return <h2>{children}</h2>;
+          case "paragraph":
+            return <p>{children}</p>;
+          case "numbered-list":
+            return <ol>{children}</ol>;
+          case "bulleted-list":
+            return <ul>{children}</ul>;
+          case "list-item":
+            return <li>{children}</li>;
+          case "link":
+            return (
+              <a href={obj.data.get("href")} target="_blank">
+                {children}
+              </a>
+            );
+          case "image":
+            return (
+              <img
+                src={obj.data.get("src")}
+                alt={obj.data.get("alt")}
+                style={{ maxWidth: "100%" }}
+              />
+            );
+          case "attribute":
+            return <attribute>{obj.data.get("field")}</attribute>;
+          case "condition":
+            return <div>{children}</div>;
+          default:
+            return;
+        }
+      }
+    }
+  },
+  {
+    serialize(obj, children) {
+      if (obj.object === "mark") {
+        switch (obj.type) {
+          case "span":
+            return (
+              <span style={parseStyles(obj.data.get("style"))}>{children}</span>
+            );
+          case "bold":
+            return <strong>{children}</strong>;
+          case "italic":
+            return <em>{children}</em>;
+          case "underlined":
+            return <u>{children}</u>;
+          case "code":
+            return (
+              <pre>
+                <code>{children}</code>
+              </pre>
+            );
+          default:
+            return;
+        }
+      }
+    }
+  },
+  {
+    deserialize(el, next) {
+      const block = BLOCK_TAGS[el.tagName.toLowerCase()];
+
+      if (block) {
+        return {
+          object: "block",
+          type: block,
+          nodes: next(el.childNodes)
+        };
+      }
+    }
+  },
+  {
+    deserialize(el, next) {
+      const mark = MARK_TAGS[el.tagName.toLowerCase()];
+
+      if (mark) {
+        return {
+          object: "mark",
+          type: mark,
+          nodes: next(el.childNodes),
+          data:
+            mark === "span"
+              ? {
+                  style: el.getAttribute("style")
+                }
+              : undefined
+        };
+      }
+    }
+  },
+  {
+    // Special case for code blocks, which need to grab the nested childNodes.
+    deserialize(el, next) {
+      if (el.tagName.toLowerCase() === "pre") {
+        const code = el.childNodes[0];
+        const childNodes =
+          code && code.tagName.toLowerCase() === "code"
+            ? code.childNodes
+            : el.childNodes;
+
+        return {
+          object: "block",
+          type: "code",
+          nodes: next(childNodes)
+        };
+      }
+    }
+  },
+  {
+    // Special case for images, to grab their src.
+    deserialize(el, next) {
+      if (el.tagName.toLowerCase() === "img") {
+        return {
+          object: "block",
+          type: "image",
+          isVoid: true,
+          nodes: next(el.childNodes),
+          data: {
+            src: el.getAttribute("src")
+          }
+        };
+      }
+    }
+  },
+  {
+    // Special case for links, to grab their href.
+    deserialize(el, next) {
+      if (el.tagName.toLowerCase() === "a") {
+        return {
+          object: "inline",
+          type: "link",
+          nodes: next(el.childNodes),
+          data: {
+            href: el.getAttribute("href")
+          }
+        };
+      }
+    }
+  },
+  {
+    deserialize(el, next) {
+      if (!el.nodeValue || el.nodeValue.trim() === "") return null;
+    }
+  }
+];
 
 const initialValue = Value.fromJSON({
   document: {
@@ -181,6 +382,12 @@ class Compose extends React.Component {
         return <em {...attributes}>{children}</em>;
       case "underlined":
         return <u {...attributes}>{children}</u>;
+      case "span":
+        return (
+          <span style={parseStyles(mark.data.get("style"))} {...attributes}>
+            {children}
+          </span>
+        );
       default:
         return;
     }
@@ -460,71 +667,6 @@ class Compose extends React.Component {
   generateHtml = () => {
     const { value } = this.state;
 
-    const rules = [
-      {
-        serialize(obj, children) {
-          if (["block", "inline"].includes(obj.object)) {
-            switch (obj.type) {
-              case "heading-one":
-                return <h1>{children}</h1>;
-              case "heading-two":
-                return <h2>{children}</h2>;
-              case "paragraph":
-                return <p className={obj.data.get("className")}>{children}</p>;
-              case "numbered-list":
-                return <ol>{children}</ol>;
-              case "bulleted-list":
-                return <ul>{children}</ul>;
-              case "list-item":
-                return <li>{children}</li>;
-              case "link":
-                return (
-                  <a href={obj.data.get("href")} target="_blank">
-                    {children}
-                  </a>
-                );
-              case "image":
-                return (
-                  <img
-                    src={obj.data.get("src")}
-                    alt={obj.data.get("alt")}
-                    style={{ maxWidth: "100%" }}
-                  />
-                );
-              case "attribute":
-                return <attribute>{obj.data.get("field")}</attribute>;
-              case "condition":
-                return <div>{children}</div>;
-              default:
-                return;
-            }
-          }
-        }
-      },
-      {
-        serialize(obj, children) {
-          if (obj.object === "mark") {
-            switch (obj.type) {
-              case "bold":
-                return <strong>{children}</strong>;
-              case "italic":
-                return <em>{children}</em>;
-              case "underlined":
-                return <u>{children}</u>;
-              case "code":
-                return (
-                  <pre>
-                    <code>{children}</code>
-                  </pre>
-                );
-              default:
-                return;
-            }
-          }
-        }
-      }
-    ];
-
     const html = new Html({ rules });
     const output = value.document.nodes.map(node => {
       const pseudoValue = { document: { nodes: [node] } };
@@ -642,10 +784,37 @@ class Compose extends React.Component {
 
   onPaste = (event, change) => {
     const transfer = getEventTransfer(event);
-    console.log(transfer);
-    // const { document } = serializer.deserialize(transfer.text)
-    // change.insertFragment(document)
-    // return true
+    const sanitizedHtml = sanitizeHtml(transfer.html, {
+      allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+        "h1",
+        "h2",
+        "span",
+        "img",
+        "u"
+      ]),
+      allowedAttributes: {
+        "*": ["style"],
+        a: ["href", "name", "target"],
+        img: ["src"]
+      },
+      allowedStyles: {
+        "*": {
+          color: [/^.*$/]
+          // "font-size": [/^.*$/],
+          // "font-family": [/^.*$/]
+        }
+      },
+      transformTags: {
+        b: sanitizeHtml.simpleTransform("strong"),
+        i: sanitizeHtml.simpleTransform("em")
+      }
+    });
+
+    const html = new Html({ rules });
+    const { document } = html.deserialize(sanitizedHtml);
+    change.insertFragment(document);
+
+    return true;
   };
 
   AttributeButton = () => {
