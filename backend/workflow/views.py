@@ -17,6 +17,7 @@ from .serializers import WorkflowSerializer, RetrieveWorkflowSerializer
 from .models import Workflow
 from .permissions import WorkflowPermissions
 
+from container.views import ContainerViewSet
 from datasource.models import Datasource
 from audit.models import Audit
 from audit.serializers import AuditSerializer
@@ -438,3 +439,37 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         serializer.is_valid()
         serializer.save()
         return JsonResponse({"success": "true"}, safe=False)
+
+    @detail_route(methods=["post"])
+    def clone_action(self, request, id=None):
+        action = self.get_object()
+        self.check_object_permissions(self.request, action)
+        
+        action = action.to_mongo()
+        action['name'] = action['name'] + '_cloned'
+        action.pop('_id')
+        # The scheduled tasks in Celery are not cloned, therefore remove the schedule
+        # information from the cloned action
+        action.pop('schedule')
+        # Ensure that the new action is not bound to the original action's Moodle link Id
+        action.pop('linkId')
+
+        serializer = WorkflowSerializer(data=action)
+        serializer.is_valid()
+        serializer.save()
+        
+        audit = AuditSerializer(
+            data={
+                "model": "action",
+                "document": str(id),
+                "action": "clone",
+                "user": self.request.user.email,
+                "diff": {
+                    "new_document": str(serializer.instance.id)
+                },
+            }
+        )
+        audit.is_valid()
+        audit.save()
+
+        return JsonResponse({ 'success': 1 })

@@ -4,7 +4,7 @@ import { connect } from "react-redux";
 import { Input, Icon, Tooltip, Button, Card, Modal } from "antd";
 import { Link } from "react-router-dom";
 
-import { deleteAction } from "../../action/ActionActions";
+import { deleteAction, cloneAction } from "../../action/ActionActions";
 
 const { Meta } = Card;
 const confirm = Modal.confirm;
@@ -15,11 +15,11 @@ class ActionTab extends React.Component {
     const { dispatch } = props;
 
     this.boundActionCreators = bindActionCreators(
-      { deleteAction },
+      { deleteAction, cloneAction },
       dispatch
     );
 
-    this.state = { filter: null, loading: {} };
+    this.state = { filter: null, deleting: {}, cloning: {} };
   }
 
   deleteAction = actionId => {
@@ -31,13 +31,32 @@ class ActionTab extends React.Component {
       cancelText: "Cancel",
       onOk: () => {
         this.setState({
-          loading: { [actionId]: true }
+          deleting: { [actionId]: true }
         });
 
         this.boundActionCreators.deleteAction({
           actionId,
           onFinish: () => {
-            this.setState({ loading: { [actionId]: false } });
+            this.setState({ deleting: { [actionId]: false } });
+          }
+        });
+      }
+    });
+  };
+
+  cloneAction = actionId => {
+    confirm({
+      title: "Confirm action clone",
+      content: "Are you sure you want to clone this action?",
+      onOk: () => {
+        this.setState({
+          cloning: { [actionId]: true }
+        });
+
+        this.boundActionCreators.cloneAction({
+          actionId,
+          onFinish: () => {
+            this.setState({ cloning: { [actionId]: false } });
           }
         });
       }
@@ -46,7 +65,7 @@ class ActionTab extends React.Component {
 
   render() {
     const { containerId, actions, dataLabs, openModal } = this.props;
-    const { filter, loading } = this.state;
+    const { filter, deleting, cloning } = this.state;
 
     return (
       <div className="tab">
@@ -85,11 +104,18 @@ class ActionTab extends React.Component {
                       <Button icon="arrow-right" />
                     </Link>
                   </Tooltip>,
+                  <Tooltip title="Clone action">
+                    <Button
+                      icon="copy"
+                      loading={action.id in cloning && cloning[action.id]}
+                      onClick={() => this.cloneAction(action.id)}
+                    />
+                  </Tooltip>,
                   <Tooltip title="Delete action">
                     <Button
                       type="danger"
                       icon="delete"
-                      loading={action.id in loading && loading[action.id]}
+                      loading={action.id in deleting && deleting[action.id]}
                       onClick={() => this.deleteAction(action.id)}
                     />
                   </Tooltip>

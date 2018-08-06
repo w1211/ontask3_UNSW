@@ -61,6 +61,30 @@ export const deleteAction = ({ actionId, onFinish }) => dispatch => {
   requestWrapper(parameters);
 };
 
+export const cloneAction = ({ actionId, onFinish }) => dispatch => {
+  const parameters = {
+    url: `/workflow/${actionId}/clone_action/`,
+    method: "POST",
+    errorFn: error => {
+      onFinish();
+      notification["error"]({
+        message: "Action clone failed",
+        description: error
+      });
+    },
+    successFn: () => {
+      onFinish();
+      dispatch(fetchContainers());
+      notification["success"]({
+        message: "Action cloned",
+        description: "The action was successfully cloned."
+      });
+    }
+  };
+
+  requestWrapper(parameters);
+};
+
 export const fetchAction = ({ actionId, onError, onSuccess }) => dispatch => {
   const parameters = {
     url: `/workflow/${actionId}/retrieve_workflow/`,

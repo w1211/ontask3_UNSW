@@ -67,7 +67,7 @@ class Workflow(Document):
     datalab = ReferenceField(
         Datalab, required=True, reverse_delete_rule=2
     )  # Cascade delete if view is deleted
-    name = StringField(required=True, unique_with="container")
+    name = StringField(required=True)
     description = StringField(null=True)
     filter = EmbeddedDocumentField(Condition)
     conditionGroups = EmbeddedDocumentListField(ConditionGroup)
