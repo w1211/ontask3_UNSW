@@ -14,7 +14,10 @@ import {
   Tabs,
   Checkbox,
   Switch,
-  Alert
+  Alert,
+  Radio,
+  Button,
+  message
 } from "antd";
 import { bindActionCreators } from "redux";
 import { connect } from "react-redux";
@@ -27,6 +30,8 @@ const FormItem = Form.Item;
 const { Option } = Select;
 const confirm = Modal.confirm;
 const TabPane = Tabs.TabPane;
+const RadioButton = Radio.Button;
+const RadioGroup = Radio.Group;
 
 class FormModule extends React.Component {
   constructor(props) {
@@ -38,7 +43,10 @@ class FormModule extends React.Component {
       dispatch
     );
 
-    this.state = { tab: "fields" };
+    this.state = {
+      tab: "fields",
+      importExport: { visible: false }
+    };
   }
 
   componentDidMount() {
@@ -413,6 +421,51 @@ class FormModule extends React.Component {
     );
   };
 
+  ImportExportFields = () => {
+    const { currentStep, importExport } = this.state;
+
+    const copyToClipboard = () => {
+      var textField = document.createElement("textarea");
+      textField.innerHTML = JSON.stringify(currentStep.fields, null, 2);
+      document.body.appendChild(textField);
+      textField.select();
+      document.execCommand("copy");
+      textField.remove();
+      message.success("Copied fields to clipboard");
+    };
+
+    return (
+      <Modal
+        visible={importExport.visible}
+        title="Import/export fields"
+        onCancel={() => this.setState({ importExport: { visible: false } })}
+        // onOk={this.handleOk}
+      >
+        <RadioGroup
+          onChange={e =>
+            this.setState({ importExport: { ...importExport, type: e.target.value } })
+          }
+          value={importExport.type}
+        >
+          <RadioButton value="import">Import</RadioButton>
+          <RadioButton value="export">Export</RadioButton>
+        </RadioGroup>
+
+        { importExport.type === "export" && 
+          <code className="form_import_export">
+            <Button
+              shape="circle"
+              icon="copy"
+              size="small"
+              onClick={copyToClipboard}
+            />
+            <pre>{JSON.stringify(currentStep.fields, null, 2)}</pre>
+          </code>
+        }
+      </Modal>
+    );
+  };
+
   render() {
     const { build, stepIndex, validate, selectedId } = this.props;
     const { currentStep, tab, didChangeActive } = this.state;
@@ -426,6 +479,14 @@ class FormModule extends React.Component {
       actions.push(
         <Tooltip title="Add field">
           <Icon type="plus" onClick={() => this.modifyFormField()} />
+        </Tooltip>,
+        <Tooltip title="Import/export fields">
+          <Icon
+            type="select"
+            onClick={() =>
+              this.setState({ importExport: { visible: true, type: "import" } })
+            }
+          />
         </Tooltip>
       );
 
@@ -446,10 +507,7 @@ class FormModule extends React.Component {
     if (build.steps.length === stepIndex + 1)
       actions.push(
         <Tooltip title="Remove form">
-          <Icon
-            type="delete"
-            onClick={this.handleDelete}
-          />
+          <Icon type="delete" onClick={this.handleDelete} />
         </Tooltip>
       );
 
@@ -491,6 +549,8 @@ class FormModule extends React.Component {
             {this.WebForm()}
           </TabPane>
         </Tabs>
+
+        {this.ImportExportFields()}
       </Card>
     );
   }
