@@ -41,6 +41,31 @@ export const deleteDataLab = ({ dataLabId, onFinish }) => dispatch => {
   requestWrapper(parameters);
 };
 
+export const cloneDataLab = ({ dataLabId, onFinish }) => dispatch => {
+  const parameters = {
+    url: `/datalab/${dataLabId}/clone_datalab/`,
+    method: "POST",
+    errorFn: error => {
+      onFinish();
+      notification["error"]({
+        message: "DataLab clone failed",
+        description: error
+      });
+    },
+    successFn: () => {
+      onFinish();
+      dispatch(fetchContainers());
+      notification["success"]({
+        message: "DataLab clone",
+        description: "The DataLab was successfully cloned."
+      });
+    }
+  };
+
+  requestWrapper(parameters);
+};
+
+
 const storeDataLab = dataLab => {
   // Convert DatePicker field timestamps to moment.js objects (required by DatePicker component)
   if ("steps" in dataLab)

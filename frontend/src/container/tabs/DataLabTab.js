@@ -4,7 +4,7 @@ import { connect } from "react-redux";
 import { Input, Icon, Tooltip, Button, Card, Modal } from "antd";
 import { Link } from "react-router-dom";
 
-import { deleteDataLab } from "../../dataLab/DataLabActions";
+import { deleteDataLab, cloneDataLab } from "../../dataLab/DataLabActions";
 
 const { Meta } = Card;
 const confirm = Modal.confirm;
@@ -14,9 +14,12 @@ class DataLabTab extends React.Component {
     super(props);
     const { dispatch } = props;
 
-    this.boundActionCreators = bindActionCreators({ deleteDataLab }, dispatch);
+    this.boundActionCreators = bindActionCreators(
+      { deleteDataLab, cloneDataLab },
+      dispatch
+    );
 
-    this.state = { filter: null, loading: {} };
+    this.state = { filter: null, deleting: {}, cloning: {} };
   }
 
   deleteDataLab = dataLabId => {
@@ -29,13 +32,32 @@ class DataLabTab extends React.Component {
       cancelText: "Cancel",
       onOk: () => {
         this.setState({
-          loading: { [dataLabId]: true }
+          deleting: { [dataLabId]: true }
         });
 
         this.boundActionCreators.deleteDataLab({
           dataLabId,
           onFinish: () => {
-            this.setState({ loading: { [dataLabId]: false } });
+            this.setState({ deleting: { [dataLabId]: false } });
+          }
+        });
+      }
+    });
+  };
+
+  cloneDataLab = dataLabId => {
+    confirm({
+      title: "Confirm DataLab clone",
+      content: "Are you sure you want to clone this DataLab?",
+      onOk: () => {
+        this.setState({
+          cloning: { [dataLabId]: true }
+        });
+
+        this.boundActionCreators.cloneDataLab({
+          dataLabId,
+          onFinish: () => {
+            this.setState({ cloning: { [dataLabId]: false } });
           }
         });
       }
@@ -44,7 +66,7 @@ class DataLabTab extends React.Component {
 
   render() {
     const { containerId, dataLabs } = this.props;
-    const { filter, loading } = this.state;
+    const { filter, deleting, cloning } = this.state;
 
     return (
       <div className="tab">
@@ -84,11 +106,18 @@ class DataLabTab extends React.Component {
                       <Button icon="arrow-right" />
                     </Tooltip>
                   </Link>,
+                  <Tooltip title="Clone DataLab">
+                    <Button
+                      icon="copy"
+                      loading={dataLab.id in cloning && cloning[dataLab.id]}
+                      onClick={() => this.cloneDataLab(dataLab.id)}
+                    />
+                  </Tooltip>,
                   <Tooltip title="Delete DataLab">
                     <Button
                       type="danger"
                       icon="delete"
-                      loading={dataLab.id in loading && loading[dataLab.id]}
+                      loading={dataLab.id in deleting && deleting[dataLab.id]}
                       onClick={() => this.deleteDataLab(dataLab.id)}
                     />
                   </Tooltip>

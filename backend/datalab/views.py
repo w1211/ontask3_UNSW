@@ -500,3 +500,32 @@ class DatalabViewSet(viewsets.ModelViewSet):
         )
 
         return JsonResponse(form_data)
+
+    @detail_route(methods=["post"])
+    def clone_datalab(self, request, id=None):
+        datalab = self.get_object()
+        self.check_object_permissions(self.request, datalab)
+        
+        datalab = datalab.to_mongo()
+        datalab['name'] = datalab['name'] + '_cloned'
+        datalab.pop('_id')
+
+        serializer = DatalabSerializer(data=datalab)
+        serializer.is_valid()
+        serializer.save()
+        
+        audit = AuditSerializer(
+            data={
+                "model": "datalab",
+                "document": str(id),
+                "action": "clone",
+                "user": self.request.user.email,
+                "diff": {
+                    "new_document": str(serializer.instance.id)
+                },
+            }
+        )
+        audit.is_valid()
+        audit.save()
+
+        return JsonResponse({ 'success': 1 })
