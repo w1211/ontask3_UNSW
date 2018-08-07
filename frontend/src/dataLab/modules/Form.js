@@ -438,7 +438,7 @@ class FormModule extends React.Component {
     return (
       <Modal
         visible={importExport.visible}
-        title="Import/export fields"
+        title="Export/import fields"
         onCancel={() => this.setState({ importExport: { visible: false } })}
         onOk={() => {
           if (importExport.type === "import") {
@@ -461,8 +461,8 @@ class FormModule extends React.Component {
           }
           value={importExport.type}
         >
-          <RadioButton value="import">Import</RadioButton>
           <RadioButton value="export">Export</RadioButton>
+          <RadioButton value="import">Import</RadioButton>
         </RadioGroup>
 
         {importExport.type === "import" && (
@@ -507,11 +507,11 @@ class FormModule extends React.Component {
         <Tooltip title="Add field">
           <Icon type="plus" onClick={() => this.modifyFormField()} />
         </Tooltip>,
-        <Tooltip title="Import/export fields">
+        <Tooltip title="Export/import fields">
           <Icon
             type="select"
             onClick={() =>
-              this.setState({ importExport: { visible: true, type: "import" } })
+              this.setState({ importExport: { visible: true, type: "export" } })
             }
           />
         </Tooltip>

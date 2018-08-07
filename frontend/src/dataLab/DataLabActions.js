@@ -250,6 +250,11 @@ const performLogic = (step, field, value) => {
     if (field === "add") step.fields.push(value);
     if (field === "delete") step.fields.splice(value, 1);
     if (field === "import") {
+      if (!value) {
+        message.error("Failed to import fields - no data provided");
+        return;
+      }
+
       let fields;
       try {
         fields = JSON.parse(value);
