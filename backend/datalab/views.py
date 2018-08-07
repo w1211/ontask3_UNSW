@@ -48,7 +48,12 @@ class DatalabViewSet(viewsets.ModelViewSet):
         for (step_index, step) in enumerate(steps):
             module_type = step["type"]
             for field in step[module_type]["fields"]:
-                order.append({"stepIndex": step_index, "field": field})
+                order.append(
+                    {
+                        "stepIndex": step_index,
+                        "field": field["name"] if step["type"] == "form" else field,
+                    }
+                )
 
         datalab = serializer.save(steps=steps, data=data, order=order)
 
@@ -505,27 +510,26 @@ class DatalabViewSet(viewsets.ModelViewSet):
     def clone_datalab(self, request, id=None):
         datalab = self.get_object()
         self.check_object_permissions(self.request, datalab)
-        
+
         datalab = datalab.to_mongo()
-        datalab['name'] = datalab['name'] + '_cloned'
-        datalab.pop('_id')
+        datalab["name"] = datalab["name"] + "_cloned"
+        datalab.pop("_id")
 
         serializer = DatalabSerializer(data=datalab)
         serializer.is_valid()
         serializer.save()
-        
+
         audit = AuditSerializer(
             data={
                 "model": "datalab",
                 "document": str(id),
                 "action": "clone",
                 "user": self.request.user.email,
-                "diff": {
-                    "new_document": str(serializer.instance.id)
-                },
+                "diff": {"new_document": str(serializer.instance.id)},
             }
         )
         audit.is_valid()
         audit.save()
 
-        return JsonResponse({ 'success': 1 })
+        return JsonResponse({"success": 1})
+
