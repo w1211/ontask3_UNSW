@@ -422,6 +422,7 @@ class FormModule extends React.Component {
   };
 
   ImportExportFields = () => {
+    const { stepIndex } = this.props;
     const { currentStep, importExport } = this.state;
 
     const copyToClipboard = () => {
@@ -439,11 +440,24 @@ class FormModule extends React.Component {
         visible={importExport.visible}
         title="Import/export fields"
         onCancel={() => this.setState({ importExport: { visible: false } })}
-        // onOk={this.handleOk}
+        onOk={() => {
+          if (importExport.type === "import") {
+            this.boundActionCreators.updateBuild({
+              stepIndex,
+              field: "import",
+              value: importExport.importValue,
+              isNotField: true
+            })
+          }
+
+          this.setState({ importExport: { visible: false } });
+        }}
       >
         <RadioGroup
           onChange={e =>
-            this.setState({ importExport: { ...importExport, type: e.target.value } })
+            this.setState({
+              importExport: { ...importExport, type: e.target.value }
+            })
           }
           value={importExport.type}
         >
@@ -451,8 +465,21 @@ class FormModule extends React.Component {
           <RadioButton value="export">Export</RadioButton>
         </RadioGroup>
 
-        { importExport.type === "export" && 
-          <code className="form_import_export">
+        {importExport.type === "import" && (
+          <textarea
+            value={importExport.importValue}
+            onChange={e =>
+              this.setState({
+                importExport: { ...importExport, importValue: e.target.value }
+              })
+            }
+            className="form_import"
+            placeholder="Paste the JSON object that describes the form fields to be imported here..."
+          />
+        )}
+
+        {importExport.type === "export" && (
+          <code className="form_export">
             <Button
               shape="circle"
               icon="copy"
@@ -461,7 +488,7 @@ class FormModule extends React.Component {
             />
             <pre>{JSON.stringify(currentStep.fields, null, 2)}</pre>
           </code>
-        }
+        )}
       </Modal>
     );
   };

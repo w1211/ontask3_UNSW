@@ -65,7 +65,6 @@ export const cloneDataLab = ({ dataLabId, onFinish }) => dispatch => {
   requestWrapper(parameters);
 };
 
-
 const storeDataLab = dataLab => {
   // Convert DatePicker field timestamps to moment.js objects (required by DatePicker component)
   if ("steps" in dataLab)
@@ -250,6 +249,29 @@ const performLogic = (step, field, value) => {
   if (moduleType === "form") {
     if (field === "add") step.fields.push(value);
     if (field === "delete") step.fields.splice(value, 1);
+    if (field === "import") {
+      let fields;
+      try {
+        fields = JSON.parse(value);
+      } catch (ex) {
+        message.error("Failed to import fields - invalid JSON provided");
+        return;
+      }
+
+      const existingFields = step.fields.map(field => field.name);
+      fields.forEach((field, fieldIndex) => {
+        if (!existingFields.includes(field.name)) return;
+
+        let i = 1;
+        while (existingFields.includes(`${field.name}_${i}`)) {
+          i += 1;
+        }
+        fields[fieldIndex].name = `${field.name}_${i}`;
+      });
+
+      step.fields.push(...fields);
+      message.success("Form fields imported");
+    }
   }
 };
 

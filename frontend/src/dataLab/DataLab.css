@@ -250,24 +250,29 @@
 .dataLab .web_form .saved {
   background: #E8F5E9;
 }
-.form_export {
+.form_export, .form_import {
   background: #eee;
   padding: 1em;
   margin: 0.5em 0;
   border: 1px dashed #ccc;
   border-radius: 5px;
   display: block;
-  max-height: 350px;
+  height: 300px;
   overflow-y: scroll;
+  font-size: 0.75em;
+  word-wrap: break-word;
+  width: 100%;
 }
 .form_export button {
   position: absolute;
   right: 40px;
 }
 .form_export pre {
-  font-size: 0.75em;
   margin: 0;
-  word-wrap: break-word;
+}
+.form_import {
+  font-family: Consolas, Menlo, Courier, monospace;
+  resize: none;
 }
 
 /* Form field modal styles */
