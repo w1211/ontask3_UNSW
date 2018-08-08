@@ -16,6 +16,13 @@ class EditableField extends React.Component {
     };
   }
 
+  componentDidUpdate(prevProps) {
+    const { originalValue } = this.props;
+
+    if (prevProps.originalValue !== originalValue)
+      this.setState({ value: originalValue });
+  }
+
   handleChange = (value, shouldSave) => {
     const { onSave } = this.props;
 
@@ -204,7 +211,7 @@ class EditableField extends React.Component {
 
   render() {
     const { field, originalValue } = this.props;
-
+    
     if (!field) return originalValue;
 
     switch (field.type) {
