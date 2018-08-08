@@ -2,7 +2,7 @@ import React from "react";
 import { withRouter } from "react-router";
 import { bindActionCreators } from "redux";
 import { connect } from "react-redux";
-import { Modal, Form, Input, Alert, Select } from "antd";
+import { Modal, Form, Input, Alert, Select, Tooltip } from "antd";
 import _ from "lodash";
 
 import * as ActionActionCreators from "./ActionActions";
@@ -27,17 +27,18 @@ class ActionModal extends React.Component {
   }
 
   handleOk = () => {
-    const { form, data, closeModal, history } = this.props;
-    const { containerId } = data;
+    const { selected, form, data, closeModal, history } = this.props;
 
     form.validateFields((err, payload) => {
       if (err) return;
 
-      this.boundActionCreators.createAction({
-        containerId,
+      const callFn = selected ? "updateAction" : "createAction";
+      this.boundActionCreators[callFn]({
+        containerId: data && data.containerId,
+        actionId: selected && selected.id,
         payload,
         onError: error => this.setState({ loading: false, error }),
-        onSuccess: (action) => {
+        onSuccess: action => {
           this.setState({ loading: false, error: null });
           form.resetFields();
           closeModal();
@@ -57,47 +58,68 @@ class ActionModal extends React.Component {
   };
 
   render() {
-    const { visible, form, data } = this.props;
+    const { selected, visible, form, data } = this.props;
     const { loading, error } = this.state;
+    const { getFieldDecorator } = form;
 
-    const dataLabs = _.get(data, 'dataLabs', []);
+    const dataLabs = _.get(data, "dataLabs", []);
 
     return (
       <Modal
         visible={visible}
-        title="Create action"
-        okText="Create"
+        title={selected ? "Update action" : "Create action"}
+        okText={selected ? "Update" : "Create"}
         onCancel={this.handleCancel}
         onOk={this.handleOk}
         confirmLoading={loading}
       >
         <Form layout="horizontal">
           <FormItem {...formItemLayout} label="Name">
-            {form.getFieldDecorator("name", {
+            {getFieldDecorator("name", {
+              initialValue: _.get(selected, "name"),
               rules: [{ required: true, message: "Name is required" }]
             })(<Input />)}
           </FormItem>
 
           <FormItem {...formItemLayout} label="Description">
-            {form.getFieldDecorator("description")(<TextArea rows={4} />)}
+            {getFieldDecorator("description", {
+              initialValue: _.get(selected, "description")
+            })(<TextArea rows={4} />)}
           </FormItem>
 
-          <FormItem {...formItemLayout} label="DataLab">
-            {form.getFieldDecorator("datalab", {
-              rules: [{ required: true, message: "DataLab is required" }]
-            })(
-              <Select>
-                {dataLabs &&
-                  dataLabs.map((dataLab, i) => {
-                    return (
-                      <Option value={dataLab.id} key={i}>
-                        {dataLab.name}
-                      </Option>
-                    );
-                  })}
-              </Select>
-            )}
-          </FormItem>
+          {selected ? (
+            <FormItem {...formItemLayout} label="DataLab">
+              <Tooltip
+                title={
+                  selected
+                    ? "DataLab cannot be modified after an action is created"
+                    : ""
+                }
+              >
+                <Select disabled={true} value={selected.datalab} />
+              </Tooltip>
+            </FormItem>
+          ) : (
+            <FormItem {...formItemLayout} label="DataLab">
+              {getFieldDecorator("datalab", {
+                initialValue: _.get(selected, "datalab"),
+                rules: [
+                  { required: !!selected, message: "DataLab is required" }
+                ]
+              })(
+                <Select>
+                  {dataLabs &&
+                    dataLabs.map((dataLab, i) => {
+                      return (
+                        <Option value={dataLab.id} key={i}>
+                          {dataLab.name}
+                        </Option>
+                      );
+                    })}
+                </Select>
+              )}
+            </FormItem>
+          )}
 
           {error && <Alert message={error} type="error" />}
         </Form>

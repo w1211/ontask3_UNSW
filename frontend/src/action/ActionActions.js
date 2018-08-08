@@ -37,6 +37,31 @@ export const createAction = ({
   requestWrapper(parameters);
 };
 
+export const updateAction = ({
+  actionId,
+  payload,
+  onError,
+  onSuccess
+}) => dispatch => {
+  delete payload['datalab'];
+  
+  const parameters = {
+    url: `/workflow/${actionId}/`,
+    method: "PATCH",
+    errorFn: onError,
+    successFn: action => {
+      onSuccess(action);
+      notification["success"]({
+        message: "Action updated",
+        description: "The action was successfully updated."
+      });
+    },
+    payload
+  };
+
+  requestWrapper(parameters);
+};
+
 export const deleteAction = ({ actionId, onFinish }) => dispatch => {
   const parameters = {
     url: `/workflow/${actionId}/`,

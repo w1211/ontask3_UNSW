@@ -102,7 +102,7 @@ class DataLabTab extends React.Component {
                 title={dataLab.name}
                 actions={[
                   <Link to={{ pathname: `/datalab/${dataLab.id}/data` }}>
-                    <Tooltip title="Edit DataLab">
+                    <Tooltip title="Enter DataLab">
                       <Button icon="arrow-right" />
                     </Tooltip>
                   </Link>,

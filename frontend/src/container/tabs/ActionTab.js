@@ -99,10 +99,21 @@ class ActionTab extends React.Component {
                 bodyStyle={{ flex: 1 }}
                 title={action.name}
                 actions={[
-                  <Tooltip title="Edit action">
+                  <Tooltip title="Enter action">
                     <Link to={`/action/${action.id}`}>
                       <Button icon="arrow-right" />
                     </Link>
+                  </Tooltip>,
+                  <Tooltip title="Edit action">
+                    <Button
+                      icon="edit"
+                      onClick={() => {
+                        openModal({
+                          type: "action",
+                          selected: action
+                        });
+                      }}
+                    />
                   </Tooltip>,
                   <Tooltip title="Clone action">
                     <Button

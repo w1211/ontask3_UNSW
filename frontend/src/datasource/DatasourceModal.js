@@ -378,7 +378,7 @@ class DatasourceModal extends React.Component {
       <Modal
         visible={visible}
         className="datasource"
-        title="Datasources"
+        title={selected ? "Update datasource" : "Create datasource"}
         okText={selected ? "Update" : "Create"}
         onCancel={this.handleCancel}
         onOk={this.handleOk}
