@@ -4,6 +4,7 @@ import { login } from "./AuthActions";
 
 import aaf from "../img/aaf.png";
 import loginImg from "../img/loginImg.png";
+import Register from "./Register";
 
 import "./Login.css";
 
@@ -13,7 +14,8 @@ const TabPane = Tabs.TabPane;
 class Login extends React.Component {
   state = {
     loading: false,
-    error: null
+    error: null,
+    registerVisible: false
   };
 
   beginLogin = () => {
@@ -49,7 +51,7 @@ class Login extends React.Component {
 
   render() {
     const { form } = this.props;
-    const { error, loading } = this.state;
+    const { error, loading, registerVisible } = this.state;
 
     return (
       <div className="login">
@@ -59,7 +61,7 @@ class Login extends React.Component {
           </div>
 
           <div>
-            <Tabs defaultActiveKey="1" className="tabs">
+            <Tabs defaultActiveKey="2" className="tabs">
               <TabPane tab="AAF Login" key="1">
                 <a href={`${process.env.REACT_APP_AAF_URL}`}>
                   <img
@@ -75,12 +77,12 @@ class Login extends React.Component {
                   <FormItem>
                     {form.getFieldDecorator("email", {
                       rules: [
-                        { required: true, message: "Username is required" }
+                        { required: true, message: "Email is required" }
                       ]
                     })(
                       <Input
-                        prefix={<Icon type="user" />}
-                        placeholder="Username"
+                        prefix={<Icon type="mail" />}
+                        placeholder="Email"
                       />
                     )}
                   </FormItem>
@@ -106,8 +108,20 @@ class Login extends React.Component {
                     onClick={this.handleSubmit}
                     loading={loading}
                   >
-                    Log in
+                    Sign in
                   </Button>
+
+                  <div className="register">
+                    New to OnTask?{" "}
+                    <a onClick={() => this.setState({ registerVisible: true })}>
+                      Sign up
+                    </a>
+                  </div>
+
+                  <Register
+                    visible={registerVisible}
+                    closeModal={() => this.setState({ registerVisible: false })}
+                  />
 
                   {error && (
                     <Alert message={error} type="error" className="error" />

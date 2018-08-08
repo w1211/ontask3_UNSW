@@ -34,7 +34,7 @@ const requestWrapper = ({
         errorFn("Invalid credentials");
       } else if (response.status >= 400 && response.status < 600) {
         response.json().then(error => {
-          errorFn(error[0]);
+          errorFn(typeof error === "object" ? error : error[0]);
         });
       } else {
         if (response.status === 204) {
