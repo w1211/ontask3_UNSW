@@ -104,7 +104,7 @@ class ActionModal extends React.Component {
               {getFieldDecorator("datalab", {
                 initialValue: _.get(selected, "datalab"),
                 rules: [
-                  { required: !!selected, message: "DataLab is required" }
+                  { required: !selected, message: "DataLab is required" }
                 ]
               })(
                 <Select>
