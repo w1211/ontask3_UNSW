@@ -49,7 +49,7 @@ class Register extends React.Component {
       <Modal
         title="Sign up"
         visible={visible}
-        loading={loading}
+        confirmLoading={loading}
         onCancel={this.handleCancel}
         onOk={this.handleOk}
       >
