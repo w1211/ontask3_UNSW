@@ -61,7 +61,10 @@ class Login extends React.Component {
           </div>
 
           <div>
-            <Tabs defaultActiveKey="2" className="tabs">
+            <Tabs
+              defaultActiveKey={process.env.REACT_APP_DEMO ? "2" : "1"}
+              className="tabs"
+            >
               <TabPane tab="AAF Login" key="1">
                 <a href={`${process.env.REACT_APP_AAF_URL}`}>
                   <img
@@ -73,12 +76,31 @@ class Login extends React.Component {
               </TabPane>
 
               <TabPane tab="Internal Login" key="2">
+                {process.env.REACT_APP_DEMO && (
+                  <div>
+                    <div className="register">
+                      New to OnTask?
+                      <br />
+                      <a
+                        onClick={() => this.setState({ registerVisible: true })}
+                      >
+                        Click here to register an account
+                      </a>
+                    </div>
+
+                    <Register
+                      visible={registerVisible}
+                      closeModal={() =>
+                        this.setState({ registerVisible: false })
+                      }
+                    />
+                  </div>
+                )}
+
                 <Form>
                   <FormItem>
                     {form.getFieldDecorator("email", {
-                      rules: [
-                        { required: true, message: "Email is required" }
-                      ]
+                      rules: [{ required: true, message: "Email is required" }]
                     })(
                       <Input
                         prefix={<Icon type="mail" />}
@@ -111,18 +133,6 @@ class Login extends React.Component {
                     Sign in
                   </Button>
 
-                  <div className="register">
-                    New to OnTask?{" "}
-                    <a onClick={() => this.setState({ registerVisible: true })}>
-                      Sign up
-                    </a>
-                  </div>
-
-                  <Register
-                    visible={registerVisible}
-                    closeModal={() => this.setState({ registerVisible: false })}
-                  />
-
                   {error && (
                     <Alert message={error} type="error" className="error" />
                   )}
@@ -131,6 +141,16 @@ class Login extends React.Component {
             </Tabs>
           </div>
         </div>
+
+        {process.env.REACT_APP_DEMO && (
+          <Alert
+            className="demo_warning"
+            showIcon
+            type="warning"
+            message="Data stored in this demo version of OnTask may be wiped when 
+            new features are released. Please do not upload confidential data."
+          />
+        )}
       </div>
     );
   }

@@ -2,12 +2,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
   flex: 1;
 }
 .login .content {
   display: flex;
   justify-content: center;
-  margin: 50px;
+  margin: 25px;
 }
 .login .login_image {
   width: 500px;
@@ -29,5 +30,11 @@
   margin-top: 20px;
 }
 .login .register {
-  margin-top: 15px;
+  margin-bottom: 15px;
+}
+.login .register a {
+  text-decoration: underline;
+}
+.login .demo_warning {
+  max-width: 450px;
 }
