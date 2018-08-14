@@ -1,5 +1,18 @@
 import React from "react";
-import { Form, Input, Select, Button, Alert, Spin, Icon, Tooltip } from "antd";
+import {
+  Form,
+  Input,
+  Select,
+  Button,
+  Alert,
+  Spin,
+  Icon,
+  Tooltip,
+  Checkbox,
+  Divider,
+  Table,
+  Modal
+} from "antd";
 import moment from "moment";
 import _ from "lodash";
 
@@ -34,7 +47,8 @@ class Email extends React.Component {
       loading: { emailSettings: false, emailSend: false, preview: true },
       options,
       preview: null,
-      error: null
+      error: null,
+      emailView: { visible: false }
     };
 
     this.dayMap = {
@@ -130,6 +144,135 @@ class Email extends React.Component {
 
   closeSchedulerModal = () => {
     this.setState({ scheduler: { visible: false, selected: null, data: {} } });
+  };
+
+  EmailHistory = () => {
+    const { action } = this.props;
+    const { emailView } = this.state;
+
+    const expandedRowRender = job => (
+      <Table
+        size="small"
+        columns={[
+          { title: "Recipient", dataIndex: "recipient", key: "recipient" },
+          {
+            title: "Feedback",
+            dataIndex: "feedback",
+            key: "feedback",
+            render: text =>
+              job.included_feedback ? text : <Icon type="minus" />
+          },
+          {
+            title: "Tracking",
+            dataIndex: "tracking",
+            key: "tracking",
+            render: text =>
+              job.included_tracking ? (
+                text ? (
+                  <Icon type="check" />
+                ) : (
+                  <Icon type="close" />
+                )
+              ) : (
+                <Icon type="minus" />
+              )
+          },
+          {
+            title: "Content",
+            dataIndex: "content",
+            key: "content",
+            render: (text, record) => (
+              <a
+                onClick={() =>
+                  this.setState({
+                    emailView: {
+                      visible: true,
+                      recipient: record.recipient,
+                      subject: job.subject,
+                      text
+                    }
+                  })
+                }
+              >
+                View
+              </a>
+            )
+          }
+        ]}
+        dataSource={job.emails}
+        rowKey="recipient"
+        pagination={{ size: "small", pageSize: 5 }}
+      />
+    );
+
+    const onCancel = () => this.setState({ emailView: { visible: false } });
+
+    return (
+      <div>
+        <Table
+          size="small"
+          className="email_history"
+          locale={{ emptyText: "No emails have been sent for this action" }}
+          columns={[
+            { title: "Job Id", dataIndex: "job_id", key: "job_id" },
+            { title: "Type", dataIndex: "type", key: "type" },
+            { title: "Subject", dataIndex: "subject", key: "subject" },
+            {
+              title: "Date/Time",
+              dataIndex: "initiated_at",
+              key: "initiated_at",
+              render: text => moment(text).format("DD/MM/YYYY - HH:mm")
+            },
+            {
+              title: "Incl. Feedback",
+              dataIndex: "included_feedback",
+              key: "included_feedback",
+              render: text =>
+                text ? <Icon type="check" /> : <Icon type="close" />
+            },
+            {
+              title: "Incl. Tracking",
+              dataIndex: "included_tracking",
+              key: "included_tracking",
+              render: text =>
+                text ? <Icon type="check" /> : <Icon type="close" />
+            }
+          ]}
+          dataSource={action.emailJobs}
+          expandedRowRender={expandedRowRender}
+          rowKey="job_id"
+          pagination={{ size: "small", pageSize: 5 }}
+        />
+
+        <Modal
+          visible={emailView.visible}
+          onCancel={onCancel}
+          footer={
+            <Button type="primary" onClick={onCancel}>
+              OK
+            </Button>
+          }
+        >
+          <div className="view_email">
+            <div className="field">Recipient:</div>
+            <div className="value">{emailView.recipient}</div>
+            <div className="field">Subject:</div>
+            <div className="value">{emailView.subject}</div>
+            <div className="field">Date/Time:</div>
+            <div className="value">
+              {moment(emailView.initiated_at).format("DD/MM/YYYY - HH:mm")}
+            </div>
+            <Divider />
+            <div
+              className="content"
+              dangerouslySetInnerHTML={{
+                __html: emailView.text
+              }}
+            />
+          </div>
+        </Modal>
+      </div>
+    );
   };
 
   render() {
@@ -249,6 +392,50 @@ class Email extends React.Component {
             })(<Input />)}
           </FormItem>
 
+          <FormItem
+            {...narrowFormItemLayout}
+            className="checkbox"
+            label={
+              <div className="field_label">
+                Email tracking
+                <Tooltip
+                  title={`Uses a tracking pixel to determine whether the recipient
+                  has opened/read the email`}
+                >
+                  <Icon type="question-circle-o" />
+                </Tooltip>
+              </div>
+            }
+          >
+            {form.getFieldDecorator("emailSettings.include_tracking", {
+              initialValue:
+                _.get(action, "emailSettings.include_tracking") || false,
+              valuePropName: "checked"
+            })(<Checkbox />)}
+          </FormItem>
+
+          <FormItem
+            {...narrowFormItemLayout}
+            className="checkbox"
+            label={
+              <div className="field_label">
+                Feedback form
+                <Tooltip
+                  title={`Includes a hyperlink to a form that allows recipients to 
+                  provide feedback for this email`}
+                >
+                  <Icon type="question-circle-o" />
+                </Tooltip>
+              </div>
+            }
+          >
+            {form.getFieldDecorator("emailSettings.include_feedback", {
+              initialValue:
+                _.get(action, "emailSettings.include_feedback") || false,
+              valuePropName: "checked"
+            })(<Checkbox />)}
+          </FormItem>
+
           <div className="button">
             <Button
               loading={loading.emailSettings}
@@ -258,6 +445,16 @@ class Email extends React.Component {
             </Button>
           </div>
         </Form>
+
+        <Divider dashed />
+
+        <div>
+          <h3>Email history</h3>
+
+          {this.EmailHistory()}
+        </div>
+
+        <Divider dashed />
 
         <div>
           <h3>Content preview</h3>
@@ -294,7 +491,9 @@ class Email extends React.Component {
           ) : (
             <div
               style={{ maxHeight: 500 }}
-              dangerouslySetInnerHTML={{ __html: preview && preview.populatedContent[index] }}
+              dangerouslySetInnerHTML={{
+                __html: preview && preview.populatedContent[index]
+              }}
             />
           )}
         </div>
@@ -308,7 +507,7 @@ class Email extends React.Component {
           Send once-off email
         </Button>
 
-        {error && <Alert message={error} type="error" />}
+        {error && <Alert message={error} className="error" type="error" />}
       </div>
     );
   }

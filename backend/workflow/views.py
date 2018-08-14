@@ -14,7 +14,7 @@ from datetime import date, datetime
 from bson import ObjectId
 
 from .serializers import WorkflowSerializer, RetrieveWorkflowSerializer
-from .models import Workflow
+from .models import Workflow, EmailSettings, EmailJob, Email
 from .permissions import WorkflowPermissions
 
 from container.views import ContainerViewSet
@@ -238,11 +238,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         html = self.request.data["html"]
 
         populated_content = populate_content(
-            workflow.datalab,
-            workflow.filter,
-            workflow.conditionGroups,
-            content,
-            html,
+            workflow.datalab, workflow.filter, workflow.conditionGroups, content, html
         )
 
         return JsonResponse({"populatedContent": populated_content})
@@ -393,83 +389,83 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         if not workflow["html"]:
             raise ValidationError("Email content cannot be empty.")
 
-        field = request.data["emailSettings"]["field"]
-        subject = request.data["emailSettings"]["subject"]
-        reply_to = request.data["emailSettings"]["replyTo"]
+        email_settings = EmailSettings(**request.data["emailSettings"])
 
-        data = evaluate_filter(workflow["datalab"]["data"], workflow["filter"])
-        populated_content = populate_content(
+        populated_content, data = populate_content(
             workflow.datalab,
             workflow.filter,
             workflow.conditionGroups,
             workflow.content,
             workflow.html,
+            should_include_data=True,
+        )
+
+        job = EmailJob(
+            subject=email_settings.subject,
+            type="manual",
+            included_tracking=email_settings.include_tracking and True,
+            included_feedback=email_settings.include_feedback and True,
+            emails=[],
         )
 
         failed_emails = False
         # if only send email once-off
         for index, item in enumerate(data):
-            email_sent = send_email(
-                item[field], subject, populated_content[index], reply_to
-            )
-            # if not email_sent:
-            #     failed_emails = True
-            # else:
-            #     serializer = AuditSerializer(data = {
-            #         'workflowId': id,
-            #         'creator': self.request.user.email,
-            #         # TODO: add reply-to
-            #         'receiver': item[field],
-            #         'emailBody': html[index],
-            #         'emailSubject': subject
-            #     })
-            #     serializer.is_valid()
-            #     serializer.save()
-        if failed_emails:
-            # TODO: Make these records identifiable, e.g. allow user to specify the primary key of the DataLab?
-            # And send back a list of the specific records that we failed to send an email to
-            raise ValidationError("Emails to the some records failed to send")
-            # raise ValidationError('Emails to the some records failed to send: ' + str(failed_emails).strip('[]').strip("'"))
-        serializer = WorkflowSerializer(
-            instance=workflow,
-            data={"emailSettings": request.data["emailSettings"]},
-            partial=True,
-        )
+            # email_sent = send_email(
+            #     item[field], subject, populated_content[index], email_settings.reply_to
+            # )
+            email_sent = True
 
-        serializer.is_valid()
-        serializer.save()
-        return JsonResponse({"success": "true"}, safe=False)
+            if email_sent:
+                job["emails"].append(
+                    Email(
+                        recipient=item[email_settings.field],
+                        content=populated_content[index],
+                    )
+                )
+            # else:
+            #     failed_emails = True
+
+        # if failed_emails:
+        # TODO: Make these records identifiable, e.g. allow user to specify the primary key of the DataLab?
+        # And send back a list of the specific records that we failed to send an email to
+        # raise ValidationError('Emails to the some records failed to send: ' + str(failed_emails).strip('[]').strip("'"))
+
+        workflow.emailJobs.append(job)
+        workflow.emailSettings = email_settings
+        workflow.save()
+
+        return JsonResponse({"success": "true"})
 
     @detail_route(methods=["post"])
     def clone_action(self, request, id=None):
         action = self.get_object()
         self.check_object_permissions(self.request, action)
-        
+
         action = action.to_mongo()
-        action['name'] = action['name'] + '_cloned'
-        action.pop('_id')
+        action["name"] = action["name"] + "_cloned"
+        action.pop("_id")
         # The scheduled tasks in Celery are not cloned, therefore remove the schedule
         # information from the cloned action
-        action.pop('schedule')
+        action.pop("schedule")
         # Ensure that the new action is not bound to the original action's Moodle link Id
-        action.pop('linkId')
+        action.pop("linkId")
 
         serializer = WorkflowSerializer(data=action)
         serializer.is_valid()
         serializer.save()
-        
+
         audit = AuditSerializer(
             data={
                 "model": "action",
                 "document": str(id),
                 "action": "clone",
                 "user": self.request.user.email,
-                "diff": {
-                    "new_document": str(serializer.instance.id)
-                },
+                "diff": {"new_document": str(serializer.instance.id)},
             }
         )
         audit.is_valid()
         audit.save()
 
-        return JsonResponse({ 'success': 1 })
+        return JsonResponse({"success": 1})
+

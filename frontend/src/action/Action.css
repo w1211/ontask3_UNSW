@@ -119,3 +119,35 @@
 .action .email .current_record {
   margin-left: 10px;
 }
+.action .checkbox {
+  margin: -10px 0;
+}
+.action .field_label {
+  display: inline;
+}
+.action .field_label i {
+  margin-left: 5px;
+}
+.action .error {
+  margin-top: 15px;
+}
+
+.action .email_history .ant-table-expanded-row:hover > td {
+  background: #fbfbfb;
+}
+.view_email {
+  display: flex;
+  flex-wrap: wrap;
+}
+.view_email .field {
+  width: 25%;
+  font-weight: 700;
+}
+.view_email .value {
+  width: 75%;
+}
+.view_email .content {
+  padding: 10px;
+  border: 1px solid #F1F1F1;
+  width: 100%;
+}
