@@ -3,7 +3,7 @@ from rest_framework_mongoengine.validators import ValidationError
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.permissions import IsAuthenticated
 
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 import os
 import json
 import re
@@ -34,6 +34,9 @@ from scheduler.methods import (
 )
 from scheduler.utils import send_email
 from .utils import *
+
+import jwt
+from ontask.settings import SECRET_KEY, BACKEND_DOMAIN
 
 
 class WorkflowViewSet(viewsets.ModelViewSet):
@@ -377,6 +380,36 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         return self.retrieve_workflow(request, id=id)
 
+    @list_route(methods=["get"], permission_classes=[])
+    def read_receipt(self, request):
+        token = request.GET.get("email")
+        decryped_token = None
+
+        if token:
+            try:
+                decryped_token = jwt.decode(
+                    token, SECRET_KEY, algorithms=["HS256"]
+                )
+            except Exception:
+                # Invalid token, ignore the read receipt
+                return HttpResponse(status=204)
+        
+            did_update = False
+            workflow = Workflow.objects.get(id=decryped_token['workflow_id'])
+            for job in workflow.emailJobs:
+                if job.job_id == ObjectId(decryped_token['job_id']):
+                    for email in job.emails:
+                        if email.recipient == decryped_token['recipient']:
+                            email.tracking = True
+                            did_update = True
+                            break
+                    break
+
+            if did_update:
+                workflow.save()
+
+        return HttpResponse(status=204)
+
     @detail_route(methods=["put"])
     def send_email(self, request, id=None):
         workflow = Workflow.objects.get(id=id)
@@ -400,8 +433,9 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             should_include_data=True,
         )
 
+        job_id = ObjectId()
         job = EmailJob(
-            job_id=ObjectId(),
+            job_id=job_id,
             subject=email_settings.subject,
             type="Manual",
             included_tracking=email_settings.include_tracking and True,
@@ -411,17 +445,32 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         failed_emails = False
         for index, item in enumerate(data):
+            recipient = item[email_settings.field]
+            email_content = populated_content[index]
+
+            if email_settings.include_tracking:
+                tracking_token = jwt.encode(
+                    {
+                        "workflow_id": str(id),
+                        "job_id": str(job_id),
+                        "recipient": recipient,
+                    },
+                    SECRET_KEY,
+                    algorithm="HS256",
+                ).decode("utf-8")
+                tracking_pixel = f'<img src="{BACKEND_DOMAIN}/workflow/read_receipt/\
+                ?email={tracking_token}"/>'
+                email_content += tracking_pixel
+
             email_sent = send_email(
-                item[email_settings.field],
-                email_settings.subject,
-                populated_content[index],
-                email_settings.replyTo,
+                recipient, email_settings.subject, email_content, email_settings.replyTo
             )
 
             if email_sent:
                 job["emails"].append(
                     Email(
-                        recipient=item[email_settings.field],
+                        recipient=recipient,
+                        # Content without the tracking pixel
                         content=populated_content[index],
                     )
                 )
