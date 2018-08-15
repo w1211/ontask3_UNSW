@@ -10,8 +10,9 @@ from mongoengine.fields import (
     DictField,
     BooleanField,
     SequenceField,
+    ObjectIdField
 )
-
+from bson import ObjectId
 from datetime import datetime
 
 from container.models import Container
@@ -67,10 +68,10 @@ class Email(EmbeddedDocument):
 
 
 class EmailJob(EmbeddedDocument):
-    job_id = SequenceField()
+    job_id = ObjectIdField()
     subject = StringField()
     emails = EmbeddedDocumentListField(Email)
-    type = StringField(choices=["manual", "scheduled"])
+    type = StringField(choices=["Manual", "Scheduled"])
     initiated_at = DateTimeField(default=datetime.utcnow)
     included_tracking = BooleanField()
     included_feedback = BooleanField()

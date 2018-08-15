@@ -214,15 +214,14 @@ class Email extends React.Component {
           className="email_history"
           locale={{ emptyText: "No emails have been sent for this action" }}
           columns={[
-            { title: "Job Id", dataIndex: "job_id", key: "job_id" },
-            { title: "Type", dataIndex: "type", key: "type" },
-            { title: "Subject", dataIndex: "subject", key: "subject" },
             {
               title: "Date/Time",
               dataIndex: "initiated_at",
               key: "initiated_at",
               render: text => moment(text).format("DD/MM/YYYY - HH:mm")
             },
+            { title: "Type", dataIndex: "type", key: "type" },
+            { title: "Subject", dataIndex: "subject", key: "subject" },
             {
               title: "Incl. Feedback",
               dataIndex: "included_feedback",

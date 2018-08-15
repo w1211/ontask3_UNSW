@@ -401,20 +401,22 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         )
 
         job = EmailJob(
+            job_id=ObjectId(),
             subject=email_settings.subject,
-            type="manual",
+            type="Manual",
             included_tracking=email_settings.include_tracking and True,
             included_feedback=email_settings.include_feedback and True,
             emails=[],
         )
 
         failed_emails = False
-        # if only send email once-off
         for index, item in enumerate(data):
-            # email_sent = send_email(
-            #     item[field], subject, populated_content[index], email_settings.reply_to
-            # )
-            email_sent = True
+            email_sent = send_email(
+                item[email_settings.field],
+                email_settings.subject,
+                populated_content[index],
+                email_settings.replyTo,
+            )
 
             if email_sent:
                 job["emails"].append(
