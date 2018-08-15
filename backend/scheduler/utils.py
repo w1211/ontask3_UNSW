@@ -8,6 +8,8 @@ from uuid import uuid4
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.header import Header
+from email.utils import formataddr
 
 from ontask.settings import SMTP
 
@@ -57,7 +59,10 @@ def send_email(recipient, subject, content, reply_to=None):
     try:
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
-        msg['From'] = SMTP['USER']
+        if 'NAME' in SMTP:
+            msg['From'] = formataddr((str(Header(SMTP['NAME'], 'utf-8')), SMTP['USER']))
+        else:
+            msg['From'] = SMTP['USER']
         msg['To'] = recipient
         if reply_to:
             msg['Reply-To'] = reply_to
