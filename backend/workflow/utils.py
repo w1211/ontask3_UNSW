@@ -1,6 +1,11 @@
 import re
-from collections import defaultdict
 from rest_framework_mongoengine.validators import ValidationError
+
+from bson import ObjectId
+import jwt
+from .models import EmailSettings, EmailJob, Email
+from ontask.settings import SECRET_KEY, BACKEND_DOMAIN
+from scheduler.utils import send_email
 
 
 def did_pass_formula(item, formula):
@@ -185,3 +190,69 @@ def populate_content(
         return result, filtered_data
 
     return result
+
+
+def perform_email_job(workflow, job_type, email_settings=None):
+    if not email_settings:
+        email_settings = workflow.emailSettings
+
+    populated_content, data = populate_content(
+        workflow.datalab,
+        workflow.filter,
+        workflow.conditionGroups,
+        workflow.content,
+        workflow.html,
+        should_include_data=True,
+    )
+
+    job_id = ObjectId()
+    job = EmailJob(
+        job_id=job_id,
+        subject=email_settings.subject,
+        type=job_type,
+        included_tracking=email_settings.include_tracking and True,
+        included_feedback=email_settings.include_feedback and True,
+        emails=[],
+    )
+
+    failed_emails = False
+    for index, item in enumerate(data):
+        recipient = item[email_settings.field]
+        email_content = populated_content[index]
+
+        if email_settings.include_tracking:
+            tracking_token = jwt.encode(
+                {
+                    "workflow_id": str(workflow.id),
+                    "job_id": str(job_id),
+                    "recipient": recipient,
+                },
+                SECRET_KEY,
+                algorithm="HS256",
+            ).decode("utf-8")
+
+            tracking_pixel = f'<img src="{BACKEND_DOMAIN}/workflow/read_receipt/?email={tracking_token}"/>'
+
+            email_content += tracking_pixel
+
+        email_sent = send_email(
+            recipient, email_settings.subject, email_content, email_settings.replyTo
+        )
+
+        if email_sent:
+            job["emails"].append(
+                Email(
+                    recipient=recipient,
+                    # Content without the tracking pixel
+                    content=populated_content[index],
+                )
+            )
+        # else:
+        #     failed_emails = True
+
+    # if failed_emails:
+    # TODO: Make these records identifiable, e.g. allow user to specify the primary key of the DataLab?
+    # And send back a list of the specific records that we failed to send an email to
+    # raise ValidationError('Emails to the some records failed to send: ' + str(failed_emails).strip('[]').strip("'"))
+
+    return job

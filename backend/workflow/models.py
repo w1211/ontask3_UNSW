@@ -8,7 +8,12 @@ from mongoengine.fields import (
     IntField,
     ListField,
     DictField,
+    BooleanField,
+    SequenceField,
+    ObjectIdField
 )
+from bson import ObjectId
+from datetime import datetime
 
 from container.models import Container
 from datalab.models import Datalab
@@ -31,12 +36,6 @@ class ConditionGroup(EmbeddedDocument):
     conditions = EmbeddedDocumentListField(Condition)
 
 
-# Action
-class Content(EmbeddedDocument):
-    html = StringField(null=True)
-    plain = StringField(null=True)
-
-
 class Schedule(EmbeddedDocument):
     startTime = DateTimeField()
     endTime = DateTimeField()
@@ -57,6 +56,26 @@ class EmailSettings(EmbeddedDocument):
     subject = StringField(required=True)
     field = StringField(required=True)
     replyTo = StringField(required=True)
+    include_tracking = BooleanField()
+    include_feedback = BooleanField()
+
+
+class Email(EmbeddedDocument):
+    recipient = StringField()
+    content = StringField()
+    feedback = StringField()
+    first_tracked = DateTimeField()
+    last_tracked = DateTimeField()
+
+
+class EmailJob(EmbeddedDocument):
+    job_id = ObjectIdField()
+    subject = StringField()
+    emails = EmbeddedDocumentListField(Email)
+    type = StringField(choices=["Manual", "Scheduled"])
+    initiated_at = DateTimeField(default=datetime.utcnow)
+    included_tracking = BooleanField()
+    included_feedback = BooleanField()
 
 
 # Workflow
@@ -76,3 +95,4 @@ class Workflow(Document):
     emailSettings = EmbeddedDocumentField(EmailSettings)
     schedule = EmbeddedDocumentField(Schedule, null=True, required=False)
     linkId = StringField(null=True)  # link_id is unique across workflow objects
+    emailJobs = EmbeddedDocumentListField(EmailJob)

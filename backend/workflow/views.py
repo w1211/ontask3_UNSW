@@ -3,7 +3,7 @@ from rest_framework_mongoengine.validators import ValidationError
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.permissions import IsAuthenticated
 
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 import os
 import json
 import re
@@ -12,9 +12,10 @@ import requests
 from json import dumps
 from datetime import date, datetime
 from bson import ObjectId
+import base64
 
 from .serializers import WorkflowSerializer, RetrieveWorkflowSerializer
-from .models import Workflow
+from .models import Workflow, EmailSettings, EmailJob, Email
 from .permissions import WorkflowPermissions
 
 from container.views import ContainerViewSet
@@ -32,8 +33,19 @@ from scheduler.methods import (
     remove_scheduled_task,
     remove_async_task,
 )
-from scheduler.utils import send_email
-from .utils import *
+from .utils import (
+    evaluate_filter,
+    validate_condition_group,
+    perform_email_job,
+    populate_content,
+)
+
+import jwt
+from ontask.settings import SECRET_KEY, BACKEND_DOMAIN
+
+PIXEL_GIF_DATA = base64.b64decode(
+    b"R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+)
 
 
 class WorkflowViewSet(viewsets.ModelViewSet):
@@ -238,11 +250,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         html = self.request.data["html"]
 
         populated_content = populate_content(
-            workflow.datalab,
-            workflow.filter,
-            workflow.conditionGroups,
-            content,
-            html,
+            workflow.datalab, workflow.filter, workflow.conditionGroups, content, html
         )
 
         return JsonResponse({"populatedContent": populated_content})
@@ -381,6 +389,37 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         return self.retrieve_workflow(request, id=id)
 
+    @list_route(methods=["get"], permission_classes=[])
+    def read_receipt(self, request):
+        token = request.GET.get("email")
+        decrypted_token = None
+
+        if token:
+            try:
+                decrypted_token = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+            except Exception:
+                # Invalid token, ignore the read receipt
+                return HttpResponse(PIXEL_GIF_DATA, content_type='image/gif')
+
+            did_update = False
+            workflow = Workflow.objects.get(id=decrypted_token["workflow_id"])
+            for job in workflow.emailJobs:
+                if job.job_id == ObjectId(decrypted_token["job_id"]):
+                    for email in job.emails:
+                        if email.recipient == decrypted_token["recipient"]:
+                            if not email.first_tracked:
+                                email.first_tracked = datetime.utcnow()
+                            else:
+                                email.last_tracked = datetime.utcnow()
+                            did_update = True
+                            break
+                    break
+
+            if did_update:
+                workflow.save()
+
+        return HttpResponse(PIXEL_GIF_DATA, content_type='image/gif')
+
     @detail_route(methods=["put"])
     def send_email(self, request, id=None):
         workflow = Workflow.objects.get(id=id)
@@ -393,83 +432,45 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         if not workflow["html"]:
             raise ValidationError("Email content cannot be empty.")
 
-        field = request.data["emailSettings"]["field"]
-        subject = request.data["emailSettings"]["subject"]
-        reply_to = request.data["emailSettings"]["replyTo"]
+        email_settings = EmailSettings(**request.data["emailSettings"])
 
-        data = evaluate_filter(workflow["datalab"]["data"], workflow["filter"])
-        populated_content = populate_content(
-            workflow.datalab,
-            workflow.filter,
-            workflow.conditionGroups,
-            workflow.content,
-            workflow.html,
-        )
+        email_job = perform_email_job(workflow, "Manual", email_settings)
 
-        failed_emails = False
-        # if only send email once-off
-        for index, item in enumerate(data):
-            email_sent = send_email(
-                item[field], subject, populated_content[index], reply_to
-            )
-            # if not email_sent:
-            #     failed_emails = True
-            # else:
-            #     serializer = AuditSerializer(data = {
-            #         'workflowId': id,
-            #         'creator': self.request.user.email,
-            #         # TODO: add reply-to
-            #         'receiver': item[field],
-            #         'emailBody': html[index],
-            #         'emailSubject': subject
-            #     })
-            #     serializer.is_valid()
-            #     serializer.save()
-        if failed_emails:
-            # TODO: Make these records identifiable, e.g. allow user to specify the primary key of the DataLab?
-            # And send back a list of the specific records that we failed to send an email to
-            raise ValidationError("Emails to the some records failed to send")
-            # raise ValidationError('Emails to the some records failed to send: ' + str(failed_emails).strip('[]').strip("'"))
-        serializer = WorkflowSerializer(
-            instance=workflow,
-            data={"emailSettings": request.data["emailSettings"]},
-            partial=True,
-        )
+        workflow.emailJobs.append(email_job)
+        workflow.emailSettings = email_settings
+        workflow.save()
 
-        serializer.is_valid()
-        serializer.save()
-        return JsonResponse({"success": "true"}, safe=False)
+        return JsonResponse({"success": "true"})
 
     @detail_route(methods=["post"])
     def clone_action(self, request, id=None):
         action = self.get_object()
         self.check_object_permissions(self.request, action)
-        
+
         action = action.to_mongo()
-        action['name'] = action['name'] + '_cloned'
-        action.pop('_id')
+        action["name"] = action["name"] + "_cloned"
+        action.pop("_id")
         # The scheduled tasks in Celery are not cloned, therefore remove the schedule
         # information from the cloned action
-        action.pop('schedule')
+        action.pop("schedule")
         # Ensure that the new action is not bound to the original action's Moodle link Id
-        action.pop('linkId')
+        action.pop("linkId")
 
         serializer = WorkflowSerializer(data=action)
         serializer.is_valid()
         serializer.save()
-        
+
         audit = AuditSerializer(
             data={
                 "model": "action",
                 "document": str(id),
                 "action": "clone",
                 "user": self.request.user.email,
-                "diff": {
-                    "new_document": str(serializer.instance.id)
-                },
+                "diff": {"new_document": str(serializer.instance.id)},
             }
         )
         audit.is_valid()
         audit.save()
 
-        return JsonResponse({ 'success': 1 })
+        return JsonResponse({"success": 1})
+
