@@ -1,16 +1,16 @@
-import React, { Component } from 'react';
-import { Modal, Table, Button } from 'antd';
+import React, { Component } from "react";
+import { Modal, Table, Button } from "antd";
 
 export default class DataPreview extends Component {
-
   handleCancel = () => {
     const { closeModal } = this.props;
     closeModal();
-  }
+  };
 
   render() {
-    const { visible, columns, dataPre } = this.props;
-
+    const { visible, data } = this.props;
+    const { columns, datasource } = data;
+    
     return (
       <div>
         <Modal
@@ -21,13 +21,17 @@ export default class DataPreview extends Component {
           footer={[
             <Button key="submit" type="primary" onClick={this.handleCancel}>
               Ok
-            </Button>,
+            </Button>
           ]}
         >
-          <Table rowKey={record => dataPre.indexOf(record)} columns={columns} dataSource={dataPre} pagination={{pageSize:5}} />
+          <Table
+            rowKey={(record, index) => index}
+            columns={columns}
+            dataSource={datasource}
+            pagination={{ pageSize: 5 }}
+          />
         </Modal>
       </div>
     );
   }
 }
-

@@ -3,7 +3,10 @@ import { bindActionCreators } from "redux";
 import { connect } from "react-redux";
 import { Input, Icon, Tooltip, Button, Card, Modal } from "antd";
 
-import { deleteDatasource } from "../../datasource/DatasourceActions";
+import {
+  getDatasourceData,
+  deleteDatasource
+} from "../../datasource/DatasourceActions";
 
 const { Meta } = Card;
 const confirm = Modal.confirm;
@@ -14,12 +17,40 @@ class DatasourceTab extends React.Component {
     const { dispatch } = props;
 
     this.boundActionCreators = bindActionCreators(
-      { deleteDatasource },
+      { getDatasourceData, deleteDatasource },
       dispatch
     );
 
-    this.state = { filter: null, loading: {} };
+    this.state = { filter: null, loading: {}, fetching: {} };
   }
+
+  previewDatasource = datasourceId => {
+    const { openModal } = this.props;
+
+    this.setState({
+      fetching: { [datasourceId]: true }
+    });
+
+    this.boundActionCreators.getDatasourceData({
+      datasourceId,
+      onError: error => console.log(error),
+      onSuccess: datasource => {
+        let columns = {};
+        if (datasource.length !== 0) {
+          columns = Object.keys(datasource[0]).map(k => {
+            return { title: k, dataIndex: k };
+          });
+        }
+
+        this.setState({ fetching: { [datasourceId]: false } });
+
+        openModal({
+          type: "dataPreview",
+          data: { columns, datasource }
+        });
+      }
+    });
+  };
 
   deleteDatasource = datasourceId => {
     confirm({
@@ -45,7 +76,7 @@ class DatasourceTab extends React.Component {
 
   render() {
     const { containerId, datasources, openModal } = this.props;
-    const { filter, loading } = this.state;
+    const { filter, loading, fetching } = this.state;
 
     const typeMap = {
       mysql: "MySQL",
@@ -127,12 +158,13 @@ class DatasourceTab extends React.Component {
                   />
                 </Tooltip>
               );
-            
+
             actions.push(
               <Tooltip title="Preview datasource">
                 <Button
                   icon="search"
-                  onClick={() => openModal({ type: "dataPreview", selected: datasource })}
+                  loading={datasource.id in fetching && fetching[datasource.id]}
+                  onClick={() => this.previewDatasource(datasource.id)}
                 />
               </Tooltip>
             );

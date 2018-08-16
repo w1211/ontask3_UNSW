@@ -9,7 +9,6 @@ import {
   updateSchedule,
   deleteSchedule
 } from "../datasource/DatasourceActions";
-import { getDatasource } from "../datasource/DatasourceActions";
 
 import ContainerModal from "./ContainerModal";
 import ContainerList from "./ContainerList";
@@ -29,7 +28,7 @@ class Container extends React.Component {
     const { dispatch } = props;
 
     this.boundActionCreators = bindActionCreators(
-      { ...ContainerActionCreators, updateSchedule, deleteSchedule, getDatasource },
+      { ...ContainerActionCreators, updateSchedule, deleteSchedule },
       dispatch
     );
 
@@ -39,7 +38,7 @@ class Container extends React.Component {
       scheduler: { visible: false, selected: null, data: {} },
       action: { visible: false, selected: null, data: {} },
       sharing: { visible: false, selected: null },
-      dataPreview: { visible: false, selected: null, columns: null, dataPre: null }
+      dataPreview: { visible: false, selected: null, data: {} }
     };
   }
 
@@ -49,21 +48,7 @@ class Container extends React.Component {
 
   openModal = ({ type, selected, data }) => {
     // Opens a model of the specified type
-    // Type is one of ['container', 'datasource', 'action', sharing']
     // E.g. create/edit container, modify sharing permissions of a container
-    if (type === "dataPreview") {
-      this.boundActionCreators.getDatasource({
-        datasourceId: selected.id,
-        onError: error => console.log("error", error),
-        onSuccess: datasource => {
-          let columns = {};
-          if (datasource.length !== 0) {
-            columns = Object.keys(datasource[0]).map(k => { return { title: k, dataIndex: k }});
-          }
-          this.setState({ dataPreview: {...this.state.dataPreview, columns, dataPre: datasource} });
-        }
-      })
-    }
     this.setState({
       [type]: {
         visible: true,
@@ -75,25 +60,25 @@ class Container extends React.Component {
 
   closeModal = type => {
     // Close the model of the specified type, and clear the parameters
-
-    if (type === "dataPreview") {
-      this.setState({
-        dataPreview: {...this.state.dataPreview, visible:false}
-      });
-    } else {
-      this.setState({
-        [type]: {
-          visible: false,
-          selected: null,
-          data: {}
-        }
-      });
-    }
+    this.setState({
+      [type]: {
+        visible: false,
+        selected: null,
+        data: {}
+      }
+    });
   };
 
   render() {
     const { isFetching, containers } = this.props;
-    const { container, datasource, scheduler, action, sharing, dataPreview } = this.state;
+    const {
+      container,
+      datasource,
+      scheduler,
+      action,
+      sharing,
+      dataPreview
+    } = this.state;
 
     return (
       <div className="container">

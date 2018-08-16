@@ -30,7 +30,7 @@ export const fetchSheetnames = ({
 };
 
 
-export const getDatasource = ({
+export const getDatasourceData = ({
   datasourceId,
   onError,
   onSuccess
