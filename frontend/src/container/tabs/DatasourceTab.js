@@ -127,6 +127,15 @@ class DatasourceTab extends React.Component {
                   />
                 </Tooltip>
               );
+            
+            actions.push(
+              <Tooltip title="Preview datasource">
+                <Button
+                  icon="search"
+                  onClick={() => openModal({ type: "dataPreview", selected: datasource })}
+                />
+              </Tooltip>
+            );
 
             actions.push(
               <Tooltip title="Delete datasource">

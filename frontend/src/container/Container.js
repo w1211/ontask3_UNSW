@@ -9,6 +9,7 @@ import {
   updateSchedule,
   deleteSchedule
 } from "../datasource/DatasourceActions";
+import { getDatasource } from "../datasource/DatasourceActions";
 
 import ContainerModal from "./ContainerModal";
 import ContainerList from "./ContainerList";
@@ -16,6 +17,7 @@ import ContainerShare from "./ContainerShare";
 import DatasourceModal from "../datasource/DatasourceModal";
 import ActionModal from "../action/ActionModal";
 import SchedulerModal from "../scheduler/SchedulerModal";
+import DataPreview from "../datasource/DataPreview";
 
 import "./Container.css";
 
@@ -27,7 +29,7 @@ class Container extends React.Component {
     const { dispatch } = props;
 
     this.boundActionCreators = bindActionCreators(
-      { ...ContainerActionCreators, updateSchedule, deleteSchedule },
+      { ...ContainerActionCreators, updateSchedule, deleteSchedule, getDatasource },
       dispatch
     );
 
@@ -36,7 +38,8 @@ class Container extends React.Component {
       datasource: { visible: false, selected: null, data: {} },
       scheduler: { visible: false, selected: null, data: {} },
       action: { visible: false, selected: null, data: {} },
-      sharing: { visible: false, selected: null }
+      sharing: { visible: false, selected: null },
+      dataPreview: { visible: false, selected: null, columns: null, dataPre: null }
     };
   }
 
@@ -48,6 +51,19 @@ class Container extends React.Component {
     // Opens a model of the specified type
     // Type is one of ['container', 'datasource', 'action', sharing']
     // E.g. create/edit container, modify sharing permissions of a container
+    if (type === "dataPreview") {
+      this.boundActionCreators.getDatasource({
+        datasourceId: selected.id,
+        onError: error => console.log("error", error),
+        onSuccess: datasource => {
+          let columns = {};
+          if (datasource.length !== 0) {
+            columns = Object.keys(datasource[0]).map(k => { return { title: k, dataIndex: k }});
+          }
+          this.setState({ dataPreview: {...this.state.dataPreview, columns, dataPre: datasource} });
+        }
+      })
+    }
     this.setState({
       [type]: {
         visible: true,
@@ -59,18 +75,25 @@ class Container extends React.Component {
 
   closeModal = type => {
     // Close the model of the specified type, and clear the parameters
-    this.setState({
-      [type]: {
-        visible: false,
-        selected: null,
-        data: {}
-      }
-    });
+
+    if (type === "dataPreview") {
+      this.setState({
+        dataPreview: {...this.state.dataPreview, visible:false}
+      });
+    } else {
+      this.setState({
+        [type]: {
+          visible: false,
+          selected: null,
+          data: {}
+        }
+      });
+    }
   };
 
   render() {
     const { isFetching, containers } = this.props;
-    const { container, datasource, scheduler, action, sharing } = this.state;
+    const { container, datasource, scheduler, action, sharing, dataPreview } = this.state;
 
     return (
       <div className="container">
@@ -108,6 +131,11 @@ class Container extends React.Component {
                   <DatasourceModal
                     {...datasource}
                     closeModal={() => this.closeModal("datasource")}
+                  />
+
+                  <DataPreview
+                    {...dataPreview}
+                    closeModal={() => this.closeModal("dataPreview")}
                   />
 
                   <ActionModal

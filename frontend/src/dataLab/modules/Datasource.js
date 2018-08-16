@@ -607,7 +607,7 @@ class DatasourceModule extends React.Component {
 
 const mapStateToProps = state => {
   const { build, datasources } = state.dataLab;
-
+  
   return {
     build,
     datasources
