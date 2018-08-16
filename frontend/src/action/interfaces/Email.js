@@ -11,7 +11,8 @@ import {
   Checkbox,
   Divider,
   Table,
-  Modal
+  Modal,
+  Popover
 } from "antd";
 import moment from "moment";
 import _ from "lodash";
@@ -146,64 +147,79 @@ class Email extends React.Component {
     this.setState({ scheduler: { visible: false, selected: null, data: {} } });
   };
 
+  TrackingDetails = record => (
+    <div>
+      <b>First tracked:</b>
+      <div>{moment(record.first_tracked).format("DD/MM/YYYY - HH:mm")}</div>
+      <Divider style={{ margin: "6px 0" }} />
+      <b>Last tracked:</b>
+      <div>
+        {record.last_tracked
+          ? moment(record.last_tracked).format("DD/MM/YYYY - HH:mm")
+          : "N/A"}
+      </div>
+    </div>
+  );
+
+  EmailJobDetails = job => (
+    <Table
+      size="small"
+      columns={[
+        { title: "Recipient", dataIndex: "recipient", key: "recipient" },
+        {
+          title: "Feedback",
+          dataIndex: "feedback",
+          key: "feedback",
+          render: text => (job.included_feedback ? text : <Icon type="minus" />)
+        },
+        {
+          title: "Tracking",
+          dataIndex: "first_tracked",
+          key: "first_tracked",
+          render: (text, record) =>
+            job.included_tracking ? (
+              !!text ? (
+                <Popover content={this.TrackingDetails(record)} trigger="hover">
+                  <Icon type="check" />
+                </Popover>
+              ) : (
+                <Icon type="close" />
+              )
+            ) : (
+              <Icon type="minus" />
+            )
+        },
+        {
+          title: "Content",
+          dataIndex: "content",
+          key: "content",
+          render: (text, record) => (
+            <a
+              onClick={() =>
+                this.setState({
+                  emailView: {
+                    visible: true,
+                    recipient: record.recipient,
+                    subject: job.subject,
+                    text
+                  }
+                })
+              }
+            >
+              View
+            </a>
+          )
+        }
+      ]}
+      dataSource={job.emails}
+      rowKey="recipient"
+      pagination={{ size: "small", pageSize: 5 }}
+    />
+  );
+
   EmailHistory = () => {
     const { action } = this.props;
     const { emailView } = this.state;
-
-    const expandedRowRender = job => (
-      <Table
-        size="small"
-        columns={[
-          { title: "Recipient", dataIndex: "recipient", key: "recipient" },
-          {
-            title: "Feedback",
-            dataIndex: "feedback",
-            key: "feedback",
-            render: text =>
-              job.included_feedback ? text : <Icon type="minus" />
-          },
-          {
-            title: "Tracking",
-            dataIndex: "tracking",
-            key: "tracking",
-            render: text =>
-              job.included_tracking ? (
-                text ? (
-                  <Icon type="check" />
-                ) : (
-                  <Icon type="close" />
-                )
-              ) : (
-                <Icon type="minus" />
-              )
-          },
-          {
-            title: "Content",
-            dataIndex: "content",
-            key: "content",
-            render: (text, record) => (
-              <a
-                onClick={() =>
-                  this.setState({
-                    emailView: {
-                      visible: true,
-                      recipient: record.recipient,
-                      subject: job.subject,
-                      text
-                    }
-                  })
-                }
-              >
-                View
-              </a>
-            )
-          }
-        ]}
-        dataSource={job.emails}
-        rowKey="recipient"
-        pagination={{ size: "small", pageSize: 5 }}
-      />
-    );
 
     const onCancel = () => this.setState({ emailView: { visible: false } });
 
@@ -235,7 +251,7 @@ class Email extends React.Component {
               key: "included_tracking",
               render: (text, record) => {
                 const trackedCount = record.emails.filter(
-                  email => !!email.tracking
+                  email => !!email.first_tracked
                 ).length;
                 const trackedPct = Math.round(
                   (trackedCount / record.emails.length) * 100
@@ -251,7 +267,7 @@ class Email extends React.Component {
             }
           ]}
           dataSource={action.emailJobs}
-          expandedRowRender={expandedRowRender}
+          expandedRowRender={this.EmailJobDetails}
           rowKey="job_id"
           pagination={{ size: "small", pageSize: 5 }}
         />

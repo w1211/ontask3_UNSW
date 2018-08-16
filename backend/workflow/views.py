@@ -402,7 +402,10 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                 if job.job_id == ObjectId(decrypted_token["job_id"]):
                     for email in job.emails:
                         if email.recipient == decrypted_token["recipient"]:
-                            email.tracking = True
+                            if not email.first_tracked:
+                                email.first_tracked = datetime.utcnow()
+                            else:
+                                email.last_tracked = datetime.utcnow()
                             did_update = True
                             break
                     break
