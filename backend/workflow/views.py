@@ -12,6 +12,7 @@ import requests
 from json import dumps
 from datetime import date, datetime
 from bson import ObjectId
+import base64
 
 from .serializers import WorkflowSerializer, RetrieveWorkflowSerializer
 from .models import Workflow, EmailSettings, EmailJob, Email
@@ -41,6 +42,10 @@ from .utils import (
 
 import jwt
 from ontask.settings import SECRET_KEY, BACKEND_DOMAIN
+
+PIXEL_GIF_DATA = base64.b64decode(
+    b"R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+)
 
 
 class WorkflowViewSet(viewsets.ModelViewSet):
@@ -394,7 +399,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                 decrypted_token = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
             except Exception:
                 # Invalid token, ignore the read receipt
-                return HttpResponse(status=204)
+                return HttpResponse(PIXEL_GIF_DATA, content_type='image/gif')
 
             did_update = False
             workflow = Workflow.objects.get(id=decrypted_token["workflow_id"])
@@ -413,7 +418,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             if did_update:
                 workflow.save()
 
-        return HttpResponse(status=204)
+        return HttpResponse(PIXEL_GIF_DATA, content_type='image/gif')
 
     @detail_route(methods=["put"])
     def send_email(self, request, id=None):
