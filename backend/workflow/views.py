@@ -32,8 +32,12 @@ from scheduler.methods import (
     remove_scheduled_task,
     remove_async_task,
 )
-from scheduler.utils import send_email
-from .utils import *
+from .utils import (
+    evaluate_filter,
+    validate_condition_group,
+    perform_email_job,
+    populate_content,
+)
 
 import jwt
 from ontask.settings import SECRET_KEY, BACKEND_DOMAIN
@@ -383,23 +387,21 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     @list_route(methods=["get"], permission_classes=[])
     def read_receipt(self, request):
         token = request.GET.get("email")
-        decryped_token = None
+        decrypted_token = None
 
         if token:
             try:
-                decryped_token = jwt.decode(
-                    token, SECRET_KEY, algorithms=["HS256"]
-                )
+                decrypted_token = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
             except Exception:
                 # Invalid token, ignore the read receipt
                 return HttpResponse(status=204)
-        
+
             did_update = False
-            workflow = Workflow.objects.get(id=decryped_token['workflow_id'])
+            workflow = Workflow.objects.get(id=decrypted_token["workflow_id"])
             for job in workflow.emailJobs:
-                if job.job_id == ObjectId(decryped_token['job_id']):
+                if job.job_id == ObjectId(decrypted_token["job_id"]):
                     for email in job.emails:
-                        if email.recipient == decryped_token['recipient']:
+                        if email.recipient == decrypted_token["recipient"]:
                             email.tracking = True
                             did_update = True
                             break
@@ -424,65 +426,9 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         email_settings = EmailSettings(**request.data["emailSettings"])
 
-        populated_content, data = populate_content(
-            workflow.datalab,
-            workflow.filter,
-            workflow.conditionGroups,
-            workflow.content,
-            workflow.html,
-            should_include_data=True,
-        )
+        email_job = perform_email_job(workflow, "Manual", email_settings)
 
-        job_id = ObjectId()
-        job = EmailJob(
-            job_id=job_id,
-            subject=email_settings.subject,
-            type="Manual",
-            included_tracking=email_settings.include_tracking and True,
-            included_feedback=email_settings.include_feedback and True,
-            emails=[],
-        )
-
-        failed_emails = False
-        for index, item in enumerate(data):
-            recipient = item[email_settings.field]
-            email_content = populated_content[index]
-
-            if email_settings.include_tracking:
-                tracking_token = jwt.encode(
-                    {
-                        "workflow_id": str(id),
-                        "job_id": str(job_id),
-                        "recipient": recipient,
-                    },
-                    SECRET_KEY,
-                    algorithm="HS256",
-                ).decode("utf-8")
-                tracking_pixel = f'<img src="{BACKEND_DOMAIN}/workflow/read_receipt/\
-                ?email={tracking_token}"/>'
-                email_content += tracking_pixel
-
-            email_sent = send_email(
-                recipient, email_settings.subject, email_content, email_settings.replyTo
-            )
-
-            if email_sent:
-                job["emails"].append(
-                    Email(
-                        recipient=recipient,
-                        # Content without the tracking pixel
-                        content=populated_content[index],
-                    )
-                )
-            # else:
-            #     failed_emails = True
-
-        # if failed_emails:
-        # TODO: Make these records identifiable, e.g. allow user to specify the primary key of the DataLab?
-        # And send back a list of the specific records that we failed to send an email to
-        # raise ValidationError('Emails to the some records failed to send: ' + str(failed_emails).strip('[]').strip("'"))
-
-        workflow.emailJobs.append(job)
+        workflow.emailJobs.append(email_job)
         workflow.emailSettings = email_settings
         workflow.save()
 

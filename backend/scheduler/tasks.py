@@ -8,8 +8,8 @@ import json
 from datetime import datetime
 
 from datasource.utils import retrieve_sql_data, retrieve_file_from_s3
-from workflow.models import Workflow, EmailSettings, EmailJob, Email
-from workflow.utils import evaluate_filter, populate_content
+from workflow.models import Workflow
+from workflow.utils import perform_email_job
 from .utils import create_crontab, send_email
 
 from ontask.settings import NOSQL_DATABASE
@@ -85,43 +85,10 @@ def refresh_datasource_data(datasource_id):
 def workflow_send_email(workflow_id):
     """ Send email based on the schedule in workflow model """
     workflow = Workflow.objects.get(id=ObjectId(workflow_id))
-    email_settings = workflow.emailSettings
-
-    populated_content, filtered_data = populate_content(
-        workflow.datalab,
-        workflow.filter,
-        workflow.conditionGroups,
-        workflow.content,
-        workflow.html,
-        should_include_data=True,
-    )
-
-    job = EmailJob(
-        job_id=ObjectId(),
-        subject=email_settings.subject,
-        type="Scheduled",
-        included_tracking=email_settings.include_tracking and True,
-        included_feedback=email_settings.include_feedback and True,
-        emails=[],
-    )
     
-    for index, item in enumerate(filtered_data):
-        email_sent = send_email(
-            item[email_settings.field],
-            email_settings.subject,
-            populated_content[index],
-            email_settings.replyTo,
-        )
-
-        if email_sent:
-            job["emails"].append(
-                Email(
-                    recipient=item[email_settings.field],
-                    content=populated_content[index],
-                )
-            )
+    email_job = perform_email_job(workflow, "Scheduled")
     
-    workflow.emailJobs.append(job)
+    workflow.emailJobs.append(email_job)
     workflow.save()
 
     return "Emails sent successfully"
