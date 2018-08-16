@@ -16,6 +16,7 @@ import ContainerShare from "./ContainerShare";
 import DatasourceModal from "../datasource/DatasourceModal";
 import ActionModal from "../action/ActionModal";
 import SchedulerModal from "../scheduler/SchedulerModal";
+import DataPreview from "../datasource/DataPreview";
 
 import "./Container.css";
 
@@ -36,7 +37,8 @@ class Container extends React.Component {
       datasource: { visible: false, selected: null, data: {} },
       scheduler: { visible: false, selected: null, data: {} },
       action: { visible: false, selected: null, data: {} },
-      sharing: { visible: false, selected: null }
+      sharing: { visible: false, selected: null },
+      dataPreview: { visible: false, selected: null, data: {} }
     };
   }
 
@@ -46,7 +48,6 @@ class Container extends React.Component {
 
   openModal = ({ type, selected, data }) => {
     // Opens a model of the specified type
-    // Type is one of ['container', 'datasource', 'action', sharing']
     // E.g. create/edit container, modify sharing permissions of a container
     this.setState({
       [type]: {
@@ -70,7 +71,14 @@ class Container extends React.Component {
 
   render() {
     const { isFetching, containers } = this.props;
-    const { container, datasource, scheduler, action, sharing } = this.state;
+    const {
+      container,
+      datasource,
+      scheduler,
+      action,
+      sharing,
+      dataPreview
+    } = this.state;
 
     return (
       <div className="container">
@@ -108,6 +116,11 @@ class Container extends React.Component {
                   <DatasourceModal
                     {...datasource}
                     closeModal={() => this.closeModal("datasource")}
+                  />
+
+                  <DataPreview
+                    {...dataPreview}
+                    closeModal={() => this.closeModal("dataPreview")}
                   />
 
                   <ActionModal

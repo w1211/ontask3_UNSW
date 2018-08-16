@@ -29,6 +29,21 @@ export const fetchSheetnames = ({
   requestWrapper(parameters);
 };
 
+
+export const getDatasourceData = ({
+  datasourceId,
+  onError,
+  onSuccess
+}) => dispatch => {
+  const parameters = {
+    url: `/datasource/${datasourceId}/`,
+    method: 'GET',
+    errorFn: onError,
+    successFn: response => onSuccess(response.data)
+  }
+  requestWrapper(parameters);
+}
+
 export const createDatasource = ({
   containerId,
   payload,
