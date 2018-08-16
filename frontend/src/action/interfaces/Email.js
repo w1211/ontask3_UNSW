@@ -223,18 +223,31 @@ class Email extends React.Component {
             { title: "Type", dataIndex: "type", key: "type" },
             { title: "Subject", dataIndex: "subject", key: "subject" },
             {
-              title: "Incl. Feedback",
+              title: "Feedback",
               dataIndex: "included_feedback",
               key: "included_feedback",
               render: text =>
                 text ? <Icon type="check" /> : <Icon type="close" />
             },
             {
-              title: "Incl. Tracking",
+              title: "Tracking",
               dataIndex: "included_tracking",
               key: "included_tracking",
-              render: text =>
-                text ? <Icon type="check" /> : <Icon type="close" />
+              render: (text, record) => {
+                const trackedCount = record.emails.filter(
+                  email => !!email.tracking
+                ).length;
+                const trackedPct = Math.round(
+                  (trackedCount / record.emails.length) * 100
+                );
+                return text ? (
+                  <span>{`${trackedCount} of ${
+                    record.emails.length
+                  } (${trackedPct}%)`}</span>
+                ) : (
+                  <Icon type="close" />
+                );
+              }
             }
           ]}
           dataSource={action.emailJobs}
