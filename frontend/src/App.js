@@ -38,14 +38,8 @@ class App extends React.Component {
   };
 
   componentWillMount() {
-    const { location } = this.props;
-
-    const webForm =
-      location.pathname.split("/")[3] === "form" && location.pathname;
-
     this.setState({
-      hasToken: localStorage.getItem("token") ? true : false,
-      webForm
+      hasToken: localStorage.getItem("token") ? true : false
     });
 
     const oneTimeToken = queryString.parse(window.location.search).tkn;
@@ -77,15 +71,17 @@ class App extends React.Component {
 
   render() {
     const { location, history } = this.props;
-    const { hasToken, webForm } = this.state;
+    const { hasToken } = this.state;
 
-    const pathName = location.pathname.slice(1);
+    const pathName = location.pathname.slice(1).split("/");
     let menuKey;
-    if (["about", "help", "contact"].includes(pathName)) {
+    if (["about", "help", "contact"].includes(pathName[0])) {
       menuKey = pathName;
     } else {
       menuKey = "dashboard";
     }
+
+    const webForm = pathName[2] === "form";
 
     const redirectTo = _.get(location, "state.redirectTo");
 
