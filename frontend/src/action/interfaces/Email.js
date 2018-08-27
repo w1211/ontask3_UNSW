@@ -292,7 +292,7 @@ class Email extends React.Component {
             </div>
             <Divider />
             <div
-              className="content"
+              className="email_content"
               dangerouslySetInnerHTML={{
                 __html: emailView.text
               }}
@@ -518,7 +518,6 @@ class Email extends React.Component {
             <Spin size="large" />
           ) : (
             <div
-              style={{ maxHeight: 500 }}
               dangerouslySetInnerHTML={{
                 __html: preview && preview.populatedContent[index]
               }}
