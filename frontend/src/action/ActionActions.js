@@ -43,8 +43,8 @@ export const updateAction = ({
   onError,
   onSuccess
 }) => dispatch => {
-  delete payload['datalab'];
-  
+  delete payload["datalab"];
+
   const parameters = {
     url: `/workflow/${actionId}/`,
     method: "PATCH",
@@ -105,6 +105,50 @@ export const cloneAction = ({ actionId, onFinish }) => dispatch => {
         description: "The action was successfully cloned."
       });
     }
+  };
+
+  requestWrapper(parameters);
+};
+
+export const fetchFeedback = ({
+  actionId,
+  jobId,
+  onError,
+  onSuccess
+}) => dispatch => {
+  const parameters = {
+    url: `/workflow/${actionId}/feedback/?job=${jobId}`,
+    method: "GET",
+    errorFn: error => {
+      onError();
+      console.log(error);
+    },
+    successFn: feedback => {
+      onSuccess(feedback);
+    }
+  };
+
+  requestWrapper(parameters);
+};
+
+export const submitFeedback = ({
+  actionId,
+  jobId,
+  payload,
+  onError,
+  onSuccess
+}) => {
+  const parameters = {
+    url: `/workflow/${actionId}/submit_feedback/?job=${jobId}`,
+    method: "POST",
+    errorFn: error => {
+      onError();
+      console.log(error);
+    },
+    successFn: feedback => {
+      onSuccess(feedback);
+    },
+    payload
   };
 
   requestWrapper(parameters);

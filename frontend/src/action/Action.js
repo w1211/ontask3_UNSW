@@ -12,6 +12,8 @@ import Email from "./interfaces/Email";
 import Feedback from "./interfaces/Feedback";
 // import StaticPage from "./interfaces/StaticPage";
 
+import queryString from "query-string";
+
 import "./Action.css";
 
 const { Content, Sider } = Layout;
@@ -35,11 +37,25 @@ class Action extends React.Component {
     const { location, match } = this.props;
 
     const isFeedbackForm = location.pathname.split("/")[3] === "feedback";
+    const actionId = match.params.id;
+    const jobId = queryString.parse(window.location.search).job;
+
     if (isFeedbackForm) {
-      this.setState({ isFeedbackForm: true, isFetching: false });
+      this.setState({ isFeedbackForm });
+
+      this.boundActionCreators.fetchFeedback({
+        actionId,
+        jobId,
+        onError: () => this.setState({ isFetching: false }),
+        onSuccess: feedback =>
+          this.setState({
+            isFetching: false,
+            feedback: { ...feedback, actionId, jobId }
+          })
+      });
     } else {
       this.boundActionCreators.fetchAction({
-        actionId: match.params.id,
+        actionId,
         onError: () => this.setState({ isFetching: false }),
         onSuccess: action => this.setState({ isFetching: false, action })
       });

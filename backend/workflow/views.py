@@ -392,7 +392,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     @detail_route(methods=["get"], permission_classes=[IsAuthenticated])
     def feedback(self, request, id=None):
         action = Workflow.objects.get(id=id)
-        job_id = request.GET.get('job')
+        job_id = request.GET.get("job")
 
         payload = None
         for job in action.emailJobs:
@@ -401,16 +401,57 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                     if email.recipient == request.user.email:
                         payload = {
                             "subject": job.subject,
-                            "datetime": job.initiated_at,
-                            "content": email.content
+                            "email_datetime": job.initiated_at,
+                            "content": email.content,
+                            "value": email.feedback,
+                            "feedback_dateime": email.feedback_datetime
                         }
 
         if not payload:
             return JsonResponse(
-                {"error": "You are not authorized to provide feedback for this correspondence"}
+                {
+                    "error": "You are not authorized to provide feedback for this correspondence"
+                }
             )
 
         return JsonResponse(payload)
+
+    @detail_route(methods=["post"], permission_classes=[IsAuthenticated])
+    def submit_feedback(self, request, id=None):
+        action = Workflow.objects.get(id=id)
+        job_id = request.GET.get("job")
+
+        feedback = request.data["feedback"]
+        if not feedback:
+            return JsonResponse({"error": "Empty feedback cannot be submitted"})
+
+        did_update = False
+        for job in action.emailJobs:
+            if str(job.job_id) == job_id and job.included_feedback:
+                for email in job.emails:
+                    if email.recipient == request.user.email:
+                        if email.feedback is None:
+                            email.feedback = feedback
+                            email.feedback_datetime = datetime.utcnow()
+                            did_update = True
+                        else:
+                            return JsonResponse(
+                                {
+                                    "error": "You have already provided feedback"
+                                }
+                            )
+
+        if did_update:
+            action.save()
+        else:
+            # None of the email recipients must have matched the request user's email
+            return JsonResponse(
+                {
+                    "error": "You are not authorized to provide feedback for this correspondence"
+                }
+            )
+
+        return JsonResponse({"success": 1})
 
     @list_route(methods=["get"], permission_classes=[])
     def read_receipt(self, request):
