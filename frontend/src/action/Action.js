@@ -9,6 +9,7 @@ import * as ActionActionCreators from "./ActionActions";
 
 import Compose from "./interfaces/Compose";
 import Email from "./interfaces/Email";
+import Feedback from "./interfaces/Feedback";
 // import StaticPage from "./interfaces/StaticPage";
 
 import "./Action.css";
@@ -31,13 +32,18 @@ class Action extends React.Component {
   }
 
   componentWillMount() {
-    const { match } = this.props;
+    const { location, match } = this.props;
 
-    this.boundActionCreators.fetchAction({
-      actionId: match.params.id,
-      onError: () => this.setState({ isFetching: false }),
-      onSuccess: action => this.setState({ isFetching: false, action })
-    });
+    const isFeedbackForm = location.pathname.split("/")[3] === "feedback";
+    if (isFeedbackForm) {
+      this.setState({ isFeedbackForm: true, isFetching: false });
+    } else {
+      this.boundActionCreators.fetchAction({
+        actionId: match.params.id,
+        onError: () => this.setState({ isFetching: false }),
+        onSuccess: action => this.setState({ isFetching: false, action })
+      });
+    }
   }
 
   updateAction = action => {
@@ -46,62 +52,66 @@ class Action extends React.Component {
 
   render() {
     const { match, location } = this.props;
-    const { isFetching, action } = this.state;
+    const { isFetching, action, isFeedbackForm, feedback } = this.state;
 
     return (
-      <div className="action">
+      <div className={`action ${isFeedbackForm && "is_feedback_form"}`}>
         <Content className="wrapper">
-          <Breadcrumb className="breadcrumbs">
-            <Breadcrumb.Item>
-              <Link to="/">Dashboard</Link>
-            </Breadcrumb.Item>
-            <Breadcrumb.Item>
-              <Link to="/containers">Containers</Link>
-            </Breadcrumb.Item>
-            <Breadcrumb.Item>Action</Breadcrumb.Item>
-          </Breadcrumb>
+          {!isFeedbackForm && (
+            <Breadcrumb className="breadcrumbs">
+              <Breadcrumb.Item>
+                <Link to="/">Dashboard</Link>
+              </Breadcrumb.Item>
+              <Breadcrumb.Item>
+                <Link to="/containers">Containers</Link>
+              </Breadcrumb.Item>
+              <Breadcrumb.Item>Action</Breadcrumb.Item>
+            </Breadcrumb>
+          )}
 
           <Layout className="layout">
             <Content className="content">
               <Layout className="content_body">
-                <Sider width={200}>
-                  <Menu
-                    mode="inline"
-                    selectedKeys={[location.pathname.split("/")[3]]}
-                    style={{ height: "100%" }}
-                  >
-                    <Menu.Item key="back">
-                      <Link to="/containers">
-                        <Icon type="arrow-left" />
-                        <span>Back to containers</span>
-                      </Link>
-                    </Menu.Item>
+                {!isFeedbackForm && (
+                  <Sider width={200}>
+                    <Menu
+                      mode="inline"
+                      selectedKeys={[location.pathname.split("/")[3]]}
+                      style={{ height: "100%" }}
+                    >
+                      <Menu.Item key="back">
+                        <Link to="/containers">
+                          <Icon type="arrow-left" />
+                          <span>Back to containers</span>
+                        </Link>
+                      </Menu.Item>
 
-                    <Menu.Divider />
+                      <Menu.Divider />
 
-                    <Menu.Item key="compose">
-                      <Link to={`${match.url}/compose`}>
-                        <Icon type="form" />
-                        <span>Compose</span>
-                      </Link>
-                    </Menu.Item>
+                      <Menu.Item key="compose">
+                        <Link to={`${match.url}/compose`}>
+                          <Icon type="form" />
+                          <span>Compose</span>
+                        </Link>
+                      </Menu.Item>
 
-                    <Menu.Item key="email">
-                      <Link to={`${match.url}/email`}>
-                        <Icon type="mail" />
-                        <span>Email</span>
-                      </Link>
-                    </Menu.Item>
+                      <Menu.Item key="email">
+                        <Link to={`${match.url}/email`}>
+                          <Icon type="mail" />
+                          <span>Email</span>
+                        </Link>
+                      </Menu.Item>
 
-                    <Menu.Item key="static" disabled>
-                      <Link to={`${match.url}/static`}>
-                        <Icon type="link" />
-                        <span>Static page</span>
-                        {/* <Tag style={{ marginLeft: 5 }} color="red" size="small">OFF</Tag> */}
-                      </Link>
-                    </Menu.Item>
-                  </Menu>
-                </Sider>
+                      <Menu.Item key="static" disabled>
+                        <Link to={`${match.url}/static`}>
+                          <Icon type="link" />
+                          <span>Static page</span>
+                          {/* <Tag style={{ marginLeft: 5 }} color="red" size="small">OFF</Tag> */}
+                        </Link>
+                      </Menu.Item>
+                    </Menu>
+                  </Sider>
+                )}
 
                 <Content className="content">
                   <h1>{action && action.name}</h1>
@@ -135,6 +145,13 @@ class Action extends React.Component {
                             action={action}
                             updateAction={this.updateAction}
                           />
+                        )}
+                      />
+
+                      <Route
+                        path={`${match.url}/feedback`}
+                        render={props => (
+                          <Feedback {...props} feedback={feedback} />
                         )}
                       />
 

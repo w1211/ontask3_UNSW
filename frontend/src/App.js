@@ -46,9 +46,16 @@ class App extends React.Component {
     if (oneTimeToken) requestToken(oneTimeToken, this.finishRequestToken);
   }
 
-  AuthenticatedRoute = ({ component: Component, ...routeProps }) => {
+  AuthenticatedRoute = ({
+    component: Component,
+    feedbackForm,
+    ...routeProps
+  }) => {
     const { location } = this.props;
     const { hasToken } = this.state;
+
+    const shouldRedirectToAAF =
+      feedbackForm && process.env.NODE_ENV !== "development";
 
     return (
       <Route
@@ -60,7 +67,7 @@ class App extends React.Component {
             <Redirect
               to={{
                 pathname: "/",
-                state: { redirectTo: location.pathname }
+                state: { redirectTo: location.pathname, shouldRedirectToAAF }
               }}
             />
           )
@@ -82,8 +89,13 @@ class App extends React.Component {
     }
 
     const webForm = pathName[2] === "form";
+    const feedbackForm = pathName[2] === "feedback";
 
     const redirectTo = _.get(location, "state.redirectTo");
+    const shouldRedirectToAAF = _.get(location, "state.shouldRedirectToAAF");
+
+    if (!hasToken && shouldRedirectToAAF && process.env.REACT_APP_AAF_URL)
+      window.location = process.env.REACT_APP_AAF_URL;
 
     return (
       <Layout className="app">
@@ -96,23 +108,25 @@ class App extends React.Component {
             </div>
           )}
 
-          <Menu
-            mode="horizontal"
-            defaultSelectedKeys={[menuKey]}
-            className="navigation"
-            onSelect={({ key }) =>
-              history.push(
-                key === "dashboard" ? (webForm ? webForm : "/") : `/${key}`
-              )
-            }
-          >
-            <Menu.Item key="dashboard">
-              {webForm ? "Form" : "Dashboard"}
-            </Menu.Item>
-            <Menu.Item key="about">About</Menu.Item>
-            <Menu.Item key="help">Help</Menu.Item>
-            <Menu.Item key="contact">Contact</Menu.Item>
-          </Menu>
+          {!feedbackForm && (
+            <Menu
+              mode="horizontal"
+              defaultSelectedKeys={[menuKey]}
+              className="navigation"
+              onSelect={({ key }) =>
+                history.push(
+                  key === "dashboard" ? (webForm ? webForm : "/") : `/${key}`
+                )
+              }
+            >
+              <Menu.Item key="dashboard">
+                {webForm ? "Form" : "Dashboard"}
+              </Menu.Item>
+              <Menu.Item key="about">About</Menu.Item>
+              <Menu.Item key="help">Help</Menu.Item>
+              <Menu.Item key="contact">Contact</Menu.Item>
+            </Menu>
+          )}
         </Header>
 
         <Switch>
@@ -140,7 +154,8 @@ class App extends React.Component {
 
           {this.AuthenticatedRoute({
             path: "/action/:id",
-            component: Action
+            component: Action,
+            feedbackForm
           })}
         </Switch>
 

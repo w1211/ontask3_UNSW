@@ -151,3 +151,7 @@
   border: 1px solid #F1F1F1;
   width: 100%;
 }
+
+.action.is_feedback_form {
+  margin-top: 25px;
+}
