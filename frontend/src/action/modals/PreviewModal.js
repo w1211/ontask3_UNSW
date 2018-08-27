@@ -38,7 +38,8 @@ class PreviewModal extends React.Component {
               disabled={index === 0 || populatedContent.length === 0}
               onClick={() => this.setState({ index: index - 1 })}
             >
-              <Icon type="left" />Previous
+              <Icon type="left" />
+              Previous
             </Button>
 
             <Button
@@ -49,7 +50,8 @@ class PreviewModal extends React.Component {
               }
               onClick={() => this.setState({ index: index + 1 })}
             >
-              Next<Icon type="right" />
+              Next
+              <Icon type="right" />
             </Button>
           </Button.Group>
 
@@ -71,7 +73,12 @@ class PreviewModal extends React.Component {
 
               <h3>Content</h3>
               <div
-                style={{ padding: "10px", border: "1px solid #F1F1F1" }}
+                style={{
+                  padding: "10px",
+                  border: "1px solid #F1F1F1",
+                  maxHeight: 300,
+                  overflowY: "scroll"
+                }}
                 dangerouslySetInnerHTML={{
                   __html: populatedContent[index]
                 }}
