@@ -104,6 +104,8 @@
   padding: 4px 11px;
   min-height: 200px;
   margin: 15px 0;
+  max-height: 325px;
+  overflow-y: scroll;
 }
 .action .email .preview.loading {
   display: flex;
@@ -147,11 +149,14 @@
   width: 75%;
 }
 .view_email .content {
-  padding: 10px;
+  padding: 10px !important;
   border: 1px solid #F1F1F1;
   width: 100%;
 }
 
 .action.is_feedback_form {
   margin-top: 25px;
+}
+.action .feedback {
+  max-width: 750px;
 }
