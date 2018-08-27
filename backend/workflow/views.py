@@ -389,6 +389,29 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         return self.retrieve_workflow(request, id=id)
 
+    @detail_route(methods=["get"], permission_classes=[IsAuthenticated])
+    def feedback(self, request, id=None):
+        action = Workflow.objects.get(id=id)
+        job_id = request.GET.get('job')
+
+        payload = None
+        for job in action.emailJobs:
+            if str(job.job_id) == job_id and job.included_feedback:
+                for email in job.emails:
+                    if email.recipient == request.user.email:
+                        payload = {
+                            "subject": job.subject,
+                            "datetime": job.initiated_at,
+                            "content": email.content
+                        }
+
+        if not payload:
+            return JsonResponse(
+                {"error": "You are not authorized to provide feedback for this correspondence"}
+            )
+
+        return JsonResponse(payload)
+
     @list_route(methods=["get"], permission_classes=[])
     def read_receipt(self, request):
         token = request.GET.get("email")
@@ -399,7 +422,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                 decrypted_token = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
             except Exception:
                 # Invalid token, ignore the read receipt
-                return HttpResponse(PIXEL_GIF_DATA, content_type='image/gif')
+                return HttpResponse(PIXEL_GIF_DATA, content_type="image/gif")
 
             did_update = False
             workflow = Workflow.objects.get(id=decrypted_token["workflow_id"])
@@ -418,7 +441,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             if did_update:
                 workflow.save()
 
-        return HttpResponse(PIXEL_GIF_DATA, content_type='image/gif')
+        return HttpResponse(PIXEL_GIF_DATA, content_type="image/gif")
 
     @detail_route(methods=["put"])
     def send_email(self, request, id=None):
