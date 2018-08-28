@@ -210,7 +210,6 @@ def perform_email_job(workflow, job_type, email_settings=None):
         job_id=job_id,
         subject=email_settings.subject,
         type=job_type,
-        included_tracking=email_settings.include_tracking and True,
         included_feedback=email_settings.include_feedback and True,
         emails=[],
     )
@@ -220,22 +219,21 @@ def perform_email_job(workflow, job_type, email_settings=None):
         recipient = item[email_settings.field]
         email_content = populated_content[index]
 
-        if email_settings.include_tracking:
-            tracking_token = jwt.encode(
-                {
-                    "workflow_id": str(workflow.id),
-                    "job_id": str(job_id),
-                    "recipient": recipient,
-                },
-                SECRET_KEY,
-                algorithm="HS256",
-            ).decode("utf-8")
+        tracking_token = jwt.encode(
+            {
+                "workflow_id": str(workflow.id),
+                "job_id": str(job_id),
+                "recipient": recipient,
+            },
+            SECRET_KEY,
+            algorithm="HS256",
+        ).decode("utf-8")
 
-            tracking_link = (
-                f"{BACKEND_DOMAIN}/workflow/read_receipt/?email={tracking_token}"
-            )
-            tracking_pixel = f"<img src='{tracking_link}'/>"
-            email_content += tracking_pixel
+        tracking_link = (
+            f"{BACKEND_DOMAIN}/workflow/read_receipt/?email={tracking_token}"
+        )
+        tracking_pixel = f"<img src='{tracking_link}'/>"
+        email_content += tracking_pixel
 
         if email_settings.include_feedback:
             feedback_link = (

@@ -56,7 +56,6 @@ class EmailSettings(EmbeddedDocument):
     subject = StringField(required=True)
     field = StringField(required=True)
     replyTo = StringField(required=True)
-    include_tracking = BooleanField()
     include_feedback = BooleanField()
 
 
@@ -65,6 +64,7 @@ class Email(EmbeddedDocument):
     content = StringField()
     feedback = StringField()
     feedback_datetime = DateTimeField()
+    track_count = IntField()
     first_tracked = DateTimeField()
     last_tracked = DateTimeField()
 
@@ -75,7 +75,6 @@ class EmailJob(EmbeddedDocument):
     emails = EmbeddedDocumentListField(Email)
     type = StringField(choices=["Manual", "Scheduled"])
     initiated_at = DateTimeField(default=datetime.utcnow)
-    included_tracking = BooleanField()
     included_feedback = BooleanField()
 
 

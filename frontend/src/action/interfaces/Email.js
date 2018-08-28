@@ -177,16 +177,12 @@ class Email extends React.Component {
           dataIndex: "first_tracked",
           key: "first_tracked",
           render: (text, record) =>
-            job.included_tracking ? (
-              !!text ? (
-                <Popover content={this.TrackingDetails(record)} trigger="hover">
-                  <Icon type="check" />
-                </Popover>
-              ) : (
-                <Icon type="close" />
-              )
+            !!text ? (
+              <Popover content={this.TrackingDetails(record)} trigger="hover">
+                <Icon type="check" />
+              </Popover>
             ) : (
-              <Icon type="minus" />
+              <Icon type="close" />
             )
         },
         {
@@ -247,8 +243,6 @@ class Email extends React.Component {
             },
             {
               title: "Tracking",
-              dataIndex: "included_tracking",
-              key: "included_tracking",
               render: (text, record) => {
                 const trackedCount = record.emails.filter(
                   email => !!email.first_tracked
@@ -256,12 +250,10 @@ class Email extends React.Component {
                 const trackedPct = Math.round(
                   (trackedCount / record.emails.length) * 100
                 );
-                return text ? (
+                return (
                   <span>{`${trackedCount} of ${
                     record.emails.length
                   } (${trackedPct}%)`}</span>
-                ) : (
-                  <Icon type="close" />
                 );
               }
             }
@@ -418,28 +410,6 @@ class Email extends React.Component {
                 localStorage.email
               )
             })(<Input />)}
-          </FormItem>
-
-          <FormItem
-            {...narrowFormItemLayout}
-            className="checkbox"
-            label={
-              <div className="field_label">
-                Email tracking
-                <Tooltip
-                  title={`Uses a tracking pixel to determine whether the recipient
-                  has opened/read the email`}
-                >
-                  <Icon type="question-circle-o" />
-                </Tooltip>
-              </div>
-            }
-          >
-            {form.getFieldDecorator("emailSettings.include_tracking", {
-              initialValue:
-                _.get(action, "emailSettings.include_tracking") || false,
-              valuePropName: "checked"
-            })(<Checkbox />)}
           </FormItem>
 
           <FormItem
