@@ -475,6 +475,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                                 email.first_tracked = datetime.utcnow()
                             else:
                                 email.last_tracked = datetime.utcnow()
+                            email.track_count += 1
                             did_update = True
                             break
                     break

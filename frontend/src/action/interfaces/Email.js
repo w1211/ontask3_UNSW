@@ -174,12 +174,12 @@ class Email extends React.Component {
         },
         {
           title: "Tracking",
-          dataIndex: "first_tracked",
-          key: "first_tracked",
-          render: (text, record) =>
-            !!text ? (
+          dataIndex: "track_count",
+          key: "track_count",
+          render: (count, record) =>
+            count > 0 ? (
               <Popover content={this.TrackingDetails(record)} trigger="hover">
-                <Icon type="check" />
+                {count}
               </Popover>
             ) : (
               <Icon type="close" />

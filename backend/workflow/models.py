@@ -64,7 +64,7 @@ class Email(EmbeddedDocument):
     content = StringField()
     feedback = StringField()
     feedback_datetime = DateTimeField()
-    track_count = IntField()
+    track_count = IntField(default=0)
     first_tracked = DateTimeField()
     last_tracked = DateTimeField()
 
