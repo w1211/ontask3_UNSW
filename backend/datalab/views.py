@@ -329,6 +329,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 "stepIndex": item["stepIndex"],
                 "field": item["field"],
                 "visible": item["visible"],
+                "pinned": item["pinned"]
             }
             for item in datalab.order
         ]
@@ -375,6 +376,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 "stepIndex": item["stepIndex"],
                 "field": item["field"],
                 "visible": item["visible"],
+                "pinned": item["pinned"]
             }
             for item in datalab.order
         ]
@@ -396,6 +398,49 @@ class DatalabViewSet(viewsets.ModelViewSet):
                     "field": order[column_index]["field"],
                     "from": not visible,
                     "to": visible,
+                },
+            }
+        )
+        audit.is_valid()
+        audit.save()
+
+        return JsonResponse(serializer.data)
+
+    @detail_route(methods=["patch"])
+    def change_pinned_status(self, request, id=None):
+        datalab = self.get_object()
+        self.check_object_permissions(self.request, datalab)
+
+        column_index = request.data["columnIndex"]
+        pinned = request.data["pinned"]
+
+        order = [
+            {
+                "stepIndex": item["stepIndex"],
+                "field": item["field"],
+                "visible": item["visible"],
+                "pinned": item["pinned"]
+            }
+            for item in datalab.order
+        ]
+        order[column_index]["pinned"] = pinned
+
+        serializer = DatalabSerializer(
+            instance=datalab, data={"order": order}, partial=True
+        )
+        serializer.is_valid()
+        serializer.save()
+
+        audit = AuditSerializer(
+            data={
+                "model": "datalab",
+                "document": str(datalab.id),
+                "action": "change_pinned_status",
+                "user": self.request.user.email,
+                "diff": {
+                    "field": order[column_index]["field"],
+                    "from": not pinned,
+                    "to": pinned,
                 },
             }
         )
