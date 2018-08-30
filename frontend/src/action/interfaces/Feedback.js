@@ -1,19 +1,38 @@
 import React from "react";
 
-import { Form, Divider, Input, Button, notification, Alert } from "antd";
+import {
+  Form,
+  Divider,
+  Input,
+  Button,
+  notification,
+  Alert,
+  Select
+} from "antd";
 import moment from "moment";
 
 import { submitFeedback } from "../ActionActions";
 
 class Feedback extends React.Component {
-  state = { loading: false, value: null };
+  state = { loading: false, dropdown: null, textbox: null };
+
+  constructor(props) {
+    super(props);
+    const { feedback } = props;
+
+    this.state = {
+      loading: false,
+      dropdown: feedback.dropdown.value,
+      textbox: feedback.textbox.value
+    };
+  }
 
   submitFeedback = () => {
     const { feedback } = this.props;
-    const { value } = this.state;
+    const { dropdown, textbox } = this.state;
     const { actionId, jobId } = feedback;
 
-    if (!value) {
+    if (!dropdown && !textbox) {
       notification["warning"]({
         message: "Feedback submission failed",
         description: "You did not provide any feedback."
@@ -25,7 +44,7 @@ class Feedback extends React.Component {
     submitFeedback({
       actionId,
       jobId,
-      payload: { feedback: value },
+      payload: { dropdown, textbox },
       onSuccess: response => {
         if ("error" in response) {
           this.setState({ loading: false, error: response.error });
@@ -38,7 +57,7 @@ class Feedback extends React.Component {
 
   render() {
     const { feedback } = this.props;
-    const { value, loading, error, didSubmit } = this.state;
+    const { dropdown, textbox, loading, error, didSubmit } = this.state;
 
     return (
       <div className="feedback">
@@ -49,34 +68,54 @@ class Feedback extends React.Component {
         ) : (
           <div className="feedback">
             <div>
-              {feedback.value && (
-                <p>
+              {feedback.feedback_datetime && (
+                <i style={{ marginBottom: 15, display: "block" }}>
                   {`You provided feedback on ${moment(
                     feedback.feedback_datetime
-                  ).format("DD/MM/YYYY - HH:mm")}.`}
-                </p>
+                  ).format("DD/MM/YYYY, HH:mm")}.`}
+                </i>
               )}
-              <Input.TextArea
-                placeholder="Provide your feedback here"
-                rows={4}
-                value={feedback.value || value}
-                onChange={e => this.setState({ value: e.target.value })}
-                disabled={feedback.value || didSubmit}
-                style={{ marginBottom: 15 }}
-              />
 
-              {!feedback.value &&
-                !didSubmit && (
-                  <Button
-                    size="large"
-                    type="primary"
-                    style={{ marginBottom: 15 }}
-                    loading={loading}
-                    onClick={this.submitFeedback}
+              {feedback.dropdown.enabled && (
+                <div>
+                  <p style={{ marginBottom: 0 }}>
+                    {feedback.dropdown.question}
+                  </p>
+                  <Select
+                    value={dropdown}
+                    onChange={e => this.setState({ dropdown: e })}
+                    style={{ marginBottom: 15, width: "100%" }}
                   >
-                    Submit feedback
-                  </Button>
-                )}
+                    {feedback.dropdown.options.map((option, i) => (
+                      <Select.Option value={option.value} key={i}>
+                        {option.label}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </div>
+              )}
+
+              {feedback.textbox.enabled && (
+                <div>
+                  <p style={{ marginBottom: 0 }}>{feedback.textbox.question}</p>
+                  <Input.TextArea
+                    rows={4}
+                    value={textbox}
+                    onChange={e => this.setState({ textbox: e.target.value })}
+                    style={{ marginBottom: 15 }}
+                  />
+                </div>
+              )}
+
+              <Button
+                size="large"
+                type="primary"
+                style={{ marginBottom: 15 }}
+                loading={loading}
+                onClick={this.submitFeedback}
+              >
+                Submit feedback
+              </Button>
 
               {error && (
                 <Alert
@@ -107,7 +146,7 @@ class Feedback extends React.Component {
               <div className="value">{feedback.subject}</div>
               <div className="field">Date/Time:</div>
               <div className="value">
-                {moment(feedback.email_datetime).format("DD/MM/YYYY - HH:mm")}
+                {moment(feedback.email_datetime).format("DD/MM/YYYY, HH:mm")}
               </div>
               <div className="field">Correspondence:</div>
               <div

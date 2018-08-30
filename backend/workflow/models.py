@@ -10,7 +10,7 @@ from mongoengine.fields import (
     DictField,
     BooleanField,
     SequenceField,
-    ObjectIdField
+    ObjectIdField,
 )
 from bson import ObjectId
 from datetime import datetime
@@ -56,6 +56,7 @@ class Option(EmbeddedDocument):
     label = StringField(required=True)
     value = StringField(required=True)
 
+
 class EmailSettings(EmbeddedDocument):
     subject = StringField(required=True)
     field = StringField(required=True)
@@ -67,10 +68,12 @@ class EmailSettings(EmbeddedDocument):
     feedback_textbox = BooleanField()
     textbox_question = StringField()
 
+
 class Email(EmbeddedDocument):
     recipient = StringField()
     content = StringField()
-    feedback = StringField()
+    dropdown_feedback = StringField()
+    textbox_feedback = StringField()
     feedback_datetime = DateTimeField()
     track_count = IntField(default=0)
     first_tracked = DateTimeField()

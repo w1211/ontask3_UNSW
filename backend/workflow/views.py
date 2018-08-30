@@ -400,11 +400,24 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                 for email in job.emails:
                     if email.recipient == request.user.email:
                         payload = {
+                            "dropdown": {
+                                "enabled": action.emailSettings.feedback_dropdown,
+                                "question": action.emailSettings.dropdown_question,
+                                "options": [
+                                    {"label": option.label, "value": option.value}
+                                    for option in action.emailSettings.dropdown_options
+                                ],
+                                "value": email.dropdown_feedback
+                            },
+                            "textbox": {
+                                "enabled": action.emailSettings.feedback_textbox,
+                                "question": action.emailSettings.textbox_question,
+                                "value": email.textbox_feedback
+                            },
                             "subject": job.subject,
                             "email_datetime": job.initiated_at,
                             "content": email.content,
-                            "value": email.feedback,
-                            "feedback_dateime": email.feedback_datetime
+                            "feedback_datetime": email.feedback_datetime,
                         }
 
         if not payload:
@@ -421,8 +434,10 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         action = Workflow.objects.get(id=id)
         job_id = request.GET.get("job")
 
-        feedback = request.data["feedback"]
-        if not feedback:
+        dropdown = request.data["dropdown"]
+        textbox = request.data["textbox"]
+
+        if not dropdown and not textbox:
             return JsonResponse({"error": "Empty feedback cannot be submitted"})
 
         did_update = False
@@ -430,16 +445,10 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             if str(job.job_id) == job_id and job.included_feedback:
                 for email in job.emails:
                     if email.recipient == request.user.email:
-                        if email.feedback is None:
-                            email.feedback = feedback
-                            email.feedback_datetime = datetime.utcnow()
-                            did_update = True
-                        else:
-                            return JsonResponse(
-                                {
-                                    "error": "You have already provided feedback"
-                                }
-                            )
+                        email.textbox_feedback = textbox
+                        email.dropdown_feedback = dropdown
+                        email.feedback_datetime = datetime.utcnow()
+                        did_update = True
 
         if did_update:
             action.save()
