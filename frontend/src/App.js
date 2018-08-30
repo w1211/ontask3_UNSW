@@ -67,7 +67,10 @@ class App extends React.Component {
             <Redirect
               to={{
                 pathname: "/",
-                state: { redirectTo: location.pathname, shouldRedirectToAAF }
+                state: {
+                  redirectTo: location.pathname + location.search,
+                  shouldRedirectToAAF
+                }
               }}
             />
           )
