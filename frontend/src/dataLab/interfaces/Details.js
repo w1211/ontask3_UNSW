@@ -66,6 +66,9 @@ class Details extends React.Component {
         )}
       ];
 
+      const getOrder = (stepIndex, field) =>
+        build.order.find(column => column.stepIndex === stepIndex && column.field === field);
+
       build.steps.forEach((step, stepIndex) => {
         if (step.type === 'datasource') {
           const module = step.type;
@@ -74,6 +77,7 @@ class Details extends React.Component {
           const datasource = datasources.find(datasource => datasource.id === step.id);
           
           step.fields.forEach((field, fieldIndex) => {
+            const orderItem = getOrder(stepIndex, field);
             const label = step.labels[field];
             const type = step.types[field];
             tableData.push({
@@ -84,8 +88,8 @@ class Details extends React.Component {
               module,
               from: datasource.name,
               type,
-              visible: build.order.find(column => column.stepIndex === stepIndex && column.field === field).visible,
-              pin: build.order.find(column => column.stepIndex === stepIndex && column.field === field).pinned
+              visible: orderItem.visible,
+              pin: orderItem.pinned
             });
           });
 
@@ -94,6 +98,7 @@ class Details extends React.Component {
           step = step.form;
           
           step.fields.forEach((field, fieldIndex) => {
+            const orderItem = getOrder(stepIndex, field.name);
             tableData.push({
               stepIndex,
               field: field.name,
@@ -102,8 +107,8 @@ class Details extends React.Component {
               module,
               from: step.name,
               type: field.type,
-              visible: build.order.find(column => column.stepIndex === stepIndex && column.field === field.name).visible,
-              pin: build.order.find(column => column.stepIndex === stepIndex && column.field === field.name).pinned
+              visible: orderItem.visible,
+              pin: orderItem.pinned
             });
           });
         };
