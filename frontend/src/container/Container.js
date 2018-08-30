@@ -116,6 +116,8 @@ class Container extends React.Component {
                   <DatasourceModal
                     {...datasource}
                     closeModal={() => this.closeModal("datasource")}
+                    datasource={datasource}
+                    containers={containers}
                   />
 
                   <DataPreview
