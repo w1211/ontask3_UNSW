@@ -52,12 +52,20 @@ class Schedule(EmbeddedDocument):
     asyncTasks = ListField(StringField())  # async tasks
 
 
+class Option(EmbeddedDocument):
+    label = StringField(required=True)
+    value = StringField(required=True)
+
 class EmailSettings(EmbeddedDocument):
     subject = StringField(required=True)
     field = StringField(required=True)
     replyTo = StringField(required=True)
     include_feedback = BooleanField()
-
+    feedback_dropdown = BooleanField()
+    dropdown_question = StringField()
+    dropdown_options = EmbeddedDocumentListField(Option)
+    feedback_textbox = BooleanField()
+    textbox_question = StringField()
 
 class Email(EmbeddedDocument):
     recipient = StringField()

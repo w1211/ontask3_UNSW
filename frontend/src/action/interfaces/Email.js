@@ -109,6 +109,13 @@ class Email extends React.Component {
     form.validateFields((err, payload) => {
       if (err) return;
 
+      if (
+        payload.emailSettings.include_feedback &&
+        !payload.emailSettings.feedback_dropdown &&
+        !payload.emailSettings.feedback_textbox
+      )
+        return;
+
       this.setState({ loading: { ...loading, emailSettings: true } });
 
       ActionActions.updateEmailSettings({
@@ -212,6 +219,179 @@ class Email extends React.Component {
       pagination={{ size: "small", pageSize: 5 }}
     />
   );
+
+  FeedbackConfiguration = () => {
+    const { action, form } = this.props;
+
+    form.getFieldDecorator("feedbackOptionKeys", {
+      initialValue:
+        action.emailSettings.dropdown_options.length > 0
+          ? action.emailSettings.dropdown_options.map(() => null)
+          : [null]
+    });
+    const feedbackOptionKeys = form.getFieldValue("feedbackOptionKeys");
+
+    return (
+      <div
+        style={{
+          border: "1px dashed #e9e9e9",
+          background: "#F5F5F5",
+          borderRadius: 5,
+          margin: "20px -1px",
+          padding: "10px 20px 10px 0"
+        }}
+      >
+        <FormItem
+          {...narrowFormItemLayout}
+          className="checkbox"
+          label="Include dropdown"
+        >
+          {form.getFieldDecorator("emailSettings.feedback_dropdown", {
+            initialValue:
+              _.get(action, "emailSettings.feedback_dropdown") || false,
+            valuePropName: "checked"
+          })(<Checkbox />)}
+        </FormItem>
+
+        {form.getFieldValue("emailSettings.feedback_dropdown") && (
+          <div>
+            <FormItem
+              {...narrowFormItemLayout}
+              label="Dropdown question"
+              style={{ margin: 0 }}
+              help={null}
+            >
+              {form.getFieldDecorator("emailSettings.dropdown_question", {
+                rules: [
+                  {
+                    required: true
+                  }
+                ],
+                initialValue: _.get(action, "emailSettings.dropdown_question")
+              })(
+                <Input placeholder="E.g. How would you rate this feedback?" />
+              )}
+            </FormItem>
+
+            <FormItem
+              {...narrowFormItemLayout}
+              label="Dropdown options"
+              style={{ margin: 0 }}
+              help={null}
+            >
+              <Button
+                type="primary"
+                size="small"
+                onClick={() => {
+                  form.setFieldsValue({
+                    feedbackOptionKeys: [...feedbackOptionKeys, null]
+                  });
+                }}
+              >
+                Add option
+              </Button>
+
+              {feedbackOptionKeys.map((key, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    marginBottom: 5
+                  }}
+                >
+                  {form.getFieldDecorator(
+                    `emailSettings.dropdown_options[${i}].label`,
+                    {
+                      rules: [
+                        {
+                          required: true
+                        }
+                      ],
+                      initialValue: _.get(
+                        action,
+                        `emailSettings.dropdown_options[${i}].label`
+                      )
+                    }
+                  )(<Input style={{ marginRight: 10 }} placeholder="Label" />)}
+
+                  {form.getFieldDecorator(
+                    `emailSettings.dropdown_options[${i}].value`,
+                    {
+                      rules: [{ required: true }],
+                      initialValue: _.get(
+                        action,
+                        `emailSettings.dropdown_options[${i}].value`
+                      )
+                    }
+                  )(<Input style={{ marginRight: 10 }} placeholder="Value" />)}
+
+                  <Button
+                    type="danger"
+                    icon="delete"
+                    disabled={feedbackOptionKeys.length <= 1}
+                    onClick={() => {
+                      const feedbackOptions = form.getFieldValue(
+                        "emailSettings.dropdown_options"
+                      );
+                      feedbackOptionKeys.pop();
+                      feedbackOptions.splice(i, 1);
+
+                      form.setFieldsValue({
+                        feedbackOptionKeys,
+                        "emailSettings.dropdown_options": feedbackOptions
+                      });
+                    }}
+                  />
+                </div>
+              ))}
+            </FormItem>
+          </div>
+        )}
+
+        <FormItem
+          {...narrowFormItemLayout}
+          className="checkbox"
+          label="Include textbox"
+        >
+          {form.getFieldDecorator("emailSettings.feedback_textbox", {
+            initialValue:
+              _.get(action, "emailSettings.feedback_textbox") || true,
+            valuePropName: "checked"
+          })(<Checkbox />)}
+        </FormItem>
+
+        {form.getFieldValue("emailSettings.feedback_textbox") && (
+          <FormItem
+            {...narrowFormItemLayout}
+            label="Textbox question"
+            style={{ margin: 0 }}
+            help={null}
+          >
+            {form.getFieldDecorator("emailSettings.textbox_question", {
+              rules: [
+                {
+                  required: true
+                }
+              ],
+              initialValue: _.get(action, "emailSettings.textbox_question")
+            })(
+              <Input placeholder="E.g. How useful was this correspondence?" />
+            )}
+          </FormItem>
+        )}
+
+        {!form.getFieldValue("emailSettings.feedback_textbox") &&
+          !form.getFieldValue("emailSettings.feedback_dropdown") && (
+            <Alert
+              style={{ margin: "10px 0 0 15px" }}
+              type="error"
+              message="You must have at least a dropdown or a textbox in order to collect feedback"
+            />
+          )}
+      </div>
+    );
+  };
 
   EmailHistory = () => {
     const { action } = this.props;
@@ -433,6 +613,9 @@ class Email extends React.Component {
               valuePropName: "checked"
             })(<Checkbox />)}
           </FormItem>
+
+          {form.getFieldValue("emailSettings.include_feedback") &&
+            this.FeedbackConfiguration()}
 
           <div className="button">
             <Button
