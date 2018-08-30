@@ -716,7 +716,7 @@ export const changePinState = (dataLabId, payload) => (
       console.log(error);
     },
     successFn: dataLab => {
-      message.success("The selected Field has been pinned.");
+      message.success("Pinned status successfully updated.");
       dataLab.datasources = datasources;
       dispatch(storeDataLab(dataLab));
     },
