@@ -10,6 +10,7 @@ import {
   Select
 } from "antd";
 import moment from "moment";
+import _ from "lodash";
 
 import { submitFeedback } from "../ActionActions";
 
@@ -22,8 +23,8 @@ class Feedback extends React.Component {
 
     this.state = {
       loading: false,
-      dropdown: feedback.dropdown.value,
-      textbox: feedback.textbox.value
+      dropdown: _.get(feedback, "dropdown.value"),
+      textbox: _.get(feedback, "textbox.value")
     };
   }
 

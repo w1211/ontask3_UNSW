@@ -154,15 +154,41 @@ class Email extends React.Component {
     this.setState({ scheduler: { visible: false, selected: null, data: {} } });
   };
 
+  FeedbackDetails = record => (
+    <div>
+      <b>Feedback provided on:</b>
+      <div>{moment(record.feedback_datetime).format("DD/MM/YYYY, HH:mm")}</div>
+
+      <Divider style={{ margin: "6px 0" }} />
+
+      {record.dropdown_feedback && (
+        <div>
+          <b>Dropdown feedback:</b>
+          <div>{record.dropdown_feedback}</div>
+        </div>
+      )}
+
+      {record.dropdown_feedback &&
+        record.textbox_feedback && <Divider style={{ margin: "6px 0" }} />}
+
+      {record.textbox_feedback && (
+        <div style={{ maxWidth: 400, wordBreak: "break-word" }}>
+          <b>Textbox feedback:</b>
+          <div>{record.textbox_feedback}</div>
+        </div>
+      )}
+    </div>
+  );
+
   TrackingDetails = record => (
     <div>
       <b>First tracked:</b>
-      <div>{moment(record.first_tracked).format("DD/MM/YYYY - HH:mm")}</div>
+      <div>{moment(record.first_tracked).format("DD/MM/YYYY, HH:mm")}</div>
       <Divider style={{ margin: "6px 0" }} />
       <b>Last tracked:</b>
       <div>
         {record.last_tracked
-          ? moment(record.last_tracked).format("DD/MM/YYYY - HH:mm")
+          ? moment(record.last_tracked).format("DD/MM/YYYY, HH:mm")
           : "N/A"}
       </div>
     </div>
@@ -175,9 +201,24 @@ class Email extends React.Component {
         { title: "Recipient", dataIndex: "recipient", key: "recipient" },
         {
           title: "Feedback",
-          dataIndex: "feedback",
-          key: "feedback",
-          render: text => (job.included_feedback ? text : <Icon type="minus" />)
+          render: (text, record) => {
+            if (!job.included_feedback) return <Icon type="minus" />;
+
+            var feedback =
+              record.dropdown_feedback && record.textbox_feedback
+                ? `["${record.dropdown_feedback}", "${
+                    record.textbox_feedback
+                  }"]`
+                : record.dropdown_feedback || record.textbox_feedback || "";
+
+            return (
+              <Popover content={this.FeedbackDetails(record)} trigger="hover">
+                {feedback.length > 25
+                  ? `${feedback.slice(0, 25)} ...`
+                  : feedback}
+              </Popover>
+            );
+          }
         },
         {
           title: "Tracking",
@@ -410,7 +451,7 @@ class Email extends React.Component {
               title: "Date/Time",
               dataIndex: "initiated_at",
               key: "initiated_at",
-              render: text => moment(text).format("DD/MM/YYYY - HH:mm")
+              render: text => moment(text).format("DD/MM/YYYY, HH:mm")
             },
             { title: "Type", dataIndex: "type", key: "type" },
             { title: "Subject", dataIndex: "subject", key: "subject" },
@@ -460,7 +501,7 @@ class Email extends React.Component {
             <div className="value">{emailView.subject}</div>
             <div className="field">Date/Time:</div>
             <div className="value">
-              {moment(emailView.initiated_at).format("DD/MM/YYYY - HH:mm")}
+              {moment(emailView.initiated_at).format("DD/MM/YYYY, HH:mm")}
             </div>
             <Divider />
             <div
