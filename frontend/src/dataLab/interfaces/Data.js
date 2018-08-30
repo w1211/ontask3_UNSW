@@ -61,7 +61,12 @@ class Data extends React.Component {
           column.stepIndex === orderItem.stepIndex &&
           column.field === orderItem.field
       );
-      if (column && orderItem.visible) orderedColumns.push(column);
+      if (column && orderItem.visible) {
+        if (!orderItem.pinned)
+          orderedColumns.push(column);
+        if (orderItem.pinned)
+          orderedColumns.push({ ...column, fixed: "left" });
+      }
     });
 
     // Identify the first non-primary field

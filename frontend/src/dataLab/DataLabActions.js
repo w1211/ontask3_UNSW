@@ -699,3 +699,29 @@ export const updateWebForm = ({ payload, onFinish }) => dispatch => {
 
   requestWrapper(parameters);
 };
+
+
+export const changePinState = (dataLabId, payload) => (
+  dispatch,
+  getState
+) => {
+  const { dataLab } = getState();
+  const datasources = dataLab.datasources;
+
+  const parameters = {
+    initialFn: () => {},
+    url: `/datalab/${dataLabId}/change_pin_state/`,
+    method: "PATCH",
+    errorFn: error => {
+      console.log(error);
+    },
+    successFn: dataLab => {
+      message.success("The selected Field has been pinned.");
+      dataLab.datasources = datasources;
+      dispatch(storeDataLab(dataLab));
+    },
+    payload
+  };
+
+  requestWrapper(parameters);
+};
