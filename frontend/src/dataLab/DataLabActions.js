@@ -710,7 +710,7 @@ export const changePinState = (dataLabId, payload) => (
 
   const parameters = {
     initialFn: () => {},
-    url: `/datalab/${dataLabId}/change_pin_state/`,
+    url: `/datalab/${dataLabId}/change_pinned_status/`,
     method: "PATCH",
     errorFn: error => {
       console.log(error);
