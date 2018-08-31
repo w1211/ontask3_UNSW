@@ -90,6 +90,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 "stepIndex": item["stepIndex"],
                 "field": item["field"],
                 "visible": item["visible"],
+                "pinned": item["pinned"]
             }
             for item in datalab.order
         ]
