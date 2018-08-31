@@ -121,6 +121,8 @@ class DatasourceModal extends React.Component {
       fileError, // If there are errors, save them to the state so they can be shown in the interface
       file: fileError ? null : file // If there are no errors, then save the file in the state
     });
+
+    if (file) this.filenameAutocomplete(file.name);
   };
 
   validateFile = (extension, fileSize) => {
@@ -130,6 +132,32 @@ class DatasourceModal extends React.Component {
 
     // Validate file size
     if (fileSize > 2) return "File must not be larger than 2MB";
+  };
+
+  filenameAutocomplete = name => {
+    const { containers, form, datasource } = this.props;
+    if (!name || form.getFieldValue("name") || datasource.selected) return;
+
+    const { containerId } = this.props.datasource.data;
+
+    const container = containers.find(c => c.id === containerId);
+
+    const datasourceNames = container.datasources.map(data => data.name);
+    const sortedName = [...datasourceNames].sort();
+
+    const lastIndex = name.lastIndexOf(".");
+    const currentName = name.substring(0, lastIndex);
+
+    let i = 0;
+    let resultname = currentName;
+    sortedName.forEach(n => {
+      if (n === resultname) {
+        i++;
+        resultname = `${currentName}_${i}`;
+      }
+    });
+
+    form.setFieldsValue({ name: resultname });
   };
 
   S3Bucket = (fileName, extension) => {
