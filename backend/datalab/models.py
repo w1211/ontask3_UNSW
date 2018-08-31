@@ -19,6 +19,7 @@ class Column(EmbeddedDocument):
     stepIndex = IntField()
     field = StringField()
     visible = BooleanField(default=True)
+    pinned = BooleanField(default=False)
 
 
 class Discrepencies(EmbeddedDocument):

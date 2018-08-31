@@ -30,7 +30,7 @@ class Details extends React.Component {
     let columns = [];
     let tableData = [];
     let orderedTableData = [];
-    
+
     if (build) {
       columns = [
         { title: 'Field', dataIndex: 'label', key: 'label' },
@@ -41,8 +41,8 @@ class Details extends React.Component {
         { title: 'Type', dataIndex: 'type', key: 'type', render: (text, record) => {
           if (record.module === 'datasource') return (
             <Select 
-              size="small" 
-              defaultValue={text} 
+              size="small"
+              defaultValue={text}
               onChange={(e) => this.boundActionCreators.updateFieldType(selectedId, { stepIndex: record.stepIndex, field: record.field, type: e })}
             >
               <Option value="text">text</Option>
@@ -54,11 +54,20 @@ class Details extends React.Component {
         }},
         { title: 'Visible', dataIndex: 'visible', key: 'visible', render: (text, record, row) => (
           <Checkbox 
-            defaultChecked={text} 
+            defaultChecked={text}
             onChange={(e) => this.boundActionCreators.changeColumnVisibility(selectedId, { columnIndex: row, visible: e.target.checked })}
+          />
+        )},
+        { title: 'Pin', dataIndex: 'pin', key: 'pin', render: (text, record, row) => (
+          <Checkbox
+            defaultChecked={text}
+            onChange={(e) => this.boundActionCreators.changePinState(selectedId, { columnIndex: row, pinned: e.target.checked })}
           />
         )}
       ];
+
+      const getOrder = (stepIndex, field) =>
+        build.order.find(column => column.stepIndex === stepIndex && column.field === field);
 
       build.steps.forEach((step, stepIndex) => {
         if (step.type === 'datasource') {
@@ -68,6 +77,7 @@ class Details extends React.Component {
           const datasource = datasources.find(datasource => datasource.id === step.id);
           
           step.fields.forEach((field, fieldIndex) => {
+            const orderItem = getOrder(stepIndex, field);
             const label = step.labels[field];
             const type = step.types[field];
             tableData.push({
@@ -76,9 +86,10 @@ class Details extends React.Component {
               key: label,
               label,
               module,
-              from: datasource.name, 
+              from: datasource.name,
               type,
-              visible: build.order.find(column => column.stepIndex === stepIndex && column.field === field).visible
+              visible: orderItem.visible,
+              pin: orderItem.pinned
             });
           });
 
@@ -87,15 +98,17 @@ class Details extends React.Component {
           step = step.form;
           
           step.fields.forEach((field, fieldIndex) => {
+            const orderItem = getOrder(stepIndex, field.name);
             tableData.push({
               stepIndex,
               field: field.name,
               key: field.name,
               label: field.name,
               module,
-              from: step.name, 
+              from: step.name,
               type: field.type,
-              visible: build.order.find(column => column.stepIndex === stepIndex && column.field === field.name).visible
+              visible: orderItem.visible,
+              pin: orderItem.pinned
             });
           });
         };
@@ -110,8 +123,8 @@ class Details extends React.Component {
     };
 
     return (
-      <div className="details">            
-        
+      <div className="details">
+
         <Table
           columns={columns}
           dataSource={orderedTableData}
