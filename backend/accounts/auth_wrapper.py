@@ -1,7 +1,7 @@
 ''' AUTHENTICATION WRAPPER '''
 from django.conf import settings
 from jwt import decode, ExpiredSignature
-from Crypto.Cipher import XOR
+from passlib.hash import pbkdf2_sha256
 import base64
 import traceback
 from .auth_handler import UserAuthHandler
@@ -24,14 +24,13 @@ class LTIAuthHandler(UserAuthHandler):
         '''Initializes the configurations for the AAF authentication'''
         # Maps the AAF configuration from the settings file
         self.config = settings.LTI_CONFIG
-        self.cipher = XOR.new(settings.CIPHER_SUITE_KEY)
-
+        
     def authenticate_user(self, payload):
         '''Verifies if LTI has authenticated the user and returns a User object'''
         try:
             email = payload["lis_person_contact_email_primary"][0]
             fullname = payload["lis_person_name_full"][0]
-            password = base64.b64encode(self.cipher.encrypt(email))
+            password = pbkdf2_sha256.using(salt=bytes(settings.SECRET_KEY, encoding="UTF-8")).hash(email)
             role = self.extract_user_role(payload["roles"][0])
             user = self.authenticateOrCreate(email, fullname, password, role)
             #zid for checking if user is workflow owner
@@ -62,7 +61,6 @@ class AAFAuthHandler(UserAuthHandler):
         '''Initializes the configurations for the AAF authentication'''
         # Maps the AAF configuration from the settings file
         self.config = settings.AAF_CONFIG
-        self.cipher = XOR.new(settings.CIPHER_SUITE_KEY)
 
     def authenticate_user(self, jwt_payload):
         '''Verifies if AAF has authenticated the user and returns a User object'''
@@ -79,7 +77,7 @@ class AAFAuthHandler(UserAuthHandler):
                 user_attributes = verified_jwt['https://aaf.edu.au/attributes']
                 email = user_attributes["mail"]
                 fullname =  user_attributes["displayname"]
-                password = base64.b64encode(self.cipher.encrypt(email))
+                password = pbkdf2_sha256.using(salt=bytes(settings.SECRET_KEY, encoding="UTF-8")).hash(email)
                 role = self.extract_user_role(user_attributes["edupersonscopedaffiliation"])
                 user = self.authenticateOrCreate(email, fullname, password, role)
                 return user
