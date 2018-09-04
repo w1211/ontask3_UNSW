@@ -401,11 +401,12 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                     if email.recipient == request.user.email:
                         payload = {
                             "dropdown": {
-                                "enabled": action.emailSettings.feedback_dropdown,
-                                "question": action.emailSettings.dropdown_question,
+                                "enabled": action.emailSettings.feedback_list,
+                                "question": action.emailSettings.list_question,
+                                "type": action.emailSettings.list_type,
                                 "options": [
                                     {"label": option.label, "value": option.value}
-                                    for option in action.emailSettings.dropdown_options
+                                    for option in action.emailSettings.list_options
                                 ],
                                 "value": email.dropdown_feedback
                             },

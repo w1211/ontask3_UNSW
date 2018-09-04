@@ -7,7 +7,8 @@ import {
   Button,
   notification,
   Alert,
-  Select
+  Select,
+  Radio
 } from "antd";
 import moment from "moment";
 import _ from "lodash";
@@ -79,26 +80,47 @@ class Feedback extends React.Component {
 
               {feedback.dropdown.enabled && (
                 <div>
-                  <p style={{ marginBottom: 0 }}>
+                  <p style={{ marginBottom: 5, fontWeight: 500 }}>
                     {feedback.dropdown.question}
                   </p>
-                  <Select
-                    value={dropdown}
-                    onChange={e => this.setState({ dropdown: e })}
-                    style={{ marginBottom: 15, width: "100%" }}
-                  >
-                    {feedback.dropdown.options.map((option, i) => (
-                      <Select.Option value={option.value} key={i}>
-                        {option.label}
-                      </Select.Option>
-                    ))}
-                  </Select>
+
+                  {feedback.dropdown.type === "dropdown" && (
+                    <Select
+                      value={dropdown}
+                      onChange={e => this.setState({ dropdown: e })}
+                      style={{ marginBottom: 15, width: "100%" }}
+                    >
+                      {feedback.dropdown.options.map((option, i) => (
+                        <Select.Option value={option.value} key={i}>
+                          {option.label}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  )}
+
+                  {feedback.dropdown.type === "radio" && (
+                    <Radio.Group
+                      value={dropdown}
+                      onChange={e =>
+                        this.setState({ dropdown: e.target.value })
+                      }
+                      style={{ marginBottom: 15, width: "100%" }}
+                    >
+                      {feedback.dropdown.options.map((option, i) => (
+                        <Radio value={option.value} key={i}>
+                          {option.label}
+                        </Radio>
+                      ))}
+                    </Radio.Group>
+                  )}
                 </div>
               )}
 
               {feedback.textbox.enabled && (
                 <div>
-                  <p style={{ marginBottom: 0 }}>{feedback.textbox.question}</p>
+                  <p style={{ marginBottom: 5, fontWeight: 500 }}>
+                    {feedback.textbox.question}
+                  </p>
                   <Input.TextArea
                     rows={4}
                     value={textbox}
