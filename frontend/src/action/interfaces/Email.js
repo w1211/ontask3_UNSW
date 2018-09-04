@@ -111,7 +111,7 @@ class Email extends React.Component {
 
       if (
         payload.emailSettings.include_feedback &&
-        !payload.emailSettings.feedback_dropdown &&
+        !payload.emailSettings.feedback_list &&
         !payload.emailSettings.feedback_textbox
       )
         return;
@@ -161,14 +161,14 @@ class Email extends React.Component {
 
       <Divider style={{ margin: "6px 0" }} />
 
-      {record.dropdown_feedback && (
+      {record.list_feedback && (
         <div>
           <b>Dropdown feedback:</b>
-          <div>{record.dropdown_feedback}</div>
+          <div>{record.list_feedback}</div>
         </div>
       )}
 
-      {record.dropdown_feedback &&
+      {record.list_feedback &&
         record.textbox_feedback && <Divider style={{ margin: "6px 0" }} />}
 
       {record.textbox_feedback && (
@@ -205,11 +205,9 @@ class Email extends React.Component {
             if (!job.included_feedback) return <Icon type="minus" />;
 
             var feedback =
-              record.dropdown_feedback && record.textbox_feedback
-                ? `["${record.dropdown_feedback}", "${
-                    record.textbox_feedback
-                  }"]`
-                : record.dropdown_feedback || record.textbox_feedback || "";
+              record.list_feedback && record.textbox_feedback
+                ? `["${record.list_feedback}", "${record.textbox_feedback}"]`
+                : record.list_feedback || record.textbox_feedback || "";
 
             return (
               <Popover content={this.FeedbackDetails(record)} trigger="hover">
@@ -266,8 +264,8 @@ class Email extends React.Component {
 
     form.getFieldDecorator("feedbackOptionKeys", {
       initialValue:
-        action.emailSettings.dropdown_options.length > 0
-          ? action.emailSettings.dropdown_options.map(() => null)
+        action.emailSettings.list_options.length > 0
+          ? action.emailSettings.list_options.map(() => null)
           : [null]
     });
     const feedbackOptionKeys = form.getFieldValue("feedbackOptionKeys");
@@ -285,30 +283,29 @@ class Email extends React.Component {
         <FormItem
           {...narrowFormItemLayout}
           className="checkbox"
-          label="Include dropdown"
+          label="Include list"
         >
-          {form.getFieldDecorator("emailSettings.feedback_dropdown", {
-            initialValue:
-              _.get(action, "emailSettings.feedback_dropdown") || false,
+          {form.getFieldDecorator("emailSettings.feedback_list", {
+            initialValue: _.get(action, "emailSettings.feedback_list") || false,
             valuePropName: "checked"
           })(<Checkbox />)}
         </FormItem>
 
-        {form.getFieldValue("emailSettings.feedback_dropdown") && (
+        {form.getFieldValue("emailSettings.feedback_list") && (
           <div>
             <FormItem
               {...narrowFormItemLayout}
-              label="Dropdown question"
+              label="List question"
               style={{ margin: 0 }}
               help={null}
             >
-              {form.getFieldDecorator("emailSettings.dropdown_question", {
+              {form.getFieldDecorator("emailSettings.list_question", {
                 rules: [
                   {
                     required: true
                   }
                 ],
-                initialValue: _.get(action, "emailSettings.dropdown_question")
+                initialValue: _.get(action, "emailSettings.list_question")
               })(
                 <Input placeholder="E.g. How would you rate this feedback?" />
               )}
@@ -316,7 +313,29 @@ class Email extends React.Component {
 
             <FormItem
               {...narrowFormItemLayout}
-              label="Dropdown options"
+              label="List type"
+              style={{ margin: 0 }}
+              help={null}
+            >
+              {form.getFieldDecorator("emailSettings.list_type", {
+                rules: [
+                  {
+                    required: true
+                  }
+                ],
+                initialValue:
+                  _.get(action, "emailSettings.list_type") || "radio"
+              })(
+                <Select>
+                  <Option value="dropdown">Dropdown</Option>
+                  <Option value="radio">Radio boxes</Option>
+                </Select>
+              )}
+            </FormItem>
+
+            <FormItem
+              {...narrowFormItemLayout}
+              label="List options"
               style={{ margin: 0 }}
               help={null}
             >
@@ -342,7 +361,7 @@ class Email extends React.Component {
                   }}
                 >
                   {form.getFieldDecorator(
-                    `emailSettings.dropdown_options[${i}].label`,
+                    `emailSettings.list_options[${i}].label`,
                     {
                       rules: [
                         {
@@ -351,18 +370,18 @@ class Email extends React.Component {
                       ],
                       initialValue: _.get(
                         action,
-                        `emailSettings.dropdown_options[${i}].label`
+                        `emailSettings.list_options[${i}].label`
                       )
                     }
                   )(<Input style={{ marginRight: 10 }} placeholder="Label" />)}
 
                   {form.getFieldDecorator(
-                    `emailSettings.dropdown_options[${i}].value`,
+                    `emailSettings.list_options[${i}].value`,
                     {
                       rules: [{ required: true }],
                       initialValue: _.get(
                         action,
-                        `emailSettings.dropdown_options[${i}].value`
+                        `emailSettings.list_options[${i}].value`
                       )
                     }
                   )(<Input style={{ marginRight: 10 }} placeholder="Value" />)}
@@ -373,14 +392,14 @@ class Email extends React.Component {
                     disabled={feedbackOptionKeys.length <= 1}
                     onClick={() => {
                       const feedbackOptions = form.getFieldValue(
-                        "emailSettings.dropdown_options"
+                        "emailSettings.list_options"
                       );
                       feedbackOptionKeys.pop();
                       feedbackOptions.splice(i, 1);
 
                       form.setFieldsValue({
                         feedbackOptionKeys,
-                        "emailSettings.dropdown_options": feedbackOptions
+                        "emailSettings.list_options": feedbackOptions
                       });
                     }}
                   />
@@ -397,7 +416,10 @@ class Email extends React.Component {
         >
           {form.getFieldDecorator("emailSettings.feedback_textbox", {
             initialValue:
-              _.get(action, "emailSettings.feedback_textbox") || true,
+              _.get(action, "emailSettings.feedback_textbox") ||
+              form.getFieldValue("emailSettings.feedback_list")
+                ? false
+                : true,
             valuePropName: "checked"
           })(<Checkbox />)}
         </FormItem>
@@ -423,7 +445,7 @@ class Email extends React.Component {
         )}
 
         {!form.getFieldValue("emailSettings.feedback_textbox") &&
-          !form.getFieldValue("emailSettings.feedback_dropdown") && (
+          !form.getFieldValue("emailSettings.feedback_list") && (
             <Alert
               style={{ margin: "10px 0 0 15px" }}
               type="error"

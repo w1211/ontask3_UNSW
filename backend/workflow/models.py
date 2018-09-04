@@ -62,9 +62,10 @@ class EmailSettings(EmbeddedDocument):
     field = StringField(required=True)
     replyTo = StringField(required=True)
     include_feedback = BooleanField()
-    feedback_dropdown = BooleanField()
-    dropdown_question = StringField()
-    dropdown_options = EmbeddedDocumentListField(Option)
+    feedback_list = BooleanField()
+    list_question = StringField()
+    list_options = EmbeddedDocumentListField(Option)
+    list_type = StringField(choices=("dropdown", "radio"))
     feedback_textbox = BooleanField()
     textbox_question = StringField()
 
