@@ -408,7 +408,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                                     {"label": option.label, "value": option.value}
                                     for option in action.emailSettings.list_options
                                 ],
-                                "value": email.dropdown_feedback
+                                "value": email.list_feedback
                             },
                             "textbox": {
                                 "enabled": action.emailSettings.feedback_textbox,
@@ -447,7 +447,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                 for email in job.emails:
                     if email.recipient == request.user.email:
                         email.textbox_feedback = textbox
-                        email.dropdown_feedback = dropdown
+                        email.list_feedback = dropdown
                         email.feedback_datetime = datetime.utcnow()
                         did_update = True
 

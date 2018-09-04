@@ -73,7 +73,7 @@ class EmailSettings(EmbeddedDocument):
 class Email(EmbeddedDocument):
     recipient = StringField()
     content = StringField()
-    dropdown_feedback = StringField()
+    list_feedback = StringField()
     textbox_feedback = StringField()
     feedback_datetime = DateTimeField()
     track_count = IntField(default=0)
