@@ -10,7 +10,7 @@ from mongoengine.fields import (
     DictField,
     BooleanField,
     SequenceField,
-    ObjectIdField
+    ObjectIdField,
 )
 from bson import ObjectId
 from datetime import datetime
@@ -52,18 +52,31 @@ class Schedule(EmbeddedDocument):
     asyncTasks = ListField(StringField())  # async tasks
 
 
+class Option(EmbeddedDocument):
+    label = StringField(required=True)
+    value = StringField(required=True)
+
+
 class EmailSettings(EmbeddedDocument):
     subject = StringField(required=True)
     field = StringField(required=True)
     replyTo = StringField(required=True)
-    include_tracking = BooleanField()
     include_feedback = BooleanField()
+    feedback_list = BooleanField()
+    list_question = StringField()
+    list_options = EmbeddedDocumentListField(Option)
+    list_type = StringField(choices=("dropdown", "radio"))
+    feedback_textbox = BooleanField()
+    textbox_question = StringField()
 
 
 class Email(EmbeddedDocument):
     recipient = StringField()
     content = StringField()
-    feedback = StringField()
+    list_feedback = StringField()
+    textbox_feedback = StringField()
+    feedback_datetime = DateTimeField()
+    track_count = IntField(default=0)
     first_tracked = DateTimeField()
     last_tracked = DateTimeField()
 
@@ -74,7 +87,6 @@ class EmailJob(EmbeddedDocument):
     emails = EmbeddedDocumentListField(Email)
     type = StringField(choices=["Manual", "Scheduled"])
     initiated_at = DateTimeField(default=datetime.utcnow)
-    included_tracking = BooleanField()
     included_feedback = BooleanField()
 
 

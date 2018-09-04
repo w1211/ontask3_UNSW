@@ -193,6 +193,7 @@ class WebForm extends React.Component {
         {singleRecordIndex !== null && singleRecordIndex !== undefined ? (
           <Table
             bordered
+            showHeader={form.data.length > 1}
             columns={this.generateSingleRecordColumns()}
             dataSource={Object.keys(form.data[singleRecordIndex]).map(
               (field, i) => ({

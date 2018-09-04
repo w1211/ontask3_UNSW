@@ -389,6 +389,80 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         return self.retrieve_workflow(request, id=id)
 
+    @detail_route(methods=["get"], permission_classes=[IsAuthenticated])
+    def feedback(self, request, id=None):
+        action = Workflow.objects.get(id=id)
+        job_id = request.GET.get("job")
+
+        payload = None
+        for job in action.emailJobs:
+            if str(job.job_id) == job_id and job.included_feedback:
+                for email in job.emails:
+                    if email.recipient == request.user.email:
+                        payload = {
+                            "dropdown": {
+                                "enabled": action.emailSettings.feedback_list,
+                                "question": action.emailSettings.list_question,
+                                "type": action.emailSettings.list_type,
+                                "options": [
+                                    {"label": option.label, "value": option.value}
+                                    for option in action.emailSettings.list_options
+                                ],
+                                "value": email.list_feedback
+                            },
+                            "textbox": {
+                                "enabled": action.emailSettings.feedback_textbox,
+                                "question": action.emailSettings.textbox_question,
+                                "value": email.textbox_feedback
+                            },
+                            "subject": job.subject,
+                            "email_datetime": job.initiated_at,
+                            "content": email.content,
+                            "feedback_datetime": email.feedback_datetime,
+                        }
+
+        if not payload:
+            return JsonResponse(
+                {
+                    "error": "You are not authorized to provide feedback for this correspondence"
+                }
+            )
+
+        return JsonResponse(payload)
+
+    @detail_route(methods=["post"], permission_classes=[IsAuthenticated])
+    def submit_feedback(self, request, id=None):
+        action = Workflow.objects.get(id=id)
+        job_id = request.GET.get("job")
+
+        dropdown = request.data["dropdown"]
+        textbox = request.data["textbox"]
+
+        if not dropdown and not textbox:
+            return JsonResponse({"error": "Empty feedback cannot be submitted"})
+
+        did_update = False
+        for job in action.emailJobs:
+            if str(job.job_id) == job_id and job.included_feedback:
+                for email in job.emails:
+                    if email.recipient == request.user.email:
+                        email.textbox_feedback = textbox
+                        email.list_feedback = dropdown
+                        email.feedback_datetime = datetime.utcnow()
+                        did_update = True
+
+        if did_update:
+            action.save()
+        else:
+            # None of the email recipients must have matched the request user's email
+            return JsonResponse(
+                {
+                    "error": "You are not authorized to provide feedback for this correspondence"
+                }
+            )
+
+        return JsonResponse({"success": 1})
+
     @list_route(methods=["get"], permission_classes=[])
     def read_receipt(self, request):
         token = request.GET.get("email")
@@ -399,7 +473,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                 decrypted_token = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
             except Exception:
                 # Invalid token, ignore the read receipt
-                return HttpResponse(PIXEL_GIF_DATA, content_type='image/gif')
+                return HttpResponse(PIXEL_GIF_DATA, content_type="image/gif")
 
             did_update = False
             workflow = Workflow.objects.get(id=decrypted_token["workflow_id"])
@@ -411,6 +485,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                                 email.first_tracked = datetime.utcnow()
                             else:
                                 email.last_tracked = datetime.utcnow()
+                            email.track_count += 1
                             did_update = True
                             break
                     break
@@ -418,7 +493,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             if did_update:
                 workflow.save()
 
-        return HttpResponse(PIXEL_GIF_DATA, content_type='image/gif')
+        return HttpResponse(PIXEL_GIF_DATA, content_type="image/gif")
 
     @detail_route(methods=["put"])
     def send_email(self, request, id=None):

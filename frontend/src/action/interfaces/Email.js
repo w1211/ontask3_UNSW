@@ -109,6 +109,13 @@ class Email extends React.Component {
     form.validateFields((err, payload) => {
       if (err) return;
 
+      if (
+        payload.emailSettings.include_feedback &&
+        !payload.emailSettings.feedback_list &&
+        !payload.emailSettings.feedback_textbox
+      )
+        return;
+
       this.setState({ loading: { ...loading, emailSettings: true } });
 
       ActionActions.updateEmailSettings({
@@ -147,15 +154,41 @@ class Email extends React.Component {
     this.setState({ scheduler: { visible: false, selected: null, data: {} } });
   };
 
+  FeedbackDetails = record => (
+    <div>
+      <b>Feedback provided on:</b>
+      <div>{moment(record.feedback_datetime).format("DD/MM/YYYY, HH:mm")}</div>
+
+      <Divider style={{ margin: "6px 0" }} />
+
+      {record.list_feedback && (
+        <div>
+          <b>Dropdown feedback:</b>
+          <div>{record.list_feedback}</div>
+        </div>
+      )}
+
+      {record.list_feedback &&
+        record.textbox_feedback && <Divider style={{ margin: "6px 0" }} />}
+
+      {record.textbox_feedback && (
+        <div style={{ maxWidth: 400, wordBreak: "break-word" }}>
+          <b>Textbox feedback:</b>
+          <div>{record.textbox_feedback}</div>
+        </div>
+      )}
+    </div>
+  );
+
   TrackingDetails = record => (
     <div>
       <b>First tracked:</b>
-      <div>{moment(record.first_tracked).format("DD/MM/YYYY - HH:mm")}</div>
+      <div>{moment(record.first_tracked).format("DD/MM/YYYY, HH:mm")}</div>
       <Divider style={{ margin: "6px 0" }} />
       <b>Last tracked:</b>
       <div>
         {record.last_tracked
-          ? moment(record.last_tracked).format("DD/MM/YYYY - HH:mm")
+          ? moment(record.last_tracked).format("DD/MM/YYYY, HH:mm")
           : "N/A"}
       </div>
     </div>
@@ -168,25 +201,34 @@ class Email extends React.Component {
         { title: "Recipient", dataIndex: "recipient", key: "recipient" },
         {
           title: "Feedback",
-          dataIndex: "feedback",
-          key: "feedback",
-          render: text => (job.included_feedback ? text : <Icon type="minus" />)
+          render: (text, record) => {
+            if (!job.included_feedback) return <Icon type="minus" />;
+
+            var feedback =
+              record.list_feedback && record.textbox_feedback
+                ? `["${record.list_feedback}", "${record.textbox_feedback}"]`
+                : record.list_feedback || record.textbox_feedback || "";
+
+            return (
+              <Popover content={this.FeedbackDetails(record)} trigger="hover">
+                {feedback.length > 25
+                  ? `${feedback.slice(0, 25)} ...`
+                  : feedback}
+              </Popover>
+            );
+          }
         },
         {
           title: "Tracking",
-          dataIndex: "first_tracked",
-          key: "first_tracked",
-          render: (text, record) =>
-            job.included_tracking ? (
-              !!text ? (
-                <Popover content={this.TrackingDetails(record)} trigger="hover">
-                  <Icon type="check" />
-                </Popover>
-              ) : (
-                <Icon type="close" />
-              )
+          dataIndex: "track_count",
+          key: "track_count",
+          render: (count, record) =>
+            count > 0 ? (
+              <Popover content={this.TrackingDetails(record)} trigger="hover">
+                {count}
+              </Popover>
             ) : (
-              <Icon type="minus" />
+              <Icon type="close" />
             )
         },
         {
@@ -217,6 +259,203 @@ class Email extends React.Component {
     />
   );
 
+  FeedbackConfiguration = () => {
+    const { action, form } = this.props;
+
+    form.getFieldDecorator("feedbackOptionKeys", {
+      initialValue:
+        action.emailSettings.list_options.length > 0
+          ? action.emailSettings.list_options.map(() => null)
+          : [null]
+    });
+    const feedbackOptionKeys = form.getFieldValue("feedbackOptionKeys");
+
+    return (
+      <div
+        style={{
+          border: "1px dashed #e9e9e9",
+          background: "#F5F5F5",
+          borderRadius: 5,
+          margin: "20px -1px",
+          padding: "10px 20px 10px 0"
+        }}
+      >
+        <FormItem
+          {...narrowFormItemLayout}
+          className="checkbox"
+          label="Include list"
+        >
+          {form.getFieldDecorator("emailSettings.feedback_list", {
+            initialValue: _.get(action, "emailSettings.feedback_list") || false,
+            valuePropName: "checked"
+          })(<Checkbox />)}
+        </FormItem>
+
+        {form.getFieldValue("emailSettings.feedback_list") && (
+          <div>
+            <FormItem
+              {...narrowFormItemLayout}
+              label="List question"
+              style={{ margin: 0 }}
+              help={null}
+            >
+              {form.getFieldDecorator("emailSettings.list_question", {
+                rules: [
+                  {
+                    required: true
+                  }
+                ],
+                initialValue: _.get(action, "emailSettings.list_question")
+              })(
+                <Input placeholder="E.g. How would you rate this feedback?" />
+              )}
+            </FormItem>
+
+            <FormItem
+              {...narrowFormItemLayout}
+              label="List type"
+              style={{ margin: 0 }}
+              help={null}
+            >
+              {form.getFieldDecorator("emailSettings.list_type", {
+                rules: [
+                  {
+                    required: true
+                  }
+                ],
+                initialValue:
+                  _.get(action, "emailSettings.list_type") || "radio"
+              })(
+                <Select>
+                  <Option value="dropdown">Dropdown</Option>
+                  <Option value="radio">Radio boxes</Option>
+                </Select>
+              )}
+            </FormItem>
+
+            <FormItem
+              {...narrowFormItemLayout}
+              label="List options"
+              style={{ margin: 0 }}
+              help={null}
+            >
+              <Button
+                type="primary"
+                size="small"
+                onClick={() => {
+                  form.setFieldsValue({
+                    feedbackOptionKeys: [...feedbackOptionKeys, null]
+                  });
+                }}
+              >
+                Add option
+              </Button>
+
+              {feedbackOptionKeys.map((key, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    marginBottom: 5
+                  }}
+                >
+                  {form.getFieldDecorator(
+                    `emailSettings.list_options[${i}].label`,
+                    {
+                      rules: [
+                        {
+                          required: true
+                        }
+                      ],
+                      initialValue: _.get(
+                        action,
+                        `emailSettings.list_options[${i}].label`
+                      )
+                    }
+                  )(<Input style={{ marginRight: 10 }} placeholder="Label" />)}
+
+                  {form.getFieldDecorator(
+                    `emailSettings.list_options[${i}].value`,
+                    {
+                      rules: [{ required: true }],
+                      initialValue: _.get(
+                        action,
+                        `emailSettings.list_options[${i}].value`
+                      )
+                    }
+                  )(<Input style={{ marginRight: 10 }} placeholder="Value" />)}
+
+                  <Button
+                    type="danger"
+                    icon="delete"
+                    disabled={feedbackOptionKeys.length <= 1}
+                    onClick={() => {
+                      const feedbackOptions = form.getFieldValue(
+                        "emailSettings.list_options"
+                      );
+                      feedbackOptionKeys.pop();
+                      feedbackOptions.splice(i, 1);
+
+                      form.setFieldsValue({
+                        feedbackOptionKeys,
+                        "emailSettings.list_options": feedbackOptions
+                      });
+                    }}
+                  />
+                </div>
+              ))}
+            </FormItem>
+          </div>
+        )}
+
+        <FormItem
+          {...narrowFormItemLayout}
+          className="checkbox"
+          label="Include textbox"
+        >
+          {form.getFieldDecorator("emailSettings.feedback_textbox", {
+            initialValue:
+              _.get(action, "emailSettings.feedback_textbox") ||
+              form.getFieldValue("emailSettings.feedback_list")
+                ? false
+                : true,
+            valuePropName: "checked"
+          })(<Checkbox />)}
+        </FormItem>
+
+        {form.getFieldValue("emailSettings.feedback_textbox") && (
+          <FormItem
+            {...narrowFormItemLayout}
+            label="Textbox question"
+            style={{ margin: 0 }}
+            help={null}
+          >
+            {form.getFieldDecorator("emailSettings.textbox_question", {
+              rules: [
+                {
+                  required: true
+                }
+              ],
+              initialValue: _.get(action, "emailSettings.textbox_question")
+            })(
+              <Input placeholder="E.g. How useful was this correspondence?" />
+            )}
+          </FormItem>
+        )}
+
+        {!form.getFieldValue("emailSettings.feedback_textbox") &&
+          !form.getFieldValue("emailSettings.feedback_list") && (
+            <Alert
+              style={{ margin: "10px 0 0 15px" }}
+              type="error"
+              message="You must have at least a dropdown or a textbox in order to collect feedback"
+            />
+          )}
+      </div>
+    );
+  };
+
   EmailHistory = () => {
     const { action } = this.props;
     const { emailView } = this.state;
@@ -234,7 +473,7 @@ class Email extends React.Component {
               title: "Date/Time",
               dataIndex: "initiated_at",
               key: "initiated_at",
-              render: text => moment(text).format("DD/MM/YYYY - HH:mm")
+              render: text => moment(text).format("DD/MM/YYYY, HH:mm")
             },
             { title: "Type", dataIndex: "type", key: "type" },
             { title: "Subject", dataIndex: "subject", key: "subject" },
@@ -247,8 +486,6 @@ class Email extends React.Component {
             },
             {
               title: "Tracking",
-              dataIndex: "included_tracking",
-              key: "included_tracking",
               render: (text, record) => {
                 const trackedCount = record.emails.filter(
                   email => !!email.first_tracked
@@ -256,12 +493,10 @@ class Email extends React.Component {
                 const trackedPct = Math.round(
                   (trackedCount / record.emails.length) * 100
                 );
-                return text ? (
+                return (
                   <span>{`${trackedCount} of ${
                     record.emails.length
                   } (${trackedPct}%)`}</span>
-                ) : (
-                  <Icon type="close" />
                 );
               }
             }
@@ -288,11 +523,11 @@ class Email extends React.Component {
             <div className="value">{emailView.subject}</div>
             <div className="field">Date/Time:</div>
             <div className="value">
-              {moment(emailView.initiated_at).format("DD/MM/YYYY - HH:mm")}
+              {moment(emailView.initiated_at).format("DD/MM/YYYY, HH:mm")}
             </div>
             <Divider />
             <div
-              className="content"
+              className="email_content"
               dangerouslySetInnerHTML={{
                 __html: emailView.text
               }}
@@ -425,28 +660,6 @@ class Email extends React.Component {
             className="checkbox"
             label={
               <div className="field_label">
-                Email tracking
-                <Tooltip
-                  title={`Uses a tracking pixel to determine whether the recipient
-                  has opened/read the email`}
-                >
-                  <Icon type="question-circle-o" />
-                </Tooltip>
-              </div>
-            }
-          >
-            {form.getFieldDecorator("emailSettings.include_tracking", {
-              initialValue:
-                _.get(action, "emailSettings.include_tracking") || false,
-              valuePropName: "checked"
-            })(<Checkbox />)}
-          </FormItem>
-
-          <FormItem
-            {...narrowFormItemLayout}
-            className="checkbox"
-            label={
-              <div className="field_label">
                 Feedback form
                 <Tooltip
                   title={`Includes a hyperlink to a form that allows recipients to 
@@ -463,6 +676,9 @@ class Email extends React.Component {
               valuePropName: "checked"
             })(<Checkbox />)}
           </FormItem>
+
+          {form.getFieldValue("emailSettings.include_feedback") &&
+            this.FeedbackConfiguration()}
 
           <div className="button">
             <Button
@@ -518,7 +734,6 @@ class Email extends React.Component {
             <Spin size="large" />
           ) : (
             <div
-              style={{ maxHeight: 500 }}
               dangerouslySetInnerHTML={{
                 __html: preview && preview.populatedContent[index]
               }}

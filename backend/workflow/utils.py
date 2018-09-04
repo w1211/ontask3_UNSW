@@ -4,7 +4,7 @@ from rest_framework_mongoengine.validators import ValidationError
 from bson import ObjectId
 import jwt
 from .models import EmailSettings, EmailJob, Email
-from ontask.settings import SECRET_KEY, BACKEND_DOMAIN
+from ontask.settings import SECRET_KEY, BACKEND_DOMAIN, FRONTEND_DOMAIN
 from scheduler.utils import send_email
 
 
@@ -210,7 +210,6 @@ def perform_email_job(workflow, job_type, email_settings=None):
         job_id=job_id,
         subject=email_settings.subject,
         type=job_type,
-        included_tracking=email_settings.include_tracking and True,
         included_feedback=email_settings.include_feedback and True,
         emails=[],
     )
@@ -220,20 +219,30 @@ def perform_email_job(workflow, job_type, email_settings=None):
         recipient = item[email_settings.field]
         email_content = populated_content[index]
 
-        if email_settings.include_tracking:
-            tracking_token = jwt.encode(
-                {
-                    "workflow_id": str(workflow.id),
-                    "job_id": str(job_id),
-                    "recipient": recipient,
-                },
-                SECRET_KEY,
-                algorithm="HS256",
-            ).decode("utf-8")
+        tracking_token = jwt.encode(
+            {
+                "workflow_id": str(workflow.id),
+                "job_id": str(job_id),
+                "recipient": recipient,
+            },
+            SECRET_KEY,
+            algorithm="HS256",
+        ).decode("utf-8")
 
-            tracking_pixel = f'<img src="{BACKEND_DOMAIN}/workflow/read_receipt/?email={tracking_token}"/>'
+        tracking_link = (
+            f"{BACKEND_DOMAIN}/workflow/read_receipt/?email={tracking_token}"
+        )
+        tracking_pixel = f"<img src='{tracking_link}'/>"
+        email_content += tracking_pixel
 
-            email_content += tracking_pixel
+        if email_settings.include_feedback:
+            feedback_link = (
+                f"{FRONTEND_DOMAIN}/action/{workflow.id}/feedback/?job={job_id}"
+            )
+            email_content += (
+                "<p>Did you find this correspondence useful? Please provide your "
+                f"feedback by <a href='{feedback_link}'>clicking here</a>.</p>"
+            )
 
         email_sent = send_email(
             recipient, email_settings.subject, email_content, email_settings.replyTo

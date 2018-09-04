@@ -173,11 +173,13 @@ def update_form_data(
             permission_field = web_form["permission"]
             if web_form["showAll"]:
                 permissable_users = {
-                    item.get(permission_field) for item in datalab.data
+                    item.get(permission_field).strip() for item in datalab.data
                 }
                 has_access = request_user in permissable_users
             else:
-                has_access = request_user == datalab_data_map[primary][permission_field]
+                has_access = (
+                    request_user == datalab_data_map[primary][permission_field].strip()
+                )
 
     # Confirm whether the user has access after the above checks have been performed
     if not has_access:
@@ -275,7 +277,7 @@ def retrieve_form_data(datalab, step, request_user):
             has_access
             or web_form["showAll"]
             and request_user in permissable_users
-            or item[permission_field] == request_user
+            or item[permission_field].strip() == request_user
         ):
             record = {field: item.get(field) for field in columns}
             data.append(record)
