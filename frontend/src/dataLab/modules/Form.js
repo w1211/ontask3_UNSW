@@ -392,7 +392,7 @@ class FormModule extends React.Component {
 
         <FormItem>
           <Tooltip
-            title="Users that have access to the web form will be able to see all records (but can only edit their associated records)"
+            title="Users that have access to the web form will be able to see and edit all records"
             placement="right"
           >
             <Checkbox
