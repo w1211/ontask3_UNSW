@@ -264,7 +264,7 @@ class Email extends React.Component {
 
     form.getFieldDecorator("feedbackOptionKeys", {
       initialValue:
-        action.emailSettings.list_options.length > 0
+        _.get(action, "emailSettings.list_options", []).length > 0
           ? action.emailSettings.list_options.map(() => null)
           : [null]
     });
