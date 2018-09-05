@@ -14,6 +14,8 @@ import {
   Radio
 } from "antd";
 
+import { IconName } from "./IconName";
+
 import FormItemLayout from "../../shared/FormItemLayout";
 
 const FormItem = Form.Item;
@@ -251,6 +253,13 @@ class FormFieldModal extends React.Component {
                   </FormItem>
                 )}
 
+                <FormItem {...FormItemLayout} label="Use Icon">
+                  {getFieldDecorator("useIcon", {
+                    initialValue: field ? field.useIcon : false,
+                    valuePropName: "checked"
+                  })(<Checkbox />)}
+                </FormItem>
+
                 <FormItem {...FormItemLayout} label="Multi-select">
                   {getFieldDecorator("multiSelect", {
                     initialValue: field ? field.multiSelect : false,
@@ -275,14 +284,34 @@ class FormFieldModal extends React.Component {
 
                   {options.map((option, i) => (
                     <div key={i} className="option">
-                      <Input
-                        placeholder="Label"
-                        value={options[i].label}
-                        onChange={e => {
-                          options[i].label = e.target.value;
-                          this.setState({ options, error: null });
-                        }}
-                      />
+                      {getFieldValue("useIcon") ? (
+                        <Select
+                          showSearch
+                          showArrow={false}
+                          style={{ width: "111%" }}
+                          placeholder="Choose Icon"
+                          value={options[i].label}
+                          onChange={value => {
+                            options[i].label = value;
+                            this.setState({ options, error: null });
+                          }}
+                        >
+                          {IconName.map(icon => (
+                            <Option key={icon} value={icon}>
+                              {icon} <Icon type={icon} />
+                            </Option>
+                          ))}
+                        </Select>
+                      ) : (
+                        <Input
+                          placeholder="Label"
+                          value={options[i].label}
+                          onChange={e => {
+                            options[i].label = e.target.value;
+                            this.setState({ options, error: null });
+                          }}
+                        />
+                      )}
 
                       <Input
                         placeholder="Value"
