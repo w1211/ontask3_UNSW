@@ -47,6 +47,7 @@ class FormField(EmbeddedDocument):
     precision = IntField(null=True)
     interval = FloatField(null=True)
     numberDisplay = StringField(null=True)
+    useIcon = BooleanField(null=True)
 
 
 class WebForm(EmbeddedDocument):
