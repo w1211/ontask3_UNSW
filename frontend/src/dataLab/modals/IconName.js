@@ -66,8 +66,6 @@ export const IconName = [
   "user",
   "video-camera",
   "home",
-  "spin anticon-loading",
-  "loading-3-quarters",
   "cloud-upload-o",
   "cloud-download-o",
   "cloud-upload",
