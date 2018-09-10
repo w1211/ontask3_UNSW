@@ -253,14 +253,22 @@ class FormFieldModal extends React.Component {
                   </FormItem>
                 )}
 
-                <FormItem {...FormItemLayout} label="Use Icon">
+                <FormItem
+                  {...FormItemLayout}
+                  label="Use icons"
+                  style={{ marginBottom: 8 }}
+                >
                   {getFieldDecorator("useIcon", {
                     initialValue: field ? field.useIcon : false,
                     valuePropName: "checked"
                   })(<Checkbox />)}
                 </FormItem>
 
-                <FormItem {...FormItemLayout} label="Multi-select">
+                <FormItem
+                  {...FormItemLayout}
+                  label="Multi-select"
+                  style={{ marginBottom: 8 }}
+                >
                   {getFieldDecorator("multiSelect", {
                     initialValue: field ? field.multiSelect : false,
                     valuePropName: "checked"
@@ -288,7 +296,7 @@ class FormFieldModal extends React.Component {
                         <Select
                           showSearch
                           showArrow={false}
-                          style={{ width: "111%" }}
+                          style={{ width: "111%", overflow: "hidden" }}
                           placeholder="Choose Icon"
                           value={options[i].label}
                           onChange={value => {
@@ -298,7 +306,7 @@ class FormFieldModal extends React.Component {
                         >
                           {IconName.map(icon => (
                             <Option key={icon} value={icon}>
-                              {icon} <Icon type={icon} />
+                              <Icon type={icon} /> {icon}
                             </Option>
                           ))}
                         </Select>
