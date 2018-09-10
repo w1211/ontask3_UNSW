@@ -1,5 +1,13 @@
 import React from "react";
-import { Input, InputNumber, DatePicker, Checkbox, Select, Radio } from "antd";
+import {
+  Input,
+  InputNumber,
+  DatePicker,
+  Checkbox,
+  Select,
+  Radio,
+  Icon
+} from "antd";
 import moment from "moment";
 import { range } from "lodash";
 
@@ -48,7 +56,7 @@ class EditableField extends React.Component {
 
     if (!editMode)
       return originalValue instanceof Array
-        ? originalValue.join(', ')
+        ? originalValue.join(", ")
         : originalValue;
 
     if (field.textDisplay === "input") {
@@ -85,7 +93,9 @@ class EditableField extends React.Component {
             onBlur={this.handleSave}
           >
             {field.options.map(option => (
-              <Option key={option.value}>{option.label}</Option>
+              <Option key={option.value}>
+                {field.useIcon ? <Icon type={option.label} /> : option.label}
+              </Option>
             ))}
           </Select>
         );
@@ -96,7 +106,11 @@ class EditableField extends React.Component {
           return (
             <CheckboxGroup
               options={field.options.map(option => ({
-                label: option.label,
+                label: field.useIcon ? (
+                  <Icon type={option.label} />
+                ) : (
+                  option.label
+                ),
                 value: option.value
               }))}
               style={{
@@ -119,7 +133,7 @@ class EditableField extends React.Component {
             >
               {field.options.map(option => (
                 <Radio key={option.value} value={option.value}>
-                  {option.label}
+                  {field.useIcon ? <Icon type={option.label} /> : option.label}
                 </Radio>
               ))}
             </RadioGroup>
@@ -150,7 +164,9 @@ class EditableField extends React.Component {
           onChange={this.handleChange}
           onBlur={this.handleSave}
         >
-          {steps.map(step => <Option key={step}>{step}</Option>)}
+          {steps.map(step => (
+            <Option key={step}>{step}</Option>
+          ))}
         </Select>
       );
     } else {
@@ -211,7 +227,7 @@ class EditableField extends React.Component {
 
   render() {
     const { field, originalValue } = this.props;
-    
+
     if (!field) return originalValue;
 
     switch (field.type) {
