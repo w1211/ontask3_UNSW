@@ -238,7 +238,7 @@ class Model extends React.Component {
           hasDependency={this.hasDependency}
           closeFormFieldModal={() => this.closeModal("formField")}
         />
-
+          
         <Button
           size="large"
           type="primary"
