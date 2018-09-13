@@ -49,6 +49,27 @@
 .action .toolbar .attribute_select {
   width: 125px;
 }
+.imageUpload .button_style {
+  width: 200px;
+}
+.imageUpload .upload_style {
+  margin-bottom: 5px;
+  display: block;
+}
+.action_toolbar_popup .description {
+  width: 200px;
+}
+.ant-upload-list-item-name {
+  width: 180px !important;
+}
+.img-popover-confirm{
+  text-align: right;
+  margin-top: 5px;
+}
+.img-popover-confirm-ok {
+  margin-left: 5px;
+}
+
 .action_toolbar_popup {
   max-width: 200px;
 }

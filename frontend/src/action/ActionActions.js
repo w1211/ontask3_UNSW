@@ -597,3 +597,33 @@ export const updateEmailSettings = ({
   };
   requestWrapper(parameters);
 };
+
+
+export const uploadImage = ({
+  actionId,
+  file,
+  alt,
+  closePopover,
+  onError,
+  onSuccess
+}) => () => {
+  const data = new FormData();
+  data.append("file", file, file.name);
+  data.append("alt", alt);
+
+  const parameters = {
+    url: `/workflow/${actionId}/upload_image/`,
+    method: "POST",
+    errorFn: error => {
+      console.log(error);
+      onError();
+      closePopover();
+    },
+    successFn: action => {
+      onSuccess(action);
+      closePopover();
+    }
+  };
+
+  requestWrapper(parameters);
+};

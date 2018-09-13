@@ -12,7 +12,11 @@ import {
   Popover,
   Tooltip,
   Table,
-  Select
+  Select,
+  Upload,
+  Icon,
+  Checkbox,
+  message
 } from "antd";
 
 import sanitizeHtml from "sanitize-html";
@@ -63,24 +67,26 @@ const MARK_TAGS = {
 };
 
 const parseStyles = styles => {
-  return styles ? styles
-    .split(";")
-    .filter(style => style.split(":")[0] && style.split(":")[1])
-    .map(style => [
-      style
-        .split(":")[0]
-        .trim()
-        .replace(/-./g, c => c.substr(1).toUpperCase()),
-      style.split(":")[1].trim()
-    ])
-    .reduce(
-      (styleObj, style) => ({
-        ...styleObj,
-        [style[0]]: style[1]
-      }),
-      {}
-    ) : styles;
-  }
+  return styles
+    ? styles
+        .split(";")
+        .filter(style => style.split(":")[0] && style.split(":")[1])
+        .map(style => [
+          style
+            .split(":")[0]
+            .trim()
+            .replace(/-./g, c => c.substr(1).toUpperCase()),
+          style.split(":")[1].trim()
+        ])
+        .reduce(
+          (styleObj, style) => ({
+            ...styleObj,
+            [style[0]]: style[1]
+          }),
+          {}
+        )
+    : styles;
+};
 
 const rules = [
   {
@@ -310,7 +316,14 @@ class Compose extends React.Component {
       visible: { filter: false, conditionGroup: false },
       contentLoading: false,
       hyperlink: { label: null, url: null },
-      image: { src: null, alt: null }
+      image: {
+        src: null,
+        alt: null,
+        useUpload: false,
+        imgFile: [],
+        visibility: false,
+        loading: false
+      }
     };
   }
 
@@ -738,47 +751,163 @@ class Compose extends React.Component {
     const { image, value } = this.state;
     const change = value.change();
 
+    const { action } = this.props;
+
+    const closePopover = {
+      src: null,
+      alt: null,
+      imgFile: [],
+      loading: false
+    };
+
+    const uploadProps = {
+      className: "upload_style",
+      name: "file",
+      multiple: false,
+      action: "",
+      onRemove: () => {
+        this.setState({ image: { ...image, imgFile: [] } });
+        return { fileList: [] };
+      },
+      beforeUpload: file => {
+        const fileName = file.name.split(".");
+        const extension = fileName[fileName.length - 1];
+
+        if (["png", "jpg", "gif", "jpeg"].includes(extension)) {
+          this.setState({ image: { ...image, imgFile: [file] } });
+        } else {
+          this.setState({ image: { ...image, imgFile: [] } });
+          message.error("Please upload png, jpg, gif, jpeg file");
+        }
+        return false;
+      },
+      fileList: image.imgFile
+    };
+
     return (
-      <Popconfirm
-        icon={null}
-        title={
-          <div className="action_toolbar_popup">
-            <Input
-              placeholder="Image URL"
-              size="small"
-              onChange={e =>
+      <Popover
+        trigger="click"
+        content={
+          <div className="imageUpload">
+            <div className="action_toolbar_popup">
+              <Input
+                placeholder="Description/Alt tag"
+                size="small"
+                name="alt"
+                onChange={e => {
+                  this.setState({ image: { ...image, alt: e.target.value } });
+                }}
+                className="description"
+                value={image.alt}
+              />
+
+              {!image.useUpload && (
+                <Input
+                  name="src"
+                  placeholder="Image URL"
+                  size="small"
+                  onChange={e => {
+                    this.setState({ image: { ...image, src: e.target.value } });
+                  }}
+                  value={image.src}
+                />
+              )}
+            </div>
+
+            {image.useUpload && (
+              <Upload {...uploadProps}>
+                <Button size="small" className="button_style">
+                  <Icon type="upload" /> Click to Upload Image
+                </Button>
+              </Upload>
+            )}
+
+            <Checkbox
+              onChange={e => {
                 this.setState({
-                  image: { ...image, src: e.target.value }
-                })
-              }
-              value={image.src}
-            />
-            <Input
-              placeholder="Description/Alt tag"
-              size="small"
-              onChange={e =>
-                this.setState({
-                  image: { ...image, alt: e.target.value }
-                })
-              }
-              value={image.alt}
-            />
+                  image: { ...image, useUpload: e.target.checked }
+                });
+              }}
+              checked={image.useUpload}
+            >
+              URL / Upload
+            </Checkbox>
+
+            <div className="img-popover-confirm">
+              <Button
+                size="small"
+                onClick={() => {
+                  this.setState({
+                    image: { ...image, ...closePopover, visibility: false }
+                  });
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="small"
+                type="primary"
+                className="img-popover-confirm-ok"
+                loading={image.loading}
+                onClick={() => {
+                  const closePop = () => {
+                    this.setState({
+                      image: { ...image, ...closePopover, visibility: false }
+                    });
+                  };
+
+                  this.setState({ image: { ...image, loading: true } });
+                  if (!image.useUpload) {
+                    change.insertInline({
+                      type: "image",
+                      data: { src: image.src, alt: image.alt },
+                      isVoid: true
+                    });
+                    this.onChange(change);
+                    closePop();
+                    return;
+                  }
+
+                  if (image.imgFile.length === 0) {
+                    closePop();
+                    return;
+                  }
+
+                  this.boundActionCreators.uploadImage({
+                    actionId: action.id,
+                    file: image.imgFile[0],
+                    alt: image.alt,
+                    closePopover: closePop(),
+                    onError: () => {
+                      message.error("Image upload failed");
+                    },
+                    onSuccess: action => {
+                      change.insertInline({
+                        type: "image",
+                        data: { src: action.url, alt: image.alt },
+                        isVoid: true
+                      });
+                      this.onChange(change);
+                    }
+                  });
+                }}
+              >
+                Ok
+              </Button>
+            </div>
           </div>
         }
         onVisibleChange={visible => {
-          if (!visible) this.setState({ image: { src: null, alt: null } });
+          if (!visible)
+            this.setState({
+              image: { ...image, ...closePopover, visibility: visible }
+            });
+          else this.setState({ image: { ...image, visibility: visible } });
         }}
-        onConfirm={() => {
-          change.insertInline({
-            type: "image",
-            data: { src: image.src, alt: image.alt },
-            isVoid: true
-          });
-          this.onChange(change);
-        }}
+        visible={image.visibility}
       >
         <i className="material-icons">insert_photo</i>
-      </Popconfirm>
+      </Popover>
     );
   };
 
