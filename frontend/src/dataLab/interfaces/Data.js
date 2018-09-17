@@ -357,8 +357,6 @@ class Data extends React.Component {
     // for the first time
     const orderedColumns = this.initialiseColumns();
 
-    console.log(orderedColumns);
-
     return (
       <div>
         <div className="searcbar_pos">
