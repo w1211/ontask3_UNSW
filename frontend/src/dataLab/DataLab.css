@@ -358,13 +358,33 @@
 }
 
 
-
-
-
-
-
-
-
+/* DataLab details (column order) interface */
+.dataLab .details .from {
+  display: flex;
+  align-items: center;
+}
+.dataLab .details .from.computed {
+  font-style: italic; 
+}
+.dataLab .details .from i {
+  font-size: 125%;
+  margin-right: 5px;
+}
+.dataLab .details .datasourceIcon {
+  color: #BBDEFB;
+}
+.dataLab .details .formIcon {
+  color: #D1C4E9;
+}
+.dataLab .details .computedIcon {
+  color: #C8E6C9;
+}
+.dataLab .details  tr.drop-over-downward td {
+  border-bottom: 2px dashed #1890ff;
+}
+.dataLab .details  tr.drop-over-upward td {
+  border-top: 2px dashed #1890ff;
+}
 
 
 
@@ -406,27 +426,3 @@
   display: flex;
   align-items: center;
 }
-
-.dataLab .details .from {
-  display: flex;
-  align-items: center;
-}
-
-.dataLab .details .from i {
-  font-size: 125%;
-  margin-right: 5px;
-}
-.dataLab .details .datasourceIcon {
-  color: #BBDEFB;
-}
-.dataLab .details .formIcon {
-  color: #D1C4E9;
-}
-
-.dataLab .details  tr.drop-over-downward td {
-  border-bottom: 2px dashed #1890ff;
-}
-.dataLab .details  tr.drop-over-upward td {
-  border-top: 2px dashed #1890ff;
-}
-
