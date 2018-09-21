@@ -278,7 +278,23 @@ class Data extends React.Component {
       const label = field.name;
       const truncatedLabel = this.TruncatedLabel(label);
 
-      const title = <div className="column_header">{truncatedLabel}</div>;
+      const title = (
+        <div className="column_header">
+          <Dropdown
+            trigger={["click"]}
+            overlay={
+              <Menu onClick={e => this.handleHeaderClick(e, stepIndex, field)}>
+                <Menu.Item key="visualise">
+                  <Icon type="area-chart" style={{ marginRight: 5 }} />
+                  Visualise
+                </Menu.Item>
+              </Menu>
+            }
+          >
+            <a className="computed">{label}</a>
+          </Dropdown>
+        </div>
+      );
 
       columns.push({
         stepIndex,

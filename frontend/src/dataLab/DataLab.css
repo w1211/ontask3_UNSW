@@ -347,6 +347,9 @@
 .dataLab .data_manipulation .column_header .form {
   color: #9C27B0;
 }
+.dataLab .data_manipulation .column_header .computed {
+  color: #66BB6A;
+}
 .dataLab .data_manipulation .menu_icon {
   margin-right: 5px;
 }
