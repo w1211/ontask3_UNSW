@@ -111,7 +111,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
         # Check for any added fields and append to end of order list
         for (step_index, step) in enumerate(steps):
             for field in step[step["type"]]["fields"]:
-                if step["type"] == "form":
+                if step["type"] in ["form", "computed"]:
                     field = field["name"]
                 already_exists = next(
                     (
