@@ -3,6 +3,7 @@ import { bindActionCreators } from "redux";
 import { connect } from "react-redux";
 import { Table, Icon, Menu, Dropdown, Popover, Tooltip, Button } from "antd";
 import moment from "moment";
+import _ from "lodash";
 
 import * as DataLabActionCreators from "../DataLabActions";
 
@@ -170,8 +171,8 @@ class Data extends React.Component {
         dataIndex: label,
         key: label,
         sorter: (a, b) => {
-          a = label in a ? a[label] : "";
-          b = label in b ? b[label] : "";
+          a = label in a && a[label];
+          b = label in b && b[label];
           return a.localeCompare(b);
         },
         sortOrder: sort && sort.field === label && sort.order,
@@ -256,8 +257,10 @@ class Data extends React.Component {
         sorter: (a, b) => {
           a = label in a ? a[label] : "";
           b = label in b ? b[label] : "";
-          return a.localeCompare(b);
-        },
+          if (typeof a === "number" && typeof b === "number")
+            return a < b
+          return a.toString().localeCompare(b.toString());
+        }, 
         sortOrder: sort && sort.field === label && sort.order,
         render: (text, record) =>
           this.renderFormField(stepIndex, field, text, record[step.primary])
@@ -291,7 +294,7 @@ class Data extends React.Component {
               </Menu>
             }
           >
-            <a className="computed">{label}</a>
+            <a className="computed">{truncatedLabel}</a>
           </Dropdown>
         </div>
       );
@@ -305,7 +308,9 @@ class Data extends React.Component {
         sorter: (a, b) => {
           a = label in a ? a[label] : "";
           b = label in b ? b[label] : "";
-          return a.localeCompare(b);
+          if (typeof a === "number" && typeof b === "number")
+            return a < b
+          return a.toString().localeCompare(b.toString());
         },
         sortOrder: sort && sort.field === label && sort.order,
         render: text => text
