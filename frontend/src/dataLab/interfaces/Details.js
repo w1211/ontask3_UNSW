@@ -36,7 +36,8 @@ class Details extends React.Component {
         { title: 'Field', dataIndex: 'label', key: 'label' },
         { title: 'From', dataIndex: 'from', key: 'from', render: (text, record) => {
           if (record.module === 'datasource') return <div className="from"><Icon type="database" className="datasourceIcon"/>{record.from}</div>;
-          if (record.module === 'form') return <div className="from"><Icon type="form" className="formIcon"/>{record.from}</div>;;
+          if (record.module === 'form') return <div className="from"><Icon type="form" className="formIcon"/>{record.from}</div>;
+          if (record.module === 'computed') return <div className="from computed"><Icon type="calculator" className="computedIcon"/>Computed</div>;
         }},
         { title: 'Type', dataIndex: 'type', key: 'type', render: (text, record) => {
           if (record.module === 'datasource') return (
@@ -93,9 +94,9 @@ class Details extends React.Component {
             });
           });
 
-        } else if (step.type === 'form') {
+        } else if (["form", "computed"].includes(step.type)) {
           const module = step.type;
-          step = step.form;
+          step = step[module];
           
           step.fields.forEach((field, fieldIndex) => {
             const orderItem = getOrder(stepIndex, field.name);

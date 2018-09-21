@@ -78,10 +78,20 @@ class FormModule(EmbeddedDocument):
     data = ListField(DictField())
 
 
+class ComputedField(EmbeddedDocument):
+    name = StringField(required=True)
+    formula = DictField(required=True)
+
+
+class ComputedModule(EmbeddedDocument):
+    fields = EmbeddedDocumentListField(ComputedField)
+
+
 class Module(EmbeddedDocument):
     type = StringField(choices=("datasource", "computed", "form"), required=True)
     datasource = EmbeddedDocumentField(DatasourceModule)
     form = EmbeddedDocumentField(FormModule)
+    computed = EmbeddedDocumentField(ComputedModule)
 
 
 class Chart(EmbeddedDocument):
