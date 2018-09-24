@@ -276,10 +276,12 @@
 }
 
 /* Form field modal styles */
-.formField .field_label {
+.formField .field_label,
+.computed-field-modal .field_label {
   display: inline;
 }
-.formField .field_label i {
+.formField .field_label i,
+.computed-field-modal .field_label i {
   margin-left: 5px;
 }
 .formField .field {
@@ -291,6 +293,45 @@
 }
 .formField .option > *:not(:last-child) {
   margin-right: 5px;
+}
+/* Override the disabled select styles */
+.dataLab .form .fields .ant-select-selection__choice,
+.dataLab .computed .fields .ant-select-selection__choice { 
+  background-color: #fafafa;
+  color: rgba(0, 0, 0, 0.65);
+  cursor: pointer;
+}
+.dataLab .form .fields .ant-select-selection__choice:hover,
+.dataLab .computed .fields .ant-select-selection__choice:hover { 
+  border-color: #40a9ff;
+}
+.dataLab .form .fields > div,
+.dataLab .computed .fields > div {
+  background: white;
+  cursor: default;
+}
+
+/* Computed module styles */
+.dataLab .module .computed {
+  border-color: #C8E6C9;
+}
+.dataLab .module .computed .title .step_number {
+  background: #C8E6C9;
+}
+.dataLab .module .computed .title .title_icon {
+  color: #C8E6C9;
+}
+.dataLab .module .computed .added_fields {
+  font-size: 14px;
+  margin: 8px 0;
+}
+/* Remove the border radius from the tree-select, so that it fits nicely
+  inside the aggregate function creator */
+.computed-field-modal .tree-select > span {
+  border-radius: 0 2px 2px 0;
+}
+.computed-field-modal .toolbar {
+  margin-bottom: 10px;
 }
 
 /* Data component styles */
@@ -320,6 +361,9 @@
 .dataLab .data_manipulation .column_header .form {
   color: #9C27B0;
 }
+.dataLab .data_manipulation .column_header .computed {
+  color: #66BB6A;
+}
 .dataLab .data_manipulation .menu_icon {
   margin-right: 5px;
 }
@@ -331,24 +375,33 @@
 }
 
 
-
-.dataLab .form .fields > div {
-  background: white;
-  cursor: default;
+/* DataLab details (column order) interface */
+.dataLab .details .from {
+  display: flex;
+  align-items: center;
 }
-.dataLab .form .fields .ant-select-selection__choice { 
-  background-color: #fafafa;
-  color: rgba(0, 0, 0, 0.65);
-  cursor: pointer;
+.dataLab .details .from.computed {
+  font-style: italic; 
 }
-.dataLab .form .fields .ant-select-selection__choice:hover { 
-  border-color: #40a9ff;
+.dataLab .details .from i {
+  font-size: 125%;
+  margin-right: 5px;
 }
-
-
-
-
-
+.dataLab .details .datasourceIcon {
+  color: #BBDEFB;
+}
+.dataLab .details .formIcon {
+  color: #D1C4E9;
+}
+.dataLab .details .computedIcon {
+  color: #C8E6C9;
+}
+.dataLab .details  tr.drop-over-downward td {
+  border-bottom: 2px dashed #1890ff;
+}
+.dataLab .details  tr.drop-over-upward td {
+  border-top: 2px dashed #1890ff;
+}
 
 
 
@@ -390,27 +443,3 @@
   display: flex;
   align-items: center;
 }
-
-.dataLab .details .from {
-  display: flex;
-  align-items: center;
-}
-
-.dataLab .details .from i {
-  font-size: 125%;
-  margin-right: 5px;
-}
-.dataLab .details .datasourceIcon {
-  color: #BBDEFB;
-}
-.dataLab .details .formIcon {
-  color: #D1C4E9;
-}
-
-.dataLab .details  tr.drop-over-downward td {
-  border-bottom: 2px dashed #1890ff;
-}
-.dataLab .details  tr.drop-over-upward td {
-  border-top: 2px dashed #1890ff;
-}
-

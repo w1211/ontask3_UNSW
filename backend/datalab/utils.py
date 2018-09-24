@@ -1,10 +1,10 @@
 from collections import defaultdict
 from datetime import datetime
+import numexpr as ne
 
 from .models import Datalab
 from datasource.models import Datasource
 from audit.serializers import AuditSerializer
-
 
 def bind_column_types(steps):
     for step in steps:
@@ -25,7 +25,77 @@ def bind_column_types(steps):
     return steps
 
 
+
+def calculate_computed_field(formula, record, build_fields):
+    calculated_value = 0
+
+    populated_formula = []
+
+    def cast_float(value):
+        try:
+            return float(value)
+        except ValueError:
+            return 0
+
+    # Populate values on first pass-through
+    for node in formula["document"]["nodes"]:
+        if node["type"] == "open-bracket":
+            populated_formula.append("(")
+            
+        if node["type"] == "close-bracket":
+            populated_formula.append(")")
+
+        if node["type"] == "operator":
+            populated_formula.append(node["data"]["type"])
+
+        if node["type"] == "field":
+            field = node["data"]["name"]
+            value = cast_float(record[field])
+            populated_formula.append(value)
+
+        if node["type"] == "aggregation":
+            value = 0
+            
+            if node["data"]["type"] == "sum":
+                for column in node["data"]["columns"]:
+                    split_column = column.split("_")
+
+                    if len(split_column) == 1:
+                        step_index = int(split_column[0])
+                        for field in build_fields[step_index]:
+                            value += cast_float(record[field])
+
+                    elif len(split_column) == 2:
+                        step_index, field_index = [int(i) for i in split_column]
+                        field = build_fields[step_index][field_index]
+                        value += cast_float(record[field])
+ 
+            populated_formula.append(value)
+
+    populated_formula = "".join([str(x) for x in populated_formula])
+    result = 0
+
+    try:
+        result = ne.evaluate(populated_formula).item()
+    except ZeroDivisionError:
+        pass
+
+    return result
+
+
 def combine_data(steps):
+    # Identify the fields used in the build
+    # Consumed by the computed column calculation
+    build_fields = [[] for x in range(len(steps))]
+    for i, step in enumerate(steps):
+        if step["type"] == "datasource":
+            for field in step["datasource"]["fields"]:
+                build_fields[i].append(step["datasource"]["labels"][field])
+        if step["type"] in ["form", "computed"]:
+            step = step[step["type"]]
+            for field in step["fields"]:
+                build_fields[i].append(field["name"])
+
     # Initialize the dataset using the first module, which is always a datasource
     first_module = steps[0]["datasource"]
     datasource = Datasource.objects.get(id=first_module["id"])
@@ -123,6 +193,15 @@ def combine_data(steps):
                 if match_value in data_map:
                     for matched_record in data_map[match_value]:
                         matched_record.update(item)
+
+        if step["type"] == "computed":
+            module = step["computed"]
+
+            for item in data:
+                for field in module["fields"]:
+                    item[field["name"]] = calculate_computed_field(
+                        field["formula"], item, build_fields
+                    )
 
         # Create the data (list of dicts, with each dict representing a record) based on the updated data map
         if len(data_map):

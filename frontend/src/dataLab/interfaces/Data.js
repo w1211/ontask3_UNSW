@@ -80,6 +80,9 @@ class Data extends React.Component {
         columns.push(...this.DatasourceColumns(stepIndex));
 
       if (step.type === "form") columns.push(...this.FormColumns(stepIndex));
+
+      if (step.type === "computed")
+        columns.push(...this.ComputedColumns(stepIndex));
     });
 
     // Order the columns
@@ -199,8 +202,8 @@ class Data extends React.Component {
         dataIndex: label,
         key: label,
         sorter: (a, b) => {
-          a = label in a ? a[label] : "";
-          b = label in b ? b[label] : "";
+          a = label in a && a[label];
+          b = label in b && b[label];
           return a.localeCompare(b);
         },
         sortOrder: sort && sort.field === label && sort.order,
@@ -285,11 +288,63 @@ class Data extends React.Component {
         sorter: (a, b) => {
           a = label in a ? a[label] : "";
           b = label in b ? b[label] : "";
-          return a.localeCompare(b);
-        },
+          if (typeof a === "number" && typeof b === "number")
+            return a < b
+          return a.toString().localeCompare(b.toString());
+        }, 
         sortOrder: sort && sort.field === label && sort.order,
         render: (text, record) =>
           this.renderFormField(stepIndex, field, text, record[step.primary])
+      });
+    });
+
+    return columns;
+  };
+
+  ComputedColumns = stepIndex => {
+    const { build } = this.props;
+    const { sort } = this.state;
+
+    const step = build.steps[stepIndex]["computed"];
+    const columns = [];
+
+    step.fields.forEach(field => {
+      const label = field.name;
+      const truncatedLabel = this.TruncatedLabel(label);
+
+      const title = (
+        <div className="column_header">
+          <Dropdown
+            trigger={["click"]}
+            overlay={
+              <Menu onClick={e => this.handleHeaderClick(e, stepIndex, field)}>
+                <Menu.Item key="visualise">
+                  <Icon type="area-chart" style={{ marginRight: 5 }} />
+                  Visualise
+                </Menu.Item>
+              </Menu>
+            }
+          >
+            <a className="computed">{truncatedLabel}</a>
+          </Dropdown>
+        </div>
+      );
+
+      columns.push({
+        stepIndex,
+        field: label,
+        title,
+        dataIndex: label,
+        key: label,
+        sorter: (a, b) => {
+          a = label in a ? a[label] : "";
+          b = label in b ? b[label] : "";
+          if (typeof a === "number" && typeof b === "number")
+            return a < b
+          return a.toString().localeCompare(b.toString());
+        },
+        sortOrder: sort && sort.field === label && sort.order,
+        render: text => text
       });
     });
 

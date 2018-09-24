@@ -134,9 +134,6 @@ export const addModule = mod => (dispatch, getState) => {
   const { dataLab } = getState();
   let build = Object.assign({}, dataLab.build);
 
-  // TEMPORARY: only allow form or datasource modules to be added
-  if (!["datasource", "form"].includes(mod.type)) return;
-
   // Force the first module to be a datasource
   if (build.steps.length === 0 && mod.type !== "datasource") {
     message.error("The first module of a DataLab must be a datasource.");
@@ -278,6 +275,11 @@ const performLogic = (step, field, value) => {
       message.success("Form fields imported");
     }
   }
+
+  if (moduleType === "computed") {
+    if (field === "add") step.fields.push(value);
+    if (field === "delete") step.fields.splice(value, 1);
+  }
 };
 
 export const updateBuild = ({ stepIndex, field, value, isNotField }) => (
@@ -345,6 +347,13 @@ const isBuildValid = build => {
         }
       };
     }
+
+    if (step.type === "computed") {
+      const computed = step.computed;
+      build.errors.steps[stepIndex] = {
+        fields: !("fields" in computed && computed.fields.length > 0)
+      };
+    }
   });
 
   let didError = true && build.errors.name;
@@ -370,6 +379,7 @@ const cleanupBuild = build => {
   build.steps.forEach(step => {
     if (step.type === "datasource") {
       delete step.form;
+      delete step.computed;
 
       if (_.get(step, "datasource.discrepencies") === null) {
         delete step.datasource.discrepencies;
@@ -383,6 +393,7 @@ const cleanupBuild = build => {
 
     if (step.type === "form") {
       delete step.datasource;
+      delete step.computed;
 
       if (_.get(step, "form.activeFrom"))
         step.form.activeFrom = moment.utc(step.form.activeFrom);
@@ -394,6 +405,11 @@ const cleanupBuild = build => {
         _.get(step, "form.webForm.active") === false
       )
         delete step.form.webForm;
+    }
+
+    if (step.type === "computed") {
+      delete step.datasource;
+      delete step.form;
     }
   });
 };
@@ -700,11 +716,7 @@ export const updateWebForm = ({ payload, onFinish }) => dispatch => {
   requestWrapper(parameters);
 };
 
-
-export const changePinState = (dataLabId, payload) => (
-  dispatch,
-  getState
-) => {
+export const changePinState = (dataLabId, payload) => (dispatch, getState) => {
   const { dataLab } = getState();
   const datasources = dataLab.datasources;
 

@@ -225,3 +225,4 @@ REACT_APP_AWS_ID = 'YOUR_AWS_ACCESS_KEY_ID'
 |cryptography|[Apache/BSD](https://github.com/pyca/cryptography/blob/master/LICENSE)|
 |python-dateutil|[Apache](https://github.com/dateutil/dateutil/blob/master/LICENSE)|
 |xlrd|[License](https://github.com/python-excel/xlrd/blob/master/LICENSE)|
+|numexpr|[MIT](https://github.com/pydata/numexpr/blob/master/LICENSE.txt)|

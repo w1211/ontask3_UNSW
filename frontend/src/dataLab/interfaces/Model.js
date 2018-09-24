@@ -11,9 +11,11 @@ import Add from "../draggable/Add";
 
 import DatasourceModule from "../modules/Datasource";
 import FormModule from "../modules/Form";
+import ComputedModule from "../modules/Computed";
 
 import DiscrepenciesModal from "../modals/DiscrepenciesModal";
 import FormFieldModal from "../modals/FormFieldModal";
+import ComputedFieldModal from "../modals/ComputedFieldModal";
 
 const FormItem = Form.Item;
 
@@ -30,6 +32,7 @@ class Model extends React.Component {
     this.state = {
       loading: false,
       formField: { visible: false, stepIndex: null, field: null },
+      computedField: { visible: false, stepIndex: null, field: null },
       discrepencies: { visible: false }
     };
   }
@@ -70,7 +73,7 @@ class Model extends React.Component {
     // Identify the labels used in the build
     let labels = [];
     build.steps.forEach((step, stepIndex) => {
-      let stepLabels;
+      let stepLabels = [];
 
       if (step.type === "datasource")
         stepLabels = Object.values(step.datasource.labels).map(label => ({
@@ -168,11 +171,12 @@ class Model extends React.Component {
       usedDatasources,
       usedLabels,
       formField,
+      computedField,
       discrepencies
     } = this.state;
 
     if (!build || !datasources) return null;
-
+    
     return (
       <div className="model">
         <h2>Details</h2>
@@ -222,6 +226,17 @@ class Model extends React.Component {
                   }
                 />
               )}
+
+              {step.type === "computed" && (
+                <ComputedModule
+                  stepIndex={index}
+                  usedLabels={usedLabels}
+                  validate={this.validate}
+                  openComputedFieldModal={props =>
+                    this.openModal("computedField", props)
+                  }
+                />
+              )}
             </div>
           ))}
 
@@ -238,7 +253,12 @@ class Model extends React.Component {
           hasDependency={this.hasDependency}
           closeFormFieldModal={() => this.closeModal("formField")}
         />
-          
+
+        <ComputedFieldModal
+          {...computedField}
+          closeComputedFieldModal={() => this.closeModal("computedField")}
+        />
+
         <Button
           size="large"
           type="primary"
