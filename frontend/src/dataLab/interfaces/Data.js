@@ -43,17 +43,18 @@ class Data extends React.Component {
 
   initialiseData = () => {
     const { data, build } = this.props;
+    const { searchTerm } = this.state;
 
     if (!data || !build) return [];
 
-    const unVisibleField = build.order.reduce((result, current) => {
-      if (current.visible === false) result.push(current.field);
+    const visibleFields = build.order.reduce((result, item) => {
+      if (item.visible) result.push(item.field);
       return result;
     }, []);
 
-    const currentData = data.map(row => _.omit(row, unVisibleField));
+    const currentData = data.map(row => _.pick(row, visibleFields));
 
-    const term = this.state.searchTerm.trim().toLowerCase();
+    const term = searchTerm.trim().toLowerCase();
 
     const tableData =
       term === ""
@@ -64,8 +65,7 @@ class Data extends React.Component {
               .includes(term)
           );
 
-    // Add unique keys to each of the data records, to be consumed by the data table
-    return tableData.map((data, i) => ({ ...data, key: i }));
+    return tableData;
   };
 
   initialiseColumns = () => {
@@ -92,10 +92,8 @@ class Data extends React.Component {
           column.field === orderItem.field
       );
       if (column && orderItem.visible) {
-        if (!orderItem.pinned) 
-          unPinnedColumns.push(column);
-        if (orderItem.pinned)
-          pinnedColumns.push({ ...column, fixed: "left" });
+        if (!orderItem.pinned) unPinnedColumns.push(column);
+        if (orderItem.pinned) pinnedColumns.push({ ...column, fixed: "left" });
       }
     });
 
@@ -349,7 +347,7 @@ class Data extends React.Component {
     // changes to values in form columns can be reflected
     const tableData = this.initialiseData();
 
-    const tableDataAmout = tableData.length;
+    const tableDataAmount = tableData.length;
 
     // Columns are initialised on every render, so that changes to the sort
     // in local state can be reflected in the table columns. Otherwise the
@@ -358,11 +356,11 @@ class Data extends React.Component {
     const orderedColumns = this.initialiseColumns();
 
     return (
-      <div>
-        <div className="searcbar_pos">
-          <div className="filter_infomation">
-            {tableDataAmout} records selected out of {totalDataAmount}({" "}
-            {totalDataAmount - tableDataAmout} filtered out)
+      <div className="data">
+        <div className="filter">
+          <div>
+            {tableDataAmount} records selected out of {totalDataAmount} (
+            {totalDataAmount - tableDataAmount} filtered out)
           </div>
           <Search
             className="searchbar"
@@ -381,6 +379,7 @@ class Data extends React.Component {
           />
 
           <Table
+            rowKey={(record, index) => index}
             columns={orderedColumns}
             dataSource={orderedColumns.length > 0 ? tableData : []}
             scroll={{ x: (orderedColumns.length - 1) * 150 }}

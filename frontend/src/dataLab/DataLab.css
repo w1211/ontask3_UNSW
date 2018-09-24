@@ -294,19 +294,19 @@
 }
 
 /* Data component styles */
-.dataLab .searcbar_pos {
+.dataLab .data {
+  position: relative;
+}
+.dataLab .filter {
   display: flex;
-  justify-content: flex-end;
-  margin-top: -60px;
-  margin-bottom: 20px;
+  align-items: center;
+  position: absolute;
+  top: -60px;
+  right: 0;
 }
 .dataLab .searchbar {
   width: 200px;
-  margin-left: -200px;
-}
-.dataLab .filter_infomation {
-  margin: auto;
-  margin-bottom: 0px;
+  margin-left: 20px;
 }
 .dataLab .data_manipulation .saved {
   background: #E8F5E9;
