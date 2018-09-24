@@ -1,7 +1,16 @@
 import React from "react";
 import { bindActionCreators } from "redux";
 import { connect } from "react-redux";
-import { Table, Icon, Menu, Dropdown, Popover, Tooltip, Button } from "antd";
+import {
+  Table,
+  Icon,
+  Menu,
+  Dropdown,
+  Popover,
+  Tooltip,
+  Button,
+  Input
+} from "antd";
 import moment from "moment";
 import _ from "lodash";
 
@@ -10,6 +19,8 @@ import * as DataLabActionCreators from "../DataLabActions";
 import VisualisationModal from "../visualisation/VisualisationModal";
 
 import EditableField from "../data-manipulation/EditableField";
+
+const Search = Input.Search;
 
 class Data extends React.Component {
   constructor(props) {
@@ -25,17 +36,34 @@ class Data extends React.Component {
       sort: {},
       editable: {},
       edit: { field: null, primary: null },
-      saved: {}
+      saved: {},
+      searchTerm: ""
     };
   }
 
   initialiseData = () => {
-    const { data } = this.props;
+    const { data, build } = this.props;
+    const { searchTerm } = this.state;
 
-    if (!data) return [];
+    if (!data || !build) return [];
 
-    // Add unique keys to each of the data records, to be consumed by the data table
-    const tableData = data.map((data, i) => ({ ...data, key: i }));
+    const visibleFields = build.order.reduce((result, item) => {
+      if (item.visible) result.push(item.field);
+      return result;
+    }, []);
+
+    const currentData = data.map(row => _.pick(row, visibleFields));
+
+    const term = searchTerm.trim().toLowerCase();
+
+    const tableData =
+      term === ""
+        ? currentData
+        : currentData.filter(row =>
+            String(Object.values(row))
+              .toLowerCase()
+              .includes(term)
+          );
 
     return tableData;
   };
@@ -58,7 +86,8 @@ class Data extends React.Component {
     });
 
     // Order the columns
-    const orderedColumns = [];
+    const unPinnedColumns = [];
+    const pinnedColumns = [];
     build.order.forEach(orderItem => {
       const column = columns.find(
         column =>
@@ -66,10 +95,12 @@ class Data extends React.Component {
           column.field === orderItem.field
       );
       if (column && orderItem.visible) {
-        if (!orderItem.pinned) orderedColumns.push(column);
-        if (orderItem.pinned) orderedColumns.push({ ...column, fixed: "left" });
+        if (!orderItem.pinned) unPinnedColumns.push(column);
+        if (orderItem.pinned) pinnedColumns.push({ ...column, fixed: "left" });
       }
     });
+
+    const orderedColumns = pinnedColumns.concat(unPinnedColumns);
 
     // Identify the first non-primary field
     const firstNonPrimaryField = orderedColumns.find(column => {
@@ -362,11 +393,16 @@ class Data extends React.Component {
   };
 
   render() {
-    const { visualisation, edit, saved } = this.state;
+    const { visualisation, edit, saved, searchTerm } = this.state;
+    const { data } = this.props;
+
+    const totalDataAmount = data ? data.length : 0;
 
     // Similarly, the table data is initialised on every render, so that
     // changes to values in form columns can be reflected
     const tableData = this.initialiseData();
+
+    const tableDataAmount = tableData.length;
 
     // Columns are initialised on every render, so that changes to the sort
     // in local state can be reflected in the table columns. Otherwise the
@@ -375,27 +411,45 @@ class Data extends React.Component {
     const orderedColumns = this.initialiseColumns();
 
     return (
-      <div className="data_manipulation">
-        <VisualisationModal
-          {...visualisation}
-          closeModal={() =>
-            this.setState({ visualisation: { visible: false } })
-          }
-        />
+      <div className="data">
+        <div className="filter">
+          <div>
+            {tableDataAmount} records selected out of {totalDataAmount} (
+            {totalDataAmount - tableDataAmount} filtered out)
+          </div>
+          <Search
+            className="searchbar"
+            size="large"
+            placeholder="Search..."
+            value={searchTerm}
+            onChange={e => this.setState({ searchTerm: e.target.value })}
+          />
+        </div>
+        <div className="data_manipulation">
+          <VisualisationModal
+            {...visualisation}
+            closeModal={() =>
+              this.setState({ visualisation: { visible: false } })
+            }
+          />
 
-        <Table
-          columns={orderedColumns}
-          dataSource={orderedColumns.length > 0 ? tableData : []}
-          scroll={{ x: (orderedColumns.length - 1) * 175 }}
-          onChange={this.handleChange}
-          pagination={{
-            showSizeChanger: true,
-            pageSizeOptions: ["10", "25", "50", "100"]
-          }}
-          rowClassName={record =>
-            edit.primary in record && saved[record[edit.primary]] ? "saved" : ""
-          }
-        />
+          <Table
+            rowKey={(record, index) => index}
+            columns={orderedColumns}
+            dataSource={orderedColumns.length > 0 ? tableData : []}
+            scroll={{ x: (orderedColumns.length - 1) * 150 }}
+            onChange={this.handleChange}
+            pagination={{
+              showSizeChanger: true,
+              pageSizeOptions: ["10", "25", "50", "100"]
+            }}
+            rowClassName={record =>
+              edit.primary in record && saved[record[edit.primary]]
+                ? "saved"
+                : ""
+            }
+          />
+        </div>
       </div>
     );
   }

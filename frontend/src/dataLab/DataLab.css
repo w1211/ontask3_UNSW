@@ -335,6 +335,20 @@
 }
 
 /* Data component styles */
+.dataLab .data {
+  position: relative;
+}
+.dataLab .filter {
+  display: flex;
+  align-items: center;
+  position: absolute;
+  top: -60px;
+  right: 0;
+}
+.dataLab .searchbar {
+  width: 200px;
+  margin-left: 20px;
+}
 .dataLab .data_manipulation .saved {
   background: #E8F5E9;
 }
