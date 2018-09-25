@@ -35,52 +35,74 @@ def calculate_computed_field(formula, record, build_fields):
         try:
             return float(value)
         except ValueError:
-            return 0
+            return None
+
+    def iterate_aggregation(columns, is_numerical=True):
+        values = []
+
+        for column in columns:
+            split_column = column.split("_")
+
+            if len(split_column) == 1:
+                step_index = int(split_column[0])
+                for field in build_fields[step_index]:
+                    value = cast_float(record[field]) if is_numerical else record[field]
+                    if value is not None:
+                        values.append(value)
+
+            elif len(split_column) == 2:
+                step_index, field_index = [int(i) for i in split_column]
+                field = build_fields[step_index][field_index]
+                value = cast_float(record[field]) if is_numerical else record[field]
+                if value is not None:
+                    values.append(value)
+
+        return values
 
     # Populate values on first pass-through
     for node in formula["document"]["nodes"]:
-        if node["type"] == "open-bracket":
+        node_type = node["type"]
+
+        if node_type == "open-bracket":
             populated_formula.append("(")
             
-        if node["type"] == "close-bracket":
+        if node_type == "close-bracket":
             populated_formula.append(")")
 
-        if node["type"] == "operator":
+        if node_type == "operator":
             populated_formula.append(node["data"]["type"])
 
-        if node["type"] == "field":
+        if node_type == "field":
             field = node["data"]["name"]
-            value = cast_float(record[field])
-            populated_formula.append(value)
+            populated_formula.append(record[field])
 
-        if node["type"] == "aggregation":
-            value = 0
+        if node_type == "aggregation":
+            aggregation_type = node["data"]["type"]
+            columns = node["data"]["columns"]
+            aggregation_value = 0
             
-            if node["data"]["type"] == "sum":
-                for column in node["data"]["columns"]:
-                    split_column = column.split("_")
-
-                    if len(split_column) == 1:
-                        step_index = int(split_column[0])
-                        for field in build_fields[step_index]:
-                            value += cast_float(record[field])
-
-                    elif len(split_column) == 2:
-                        step_index, field_index = [int(i) for i in split_column]
-                        field = build_fields[step_index][field_index]
-                        value += cast_float(record[field])
+            if aggregation_type == "sum":
+                aggregation_value = sum(iterate_aggregation(columns))
  
-            populated_formula.append(value)
+            if aggregation_type == "average":
+                values = iterate_aggregation(columns)
+                aggregation_value = sum(values)/len(values) if len(values) else 0
+
+            if aggregation_type == "last":
+                values = iterate_aggregation(columns, is_numerical=False)
+                aggregation_value = values[-1] if len(values) else None
+
+            if aggregation_type == "concat":
+                aggregation_value = iterate_aggregation(columns, is_numerical=False)
+
+            populated_formula.append(aggregation_value)
 
     populated_formula = "".join([str(x) for x in populated_formula])
-    result = 0
 
     try:
-        result = ne.evaluate(populated_formula).item()
-    except ZeroDivisionError:
-        pass
-
-    return result
+        return ne.evaluate(populated_formula).item()
+    except (ZeroDivisionError, AttributeError, TypeError):
+        return populated_formula
 
 
 def combine_data(steps):

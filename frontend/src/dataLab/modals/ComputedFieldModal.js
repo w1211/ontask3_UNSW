@@ -415,6 +415,9 @@ class ComputedFieldModal extends React.Component {
     const menu = (
       <Menu onClick={handleMenuClick}>
         <Menu.Item key="sum">Sum</Menu.Item>
+        <Menu.Item key="average">Average</Menu.Item>
+        <Menu.Item key="concat">Concat</Menu.Item>
+        <Menu.Item key="last">Last</Menu.Item>
       </Menu>
     );
 
@@ -609,7 +612,8 @@ class ComputedFieldModal extends React.Component {
             minHeight: 60,
             display: "flex",
             flexWrap: "wrap",
-            alignItems: "center"
+            alignItems: "center",
+            whiteSpace: "normal"
           }}
         />
 
