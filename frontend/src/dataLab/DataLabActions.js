@@ -83,7 +83,8 @@ const storeDataLab = dataLab => {
       name: dataLab.name,
       steps: dataLab.steps ? dataLab.steps : [],
       order: dataLab.order ? dataLab.order : [],
-      errors: { steps: [] }
+      errors: { steps: [] },
+      includeTrackingFeedback: dataLab.includeTrackingFeedback
     },
     data: dataLab.data ? dataLab.data : [],
     datasources: dataLab.datasources
@@ -140,19 +141,23 @@ export const addModule = mod => (dispatch, getState) => {
     return;
   }
 
-  // Initialize an object that represents this type of module
-  const newModule = { type: mod.type, [mod.type]: { fields: [] } };
+  if (mod.type === "tracking_feedback") {
+    build.includeTrackingFeedback = true;
+  } else {
+    // Initialize an object that represents this type of module
+    const newModule = { type: mod.type, [mod.type]: { fields: [] } };
 
-  // If the module is a datasource, add a label and type map
-  if (mod.type === "datasource") {
-    newModule.datasource.labels = {};
-    newModule.datasource.types = {};
+    // If the module is a datasource, add a label and type map
+    if (mod.type === "datasource") {
+      newModule.datasource.labels = {};
+      newModule.datasource.types = {};
+    }
+
+    build.steps.push(newModule);
+
+    // Initialize an object that will store errors for this module
+    build.errors.steps.push({});
   }
-
-  build.steps.push(newModule);
-
-  // Initialize an object that will store errors for this module
-  build.errors.steps.push({});
 
   dispatch({
     type: UPDATE_BUILD,
@@ -160,15 +165,19 @@ export const addModule = mod => (dispatch, getState) => {
   });
 };
 
-export const deleteModule = () => (dispatch, getState) => {
+export const deleteModule = (isFeedbackTracking) => (dispatch, getState) => {
   const { dataLab } = getState();
   let build = Object.assign({}, dataLab.build);
 
-  // Delete the last module (only the righter-most module can be deleted)
-  build.steps = build.steps.slice(0, -1);
+  if (isFeedbackTracking) {
+    build.includeTrackingFeedback = false;
+  } else {
+    // Delete the last module (only the righter-most module can be deleted)
+    build.steps = build.steps.slice(0, -1);
 
-  // Remove the last module's errors
-  build.errors.steps = build.errors.steps.slice(0, -1);
+    // Remove the last module's errors
+    build.errors.steps = build.errors.steps.slice(0, -1);
+  }
 
   dispatch({
     type: UPDATE_BUILD,

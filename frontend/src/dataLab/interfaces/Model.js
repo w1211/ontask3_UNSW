@@ -12,6 +12,7 @@ import Add from "../draggable/Add";
 import DatasourceModule from "../modules/Datasource";
 import FormModule from "../modules/Form";
 import ComputedModule from "../modules/Computed";
+import TrackingFeedbackModule from "../modules/TrackingFeedback";
 
 import DiscrepenciesModal from "../modals/DiscrepenciesModal";
 import FormFieldModal from "../modals/FormFieldModal";
@@ -241,6 +242,12 @@ class Model extends React.Component {
             </div>
           ))}
 
+          {build.includeTrackingFeedback && (
+            <div className="module">
+              <TrackingFeedbackModule />
+            </div>
+          )}
+
           <Add />
         </div>
 
@@ -275,6 +282,13 @@ class Model extends React.Component {
             <Module type="datasource" icon="database" label="Datasource" />
             <Module type="form" icon="form" label="Form" />
             <Module type="computed" icon="calculator" label="Computed Fields" />
+            {!build.includeTrackingFeedback && (
+              <Module
+                type="tracking_feedback"
+                icon="eye"
+                label="Tracking & Feedback"
+              />
+            )}
           </div>
         </div>
       </div>

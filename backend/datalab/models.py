@@ -118,3 +118,4 @@ class Datalab(Document):
     data = ListField(DictField())
     order = EmbeddedDocumentListField(Column)
     charts = EmbeddedDocumentListField(Chart)
+    includeTrackingFeedback = BooleanField(default=False)
