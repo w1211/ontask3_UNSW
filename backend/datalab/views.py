@@ -261,11 +261,11 @@ class DatalabViewSet(viewsets.ModelViewSet):
 
         serializer = DatalabSerializer(instance=datalab)
 
-        datasources = Datasource.objects(container=datalab.container.id).only(
-            "id", "name", "fields"
-        )
-
+        datasources = Datasource.objects(container=datalab.container.id)
         serializer.instance.datasources = datasources
+
+        actions = Workflow.objects(datalab=datalab.id)
+        serializer.instance.actions = actions
 
         return JsonResponse({"dataLab": serializer.data})
 
