@@ -81,11 +81,12 @@ class Model extends React.Component {
           label: label
         }));
 
-      if (step.type === "form")
-        stepLabels = step.form.fields.map(field => ({
+      if (["form", "computed"].includes(step.type)) {
+        stepLabels = step[step.type].fields.map(field => ({
           stepIndex,
           label: field.name
         }));
+      }
 
       labels = [...labels, ...stepLabels];
     });
