@@ -117,6 +117,7 @@ class Data extends React.Component {
       };
 
       orderedColumns.unshift({
+        className: "column",
         title: "Action",
         fixed: "left",
         dataIndex: 0,
@@ -197,6 +198,7 @@ class Data extends React.Component {
       );
 
       columns.push({
+        className: "column",
         stepIndex,
         field,
         dataIndex: label,
@@ -280,6 +282,7 @@ class Data extends React.Component {
       );
 
       columns.push({
+        className: "column",
         stepIndex,
         field: label,
         title,
@@ -331,6 +334,7 @@ class Data extends React.Component {
       );
 
       columns.push({
+        className: "column",
         stepIndex,
         field: label,
         title,
@@ -437,7 +441,7 @@ class Data extends React.Component {
             rowKey={(record, index) => index}
             columns={orderedColumns}
             dataSource={orderedColumns.length > 0 ? tableData : []}
-            scroll={{ x: (orderedColumns.length - 1) * 150 }}
+            scroll={{ x: (orderedColumns.length - 1) * 175 }}
             onChange={this.handleChange}
             pagination={{
               showSizeChanger: true,
