@@ -300,6 +300,9 @@
   display: flex;
   margin-bottom: 5px;
 }
+.formField .option > input {
+  width: 43%
+}
 .formField .option > *:not(:last-child) {
   margin-right: 5px;
 }
