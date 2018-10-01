@@ -254,21 +254,6 @@ class DatalabViewSet(viewsets.ModelViewSet):
         audit.is_valid()
         audit.save()
 
-    @detail_route(methods=["get"])
-    def retrieve_datalab(self, request, id=None):
-        datalab = self.get_object()
-        self.check_object_permissions(self.request, datalab)
-
-        serializer = DatalabSerializer(instance=datalab)
-
-        datasources = Datasource.objects(container=datalab.container.id)
-        serializer.instance.datasources = datasources
-
-        actions = Workflow.objects(datalab=datalab.id)
-        serializer.instance.actions = actions
-
-        return JsonResponse({"dataLab": serializer.data})
-
     @list_route(methods=["post"])
     def check_discrepencies(self, request):
         partial_build = self.request.data["partialBuild"]

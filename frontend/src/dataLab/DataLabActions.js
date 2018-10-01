@@ -95,16 +95,15 @@ export const fetchDataLab = dataLabId => dispatch => {
   dispatch({ type: START_FETCHING });
 
   const parameters = {
-    url: `/datalab/${dataLabId}/retrieve_datalab/`,
+    url: `/datalab/${dataLabId}/`,
     method: "GET",
     errorFn: error => {
       dispatch({ type: FINISH_FETCHING });
       console.log(error);
     },
     successFn: response => {
-      const { dataLab } = response;
       dispatch({ type: FINISH_FETCHING });
-      dispatch(storeDataLab(dataLab));
+      dispatch(storeDataLab(response));
     }
   };
 
