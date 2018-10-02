@@ -5,6 +5,8 @@ import numexpr as ne
 from .models import Datalab
 from datasource.models import Datasource
 from audit.serializers import AuditSerializer
+from workflow.models import Workflow
+
 
 def bind_column_types(steps):
     for step in steps:
@@ -25,8 +27,7 @@ def bind_column_types(steps):
     return steps
 
 
-
-def calculate_computed_field(formula, record, build_fields):
+def calculate_computed_field(formula, record, build_fields, tracking_feedback_data):
     calculated_value = 0
 
     populated_formula = []
@@ -37,25 +38,61 @@ def calculate_computed_field(formula, record, build_fields):
         except ValueError:
             return None
 
+    def tracking_feedback_value(action_id, job_id, data_type, record):
+        email_field = tracking_feedback_data[action_id]["email_field"]
+        data = tracking_feedback_data[action_id]["jobs"][job_id][data_type]
+        return data[record[email_field]] if record[email_field] in data else 0
+
     def iterate_aggregation(columns, is_numerical=True):
         values = []
 
         for column in columns:
             split_column = column.split("_")
 
-            if len(split_column) == 1:
-                step_index = int(split_column[0])
-                for field in build_fields[step_index]:
+            if split_column[0] in ["tracking", "feedback"]:
+                data_type = split_column[0]
+
+                if len(split_column) == 1:
+                    for action in tracking_feedback_data:
+                        for email_job in tracking_feedback_data[action]["jobs"]:
+                            values.append(
+                                tracking_feedback_value(
+                                    action, email_job, data_type, record
+                                )
+                            )
+
+                if len(split_column) == 2:
+                    action_id = split_column[1]
+                    for email_job in tracking_feedback_data[action_id]["jobs"]:
+                        values.append(
+                            tracking_feedback_value(
+                                action_id, email_job, data_type, record
+                            )
+                        )
+
+                if len(split_column) == 3:
+                    action_id = split_column[1]
+                    job_id = split_column[2]
+                    values.append(
+                        tracking_feedback_value(action_id, job_id, data_type, record)
+                    )
+
+            else:
+                if len(split_column) == 1:
+                    step_index = int(split_column[0])
+                    for field in build_fields[step_index]:
+                        value = (
+                            cast_float(record[field]) if is_numerical else record[field]
+                        )
+                        if value is not None:
+                            values.append(value)
+
+                elif len(split_column) == 2:
+                    step_index, field_index = [int(i) for i in split_column]
+                    field = build_fields[step_index][field_index]
                     value = cast_float(record[field]) if is_numerical else record[field]
                     if value is not None:
                         values.append(value)
-
-            elif len(split_column) == 2:
-                step_index, field_index = [int(i) for i in split_column]
-                field = build_fields[step_index][field_index]
-                value = cast_float(record[field]) if is_numerical else record[field]
-                if value is not None:
-                    values.append(value)
 
         return values
 
@@ -65,7 +102,7 @@ def calculate_computed_field(formula, record, build_fields):
 
         if node_type == "open-bracket":
             populated_formula.append("(")
-            
+
         if node_type == "close-bracket":
             populated_formula.append(")")
 
@@ -80,13 +117,13 @@ def calculate_computed_field(formula, record, build_fields):
             aggregation_type = node["data"]["type"]
             columns = node["data"]["columns"]
             aggregation_value = 0
-            
+
             if aggregation_type == "sum":
                 aggregation_value = sum(iterate_aggregation(columns))
- 
+
             if aggregation_type == "average":
                 values = iterate_aggregation(columns)
-                aggregation_value = sum(values)/len(values) if len(values) else 0
+                aggregation_value = sum(values) / len(values) if len(values) else 0
 
             if aggregation_type == "last":
                 values = iterate_aggregation(columns, is_numerical=False)
@@ -105,7 +142,7 @@ def calculate_computed_field(formula, record, build_fields):
         return populated_formula
 
 
-def combine_data(steps):
+def combine_data(steps, datalab_id):
     # Identify the fields used in the build
     # Consumed by the computed column calculation
     build_fields = [[] for x in range(len(steps))]
@@ -117,6 +154,30 @@ def combine_data(steps):
             step = step[step["type"]]
             for field in step["fields"]:
                 build_fields[i].append(field["name"])
+
+    # Gather all tracking and feedback data for associated actions
+    # Consumed by the computed column
+    tracking_feedback_data = {}
+    if datalab_id:
+        actions = Workflow.objects(datalab=datalab_id)
+        for action in actions:
+            action_id = str(action.id)
+            if not "emailSettings" in action or not len(action["emailJobs"]):
+                continue
+
+            tracking_feedback_data[action_id] = {
+                "email_field": action["emailSettings"]["field"],
+                "jobs": {},
+            }
+            for email_job in action["emailJobs"]:
+                job_id = str(email_job.job_id)
+
+                tracking_feedback_data[action_id]["jobs"][job_id] = {
+                    "tracking": {
+                        email["recipient"]: email["track_count"]
+                        for email in email_job["emails"]
+                    }
+                }
 
     # Initialize the dataset using the first module, which is always a datasource
     first_module = steps[0]["datasource"]
@@ -222,7 +283,7 @@ def combine_data(steps):
             for item in data:
                 for field in module["fields"]:
                     item[field["name"]] = calculate_computed_field(
-                        field["formula"], item, build_fields
+                        field["formula"], item, build_fields, tracking_feedback_data
                     )
 
         # Create the data (list of dicts, with each dict representing a record) based on the updated data map

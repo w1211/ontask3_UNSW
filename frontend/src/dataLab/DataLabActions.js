@@ -86,7 +86,8 @@ const storeDataLab = dataLab => {
       errors: { steps: [] }
     },
     data: dataLab.data ? dataLab.data : [],
-    datasources: dataLab.datasources
+    datasources: dataLab.datasources,
+    actions: dataLab.actions
   };
 };
 
@@ -139,19 +140,19 @@ export const addModule = mod => (dispatch, getState) => {
     return;
   }
 
-    // Initialize an object that represents this type of module
-    const newModule = { type: mod.type, [mod.type]: { fields: [] } };
+  // Initialize an object that represents this type of module
+  const newModule = { type: mod.type, [mod.type]: { fields: [] } };
 
-    // If the module is a datasource, add a label and type map
-    if (mod.type === "datasource") {
-      newModule.datasource.labels = {};
-      newModule.datasource.types = {};
-    }
+  // If the module is a datasource, add a label and type map
+  if (mod.type === "datasource") {
+    newModule.datasource.labels = {};
+    newModule.datasource.types = {};
+  }
 
-    build.steps.push(newModule);
+  build.steps.push(newModule);
 
-    // Initialize an object that will store errors for this module
-    build.errors.steps.push({});
+  // Initialize an object that will store errors for this module
+  build.errors.steps.push({});
 
   dispatch({
     type: UPDATE_BUILD,

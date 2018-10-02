@@ -10,7 +10,8 @@ import {
   Tooltip,
   Alert,
   Form,
-  Input
+  Input,
+  Popover
 } from "antd";
 import { Editor } from "slate-react";
 import { Value } from "slate";
@@ -54,7 +55,7 @@ class ComputedFieldModal extends React.Component {
   }
 
   generateTreeData = () => {
-    const { datasources, build, stepIndex } = this.props;
+    const { datasources, build, stepIndex, actions } = this.props;
 
     const treeData = [];
 
@@ -98,7 +99,58 @@ class ComputedFieldModal extends React.Component {
       }
     });
 
+    let tracking = [];
+    actions.forEach(action => {
+      if (action.emailJobs.length > 0) {
+        tracking.push({
+          title: (
+            <span>
+              <Icon type="thunderbolt" style={{ marginRight: 5 }} />
+              {action.name}
+            </span>
+          ),
+          value: `tracking_${action.id}`,
+          children: action.emailJobs.map(emailJob => {
+            const initiatedAt = new Date(emailJob.initiated_at)
+            .toISOString()
+            .substring(0, 10);
+
+            return {
+              title: this.TruncatedLabel(
+                `${initiatedAt} - ${emailJob.subject}`
+              ),
+              value: `tracking_${action.id}_${emailJob.job_id}`
+            };
+          })
+        });
+      }
+    });
+    
+    if (tracking.length > 0)
+      treeData.push({
+        title: (
+          <span style={{ color: "#FF7043" }}>
+            <Icon type="eye" style={{ marginRight: 5 }} />
+            Tracking
+          </span>
+        ),
+        value: "tracking",
+        children: tracking
+      });
+
     return treeData;
+  };
+
+  TruncatedLabel = label => {
+    return label.length > 25 ? (
+      <Popover
+        mouseLeaveDelay={0}
+        overlayStyle={{ maxWidth: 250 }}
+        content={label}
+      >{`${label.slice(0, 25)}...`}</Popover>
+    ) : (
+      label
+    );
   };
 
   componentDidUpdate(prevProps) {
@@ -241,7 +293,8 @@ class ComputedFieldModal extends React.Component {
                 showCheckedStrategy={TreeSelect.SHOW_PARENT}
                 searchPlaceholder={"Click to add columns"}
                 style={{ minWidth: 175 }}
-                dropdownStyle={{ maxHeight: 250 }}
+                dropdownStyle={{ maxHeight: 250, zIndex: 1030 }}
+                dropdownMatchSelectWidth={false}
                 className="tree-select"
                 value={columns}
                 onChange={columns => {
@@ -626,9 +679,9 @@ class ComputedFieldModal extends React.Component {
 }
 
 const mapStateToProps = state => {
-  const { datasources, build } = state.dataLab;
+  const { datasources, build, actions } = state.dataLab;
 
-  return { datasources, build };
+  return { datasources, build, actions };
 };
 
 export default _.flow(

@@ -83,7 +83,8 @@ class DatalabViewSet(viewsets.ModelViewSet):
 
         steps = self.request.data["steps"]
         steps = bind_column_types(steps)
-        data = combine_data(steps)
+
+        data = combine_data(steps, datalab.id)
 
         order = [
             {
