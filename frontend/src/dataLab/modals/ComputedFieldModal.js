@@ -469,7 +469,7 @@ class ComputedFieldModal extends React.Component {
       <Menu onClick={handleMenuClick}>
         <Menu.Item key="sum">Sum</Menu.Item>
         <Menu.Item key="average">Average</Menu.Item>
-        <Menu.Item key="concat">Concat</Menu.Item>
+        <Menu.Item key="list">List</Menu.Item>
         <Menu.Item key="last">Last</Menu.Item>
       </Menu>
     );

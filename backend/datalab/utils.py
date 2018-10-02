@@ -129,7 +129,7 @@ def calculate_computed_field(formula, record, build_fields, tracking_feedback_da
                 values = iterate_aggregation(columns, is_numerical=False)
                 aggregation_value = values[-1] if len(values) else None
 
-            if aggregation_type == "concat":
+            if aggregation_type == "list":
                 aggregation_value = iterate_aggregation(columns, is_numerical=False)
 
             populated_formula.append(aggregation_value)
