@@ -30,12 +30,7 @@ const initialValue = Value.fromJSON({
         type: "paragraph",
         nodes: [
           {
-            object: "text",
-            leaves: [
-              {
-                text: ""
-              }
-            ]
+            object: "text"
           }
         ]
       }
@@ -112,8 +107,8 @@ class ComputedFieldModal extends React.Component {
           value: `tracking_${action.id}`,
           children: action.emailJobs.map(emailJob => {
             const initiatedAt = new Date(emailJob.initiated_at)
-            .toISOString()
-            .substring(0, 10);
+              .toISOString()
+              .substring(0, 10);
 
             return {
               title: this.TruncatedLabel(
@@ -125,7 +120,7 @@ class ComputedFieldModal extends React.Component {
         });
       }
     });
-    
+
     if (tracking.length > 0)
       treeData.push({
         title: (
@@ -258,7 +253,15 @@ class ComputedFieldModal extends React.Component {
     switch (node.type) {
       case "paragraph":
         return (
-          <p {...attributes} style={{ display: "inline" }}>
+          <p
+            {...attributes}
+            style={{
+              display: "inline-flex",
+              margin: 0,
+              height: 0,
+              alignItems: "center"
+            }}
+          >
             {children}
           </p>
         );
