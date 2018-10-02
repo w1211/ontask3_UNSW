@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "@antv/data-set": "^0.8.9",
-    "antd": "^3.6.5",
+    "antd": "^3.9.3",
     "bizcharts": "^3.1.10",
     "is-hotkey": "^0.1.2",
     "lodash": "^4.17.10",
