@@ -362,7 +362,7 @@ class ComputedFieldModal extends React.Component {
               display: "inline-block",
               fontSize: "200%",
               marginRight: 5,
-              lineHeight: "unset"
+              marginTop: -5
             }}
           >
             (
@@ -376,7 +376,7 @@ class ComputedFieldModal extends React.Component {
               display: "inline-block",
               fontSize: "200%",
               marginRight: 5,
-              lineHeight: "unset"
+              marginTop: -5
             }}
           >
             )
