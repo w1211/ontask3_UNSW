@@ -139,6 +139,7 @@
 .dataLab .module .title {
   display: flex;
   align-items: center;
+  width: 100%;
 }
 .dataLab .module .title .title_icon {
   font-size: 150%;
