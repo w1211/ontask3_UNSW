@@ -142,7 +142,7 @@ def calculate_computed_field(formula, record, build_fields, tracking_feedback_da
         return populated_formula
 
 
-def combine_data(steps, datalab_id):
+def combine_data(steps, datalab_id=None):
     # Identify the fields used in the build
     # Consumed by the computed column calculation
     build_fields = [[] for x in range(len(steps))]
