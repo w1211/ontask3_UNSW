@@ -83,8 +83,7 @@ const storeDataLab = dataLab => {
       name: dataLab.name,
       steps: dataLab.steps ? dataLab.steps : [],
       order: dataLab.order ? dataLab.order : [],
-      errors: { steps: [] },
-      includeTrackingFeedback: dataLab.includeTrackingFeedback
+      errors: { steps: [] }
     },
     data: dataLab.data ? dataLab.data : [],
     datasources: dataLab.datasources
@@ -140,9 +139,6 @@ export const addModule = mod => (dispatch, getState) => {
     return;
   }
 
-  if (mod.type === "tracking_feedback") {
-    build.includeTrackingFeedback = true;
-  } else {
     // Initialize an object that represents this type of module
     const newModule = { type: mod.type, [mod.type]: { fields: [] } };
 
@@ -156,7 +152,6 @@ export const addModule = mod => (dispatch, getState) => {
 
     // Initialize an object that will store errors for this module
     build.errors.steps.push({});
-  }
 
   dispatch({
     type: UPDATE_BUILD,

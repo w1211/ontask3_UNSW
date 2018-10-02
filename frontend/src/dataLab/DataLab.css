@@ -346,17 +346,6 @@
   margin-bottom: 10px;
 }
 
-/* Feedback & tracking module styles */
-.dataLab .module .feedback_tracking {
-  border-color: #FFCCBC;
-}
-.dataLab .module .feedback_tracking .title .step_number {
-  background: #FFCCBC;
-}
-.dataLab .module .feedback_tracking .title .title_icon {
-  color: #FFCCBC;
-}
-
 /* Data component styles */
 .dataLab .data {
   position: relative;

@@ -109,7 +109,6 @@ class Chart(EmbeddedDocument):
     selections = ListField(StringField())
     filterCols = ListField(StringField())
 
-
 class Datalab(Document):
     # Cascade delete if container is deleted
     container = ReferenceField(Container, required=True, reverse_delete_rule=2)
@@ -118,4 +117,3 @@ class Datalab(Document):
     data = ListField(DictField())
     order = EmbeddedDocumentListField(Column)
     charts = EmbeddedDocumentListField(Chart)
-    includeTrackingFeedback = BooleanField(default=False)
