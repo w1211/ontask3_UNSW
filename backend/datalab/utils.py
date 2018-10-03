@@ -24,6 +24,18 @@ def bind_column_types(steps):
                         datasource = Datasource.objects.get(id=datasource_id)
                     types[field] = datasource["types"][field]
 
+        elif step["type"] == "computed":
+            step = step["computed"]
+            for field in step["fields"]:
+                if "type" not in field or field["type"] is None:
+                    field_type = "number"
+                    for node in field["formula"]["document"]["nodes"]:
+                        if node["type"] == "aggregation":
+                            aggregation_type = node["data"]["type"]
+                            if aggregation_type in ["list", "concat", "last"]:
+                                field_type = "text"
+                    field["type"] = field_type                
+
     return steps
 
 
@@ -36,7 +48,7 @@ def calculate_computed_field(formula, record, build_fields, tracking_feedback_da
         try:
             return float(value)
         except ValueError:
-            return None
+            return 0
 
     def tracking_feedback_value(action_id, job_id, data_type, record):
         email_field = tracking_feedback_data[action_id]["email_field"]
@@ -81,18 +93,16 @@ def calculate_computed_field(formula, record, build_fields, tracking_feedback_da
                 if len(split_column) == 1:
                     step_index = int(split_column[0])
                     for field in build_fields[step_index]:
-                        value = (
+                        values.append(
                             cast_float(record[field]) if is_numerical else record[field]
                         )
-                        if value is not None:
-                            values.append(value)
 
                 elif len(split_column) == 2:
                     step_index, field_index = [int(i) for i in split_column]
                     field = build_fields[step_index][field_index]
-                    value = cast_float(record[field]) if is_numerical else record[field]
-                    if value is not None:
-                        values.append(value)
+                    values.append(
+                        cast_float(record[field]) if is_numerical else record[field]
+                    )
 
         return values
 
@@ -131,11 +141,13 @@ def calculate_computed_field(formula, record, build_fields, tracking_feedback_da
 
             if aggregation_type == "list":
                 aggregation_value = iterate_aggregation(columns, is_numerical=False)
+                return "".join([str(x) for x in aggregation_value])
 
             if aggregation_type == "concat":
                 delimiter = node["data"]["delimiter"]
                 aggregation_value = iterate_aggregation(columns, is_numerical=False)
                 aggregation_value = delimiter.join(aggregation_value)
+                return "".join([str(x) for x in aggregation_value])
 
             populated_formula.append(aggregation_value)
 
@@ -144,7 +156,7 @@ def calculate_computed_field(formula, record, build_fields, tracking_feedback_da
     try:
         return ne.evaluate(populated_formula).item()
     except (ZeroDivisionError, AttributeError, TypeError, KeyError, SyntaxError):
-        return populated_formula
+        return None
 
 
 def combine_data(steps, datalab_id=None):

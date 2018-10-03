@@ -91,7 +91,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 "stepIndex": item["stepIndex"],
                 "field": item["field"],
                 "visible": item["visible"],
-                "pinned": item["pinned"]
+                "pinned": item["pinned"],
             }
             for item in datalab.order
         ]
@@ -316,7 +316,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 "stepIndex": item["stepIndex"],
                 "field": item["field"],
                 "visible": item["visible"],
-                "pinned": item["pinned"]
+                "pinned": item["pinned"],
             }
             for item in datalab.order
         ]
@@ -363,7 +363,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 "stepIndex": item["stepIndex"],
                 "field": item["field"],
                 "visible": item["visible"],
-                "pinned": item["pinned"]
+                "pinned": item["pinned"],
             }
             for item in datalab.order
         ]
@@ -406,7 +406,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 "stepIndex": item["stepIndex"],
                 "field": item["field"],
                 "visible": item["visible"],
-                "pinned": item["pinned"]
+                "pinned": item["pinned"],
             }
             for item in datalab.order
         ]
@@ -442,10 +442,26 @@ class DatalabViewSet(viewsets.ModelViewSet):
         self.check_object_permissions(self.request, datalab)
 
         step_index = request.data["stepIndex"]
-        field = request.data["field"]
+        field_name = request.data["field"]
         field_type = request.data["type"]
 
-        datalab.steps[step_index].datasource.types[field] = field_type
+        module_type = datalab.steps[step_index].type
+
+        if module_type == "datasource":
+            datalab.steps[step_index].datasource.types[field_name] = field_type
+
+        elif module_type == "computed":
+            field = next(
+                (
+                    field
+                    for field in datalab.steps[step_index].computed.fields
+                    if field.name == field_name
+                ),
+                None,
+            )
+            if field:
+                field.type = field_type
+
         datalab.save()
 
         serializer = DatalabSerializer(instance=datalab)

@@ -80,6 +80,7 @@ class FormModule(EmbeddedDocument):
 
 class ComputedField(EmbeddedDocument):
     name = StringField(required=True)
+    type = StringField(null=True)
     formula = DictField(required=True)
 
 
