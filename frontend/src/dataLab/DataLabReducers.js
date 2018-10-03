@@ -29,7 +29,8 @@ function dataLab(state = {}, action) {
         selectedId: action.selectedId,
         build: action.build,
         data: action.data,
-        datasources: action.datasources
+        datasources: action.datasources,
+        actions: action.actions
       });
 
       case OPEN_VISUALISATION_MODAL:

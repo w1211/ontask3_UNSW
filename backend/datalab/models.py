@@ -80,6 +80,7 @@ class FormModule(EmbeddedDocument):
 
 class ComputedField(EmbeddedDocument):
     name = StringField(required=True)
+    type = StringField(null=True)
     formula = DictField(required=True)
 
 
@@ -108,7 +109,6 @@ class Chart(EmbeddedDocument):
     percentageAxis = BooleanField(null=True)
     selections = ListField(StringField())
     filterCols = ListField(StringField())
-
 
 class Datalab(Document):
     # Cascade delete if container is deleted

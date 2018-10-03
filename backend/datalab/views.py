@@ -83,14 +83,15 @@ class DatalabViewSet(viewsets.ModelViewSet):
 
         steps = self.request.data["steps"]
         steps = bind_column_types(steps)
-        data = combine_data(steps)
+
+        data = combine_data(steps, datalab.id)
 
         order = [
             {
                 "stepIndex": item["stepIndex"],
                 "field": item["field"],
                 "visible": item["visible"],
-                "pinned": item["pinned"]
+                "pinned": item["pinned"],
             }
             for item in datalab.order
         ]
@@ -254,21 +255,6 @@ class DatalabViewSet(viewsets.ModelViewSet):
         audit.is_valid()
         audit.save()
 
-    @detail_route(methods=["get"])
-    def retrieve_datalab(self, request, id=None):
-        datalab = self.get_object()
-        self.check_object_permissions(self.request, datalab)
-
-        serializer = DatalabSerializer(instance=datalab)
-
-        datasources = Datasource.objects(container=datalab.container.id).only(
-            "id", "name", "fields"
-        )
-
-        serializer.instance.datasources = datasources
-
-        return JsonResponse({"dataLab": serializer.data})
-
     @list_route(methods=["post"])
     def check_discrepencies(self, request):
         partial_build = self.request.data["partialBuild"]
@@ -330,7 +316,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 "stepIndex": item["stepIndex"],
                 "field": item["field"],
                 "visible": item["visible"],
-                "pinned": item["pinned"]
+                "pinned": item["pinned"],
             }
             for item in datalab.order
         ]
@@ -377,7 +363,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 "stepIndex": item["stepIndex"],
                 "field": item["field"],
                 "visible": item["visible"],
-                "pinned": item["pinned"]
+                "pinned": item["pinned"],
             }
             for item in datalab.order
         ]
@@ -420,7 +406,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 "stepIndex": item["stepIndex"],
                 "field": item["field"],
                 "visible": item["visible"],
-                "pinned": item["pinned"]
+                "pinned": item["pinned"],
             }
             for item in datalab.order
         ]
@@ -456,10 +442,26 @@ class DatalabViewSet(viewsets.ModelViewSet):
         self.check_object_permissions(self.request, datalab)
 
         step_index = request.data["stepIndex"]
-        field = request.data["field"]
+        field_name = request.data["field"]
         field_type = request.data["type"]
 
-        datalab.steps[step_index].datasource.types[field] = field_type
+        module_type = datalab.steps[step_index].type
+
+        if module_type == "datasource":
+            datalab.steps[step_index].datasource.types[field_name] = field_type
+
+        elif module_type == "computed":
+            field = next(
+                (
+                    field
+                    for field in datalab.steps[step_index].computed.fields
+                    if field.name == field_name
+                ),
+                None,
+            )
+            if field:
+                field.type = field_type
+
         datalab.save()
 
         serializer = DatalabSerializer(instance=datalab)

@@ -1,13 +1,65 @@
-from rest_framework_mongoengine import serializers
+from rest_framework import serializers
+from rest_framework_mongoengine.serializers import (
+    DocumentSerializer,
+    EmbeddedDocumentSerializer,
+)
 
 from .models import Datalab
-from datasource.serializers import DatasourceSerializer
+from datasource.models import Datasource
+from workflow.models import Workflow, EmailJob, Email
 
 
-class DatalabSerializer(serializers.DocumentSerializer):
-    datasources = DatasourceSerializer(
-        many=True, allow_null=True, read_only=True)
+class EmailSerializer(EmbeddedDocumentSerializer):
+    class Meta:
+        model = Email
+        exclude = ["content"]
+
+
+class EmailJobSerializer(EmbeddedDocumentSerializer):
+    emails = EmailSerializer(many=True, allow_null=True, read_only=True)
+
+    class Meta:
+        model = EmailJob
+        fields = "__all__"
+
+
+class ActionSerializer(DocumentSerializer):
+    emailJobs = EmailJobSerializer(many=True, allow_null=True, read_only=True)
+    emailField = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Workflow
+        fields = ["id", "name", "emailJobs", "emailField"]
+
+    def get_emailField(self, action):
+        if "emailSettings" in action:
+            return action.emailSettings.field
+
+        return None
+
+
+class DatasourceSerializer(DocumentSerializer):
+    class Meta:
+        model = Datasource
+        fields = ["id", "name", "fields"]
+
+
+class DatalabSerializer(DocumentSerializer):
+    datasources = serializers.SerializerMethodField()
+    actions = serializers.SerializerMethodField()
+
+    def get_datasources(self, datalab):
+        datasources = Datasource.objects(container=datalab["container"].id)
+        datasources = [
+            DatasourceSerializer(instance=datasource).data for datasource in datasources
+        ]
+        return datasources
+
+    def get_actions(self, datalab):
+        actions = Workflow.objects(datalab=datalab.id)
+        actions = [ActionSerializer(instance=action).data for action in actions]
+        return actions
 
     class Meta:
         model = Datalab
-        fields = '__all__'
+        fields = "__all__"

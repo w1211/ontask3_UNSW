@@ -42,7 +42,7 @@
 }
 .dataLab .module_toolbox .wrapper {
   background: #fafafa;
-  padding: 20px;
+  padding: 15px;
   border: 1px solid #d9d9d9;
   border-radius: 5px;
   display: flex;
@@ -53,8 +53,8 @@
 }
 .dataLab .module_toolbox .wrapper > div {
   cursor: pointer;
-  width: 100px;
-  min-height: 100px;
+  width: 90px;
+  min-height: 90px;
 }
 .dataLab .module_toolbox .wrapper > div.dragging {
   cursor: move;
@@ -68,7 +68,7 @@
   flex-direction: column;
   flex-wrap: wrap;
   border-radius: 4px;
-  padding: 15px;
+  padding: 5px;
   box-sizing: border-box;
   align-items: center;
   justify-content: center;
@@ -76,11 +76,12 @@
 }
 .dataLab .module_toolbox .module i, 
 .dataLab .add_module i {
-  font-size: 32px;
+  font-size: 24px;
 }
 .dataLab .module_toolbox .module span, 
 .dataLab .add_module span {
-  margin-top: 10px;
+  margin-top: 5px;
+  font-size: 12px;
 }
 .dataLab .add_module {
   background-color: #fafafa;
@@ -111,6 +112,14 @@
 .dataLab .module_toolbox .computed i {
   color: #C8E6C9;
 }
+.dataLab .module_toolbox .tracking_feedback, 
+.dataLab .add_module.tracking_feedback {
+  background-color: rgba(251, 233, 231, 0.20);
+  border: 1px solid #FFCCBC;
+}
+.dataLab .module_toolbox .tracking_feedback i {
+  color: #FFCCBC;
+}
 .dataLab .dragging {
   opacity: 0.35;
   border-style: dashed;
@@ -130,6 +139,7 @@
 .dataLab .module .title {
   display: flex;
   align-items: center;
+  width: 100%;
 }
 .dataLab .module .title .title_icon {
   font-size: 150%;
@@ -291,6 +301,9 @@
   display: flex;
   margin-bottom: 5px;
 }
+.formField .option > input {
+  width: 43%
+}
 .formField .option > *:not(:last-child) {
   margin-right: 5px;
 }
@@ -330,6 +343,9 @@
 .computed-field-modal .tree-select > span {
   border-radius: 0 2px 2px 0;
 }
+.computed-field-modal .delimiter > div {
+  border-radius: 2px;
+}
 .computed-field-modal .toolbar {
   margin-bottom: 10px;
 }
@@ -352,8 +368,17 @@
 .dataLab .data_manipulation .saved {
   background: #E8F5E9;
 }
-.dataLab .data_manipulation .column_header {
+/* Fix visual bug in Firefox where column sorter appears below header text */
+.dataLab .data_manipulation .column > span {
   display: inline-flex;
+  align-items: center;
+}
+.dataLab .data_manipulation .column .ant-table-column-sorter {
+  margin-top: 4px;
+}
+/* ---- */
+.dataLab .data_manipulation .column_header {
+  display: inline;
 }
 .dataLab .data_manipulation .column_header .datasource {
   color: #2196F3;

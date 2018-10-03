@@ -86,7 +86,8 @@ const storeDataLab = dataLab => {
       errors: { steps: [] }
     },
     data: dataLab.data ? dataLab.data : [],
-    datasources: dataLab.datasources
+    datasources: dataLab.datasources,
+    actions: dataLab.actions
   };
 };
 
@@ -94,16 +95,15 @@ export const fetchDataLab = dataLabId => dispatch => {
   dispatch({ type: START_FETCHING });
 
   const parameters = {
-    url: `/datalab/${dataLabId}/retrieve_datalab/`,
+    url: `/datalab/${dataLabId}/`,
     method: "GET",
     errorFn: error => {
       dispatch({ type: FINISH_FETCHING });
       console.log(error);
     },
     successFn: response => {
-      const { dataLab } = response;
       dispatch({ type: FINISH_FETCHING });
-      dispatch(storeDataLab(dataLab));
+      dispatch(storeDataLab(response));
     }
   };
 
@@ -160,15 +160,19 @@ export const addModule = mod => (dispatch, getState) => {
   });
 };
 
-export const deleteModule = () => (dispatch, getState) => {
+export const deleteModule = (isFeedbackTracking) => (dispatch, getState) => {
   const { dataLab } = getState();
   let build = Object.assign({}, dataLab.build);
 
-  // Delete the last module (only the righter-most module can be deleted)
-  build.steps = build.steps.slice(0, -1);
+  if (isFeedbackTracking) {
+    build.includeTrackingFeedback = false;
+  } else {
+    // Delete the last module (only the righter-most module can be deleted)
+    build.steps = build.steps.slice(0, -1);
 
-  // Remove the last module's errors
-  build.errors.steps = build.errors.steps.slice(0, -1);
+    // Remove the last module's errors
+    build.errors.steps = build.errors.steps.slice(0, -1);
+  }
 
   dispatch({
     type: UPDATE_BUILD,

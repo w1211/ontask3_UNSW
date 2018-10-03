@@ -10,7 +10,9 @@ import {
   Tooltip,
   Alert,
   Form,
-  Input
+  Input,
+  Popover,
+  Select
 } from "antd";
 import { Editor } from "slate-react";
 import { Value } from "slate";
@@ -20,6 +22,7 @@ import FormItemLayout from "../../shared/FormItemLayout";
 
 const FormItem = Form.Item;
 const confirm = Modal.confirm;
+const Option = Select.Option;
 
 const initialValue = Value.fromJSON({
   document: {
@@ -29,12 +32,7 @@ const initialValue = Value.fromJSON({
         type: "paragraph",
         nodes: [
           {
-            object: "text",
-            leaves: [
-              {
-                text: ""
-              }
-            ]
+            object: "text"
           }
         ]
       }
@@ -54,7 +52,7 @@ class ComputedFieldModal extends React.Component {
   }
 
   generateTreeData = () => {
-    const { datasources, build, stepIndex } = this.props;
+    const { datasources, build, stepIndex, actions } = this.props;
 
     const treeData = [];
 
@@ -98,7 +96,58 @@ class ComputedFieldModal extends React.Component {
       }
     });
 
+    let tracking = [];
+    actions.forEach(action => {
+      if (action.emailJobs.length > 0) {
+        tracking.push({
+          title: (
+            <span>
+              <Icon type="thunderbolt" style={{ marginRight: 5 }} />
+              {action.name}
+            </span>
+          ),
+          value: `tracking_${action.id}`,
+          children: action.emailJobs.map(emailJob => {
+            const initiatedAt = new Date(emailJob.initiated_at)
+              .toISOString()
+              .substring(0, 10);
+
+            return {
+              title: this.TruncatedLabel(
+                `${initiatedAt} - ${emailJob.subject}`
+              ),
+              value: `tracking_${action.id}_${emailJob.job_id}`
+            };
+          })
+        });
+      }
+    });
+
+    if (tracking.length > 0)
+      treeData.push({
+        title: (
+          <span style={{ color: "#FF7043" }}>
+            <Icon type="eye" style={{ marginRight: 5 }} />
+            Tracking
+          </span>
+        ),
+        value: "tracking",
+        children: tracking
+      });
+
     return treeData;
+  };
+
+  TruncatedLabel = label => {
+    return label.length > 25 ? (
+      <Popover
+        mouseLeaveDelay={0}
+        overlayStyle={{ maxWidth: 250 }}
+        content={label}
+      >{`${label.slice(0, 25)}...`}</Popover>
+    ) : (
+      label
+    );
   };
 
   componentDidUpdate(prevProps) {
@@ -206,50 +255,93 @@ class ComputedFieldModal extends React.Component {
     switch (node.type) {
       case "paragraph":
         return (
-          <p {...attributes} style={{ display: "inline" }}>
+          <p
+            {...attributes}
+            style={{
+              display: "inline-flex",
+              margin: 0,
+              height: 0,
+              alignItems: "center"
+            }}
+          >
             {children}
           </p>
         );
       case "aggregation": {
         const type = node.data.get("type");
         const columns = node.data.get("columns");
+        const delimiter = node.data.get("delimiter");
+
         return (
-          <div
-            {...attributes}
-            style={{
-              border: "1px solid #757575",
-              borderRadius: 3,
-              display: "inline-flex",
-              alignItems: "center",
-              background: "#FAFAFA",
-              margin: "2px 5px 2px 0"
-            }}
-          >
+          <div>
             <div
+              {...attributes}
               style={{
-                padding: "0 5px",
-                cursor: "default"
+                border: "1px solid #757575",
+                borderRadius: 3,
+                display: "inline-flex",
+                alignItems: "center",
+                background: "#FAFAFA",
+                margin: "2px 5px 2px 0"
               }}
             >
-              {type}:
-            </div>
-            <div>
-              {children}
-              <TreeSelect
-                treeData={treeData}
-                treeCheckable={true}
-                showCheckedStrategy={TreeSelect.SHOW_PARENT}
-                searchPlaceholder={"Click to add columns"}
-                style={{ minWidth: 175 }}
-                dropdownStyle={{ maxHeight: 250 }}
-                className="tree-select"
-                value={columns}
-                onChange={columns => {
-                  change.setNodeByKey(node.key, { data: { type, columns } });
-                  this.onChange(change);
+              <div
+                style={{
+                  padding: "0 5px",
+                  cursor: "default"
                 }}
-              />
+              >
+                {type}:
+              </div>
+              <div>
+                {children}
+                <TreeSelect
+                  treeData={treeData}
+                  treeCheckable={true}
+                  showCheckedStrategy={TreeSelect.SHOW_PARENT}
+                  searchPlaceholder={"Click to add columns"}
+                  style={{ minWidth: 175 }}
+                  dropdownStyle={{ maxHeight: 250, zIndex: 1030 }}
+                  dropdownMatchSelectWidth={false}
+                  className="tree-select"
+                  value={columns}
+                  onChange={columns => {
+                    change.setNodeByKey(node.key, {
+                      data: { type, columns, delimiter }
+                    });
+                    this.onChange(change);
+                  }}
+                />
+              </div>
             </div>
+            {type === "concat" && (
+              <div style={{ display: "inline" }}>
+                <span style={{ marginRight: 5 }}>using</span>
+                <Select
+                  placeholder="Delimiter"
+                  className="delimiter"
+                  style={{
+                    width: 100,
+                    marginRight: 5,
+                    border: "1px solid #757575",
+                    borderRadius: 3
+                  }}
+                  value={delimiter === undefined ? "," : delimiter}
+                  onChange={delimiter => {
+                    change.setNodeByKey(node.key, {
+                      data: { type, columns, delimiter }
+                    });
+                    this.onChange(change);
+                  }}
+                >
+                  <Option value="">None</Option>
+                  <Option value=" ">Space</Option>
+                  <Option value=",">Comma</Option>
+                  <Option value="|">Bar</Option>
+                </Select>
+                as a delimiter
+              </div>
+            )}
           </div>
         );
       }
@@ -306,7 +398,7 @@ class ComputedFieldModal extends React.Component {
               display: "inline-block",
               fontSize: "200%",
               marginRight: 5,
-              lineHeight: "unset"
+              marginTop: -5
             }}
           >
             (
@@ -320,7 +412,7 @@ class ComputedFieldModal extends React.Component {
               display: "inline-block",
               fontSize: "200%",
               marginRight: 5,
-              lineHeight: "unset"
+              marginTop: -5
             }}
           >
             )
@@ -412,9 +504,19 @@ class ComputedFieldModal extends React.Component {
       this.onChange(change);
     };
 
+    const numberOfBlocks = value.toJSON().document.nodes.length;
+
     const menu = (
       <Menu onClick={handleMenuClick}>
         <Menu.Item key="sum">Sum</Menu.Item>
+        <Menu.Item key="average">Average</Menu.Item>
+        <Menu.Item key="list" disabled={numberOfBlocks > 1}>
+          List
+        </Menu.Item>
+        <Menu.Item key="concat" disabled={numberOfBlocks > 1}>
+          Concat
+        </Menu.Item>
+        <Menu.Item key="last">Last</Menu.Item>
       </Menu>
     );
 
@@ -450,15 +552,19 @@ class ComputedFieldModal extends React.Component {
     const menu = (
       <Menu onClick={handleMenuClick}>
         {treeData &&
-          treeData.map((step, i) => (
-            <Menu.SubMenu
-              key={i}
-              title={step.title}
-              children={step.children.map((field, j) => (
-                <Menu.Item key={field.title}>{field.title}</Menu.Item>
-              ))}
-            />
-          ))}
+          treeData.map((step, i) => {
+            if (step.value === "tracking") return null;
+            
+            return (
+              <Menu.SubMenu
+                key={i}
+                title={step.title}
+                children={step.children.map((field, j) => (
+                  <Menu.Item key={field.title}>{field.title}</Menu.Item>
+                ))}
+              />
+            );
+          })}
       </Menu>
     );
 
@@ -500,14 +606,16 @@ class ComputedFieldModal extends React.Component {
       </Menu>
     );
 
-    const lastBlock = value.endBlock.type;
+    const lastBlock = value.endBlock;
 
     return (
       <Dropdown
         overlay={menu}
         trigger={["click"]}
         disabled={
-          !["aggregation", "field", "close-bracket"].includes(lastBlock)
+          !["aggregation", "field", "close-bracket"].includes(lastBlock.type) ||
+          (lastBlock.type === "aggregation" &&
+            ["concat", "list"].includes(lastBlock.data.get("type")))
         }
       >
         <Button>
@@ -609,7 +717,8 @@ class ComputedFieldModal extends React.Component {
             minHeight: 60,
             display: "flex",
             flexWrap: "wrap",
-            alignItems: "center"
+            alignItems: "center",
+            whiteSpace: "normal"
           }}
         />
 
@@ -622,9 +731,9 @@ class ComputedFieldModal extends React.Component {
 }
 
 const mapStateToProps = state => {
-  const { datasources, build } = state.dataLab;
+  const { datasources, build, actions } = state.dataLab;
 
-  return { datasources, build };
+  return { datasources, build, actions };
 };
 
 export default _.flow(
