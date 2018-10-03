@@ -11,7 +11,8 @@ import {
   Alert,
   Form,
   Input,
-  Popover
+  Popover,
+  Select
 } from "antd";
 import { Editor } from "slate-react";
 import { Value } from "slate";
@@ -21,6 +22,7 @@ import FormItemLayout from "../../shared/FormItemLayout";
 
 const FormItem = Form.Item;
 const confirm = Modal.confirm;
+const Option = Select.Option;
 
 const initialValue = Value.fromJSON({
   document: {
@@ -268,6 +270,8 @@ class ComputedFieldModal extends React.Component {
       case "aggregation": {
         const type = node.data.get("type");
         const columns = node.data.get("columns");
+        const delimiter = node.data.get("delimiter");
+
         return (
           <div
             {...attributes}
@@ -298,13 +302,34 @@ class ComputedFieldModal extends React.Component {
                 style={{ minWidth: 175 }}
                 dropdownStyle={{ maxHeight: 250, zIndex: 1030 }}
                 dropdownMatchSelectWidth={false}
-                className="tree-select"
+                className={`tree-select ${type === "concat" && "is-concat"}`}
                 value={columns}
                 onChange={columns => {
-                  change.setNodeByKey(node.key, { data: { type, columns } });
+                  change.setNodeByKey(node.key, {
+                    data: { type, columns, delimiter }
+                  });
                   this.onChange(change);
                 }}
               />
+              {type === "concat" && (
+                <Select
+                  placeholder="Delimiter"
+                  className="delimiter"
+                  style={{ width: 100 }}
+                  value={delimiter}
+                  onChange={delimiter => {
+                    change.setNodeByKey(node.key, {
+                      data: { type, columns, delimiter }
+                    });
+                    this.onChange(change);
+                  }}
+                >
+                  <Option value="">None</Option>
+                  <Option value=" ">Space</Option>
+                  <Option value=",">Comma</Option>
+                  <Option value="|">Bar</Option>
+                </Select>
+              )}
             </div>
           </div>
         );
@@ -473,6 +498,7 @@ class ComputedFieldModal extends React.Component {
         <Menu.Item key="sum">Sum</Menu.Item>
         <Menu.Item key="average">Average</Menu.Item>
         <Menu.Item key="list">List</Menu.Item>
+        <Menu.Item key="concat">Concat</Menu.Item>
         <Menu.Item key="last">Last</Menu.Item>
       </Menu>
     );

@@ -132,13 +132,18 @@ def calculate_computed_field(formula, record, build_fields, tracking_feedback_da
             if aggregation_type == "list":
                 aggregation_value = iterate_aggregation(columns, is_numerical=False)
 
+            if aggregation_type == "concat":
+                delimiter = node["data"]["delimiter"]
+                aggregation_value = iterate_aggregation(columns, is_numerical=False)
+                aggregation_value = delimiter.join(aggregation_value)
+
             populated_formula.append(aggregation_value)
 
     populated_formula = "".join([str(x) for x in populated_formula])
 
     try:
         return ne.evaluate(populated_formula).item()
-    except (ZeroDivisionError, AttributeError, TypeError):
+    except (ZeroDivisionError, AttributeError, TypeError, KeyError, SyntaxError):
         return populated_formula
 
 
