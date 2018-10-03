@@ -140,14 +140,12 @@ def calculate_computed_field(formula, record, build_fields, tracking_feedback_da
                 aggregation_value = values[-1] if len(values) else None
 
             if aggregation_type == "list":
-                aggregation_value = iterate_aggregation(columns, is_numerical=False)
-                return "".join([str(x) for x in aggregation_value])
+                return iterate_aggregation(columns, is_numerical=False)
 
             if aggregation_type == "concat":
                 delimiter = node["data"]["delimiter"]
                 aggregation_value = iterate_aggregation(columns, is_numerical=False)
-                aggregation_value = delimiter.join(aggregation_value)
-                return "".join([str(x) for x in aggregation_value])
+                return delimiter.join(aggregation_value)
 
             populated_formula.append(aggregation_value)
 
