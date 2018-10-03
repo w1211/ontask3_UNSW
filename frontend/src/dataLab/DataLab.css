@@ -343,11 +343,8 @@
 .computed-field-modal .tree-select > span {
   border-radius: 0 2px 2px 0;
 }
-.computed-field-modal .tree-select.is-concat > span {
-  border-radius: 0;
-}
 .computed-field-modal .delimiter > div {
-  border-radius: 0 2px 2px 0;
+  border-radius: 2px;
 }
 .computed-field-modal .toolbar {
   margin-bottom: 10px;
