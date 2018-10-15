@@ -90,6 +90,9 @@ class Details extends React.Component {
                   {record.module === "datasource" && (
                     <Option value="date">date</Option>
                   )}
+                  {record.module === "computed" && (
+                    <Option value="list">list</Option>
+                  )}
                 </Select>
               );
             if (record.module === "form") return text;

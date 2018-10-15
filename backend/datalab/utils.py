@@ -33,7 +33,9 @@ def bind_column_types(steps):
                     for node in nodes:
                         if node["type"] == "aggregation":
                             aggregation_type = node["data"]["type"]
-                            if aggregation_type in ["list", "concat"]:
+                            if aggregation_type == "list":
+                                field_type = "list"
+                            elif aggregation_type ==  "concat":
                                 field_type = "text"
                             elif aggregation_type == "last" and not len(nodes) > 2:
                                 field_type = "text"
