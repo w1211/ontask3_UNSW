@@ -298,7 +298,7 @@ class DatasourceModule extends React.Component {
       dataLabId: selectedId,
       stepIndex,
       onFinish: discrepencies => {
-        if (Object.keys(discrepencies).length)
+        if ("matching" in discrepencies || "primary" in discrepencies)
           openDiscrepenciesModal({
             discrepencies,
             datasource: datasource.name,
