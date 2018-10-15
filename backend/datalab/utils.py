@@ -399,7 +399,7 @@ def update_form_data(
     Datalab.objects(id=datalab.id).update(**kw)
     datalab.reload()
 
-    data = combine_data(datalab.steps)
+    data = combine_data(datalab.steps, datalab.id)
     Datalab.objects(id=datalab.id).update(set__data=data)
     datalab.reload()
 
