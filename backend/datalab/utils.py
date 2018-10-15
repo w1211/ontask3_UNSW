@@ -56,7 +56,11 @@ def calculate_computed_field(formula, record, build_fields, tracking_feedback_da
     def tracking_feedback_value(action_id, job_id, data_type, record):
         email_field = tracking_feedback_data[action_id]["email_field"]
         data = tracking_feedback_data[action_id]["jobs"][job_id][data_type]
-        return data[record[email_field]] if record[email_field] in data else 0
+        return (
+            data[record[email_field]]
+            if email_field in record and record[email_field] in data
+            else 0
+        )
 
     def iterate_aggregation(columns, is_numerical=True):
         values = []
@@ -155,7 +159,7 @@ def calculate_computed_field(formula, record, build_fields, tracking_feedback_da
                 aggregation_value = iterate_aggregation(columns, is_numerical=False)
                 # Join values even if they are null, as this would be the expected
                 # functionality if the user is trying to construct a .csv
-                # I.e. the number of delimiters should be constant for all rows 
+                # I.e. the number of delimiters should be constant for all rows
                 # Regardless of whether a given column has a value or not
                 return delimiter.join(
                     [str(x) if x is not None else "" for x in aggregation_value]
