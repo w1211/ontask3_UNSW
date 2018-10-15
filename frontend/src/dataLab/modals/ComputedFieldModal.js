@@ -97,31 +97,32 @@ class ComputedFieldModal extends React.Component {
     });
 
     let tracking = [];
-    actions.forEach(action => {
-      if (action.emailJobs.length > 0) {
-        tracking.push({
-          title: (
-            <span>
-              <Icon type="thunderbolt" style={{ marginRight: 5 }} />
-              {action.name}
-            </span>
-          ),
-          value: `tracking_${action.id}`,
-          children: action.emailJobs.map(emailJob => {
-            const initiatedAt = new Date(emailJob.initiated_at)
-              .toISOString()
-              .substring(0, 10);
+    if (actions && actions.length > 0)
+      actions.forEach(action => {
+        if (action.emailJobs.length > 0) {
+          tracking.push({
+            title: (
+              <span>
+                <Icon type="thunderbolt" style={{ marginRight: 5 }} />
+                {action.name}
+              </span>
+            ),
+            value: `tracking_${action.id}`,
+            children: action.emailJobs.map(emailJob => {
+              const initiatedAt = new Date(emailJob.initiated_at)
+                .toISOString()
+                .substring(0, 10);
 
-            return {
-              title: this.TruncatedLabel(
-                `${initiatedAt} - ${emailJob.subject}`
-              ),
-              value: `tracking_${action.id}_${emailJob.job_id}`
-            };
-          })
-        });
-      }
-    });
+              return {
+                title: this.TruncatedLabel(
+                  `${initiatedAt} - ${emailJob.subject}`
+                ),
+                value: `tracking_${action.id}_${emailJob.job_id}`
+              };
+            })
+          });
+        }
+      });
 
     if (tracking.length > 0)
       treeData.push({

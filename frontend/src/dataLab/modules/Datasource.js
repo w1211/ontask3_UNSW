@@ -270,7 +270,7 @@ class DatasourceModule extends React.Component {
   };
 
   handleMatchingFieldChange = e => {
-    const { stepIndex, openDiscrepenciesModal } = this.props;
+    const { selectedId, stepIndex, openDiscrepenciesModal } = this.props;
     const { datasource } = this.state;
 
     this.boundActionCreators.updateBuild({
@@ -295,9 +295,10 @@ class DatasourceModule extends React.Component {
 
     // Check if there are discrepencies
     this.boundActionCreators.checkForDiscrepencies({
+      dataLabId: selectedId,
       stepIndex,
       onFinish: discrepencies => {
-        if (Object.keys(discrepencies).length)
+        if ("matching" in discrepencies || "primary" in discrepencies)
           openDiscrepenciesModal({
             discrepencies,
             datasource: datasource.name,
@@ -309,7 +310,7 @@ class DatasourceModule extends React.Component {
   };
 
   editDiscrepencySettings = () => {
-    const { stepIndex, openDiscrepenciesModal } = this.props;
+    const { selectedId, stepIndex, openDiscrepenciesModal } = this.props;
     const { datasource } = this.state;
 
     const onResolve = values =>
@@ -334,6 +335,7 @@ class DatasourceModule extends React.Component {
 
     // Check if there are discrepencies
     this.boundActionCreators.checkForDiscrepencies({
+      dataLabId: selectedId,
       stepIndex,
       onFinish: discrepencies => {
         if (Object.keys(discrepencies).length) {
@@ -606,11 +608,12 @@ class DatasourceModule extends React.Component {
 }
 
 const mapStateToProps = state => {
-  const { build, datasources } = state.dataLab;
+  const { build, datasources, selectedId } = state.dataLab;
   
   return {
     build,
-    datasources
+    datasources,
+    selectedId
   };
 };
 

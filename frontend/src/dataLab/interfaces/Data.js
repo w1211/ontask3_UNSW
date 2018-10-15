@@ -60,10 +60,10 @@ class Data extends React.Component {
       term === ""
         ? currentData
         : currentData.filter(row =>
-            String(Object.values(row))
-              .toLowerCase()
-              .includes(term)
-          );
+          String(Object.values(row))
+            .toLowerCase()
+            .includes(term)
+        );
 
     return tableData;
   };
@@ -161,8 +161,8 @@ class Data extends React.Component {
     label.length > 15 ? (
       <Popover content={label}>{`${label.slice(0, 15)}...`}</Popover>
     ) : (
-      label
-    );
+        label
+      );
 
   DatasourceColumns = stepIndex => {
     const { build } = this.props;
@@ -180,22 +180,22 @@ class Data extends React.Component {
       const title = isPrimaryOrMatching ? (
         truncatedLabel
       ) : (
-        <div className="column_header">
-          <Dropdown
-            trigger={["click"]}
-            overlay={
-              <Menu onClick={e => this.handleHeaderClick(e, stepIndex, field)}>
-                <Menu.Item key="visualise">
-                  <Icon type="area-chart" style={{ marginRight: 5 }} />
-                  Visualise
+          <div className="column_header">
+            <Dropdown
+              trigger={["click"]}
+              overlay={
+                <Menu onClick={e => this.handleHeaderClick(e, stepIndex, field)}>
+                  <Menu.Item key="visualise">
+                    <Icon type="area-chart" style={{ marginRight: 5 }} />
+                    Visualise
                 </Menu.Item>
-              </Menu>
-            }
-          >
-            <a className="datasource">{label}</a>
-          </Dropdown>
-        </div>
-      );
+                </Menu>
+              }
+            >
+              <a className="datasource">{label}</a>
+            </Dropdown>
+          </div>
+        );
 
       columns.push({
         className: "column",
@@ -294,7 +294,7 @@ class Data extends React.Component {
           if (typeof a === "number" && typeof b === "number")
             return a < b
           return a.toString().localeCompare(b.toString());
-        }, 
+        },
         sortOrder: sort && sort.field === label && sort.order,
         render: (text, record) =>
           this.renderFormField(stepIndex, field, text, record[step.primary])
@@ -348,7 +348,10 @@ class Data extends React.Component {
           return a.toString().localeCompare(b.toString());
         },
         sortOrder: sort && sort.field === label && sort.order,
-        render: text => text
+        render: text => {
+          if (Array.isArray(text)) return text.join(", ");
+          return text;
+        }
       });
     });
 

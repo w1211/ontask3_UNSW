@@ -180,7 +180,7 @@ export const deleteModule = (isFeedbackTracking) => (dispatch, getState) => {
   });
 };
 
-export const checkForDiscrepencies = ({ stepIndex, onFinish }) => (
+export const checkForDiscrepencies = ({ dataLabId, stepIndex, onFinish }) => (
   dispatch,
   getState
 ) => {
@@ -199,13 +199,13 @@ export const checkForDiscrepencies = ({ stepIndex, onFinish }) => (
     method: "POST",
     errorFn: error => console.log(error),
     successFn: result => onFinish(result),
-    payload: { partialBuild, checkModule }
+    payload: { dataLabId, partialBuild, checkModule }
   };
 
   requestWrapper(parameters);
 };
 
-export const checkForUniqueness = ({ stepIndex, primaryKey, onFinish }) => (
+export const checkForUniqueness = ({ dataLabId, stepIndex, primaryKey, onFinish }) => (
   dispatch,
   getState
 ) => {
@@ -220,7 +220,7 @@ export const checkForUniqueness = ({ stepIndex, primaryKey, onFinish }) => (
     method: "POST",
     errorFn: error => console.log(error),
     successFn: result => onFinish(result),
-    payload: { partialBuild, primaryKey }
+    payload: { dataLabId, partialBuild, primaryKey }
   };
 
   requestWrapper(parameters);

@@ -51,7 +51,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 order.append(
                     {
                         "stepIndex": step_index,
-                        "field": field["name"] if step["type"] == "form" else field,
+                        "field": field["name"] if step["type"] in ["form", "computed"] else field,
                     }
                 )
 
@@ -100,7 +100,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
         for item in order:
             step = steps[item["stepIndex"]] if item["stepIndex"] < len(steps) else None
             fields = step[step["type"]]["fields"] if step else []
-            if step and step["type"] == "form":
+            if step and step["type"] in ["form", "computed"]:
                 fields = [field["name"] for field in fields]
             if item["field"] not in fields:
                 order = [
@@ -257,10 +257,11 @@ class DatalabViewSet(viewsets.ModelViewSet):
 
     @list_route(methods=["post"])
     def check_discrepencies(self, request):
+        datalab_id = self.request.data["dataLabId"] 
         partial_build = self.request.data["partialBuild"]
         check_module = self.request.data["checkModule"]["datasource"]
 
-        data = combine_data(partial_build)
+        data = combine_data(partial_build, datalab_id)
         datasource = Datasource.objects.get(id=check_module["id"])
 
         primary_records = {item[check_module["primary"]] for item in datasource.data}
@@ -296,10 +297,11 @@ class DatalabViewSet(viewsets.ModelViewSet):
 
     @list_route(methods=["post"])
     def check_uniqueness(self, request):
+        datalab_id = self.request.data["dataLabId"] 
         partial_build = self.request.data["partialBuild"]
         primary_key = self.request.data["primaryKey"]
 
-        data = combine_data(partial_build)
+        data = combine_data(partial_build, datalab_id)
 
         all_records = [item[primary_key] for item in data if primary_key in item]
         unique_records = set(all_records)

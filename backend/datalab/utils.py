@@ -29,12 +29,17 @@ def bind_column_types(steps):
             for field in step["fields"]:
                 if "type" not in field or field["type"] is None:
                     field_type = "number"
-                    for node in field["formula"]["document"]["nodes"]:
+                    nodes = field["formula"]["document"]["nodes"]
+                    for node in nodes:
                         if node["type"] == "aggregation":
                             aggregation_type = node["data"]["type"]
-                            if aggregation_type in ["list", "concat", "last"]:
+                            if aggregation_type == "list":
+                                field_type = "list"
+                            elif aggregation_type ==  "concat":
                                 field_type = "text"
-                    field["type"] = field_type                
+                            elif aggregation_type == "last" and not len(nodes) > 2:
+                                field_type = "text"
+                    field["type"] = field_type
 
     return steps
 
@@ -47,13 +52,17 @@ def calculate_computed_field(formula, record, build_fields, tracking_feedback_da
     def cast_float(value):
         try:
             return float(value)
-        except ValueError:
+        except (ValueError, TypeError):
             return 0
 
     def tracking_feedback_value(action_id, job_id, data_type, record):
         email_field = tracking_feedback_data[action_id]["email_field"]
         data = tracking_feedback_data[action_id]["jobs"][job_id][data_type]
-        return data[record[email_field]] if record[email_field] in data else 0
+        return (
+            data[record[email_field]]
+            if email_field in record and record[email_field] in data
+            else 0
+        )
 
     def iterate_aggregation(columns, is_numerical=True):
         values = []
@@ -93,16 +102,14 @@ def calculate_computed_field(formula, record, build_fields, tracking_feedback_da
                 if len(split_column) == 1:
                     step_index = int(split_column[0])
                     for field in build_fields[step_index]:
-                        values.append(
-                            cast_float(record[field]) if is_numerical else record[field]
-                        )
+                        value = record[field] if field in record else None
+                        values.append(cast_float(value) if is_numerical else value)
 
                 elif len(split_column) == 2:
                     step_index, field_index = [int(i) for i in split_column]
                     field = build_fields[step_index][field_index]
-                    values.append(
-                        cast_float(record[field]) if is_numerical else record[field]
-                    )
+                    value = record[field] if field in record else None
+                    values.append(cast_float(value) if is_numerical else value)
 
         return values
 
@@ -121,7 +128,7 @@ def calculate_computed_field(formula, record, build_fields, tracking_feedback_da
 
         if node_type == "field":
             field = node["data"]["name"]
-            populated_formula.append(record[field])
+            populated_formula.append(cast_float(record[field]))
 
         if node_type == "aggregation":
             aggregation_type = node["data"]["type"]
@@ -136,18 +143,29 @@ def calculate_computed_field(formula, record, build_fields, tracking_feedback_da
                 aggregation_value = sum(values) / len(values) if len(values) else 0
 
             if aggregation_type == "last":
+                # If the "last" aggregation is part of a larger formula, then treat
+                # it as numerical, since it must be part of a computation
                 values = iterate_aggregation(columns, is_numerical=False)
-                aggregation_value = values[-1] if len(values) else None
+                # If the number of nodes is 2, then the aggregation is standalone
+                # It's 2 and not 1, because Slate.js blockmap always starts with a paragraph block
+                if len(formula["document"]["nodes"]) > 2:
+                    aggregation_value = cast_float(values[-1]) if len(values) else 0
+                else:
+                    return values[-1] if len(values) else None
 
             if aggregation_type == "list":
-                aggregation_value = iterate_aggregation(columns, is_numerical=False)
-                return "".join([str(x) for x in aggregation_value])
+                return iterate_aggregation(columns, is_numerical=False)
 
             if aggregation_type == "concat":
                 delimiter = node["data"]["delimiter"]
                 aggregation_value = iterate_aggregation(columns, is_numerical=False)
-                aggregation_value = delimiter.join(aggregation_value)
-                return "".join([str(x) for x in aggregation_value])
+                # Join values even if they are null, as this would be the expected
+                # functionality if the user is trying to construct a .csv
+                # I.e. the number of delimiters should be constant for all rows
+                # Regardless of whether a given column has a value or not
+                return delimiter.join(
+                    [str(x) if x is not None else "" for x in aggregation_value]
+                )
 
             populated_formula.append(aggregation_value)
 
@@ -383,7 +401,7 @@ def update_form_data(
     Datalab.objects(id=datalab.id).update(**kw)
     datalab.reload()
 
-    data = combine_data(datalab.steps)
+    data = combine_data(datalab.steps, datalab.id)
     Datalab.objects(id=datalab.id).update(set__data=data)
     datalab.reload()
 
