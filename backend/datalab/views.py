@@ -51,7 +51,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 order.append(
                     {
                         "stepIndex": step_index,
-                        "field": field["name"] if step["type"] == "form" else field,
+                        "field": field["name"] if step["type"] in ["form", "computed"] else field,
                     }
                 )
 
@@ -100,7 +100,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
         for item in order:
             step = steps[item["stepIndex"]] if item["stepIndex"] < len(steps) else None
             fields = step[step["type"]]["fields"] if step else []
-            if step and step["type"] == "form":
+            if step and step["type"] in ["form", "computed"]:
                 fields = [field["name"] for field in fields]
             if item["field"] not in fields:
                 order = [
