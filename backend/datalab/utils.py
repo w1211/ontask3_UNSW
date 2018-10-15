@@ -158,7 +158,7 @@ def calculate_computed_field(formula, record, build_fields, tracking_feedback_da
                 # I.e. the number of delimiters should be constant for all rows 
                 # Regardless of whether a given column has a value or not
                 return delimiter.join(
-                    [x if x is not None else "" for x in aggregation_value]
+                    [str(x) if x is not None else "" for x in aggregation_value]
                 )
 
             populated_formula.append(aggregation_value)
