@@ -97,12 +97,13 @@ class FormModule extends React.Component {
   };
 
   handlePrimaryChange = e => {
-    const { stepIndex } = this.props;
+    const { selectedId, stepIndex } = this.props;
     const { currentStep } = this.state;
 
     // Check if the chosen primary key is unique
     const performCheck = () =>
       this.boundActionCreators.checkForUniqueness({
+        dataLabId: selectedId,
         stepIndex,
         primaryKey: e,
         onFinish: result => {
