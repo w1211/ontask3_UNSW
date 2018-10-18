@@ -32,6 +32,8 @@ import FilterModal from "../modals/FilterModal";
 import ConditionGroupModal from "../modals/ConditionGroupModal";
 import PreviewModal from "../modals/PreviewModal";
 
+import QueryBuilder from "./QueryBuilder";
+
 import "material-design-icons/iconfont/material-icons.css";
 
 const DEFAULT_NODE = "paragraph";
@@ -861,6 +863,11 @@ class Compose extends React.Component {
 
     return (
       <div>
+        <QueryBuilder 
+          steps={action.datalab.steps}
+          datasources={action.datalab.datasources}
+        />
+
         <h3>
           Filter
           <Button

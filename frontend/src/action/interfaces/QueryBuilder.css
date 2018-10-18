@@ -1,0 +1,63 @@
+.querybuilder .field {
+    border: 1px solid rgb(117, 117, 117);
+    border-radius: 3px;
+    display: inline-flex;
+    align-items: center;
+    background: rgb(250, 250, 250);
+    margin: 2px 5px 2px 0px;
+}
+.querybuilder .field .name {
+    padding: 0px 5px;
+    cursor: default;
+}
+.querybuilder .field .name::after {
+    content: ":";
+    margin-left: 2px;
+    position: relative;
+    top: -0.5px;
+}
+.querybuilder .field .attributes { 
+    display :flex;
+}
+.querybuilder .field .operation {
+    min-width: 33px;
+}
+.querybuilder .field .operation div {
+    border-radius: 0px;
+}
+.querybuilder .field .comparator {
+    display: flex;
+    align-items: center;
+}
+.querybuilder .field .comparator span {
+    padding: 0 5px;
+}
+.querybuilder .field .comparator > * {
+    border-radius: 0;
+}
+.querybuilder .field .comparator > *:last-child {
+    border-radius: 0 2px 2px 0;
+}
+.querybuilder .field .field-input {
+    max-width: 150px;
+    min-width: 60px;
+}
+.querybuilder .conditions {
+    list-style: none;
+    margin-top: -6px;
+}
+.querybuilder .conditions li {
+    position: relative;
+    margin-bottom: 10px;
+}
+.querybuilder .conditions .delete {
+    position: absolute;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    left: -30px;
+}
+.querybuilder .parameters  {
+    background: rgba(236,239,241, 0.75);
+    padding: 7.5px;
+}
