@@ -27,8 +27,17 @@ const OptionTitle = (type, label) => (
 );
 
 class QueryBuilder extends React.Component {
+  state = {};
+
+  componentDidMount() {
+    const [options, typeMap] = this.generateOptions();
+    this.setState({ options, typeMap });
+  }
+
   generateOptions = () => {
     const { steps, datasources } = this.props;
+
+    const typeMap = {};
 
     const computedFields = [];
     const options = steps.reduce((options, mod) => {
@@ -38,15 +47,12 @@ class QueryBuilder extends React.Component {
         ).name;
 
         options.push(
-          <OptGroup label={OptionTitle("datasource", name)} key={_.uniqueId()}>
+          <OptGroup label={OptionTitle("datasource", name)} key={name}>
             {mod.datasource.fields.map(field => {
               const label = mod.datasource.labels[field];
               const type = mod.datasource.types[field];
-              return (
-                <Option value={label} type={type} key={_.uniqueId()}>
-                  {label}
-                </Option>
-              );
+              typeMap[label] = type;
+              return <Option key={label}>{label}</Option>;
             })}
           </OptGroup>
         );
@@ -56,24 +62,22 @@ class QueryBuilder extends React.Component {
         options.push(
           <OptGroup
             label={OptionTitle("form", mod.form.name)}
-            key={_.uniqueId()}
+            key={mod.form.name}
           >
-            {mod.form.fields.map(field => (
-              <Option value={field.name} type={field.type} key={_.uniqueId()}>
-                {field.name}
-              </Option>
-            ))}
+            {mod.form.fields.map(field => {
+              typeMap[field.name] = field.type;
+              return <Option key={field.name}>{field.name}</Option>;
+            })}
           </OptGroup>
         );
       }
 
       if (mod.type === "computed") {
         computedFields.push(
-          ...mod.computed.fields.map(field => (
-            <Option value={field.name} type={field.type} key={_.uniqueId()}>
-              {field.name}
-            </Option>
-          ))
+          ...mod.computed.fields.map(field => {
+            typeMap[field.name] = field.type;
+            return <Option key={field.name}>{field.name}</Option>;
+          })
         );
       }
 
@@ -83,21 +87,23 @@ class QueryBuilder extends React.Component {
     options.push(
       <OptGroup
         label={OptionTitle("computed", "Computed fields")}
-        key={_.uniqueId()}
+        key={"computed"}
       >
         {computedFields}
       </OptGroup>
     );
 
-    return options;
+    return [options, typeMap];
   };
 
   Operations = type => {
-    let operations;
-    if (type === "number") operations = [">", "≥", "<", "≤", "=", "between"];
+    let operations = [];
+    if (type === "number")
+      operations = [">", "≥", "<", "≤", "=", "!=", "between"];
+    else if (type === "text") operations = ["=", "!="];
 
-    return operations.map(operation => (
-      <Option value={operation} key={_.uniqueId()}>
+    return operations.map((operation, i) => (
+      <Option value={operation} key={i}>
         {operation}
       </Option>
     ));
@@ -124,6 +130,8 @@ class QueryBuilder extends React.Component {
           style={{ width: width + 18 }} // Include extra space for the up/down arrows
         />
       );
+    else if (type === "text")
+      return <Input key={field} className="field-input" style={{ width }} />;
   };
 
   Comparator = (type, operation, conditionIndex, parameterIndex) => {
@@ -190,6 +198,7 @@ class QueryBuilder extends React.Component {
 
   render() {
     const { form } = this.props;
+    const { options, typeMap } = this.state;
     const { getFieldDecorator, getFieldValue } = form;
 
     getFieldDecorator("conditionKeys", { initialValue: [] });
@@ -229,7 +238,7 @@ class QueryBuilder extends React.Component {
             initialValue: []
           })(
             <Select showSearch mode="multiple">
-              {this.generateOptions()}
+              {options}
             </Select>
           )}
         </FormItem>
@@ -283,14 +292,14 @@ class QueryBuilder extends React.Component {
                                   showArrow={false}
                                   dropdownMatchSelectWidth={false}
                                 >
-                                  {this.Operations("number")}
+                                  {this.Operations(typeMap[parameter])}
                                 </Select>
                               )}
                             </div>
 
                             <div className="comparator">
                               {this.Comparator(
-                                "number",
+                                typeMap[parameter],
                                 operation,
                                 conditionIndex,
                                 parameterIndex
