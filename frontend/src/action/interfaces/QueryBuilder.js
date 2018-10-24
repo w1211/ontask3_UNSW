@@ -134,10 +134,7 @@ class QueryBuilder extends React.Component {
     else if (type === "list") operations = ["contains"];
 
     return operations.map((operation, i) => (
-      <Option
-        value={operation}
-        key={i}
-      >
+      <Option value={operation} key={i}>
         {operation in labelMap ? labelMap[operation] : operation}
       </Option>
     ));
@@ -235,35 +232,38 @@ class QueryBuilder extends React.Component {
   };
 
   hasOverlap = (formulas, type) => {
-    console.log(formulas);
-    
     if (type === "number") {
-      const tests = [];
-      const values = new Set();
+      const expressionGroups = []; // Two expression "groups", one for each condition
+      const values = new Set(); // Values to logically test the expressions
 
       formulas.forEach(formula => {
         if (formula.operator === "between") {
-          tests.push([`x >= ${formula.from}`, `x <= ${formula.to}`]);
+          // Push an array of two expressions, one for each of "from" and "to"
+          expressionGroups.push([`x >= ${formula.from}`, `x <= ${formula.to}`]);
+          [-1, 0, 1].forEach(i => {
+            values.add(formula.from + i);
+            values.add(formula.to + i);
+          });
         } else {
-          tests.push([`x ${formula.operator} ${formula.comparator}`]);
+          // Push an array of one expression
+          expressionGroups.push([`x ${formula.operator} ${formula.comparator}`]);
+          [-1, 0, 1].forEach(i => values.add(formula.comparator + i));
         }
-
-        values.add(formula.comparator - 1);
-        values.add(formula.comparator);
-        values.add(formula.comparator + 1);
       });
 
-      console.log(tests);
-      console.log(values);
-
+      // If for *any* of the values...
       return [...values].some(value => {
-        return tests.every(test =>
-          test.every(subtest => {
-            const parser = Parser.parse(subtest);
+        // the logical tests of the expressions for *both* conditions returns true, given that...
+        return expressionGroups.every(expressions =>
+          // the logical tests of every expression for that condition returns true...
+          expressions.every(expression => {
+            const parser = Parser.parse(expression);
             return parser.evaluate({ x: value });
           })
         );
       });
+      // then an overlap must exist between the two conditions being compared, for the 
+      // parameter being tested.
     }
 
     return false;
@@ -279,7 +279,26 @@ class QueryBuilder extends React.Component {
     // Instantiate a single bucket containing all the conditions
     let buckets = [conditions]; // i.e. [[cond1, cond2, cond3]]
 
-    // Check whether the conditions overlap *one parameter at a time*
+    // Iterate over the parameters
+    //
+    // On the first passthrough (i.e. the first parameter), assign each
+    // condition to a given bucket if there is an overlap in the formula
+    // for that particular parameter. E.g. first parameter is "grade",
+    // one condition has grade >= 50 and the other condition has grade <= 60.
+    // These conditions would overlap if 50 <= grade <= 60.
+    //
+    // For each next parameter, perform comparisons between the conditions as
+    // above, but only with those conditions in the same bucket, and assign
+    // them to the same bucket if there is an overlap. Otherwise, a new bucket
+    // is created.
+    //
+    // The buckets should thin out with each passthrough. If there are no overlaps
+    // between the conditions after iterating through all parameters, then all buckets
+    // should have a length of 1.
+    //
+    // The final result is a list of buckets where the first condition (index 0) 
+    // definitely overlaps (taking all parameters into consideration) with every
+    // other condition in that bucket
     parameters.forEach((parameter, parameterIndex) => {
       console.log(buckets);
 
@@ -289,6 +308,8 @@ class QueryBuilder extends React.Component {
         const conditionsChecked = [];
 
         bucket.forEach((condition, conditionIndex) => {
+          // If this condition has already been assigned to a bucket due to
+          // overlapping, then do not create a new bucket
           if (conditionsChecked.includes(condition)) return;
 
           // Instantiate a new bucket containing just this condition
@@ -297,16 +318,16 @@ class QueryBuilder extends React.Component {
           // Compare this condition to each following condition *in the same bucket*
           bucket.slice(conditionIndex + 1).forEach(comparison => {
             // Check whether the condition overlaps
-            // e.g. x >= 5 and x <= 5 overlaps if x = 5
             const hasOverlap = this.hasOverlap(
               [condition[parameterIndex], comparison[parameterIndex]],
               typeMap[parameter]
             );
 
-            // If the condition being compared does overlap, add it to the bucket
+            // If the condition being compared does overlap, add it to the new bucket.
+            // Otherwise, the condition will be assigned to its own bucket, and the process
+            // will repeat until all conditions are exhausted for this passthrough
             if (hasOverlap) {
               newBucket.push(comparison);
-              // Prevent the comparison condition from being checked again
               conditionsChecked.push(comparison);
             }
           });
@@ -316,7 +337,7 @@ class QueryBuilder extends React.Component {
       });
 
       // Overwrite with the new buckets so that the next iteration only compares
-      // conditions that overlap
+      // conditions that overlap as of the n-th parameter passthrough
       buckets = newBuckets;
     });
 
