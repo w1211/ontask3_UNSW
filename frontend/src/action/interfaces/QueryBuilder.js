@@ -1,6 +1,17 @@
 import React from "react";
-import { Form, Select, Icon, Input, InputNumber, Button, Tooltip } from "antd";
+import {
+  Form,
+  Select,
+  Icon,
+  Input,
+  InputNumber,
+  Button,
+  Tooltip,
+  DatePicker
+} from "antd";
 import _ from "lodash";
+import memoize from "memoize-one";
+import { Parser } from "expr-eval";
 
 import "./QueryBuilder.css";
 
@@ -11,6 +22,12 @@ const modMap = {
   datasource: ["#2196F3", "database"],
   form: ["#5E35B1", "form"],
   computed: ["#43A047", "calculator"]
+};
+
+const labelMap = {
+  ">=": "≥",
+  "<=": "≤",
+  "==": "="
 };
 
 const formItemLayout = {
@@ -28,6 +45,19 @@ const OptionTitle = (type, label) => (
 
 class QueryBuilder extends React.Component {
   state = {};
+
+  // usedOperations = memoize((parameters, conditions) => {
+  //   const operations = parameters.map(() => new Set());
+
+  //   conditions.forEach(condition => {
+  //     condition.forEach((parameter, parameterIndex) => {
+  //       if (parameter.operator && parameterIndex in operations)
+  //         operations[parameterIndex].add(parameter.operator);
+  //     });
+  //   });
+
+  //   return operations;
+  // });
 
   componentDidMount() {
     const [options, typeMap] = this.generateOptions();
@@ -96,15 +126,19 @@ class QueryBuilder extends React.Component {
     return [options, typeMap];
   };
 
-  Operations = type => {
+  Operations = (type, parameterIndex) => {
     let operations = [];
-    if (type === "number")
-      operations = [">", "≥", "<", "≤", "=", "!=", "between"];
-    else if (type === "text") operations = ["=", "!="];
+    if (type === "number" || type === "date")
+      operations = [">", ">=", "<", "<=", "==", "!=", "between"];
+    else if (type === "text") operations = ["==", "!="];
+    else if (type === "list") operations = ["contains"];
 
     return operations.map((operation, i) => (
-      <Option value={operation} key={i}>
-        {operation}
+      <Option
+        value={operation}
+        key={i}
+      >
+        {operation in labelMap ? labelMap[operation] : operation}
       </Option>
     ));
   };
@@ -130,8 +164,10 @@ class QueryBuilder extends React.Component {
           style={{ width: width + 18 }} // Include extra space for the up/down arrows
         />
       );
-    else if (type === "text")
+    else if (type === "text" || type === "list")
       return <Input key={field} className="field-input" style={{ width }} />;
+    else if (type === "date")
+      return <DatePicker key={field} className="field-input" placeholder="" />;
   };
 
   Comparator = (type, operation, conditionIndex, parameterIndex) => {
@@ -145,7 +181,9 @@ class QueryBuilder extends React.Component {
         getFieldDecorator(`${fieldBase}from`)(
           this.Element(type, `${fieldBase}from`)
         ),
-        <span key={`${fieldBase}and`}>and</span>,
+        <span className="and" key={`${fieldBase}and`}>
+          and
+        </span>,
         getFieldDecorator(`${fieldBase}to`)(
           this.Element(type, `${fieldBase}to`)
         )
@@ -194,6 +232,95 @@ class QueryBuilder extends React.Component {
       conditionKeys,
       "rule.conditions": conditions
     });
+  };
+
+  hasOverlap = (formulas, type) => {
+    console.log(formulas);
+    
+    if (type === "number") {
+      const tests = [];
+      const values = new Set();
+
+      formulas.forEach(formula => {
+        if (formula.operator === "between") {
+          tests.push([`x >= ${formula.from}`, `x <= ${formula.to}`]);
+        } else {
+          tests.push([`x ${formula.operator} ${formula.comparator}`]);
+        }
+
+        values.add(formula.comparator - 1);
+        values.add(formula.comparator);
+        values.add(formula.comparator + 1);
+      });
+
+      console.log(tests);
+      console.log(values);
+
+      return [...values].some(value => {
+        return tests.every(test =>
+          test.every(subtest => {
+            const parser = Parser.parse(subtest);
+            return parser.evaluate({ x: value });
+          })
+        );
+      });
+    }
+
+    return false;
+  };
+
+  testOverlaps = () => {
+    const { form } = this.props;
+    const { typeMap } = this.state;
+
+    const { rule } = form.getFieldsValue();
+    const { parameters, conditions } = rule;
+
+    // Instantiate a single bucket containing all the conditions
+    let buckets = [conditions]; // i.e. [[cond1, cond2, cond3]]
+
+    // Check whether the conditions overlap *one parameter at a time*
+    parameters.forEach((parameter, parameterIndex) => {
+      console.log(buckets);
+
+      const newBuckets = [];
+
+      buckets.forEach(bucket => {
+        const conditionsChecked = [];
+
+        bucket.forEach((condition, conditionIndex) => {
+          if (conditionsChecked.includes(condition)) return;
+
+          // Instantiate a new bucket containing just this condition
+          const newBucket = [condition];
+
+          // Compare this condition to each following condition *in the same bucket*
+          bucket.slice(conditionIndex + 1).forEach(comparison => {
+            // Check whether the condition overlaps
+            // e.g. x >= 5 and x <= 5 overlaps if x = 5
+            const hasOverlap = this.hasOverlap(
+              [condition[parameterIndex], comparison[parameterIndex]],
+              typeMap[parameter]
+            );
+
+            // If the condition being compared does overlap, add it to the bucket
+            if (hasOverlap) {
+              newBucket.push(comparison);
+              // Prevent the comparison condition from being checked again
+              conditionsChecked.push(comparison);
+            }
+          });
+
+          newBuckets.push(newBucket);
+        });
+      });
+
+      // Overwrite with the new buckets so that the next iteration only compares
+      // conditions that overlap
+      buckets = newBuckets;
+    });
+
+    console.log(buckets);
   };
 
   render() {
@@ -292,7 +419,10 @@ class QueryBuilder extends React.Component {
                                   showArrow={false}
                                   dropdownMatchSelectWidth={false}
                                 >
-                                  {this.Operations(typeMap[parameter])}
+                                  {this.Operations(
+                                    typeMap[parameter],
+                                    parameterIndex
+                                  )}
                                 </Select>
                               )}
                             </div>
@@ -314,6 +444,8 @@ class QueryBuilder extends React.Component {
               </ul>
             </div>
           )}
+
+        <Button onClick={() => this.testOverlaps()}>Test</Button>
       </Form>
     );
   }

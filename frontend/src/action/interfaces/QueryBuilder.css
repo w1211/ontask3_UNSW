@@ -29,13 +29,15 @@
     display: flex;
     align-items: center;
 }
-.querybuilder .field .comparator span {
+.querybuilder .field .comparator .and {
     padding: 0 5px;
 }
-.querybuilder .field .comparator > * {
+.querybuilder .field .comparator > *,
+.querybuilder .field .comparator input {
     border-radius: 0;
 }
-.querybuilder .field .comparator > *:last-child {
+.querybuilder .field .comparator > *:last-child,
+.querybuilder .field .comparator input:last-child {
     border-radius: 0 2px 2px 0;
 }
 .querybuilder .field .field-input {
