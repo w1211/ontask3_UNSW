@@ -273,6 +273,11 @@ class QueryBuilder extends React.Component {
       if (tests.some(test => test(formulas[0], formulas[1]))) return true;
     }
 
+    if (type === "list") {
+      // The only operator for lists is "contains", so the below test is sufficient
+      if (formulas[0].comparator === formulas[1].comparator) return true;
+    }
+
     if (type === "number" || type === "date") {
       const expressionGroups = []; // Two expression "groups", one for each condition
       const values = new Set(); // Values to logically test the expressions
@@ -315,6 +320,7 @@ class QueryBuilder extends React.Component {
       // parameter being tested.
     }
 
+    // If none of the above tests returned true, then there must not be an overlap
     return false;
   };
 
