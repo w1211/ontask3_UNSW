@@ -247,6 +247,32 @@ class QueryBuilder extends React.Component {
         return false;
     });
 
+    if (type === "text") {
+      // Define the logical tests which would indicate an overlap
+      const tests = [
+        (formula1, formula2) =>
+          formula1.operator === "==" &&
+          formula2.operator === "==" &&
+          formula1.comparator === formula2.comparator,
+        (formula1, formula2) =>
+          formula1.operator === "!=" && formula2.operator === "!=",
+        (formula1, formula2) =>
+          // If one of the formula's operator is == 
+          [formula1.operator, formula2.operator].some(
+            operator => operator === "=="
+          ) &&
+          // And the other formula's operator is !=
+          [formula1.operator, formula2.operator].some(
+            operator => operator === "!="
+          ) &&
+          // And the two formulas have a different comparator
+          formula1.comparator !== formula2.comparator
+      ];
+
+      // If *any* of the logical tests above returns true, then there is an overlap
+      if (tests.some(test => test(formulas[0], formulas[1]))) return true;
+    }
+
     if (type === "number" || type === "date") {
       const expressionGroups = []; // Two expression "groups", one for each condition
       const values = new Set(); // Values to logically test the expressions
