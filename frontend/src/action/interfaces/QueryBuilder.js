@@ -10,7 +10,7 @@ import {
   DatePicker
 } from "antd";
 import _ from "lodash";
-import memoize from "memoize-one";
+import moment from "moment";
 import { Parser } from "expr-eval";
 
 import "./QueryBuilder.css";
@@ -164,7 +164,16 @@ class QueryBuilder extends React.Component {
     else if (type === "text" || type === "list")
       return <Input key={field} className="field-input" style={{ width }} />;
     else if (type === "date")
-      return <DatePicker key={field} className="field-input" placeholder="" />;
+      return (
+        <DatePicker
+          key={field}
+          className="field-input"
+          placeholder=""
+          // Make the time negligible, as we only care about the date
+          // This is important when converting to unix epoch for testing date field overlaps
+          showTime={{ defaultValue: moment("00:00:00", "HH:mm:ss") }}
+        />
+      );
   };
 
   Comparator = (type, operation, conditionIndex, parameterIndex) => {
@@ -232,12 +241,18 @@ class QueryBuilder extends React.Component {
   };
 
   hasOverlap = (formulas, type) => {
-    if (type === "number") {
+
+    if (type === "number" || type === "date") {
       const expressionGroups = []; // Two expression "groups", one for each condition
       const values = new Set(); // Values to logically test the expressions
 
       formulas.forEach(formula => {
         if (formula.operator === "between") {
+          if (type === "date") {
+            // Convert moment datetimes to unix epoch
+            formula.from = formula.from.unix();
+            formula.to = formula.to.unix();
+          }
           // Push an array of two expressions, one for each of "from" and "to"
           expressionGroups.push([`x >= ${formula.from}`, `x <= ${formula.to}`]);
           [-1, 0, 1].forEach(i => {
@@ -245,8 +260,11 @@ class QueryBuilder extends React.Component {
             values.add(formula.to + i);
           });
         } else {
+          if (type === "date") formula.comparator = formula.comparator.unix();
           // Push an array of one expression
-          expressionGroups.push([`x ${formula.operator} ${formula.comparator}`]);
+          expressionGroups.push([
+            `x ${formula.operator} ${formula.comparator}`
+          ]);
           [-1, 0, 1].forEach(i => values.add(formula.comparator + i));
         }
       });
