@@ -241,6 +241,11 @@ class QueryBuilder extends React.Component {
   };
 
   hasOverlap = (formulas, type) => {
+    // If either formula has any incomplete details, then cancel the overlap check
+    formulas.forEach(formula => {
+      if (Object.values(formula).some(value => value === undefined))
+        return false;
+    });
 
     if (type === "number" || type === "date") {
       const expressionGroups = []; // Two expression "groups", one for each condition
