@@ -48,19 +48,6 @@ const OptionTitle = (type, label) => (
 class QueryBuilder extends React.Component {
   state = { overlappingConditions: [] };
 
-  // usedOperations = memoize((parameters, conditions) => {
-  //   const operations = parameters.map(() => new Set());
-
-  //   conditions.forEach(condition => {
-  //     condition.forEach((parameter, parameterIndex) => {
-  //       if (parameter.operator && parameterIndex in operations)
-  //         operations[parameterIndex].add(parameter.operator);
-  //     });
-  //   });
-
-  //   return operations;
-  // });
-
   componentDidMount() {
     const [options, typeMap] = this.generateOptions();
     this.setState({ options, typeMap });
@@ -454,8 +441,6 @@ class QueryBuilder extends React.Component {
       this.setState({ overlappingConditions, hasMissingValues: false });
 
       if (overlappingConditions) return;
-
-      
     });
   };
 
@@ -463,6 +448,37 @@ class QueryBuilder extends React.Component {
     const { onClose } = this.props;
 
     onClose();
+  };
+
+  modifyParameters = parameters => {
+    const { form } = this.props;
+    const { getFieldValue } = form;
+
+    const oldParameters = getFieldValue("rule.parameters");
+
+    // Detect whether any parameters have been *removed*
+    const deletedParameters = oldParameters.filter(
+      oldParameter => !parameters.includes(oldParameter)
+    );
+
+    // If a parameter was removed, then update each of the conditions
+    // to remove that parameter from the condition formula
+    if (deletedParameters.length > 0) {
+      const conditions = getFieldValue("rule.conditions");
+
+      deletedParameters.forEach(deletedParameter => {
+        const deletedParameterIndex = oldParameters.indexOf(deletedParameter);
+
+        conditions.forEach(condition => {
+          condition.splice(deletedParameterIndex, 1);
+        });
+      });
+
+      // Update the conditions in the form
+      form.setFieldsValue({
+        "rule.conditions": conditions
+      });
+    }
   };
 
   render() {
@@ -511,7 +527,11 @@ class QueryBuilder extends React.Component {
               ],
               initialValue: []
             })(
-              <Select showSearch mode="multiple">
+              <Select
+                showSearch
+                mode="multiple"
+                onChange={this.modifyParameters}
+              >
                 {options}
               </Select>
             )}
