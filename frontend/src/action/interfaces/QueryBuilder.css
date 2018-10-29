@@ -36,8 +36,8 @@
 .querybuilder .field .comparator input {
     border-radius: 0;
 }
-.querybuilder .field .comparator > *:last-child,
-.querybuilder .field .comparator input:last-child {
+.querybuilder .field .comparator .field-input,
+.querybuilder .field .comparator .field-input input {
     border-radius: 0 2px 2px 0;
 }
 .querybuilder .field .field-input {
@@ -47,9 +47,13 @@
 .querybuilder .conditions {
     list-style: none;
     margin-top: -6px;
+    max-height: 200px;
+    overflow-y: scroll;
 }
 .querybuilder .conditions li {
     position: relative;
+}
+.querybuilder .conditions li:not(:last-child) {
     margin-bottom: 10px;
 }
 .querybuilder .conditions .delete {
@@ -60,6 +64,22 @@
     left: -30px;
 }
 .querybuilder .parameters  {
-    background: rgba(236,239,241, 0.75);
+    width: 100%;
+    display: inline-block;
     padding: 7.5px;
+    background: rgba(236,239,241, 0.75);
+}
+.querybuilder .conditions li.overlap .parameters {
+    background: rgba(211,47,47, 0.20);
+}
+/* Override Ant Design styles so that field parameters (i.e. operator & comparator)
+    can get a red border on error (via FormItem) but hide error text and extra margins */
+.querybuilder .field .ant-form-item {
+    margin-bottom: 0;
+}
+.querybuilder .field .ant-form-item-control {
+    line-height: normal;
+}
+.querybuilder .field .ant-form-explain {
+    display: none;
 }

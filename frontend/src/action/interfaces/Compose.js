@@ -65,24 +65,26 @@ const MARK_TAGS = {
 };
 
 const parseStyles = styles => {
-  return styles ? styles
-    .split(";")
-    .filter(style => style.split(":")[0] && style.split(":")[1])
-    .map(style => [
-      style
-        .split(":")[0]
-        .trim()
-        .replace(/-./g, c => c.substr(1).toUpperCase()),
-      style.split(":")[1].trim()
-    ])
-    .reduce(
-      (styleObj, style) => ({
-        ...styleObj,
-        [style[0]]: style[1]
-      }),
-      {}
-    ) : styles;
-  }
+  return styles
+    ? styles
+        .split(";")
+        .filter(style => style.split(":")[0] && style.split(":")[1])
+        .map(style => [
+          style
+            .split(":")[0]
+            .trim()
+            .replace(/-./g, c => c.substr(1).toUpperCase()),
+          style.split(":")[1].trim()
+        ])
+        .reduce(
+          (styleObj, style) => ({
+            ...styleObj,
+            [style[0]]: style[1]
+          }),
+          {}
+        )
+    : styles;
+};
 
 const rules = [
   {
@@ -309,7 +311,7 @@ class Compose extends React.Component {
         loading: false,
         populatedContent: []
       },
-      visible: { filter: false, conditionGroup: false },
+      querybuilder: { visible: false },
       contentLoading: false,
       hyperlink: { label: null, url: null },
       image: { src: null, alt: null }
@@ -853,19 +855,21 @@ class Compose extends React.Component {
     const { action, updateAction } = this.props;
     const {
       preview,
-      visible,
       contentLoading,
       error,
       value,
       colours,
-      isInside
+      isInside,
+      querybuilder
     } = this.state;
 
     return (
       <div>
-        <QueryBuilder 
+        <QueryBuilder
           steps={action.datalab.steps}
           datasources={action.datalab.datasources}
+          {...querybuilder}
+          onClose={() => this.setState({ querybuilder: { visible: false } })}
         />
 
         <h3>
@@ -874,10 +878,11 @@ class Compose extends React.Component {
             style={{ marginLeft: "10px" }}
             shape="circle"
             icon="edit"
-            onClick={() => {
-              this.boundActionCreators.openFilterModal(action.filter);
-              this.setState({ visible: { ...visible, filter: true } });
-            }}
+            onClick={() =>
+              this.setState({
+                querybuilder: { visible: true, type: "filter", selected: null }
+              })
+            }
           />
         </h3>
 
@@ -909,16 +914,6 @@ class Compose extends React.Component {
           </div>
         )}
 
-        <FilterModal
-          action={action}
-          updateAction={updateAction}
-          visible={visible.filter}
-          closeModal={() => {
-            this.boundActionCreators.closeFilterModal();
-            this.setState({ visible: { ...visible, filter: false } });
-          }}
-        />
-
         <Divider dashed />
 
         <h3>
@@ -927,22 +922,13 @@ class Compose extends React.Component {
             style={{ marginLeft: "10px" }}
             shape="circle"
             icon="plus"
-            onClick={() => {
-              this.boundActionCreators.openConditionGroupModal();
-              this.setState({ visible: { ...visible, conditionGroup: true } });
-            }}
+            onClick={() =>
+              this.setState({
+                querybuilder: { visible: true, type: "rule", selected: null }
+              })
+            }
           />
         </h3>
-
-        <ConditionGroupModal
-          action={action}
-          updateAction={updateAction}
-          visible={visible.conditionGroup}
-          closeModal={() => {
-            this.boundActionCreators.closeConditionGroupModal();
-            this.setState({ visible: { ...visible, conditionGroup: false } });
-          }}
-        />
 
         {action && action.conditionGroups && action.conditionGroups.length > 0
           ? action.conditionGroups.map((conditionGroup, i) => {

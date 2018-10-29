@@ -7,7 +7,9 @@ import {
   InputNumber,
   Button,
   Tooltip,
-  DatePicker
+  DatePicker,
+  Modal,
+  Alert
 } from "antd";
 import _ from "lodash";
 import moment from "moment";
@@ -44,7 +46,7 @@ const OptionTitle = (type, label) => (
 );
 
 class QueryBuilder extends React.Component {
-  state = {};
+  state = { overlappingConditions: [] };
 
   // usedOperations = memoize((parameters, conditions) => {
   //   const operations = parameters.map(() => new Set());
@@ -161,8 +163,10 @@ class QueryBuilder extends React.Component {
           style={{ width: width + 18 }} // Include extra space for the up/down arrows
         />
       );
-    else if (type === "text" || type === "list")
+    else if (type === "text")
       return <Input key={field} className="field-input" style={{ width }} />;
+    else if (type === "list")
+      return <Select mode="tags" className="field-input" style={{ width }} />;
     else if (type === "date")
       return (
         <DatePicker
@@ -184,25 +188,39 @@ class QueryBuilder extends React.Component {
 
     if (operation === "between")
       return [
-        getFieldDecorator(`${fieldBase}from`)(
-          this.Element(type, `${fieldBase}from`)
-        ),
+        getFieldDecorator(`${fieldBase}from`, {
+          rules: [
+            {
+              required: true
+            }
+          ]
+        })(this.Element(type, `${fieldBase}from`)),
         <span className="and" key={`${fieldBase}and`}>
           and
         </span>,
-        getFieldDecorator(`${fieldBase}to`)(
-          this.Element(type, `${fieldBase}to`)
-        )
+        getFieldDecorator(`${fieldBase}to`, {
+          rules: [
+            {
+              required: true
+            }
+          ]
+        })(this.Element(type, `${fieldBase}to`))
       ];
 
-    return getFieldDecorator(`${fieldBase}comparator`)(
-      this.Element(type, `${fieldBase}comparator`)
-    );
+    return getFieldDecorator(`${fieldBase}comparator`, {
+      rules: [
+        {
+          required: true
+        }
+      ]
+    })(this.Element(type, `${fieldBase}comparator`));
   };
 
   componentDidUpdate() {
     const { form } = this.props;
-    const { getFieldValue, setFieldsValue } = form;
+    const { hasMissingValues } = this.state;
+
+    const { getFieldValue, setFieldsValue, getFieldError } = form;
 
     const conditionKeys = getFieldValue("conditionKeys");
 
@@ -211,6 +229,16 @@ class QueryBuilder extends React.Component {
       setFieldsValue({
         conditionKeys: [_.uniqueId()]
       });
+
+    // If the missing values error message is visible, then
+    // check whether it is still needed after form values change
+    if (hasMissingValues) {
+      const conditionErrors = getFieldError("rule.conditions")
+        .flat()
+        .some(condition => Object.values(condition).some(error => !!error));
+
+      if (!conditionErrors) this.setState({ hasMissingValues: false });
+    }
   }
 
   addCondition = () => {
@@ -242,10 +270,17 @@ class QueryBuilder extends React.Component {
 
   hasOverlap = (formulas, type) => {
     // If either formula has any incomplete details, then cancel the overlap check
+    let isIncomplete = false;
     formulas.forEach(formula => {
-      if (Object.values(formula).some(value => value === undefined))
-        return false;
+      if (
+        Object.values(formula).some(
+          value => value === undefined || value === null
+        )
+      ) {
+        isIncomplete = true;
+      }
     });
+    if (isIncomplete) return false;
 
     if (type === "text") {
       // Define the logical tests which would indicate an overlap
@@ -257,7 +292,7 @@ class QueryBuilder extends React.Component {
         (formula1, formula2) =>
           formula1.operator === "!=" && formula2.operator === "!=",
         (formula1, formula2) =>
-          // If one of the formula's operator is == 
+          // If one of the formula's operator is ==
           [formula1.operator, formula2.operator].some(
             operator => operator === "=="
           ) &&
@@ -296,7 +331,9 @@ class QueryBuilder extends React.Component {
             values.add(formula.to + i);
           });
         } else {
-          if (type === "date") formula.comparator = formula.comparator.unix();
+          if (type === "date") {
+            formula.comparator = formula.comparator.unix();
+          }
           // Push an array of one expression
           expressionGroups.push([
             `x ${formula.operator} ${formula.comparator}`
@@ -316,7 +353,7 @@ class QueryBuilder extends React.Component {
           })
         );
       });
-      // then an overlap must exist between the two conditions being compared, for the 
+      // then an overlap must exist between the two conditions being compared, for the
       // parameter being tested.
     }
 
@@ -351,12 +388,10 @@ class QueryBuilder extends React.Component {
     // between the conditions after iterating through all parameters, then all buckets
     // should have a length of 1.
     //
-    // The final result is a list of buckets where the first condition (index 0) 
+    // The final result is a list of buckets where the first condition (index 0)
     // definitely overlaps (taking all parameters into consideration) with every
     // other condition in that bucket
     parameters.forEach((parameter, parameterIndex) => {
-      console.log(buckets);
-
       const newBuckets = [];
 
       buckets.forEach(bucket => {
@@ -396,12 +431,48 @@ class QueryBuilder extends React.Component {
       buckets = newBuckets;
     });
 
-    console.log(buckets);
+    // Find the first instance of a bucket with conditions that overlap (if any)
+    const overlappingConditions = buckets.find(bucket => bucket.length > 1);
+
+    if (overlappingConditions) {
+      return overlappingConditions.map(condition =>
+        conditions.indexOf(condition)
+      );
+    }
+  };
+
+  handleOk = () => {
+    const { form } = this.props;
+
+    form.validateFields((err, values) => {
+      if (err) {
+        if ("conditions" in err.rule) this.setState({ hasMissingValues: true });
+        return;
+      }
+
+      const overlappingConditions = this.testOverlaps();
+      this.setState({ overlappingConditions, hasMissingValues: false });
+
+      if (overlappingConditions) return;
+
+      
+    });
+  };
+
+  handleCancel = () => {
+    const { onClose } = this.props;
+
+    onClose();
   };
 
   render() {
-    const { form } = this.props;
-    const { options, typeMap } = this.state;
+    const { form, type, selected, visible } = this.props;
+    const {
+      options,
+      typeMap,
+      overlappingConditions,
+      hasMissingValues
+    } = this.state;
     const { getFieldDecorator, getFieldValue } = form;
 
     getFieldDecorator("conditionKeys", { initialValue: [] });
@@ -409,120 +480,161 @@ class QueryBuilder extends React.Component {
     const parameters = getFieldValue("rule.parameters");
 
     return (
-      <Form
-        layout="horizontal"
-        style={{
-          border: "1px solid black",
-          borderRadius: 3,
-          marginBottom: 20,
-          padding: 20
-        }}
-        className="querybuilder"
+      <Modal
+        title={`${selected ? "Update" : "Create"} ${type}`}
+        visible={visible}
+        onOk={this.handleOk}
+        onCancel={this.handleCancel}
+        width={650}
       >
-        <FormItem label="Rule name" {...formItemLayout}>
-          {getFieldDecorator("rule.name", {
-            rules: [
-              {
-                required: true,
-                message: "Rule name is required"
-              }
-            ]
-          })(<Input />)}
-        </FormItem>
-
-        <FormItem label="Parameters" {...formItemLayout}>
-          {getFieldDecorator("rule.parameters", {
-            rules: [
-              {
-                required: true,
-                message: "At least one parameter is required"
-              }
-            ],
-            initialValue: []
-          })(
-            <Select showSearch mode="multiple">
-              {options}
-            </Select>
+        <Form layout="horizontal" className="querybuilder">
+          {type === "rule" && (
+            <FormItem label="Rule name" {...formItemLayout}>
+              {getFieldDecorator("rule.name", {
+                rules: [
+                  {
+                    required: true,
+                    message: "Rule name is required"
+                  }
+                ]
+              })(<Input />)}
+            </FormItem>
           )}
-        </FormItem>
 
-        {parameters &&
-          parameters.length > 0 && (
-            <div>
-              <FormItem label="Conditions" {...formItemLayout}>
-                <Tooltip title="Add condition">
-                  <Button
-                    icon="plus"
-                    size="small"
-                    type="primary"
-                    onClick={this.addCondition}
-                  />
-                </Tooltip>
-              </FormItem>
+          <FormItem label="Parameters" {...formItemLayout}>
+            {getFieldDecorator("rule.parameters", {
+              rules: [
+                {
+                  required: true,
+                  message: "At least one parameter is required"
+                }
+              ],
+              initialValue: []
+            })(
+              <Select showSearch mode="multiple">
+                {options}
+              </Select>
+            )}
+          </FormItem>
 
-              <ul className="conditions">
-                {conditionKeys.map((key, conditionIndex) => (
-                  <li key={key}>
-                    {conditionKeys.length > 1 && (
-                      <Tooltip title="Delete condition">
+          {parameters &&
+            parameters.length > 0 && (
+              <div>
+                <FormItem label="Conditions" {...formItemLayout}>
+                  <Tooltip title="Add condition">
+                    <Button
+                      icon="plus"
+                      size="small"
+                      type="primary"
+                      onClick={this.addCondition}
+                    />
+                  </Tooltip>
+                </FormItem>
+
+                <ul className="conditions">
+                  {conditionKeys.map((key, conditionIndex) => (
+                    <li
+                      key={key}
+                      className={
+                        overlappingConditions &&
+                        overlappingConditions.includes(conditionIndex)
+                          ? "overlap"
+                          : ""
+                      }
+                    >
+                      {conditionKeys.length > 1 && (
                         <div className="delete">
-                          <Button
-                            icon="close"
-                            shape="circle"
-                            size="small"
-                            disabled={conditionKeys.length <= 1}
-                            onClick={() => this.deleteCondition(conditionIndex)}
-                          />
+                          <Tooltip title="Delete condition">
+                            <Button
+                              icon="close"
+                              shape="circle"
+                              size="small"
+                              disabled={conditionKeys.length <= 1}
+                              onClick={() =>
+                                this.deleteCondition(conditionIndex)
+                              }
+                            />
+                          </Tooltip>
                         </div>
-                      </Tooltip>
-                    )}
+                      )}
 
-                    <div className="parameters">
-                      {parameters.map((parameter, parameterIndex) => {
-                        const operation = getFieldValue(
-                          `rule.conditions[${conditionIndex}][${parameterIndex}].operator`
-                        );
+                      <div className="parameters">
+                        {parameters.map((parameter, parameterIndex) => {
+                          const operation = getFieldValue(
+                            `rule.conditions[${conditionIndex}][${parameterIndex}].operator`
+                          );
 
-                        return (
-                          <div className="field" key={`${key}_${parameter}`}>
-                            <div className="name">{parameter}</div>
+                          return (
+                            <div className="field" key={`${key}_${parameter}`}>
+                              <div className="name">{parameter}</div>
 
-                            <div className="operation">
-                              {getFieldDecorator(
-                                `rule.conditions[${conditionIndex}][${parameterIndex}].operator`
-                              )(
-                                <Select
-                                  showArrow={false}
-                                  dropdownMatchSelectWidth={false}
-                                >
-                                  {this.Operations(
+                              <div className="operation">
+                                <FormItem>
+                                  {getFieldDecorator(
+                                    `rule.conditions[${conditionIndex}][${parameterIndex}].operator`,
+                                    {
+                                      rules: [
+                                        {
+                                          required: true
+                                        }
+                                      ]
+                                    }
+                                  )(
+                                    <Select
+                                      showArrow={false}
+                                      dropdownMatchSelectWidth={false}
+                                    >
+                                      {this.Operations(
+                                        typeMap[parameter],
+                                        parameterIndex
+                                      )}
+                                    </Select>
+                                  )}
+                                </FormItem>
+                              </div>
+
+                              <div className="comparator">
+                                <FormItem>
+                                  {this.Comparator(
                                     typeMap[parameter],
+                                    operation,
+                                    conditionIndex,
                                     parameterIndex
                                   )}
-                                </Select>
-                              )}
+                                </FormItem>
+                              </div>
                             </div>
+                          );
+                        })}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-                            <div className="comparator">
-                              {this.Comparator(
-                                typeMap[parameter],
-                                operation,
-                                conditionIndex,
-                                parameterIndex
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {overlappingConditions &&
+            overlappingConditions.length > 0 && (
+              <Alert
+                message="Condition overlap detected"
+                description="For the conditions marked in red, a record could 
+              match multiple conditions at the same time. Adjust the settings to ensure
+              mutual exclusivity before continuing."
+                type="error"
+                showIcon
+              />
+            )}
+
+          {hasMissingValues && (
+            <Alert
+              message="Missing condition values"
+              description="The values marked in red must be filled in order for the condition to be valid."
+              type="error"
+              showIcon
+            />
           )}
-
-        <Button onClick={() => this.testOverlaps()}>Test</Button>
-      </Form>
+        </Form>
+      </Modal>
     );
   }
 }
