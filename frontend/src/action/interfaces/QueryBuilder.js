@@ -150,10 +150,8 @@ class QueryBuilder extends React.Component {
           style={{ width: width + 18 }} // Include extra space for the up/down arrows
         />
       );
-    else if (type === "text")
+    else if (type === "text" || type === "list")
       return <Input key={field} className="field-input" style={{ width }} />;
-    else if (type === "list")
-      return <Select mode="tags" className="field-input" style={{ width }} />;
     else if (type === "date")
       return (
         <DatePicker
