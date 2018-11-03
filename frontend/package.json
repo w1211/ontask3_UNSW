@@ -4,11 +4,11 @@
   "private": true,
   "dependencies": {
     "@antv/data-set": "^0.8.9",
-    "antd": "^3.10.0",
+    "antd": "^3.10.3",
     "bizcharts": "^3.1.10",
     "expr-eval": "^1.2.2",
     "is-hotkey": "^0.1.2",
-    "lodash": "^4.17.10",
+    "lodash": "^4.17.11",
     "material-design-icons": "^3.0.1",
     "memoize-one": "^4.0.2",
     "moment": "^2.22.2",
