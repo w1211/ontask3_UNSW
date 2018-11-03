@@ -1,4 +1,4 @@
-from mongoengine import Document, EmbeddedDocument, fields
+from mongoengine import Document, EmbeddedDocument
 from mongoengine.fields import (
     ReferenceField,
     EmbeddedDocumentField,
@@ -11,29 +11,50 @@ from mongoengine.fields import (
     BooleanField,
     SequenceField,
     ObjectIdField,
+    BaseField,
 )
-from bson import ObjectId
 from datetime import datetime
+from collections import defaultdict
+from bson.objectid import ObjectId
+import jwt
 
 from container.models import Container
 from datalab.models import Datalab
+from datasource.models import Datasource
 
-# Condition groups
+from .utils import did_pass_test, parse_content_line
+from scheduler.utils import send_email
+
+from ontask.settings import SECRET_KEY, BACKEND_DOMAIN, FRONTEND_DOMAIN
+
+
 class Formula(EmbeddedDocument):
-    field = StringField()
+    comparator = BaseField()
     operator = StringField()
-    comparator = StringField()
+    rangeFrom = BaseField()
+    rangeTo = BaseField()
 
 
 class Condition(EmbeddedDocument):
-    name = StringField(required=True)
-    type = StringField(choices=("and", "or"), default="and")
+    conditionId = ObjectIdField(default=ObjectId)
     formulas = EmbeddedDocumentListField(Formula)
 
 
-class ConditionGroup(EmbeddedDocument):
+class Rule(EmbeddedDocument):
     name = StringField(required=True)
+    parameters = ListField(StringField())
     conditions = EmbeddedDocumentListField(Condition)
+    catchAll = ObjectIdField(default=ObjectId)
+
+
+class Filter(EmbeddedDocument):
+    parameters = ListField(StringField())
+    conditions = EmbeddedDocumentListField(Condition)
+
+
+class Content(EmbeddedDocument):
+    blockMap = DictField()
+    html = ListField(StringField())
 
 
 class Schedule(EmbeddedDocument):
@@ -90,7 +111,6 @@ class EmailJob(EmbeddedDocument):
     included_feedback = BooleanField()
 
 
-# Workflow
 class Workflow(Document):
     container = ReferenceField(
         Container, required=True, reverse_delete_rule=2
@@ -100,11 +120,217 @@ class Workflow(Document):
     )  # Cascade delete if view is deleted
     name = StringField(required=True)
     description = StringField(null=True)
-    filter = EmbeddedDocumentField(Condition)
-    conditionGroups = EmbeddedDocumentListField(ConditionGroup)
-    content = DictField(null=True)
-    html = ListField(StringField())
+    filter = EmbeddedDocumentField(Filter)
+    rules = EmbeddedDocumentListField(Rule)
+    content = EmbeddedDocumentField(Content)
     emailSettings = EmbeddedDocumentField(EmailSettings)
     schedule = EmbeddedDocumentField(Schedule, null=True, required=False)
     linkId = StringField(null=True)  # link_id is unique across workflow objects
     emailJobs = EmbeddedDocumentListField(EmailJob)
+
+    @property
+    def options(self):
+        modules = []
+        types = {}
+
+        # Create a "pseudo" module to hold the computed fields
+        computed = {"type": "computed", "fields": []}
+
+        # Iterate over the modules of the datalab
+        for step in self.datalab.steps:
+            module = {"type": step.type, "fields": []}
+
+            if step.type == "datasource":
+                module["name"] = Datasource.objects.get(id=step.datasource.id).name
+                for field in step.datasource.fields:
+                    label = step.datasource.labels[field]
+                    module["fields"].append(label)
+                    types[label] = step.datasource.types[field]
+                modules.append(module)
+
+            if step.type == "form":
+                module["name"] = step.form.name
+                for field in step.form.fields:
+                    module["fields"].append(field.name)
+                    types[field.name] = field.type
+                modules.append(module)
+
+            if step.type == "computed":
+                for field in step.computed.fields:
+                    computed["fields"].append(field.name)
+                    types[field.name] = field.type
+
+        modules.append(computed)
+
+        return {"modules": modules, "types": types}
+
+    @property
+    def data(self):
+        if self.filter:
+            filtered_data = []
+
+            types = self.options["types"]
+            parameters = self.filter.parameters
+            condition = self.filter.conditions[0]
+
+            for item in self.datalab.data:
+                if all(
+                    [
+                        did_pass_test(
+                            condition.formulas[parameter_index],
+                            item.get(parameter),
+                            types.get(parameter),
+                        )
+                        for parameter_index, parameter in enumerate(parameters)
+                    ]
+                ):
+                    filtered_data.append(item)
+
+        else:
+            filtered_data = self.datalab.data
+
+        column_order = [item["field"] for item in self.datalab.order]
+
+        return {
+            "records": filtered_data,
+            "order": column_order,
+            "unfilteredLength": len(self.datalab.data),
+            "filteredLength": len(filtered_data),
+        }
+
+    def populate_content(self, content=None):
+        if not content:
+            content = self.content
+
+        filtered_data = self.data["records"]
+        types = self.options["types"]
+
+        # Assign each record to the rule groups
+        populated_rules = defaultdict(set)
+        for item_index, item in enumerate(filtered_data):
+            for rule in self.rules:
+                parameters = rule.parameters
+                did_match = False
+
+                for condition in rule.conditions:
+                    if all(
+                        [
+                            did_pass_test(
+                                condition.formulas[parameter_index],
+                                item.get(parameter),
+                                types.get(parameter),
+                            )
+                            for parameter_index, parameter in enumerate(parameters)
+                        ]
+                    ):
+                        did_match = True
+                        populated_rules[condition.conditionId].add(item_index)
+                        break
+
+                if not did_match:
+                    populated_rules[rule.catchAll].add(item_index)
+
+        block_map = content["blockMap"]["document"]["nodes"]
+        html = content["html"]
+        result = []
+
+        # Populate the content for each record
+        for item_index, item in enumerate(filtered_data):
+            populated_content = ""
+
+            for block_index, block in enumerate(block_map):
+                if block["type"] == "condition":
+                    condition_id = block["data"]["conditionId"]
+                    if item_index in populated_rules.get(ObjectId(condition_id), {}):
+                        populated_content += parse_content_line(html[block_index], item)
+                else:
+                    populated_content += parse_content_line(html[block_index], item)
+
+            result.append(populated_content)
+
+        return result
+
+    def clean_content(self, conditions):
+        if not self.content:
+            return
+
+        blocks = self.content["blockMap"]["document"]["nodes"]
+        new_blocks = list(
+            filter(
+                lambda block: block["data"].get("conditionId") not in conditions, blocks
+            )
+        )
+
+        self.content["blockMap"]["document"]["nodes"] = new_blocks
+
+        return self.content
+
+    def send_email(self, job_type, email_settings=None):
+        if not email_settings:
+            email_settings = self.emailSettings
+
+        populated_content = self.populate_content()
+
+        job_id = ObjectId()
+        job = EmailJob(
+            job_id=job_id,
+            subject=email_settings.subject,
+            type=job_type,
+            included_feedback=email_settings.include_feedback and True,
+            emails=[],
+        )
+
+        failed_emails = False
+        for index, item in enumerate(self.data["records"]):
+            recipient = item.get(email_settings.field)
+            email_content = populated_content[index]
+
+            tracking_token = jwt.encode(
+                {
+                    "action_id": str(self.id),
+                    "job_id": str(job_id),
+                    "recipient": recipient,
+                },
+                SECRET_KEY,
+                algorithm="HS256",
+            ).decode("utf-8")
+
+            tracking_link = (
+                f"{BACKEND_DOMAIN}/workflow/read_receipt/?email={tracking_token}"
+            )
+            tracking_pixel = f"<img src='{tracking_link}'/>"
+            email_content += tracking_pixel
+
+            if email_settings.include_feedback:
+                feedback_link = (
+                    f"{FRONTEND_DOMAIN}/action/{self.id}/feedback/?job={job_id}"
+                )
+                email_content += (
+                    "<p>Did you find this correspondence useful? Please provide your "
+                    f"feedback by <a href='{feedback_link}'>clicking here</a>.</p>"
+                )
+
+            email_sent = send_email(
+                recipient, email_settings.subject, email_content, email_settings.replyTo
+            )
+
+            if email_sent:
+                job.emails.append(
+                    Email(
+                        recipient=recipient,
+                        # Content without the tracking pixel
+                        content=populated_content[index],
+                    )
+                )
+            else:
+                failed_emails = True
+
+        # if failed_emails:
+        # TODO: Make these records identifiable, e.g. allow user to specify the primary key of the DataLab?
+        # And send back a list of the specific records that we failed to send an email to
+        # raise ValidationError('Emails to the some records failed to send: ' + str(failed_emails).strip('[]').strip("'"))
+
+        self.emailJobs.append(job)
+        self.emailSettings = email_settings
+
+        self.save()

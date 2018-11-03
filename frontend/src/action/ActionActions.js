@@ -156,7 +156,7 @@ export const submitFeedback = ({
 
 export const fetchAction = ({ actionId, onError, onSuccess }) => dispatch => {
   const parameters = {
-    url: `/workflow/${actionId}/retrieve_workflow/`,
+    url: `/workflow/${actionId}/`,
     method: "GET",
     errorFn: error => {
       onError();

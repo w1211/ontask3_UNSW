@@ -46,7 +46,7 @@
 }
 .querybuilder .conditions {
     list-style: none;
-    margin-top: -6px;
+    /* margin-top: -6px; */
     max-height: 200px;
     overflow-y: scroll;
 }

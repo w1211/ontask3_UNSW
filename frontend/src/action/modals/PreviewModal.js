@@ -2,11 +2,7 @@ import React from "react";
 import { Modal, Button, Icon, Table } from "antd";
 
 class PreviewModal extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.state = { index: 0 };
-  }
+  state = { index: 0 };
 
   handleClose = () => {
     const { onClose } = this.props;
@@ -16,9 +12,10 @@ class PreviewModal extends React.Component {
   };
 
   render() {
-    const { preview, data, order } = this.props;
+    const { visible, populatedContent, records, order } = this.props;
     const { index } = this.state;
-    const { populatedContent, visible } = preview;
+
+    if (!populatedContent) return null;
 
     return (
       <Modal
@@ -60,15 +57,15 @@ class PreviewModal extends React.Component {
               <h3>Data</h3>
               <Table
                 size="small"
-                pagination={false}
-                dataSource={[{ ...data[index], key: 0 }]}
-                columns={order.map(item => ({
-                  title: item.field,
-                  dataIndex: item.field,
-                  key: item.field
-                }))}
-                style={{ marginBottom: 15 }}
                 scroll={{ x: (order.length - 1) * 175 }}
+                style={{ marginBottom: 15 }}
+                pagination={false}
+                dataSource={[records[index]]}
+                columns={order.map(item => ({
+                  title: item,
+                  dataIndex: item
+                }))}
+                rowKey={(record, i) => i}
               />
 
               <h3>Content</h3>

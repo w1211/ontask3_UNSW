@@ -32,6 +32,15 @@ const labelMap = {
   "==": "="
 };
 
+const defaultState = {
+  overlappingConditions: [],
+  hasMissingValues: false,
+  selectedClone: null,
+  loading: false,
+  deleting: false,
+  error: null
+};
+
 const formItemLayout = {
   labelCol: { span: 6 },
   wrapperCol: { span: 18 },
@@ -41,81 +50,89 @@ const formItemLayout = {
 const OptionTitle = (type, label) => (
   <span style={{ color: modMap[type][0] }}>
     <Icon type={modMap[type][1]} style={{ marginRight: 5 }} />
-    {label}
+    {type === "computed" ? "Computed fields" : label}
   </span>
 );
 
 class QueryBuilder extends React.Component {
-  state = { overlappingConditions: [] };
+  state = defaultState;
 
   componentDidMount() {
-    const [options, typeMap] = this.generateOptions();
-    this.setState({ options, typeMap });
+    const options = this.generateOptions();
+    this.setState({ options });
+  }
+
+  componentDidUpdate(prevProps) {
+    const { form, selected } = this.props;
+    const { hasMissingValues } = this.state;
+
+    const { setFieldsValue, getFieldValue, getFieldError } = form;
+
+    const conditionKeys = getFieldValue("conditionKeys");
+
+    // Ensure that there is at least one condition in the rule
+    if (conditionKeys && conditionKeys.length < 1)
+      setFieldsValue({
+        conditionKeys: [_.uniqueId()]
+      });
+
+    // If the missing values error message is visible, then
+    // check whether it is still needed after form values change
+    if (hasMissingValues) {
+      const conditionErrors = getFieldError("rule.conditions");
+      let stillMissingValues = false;
+
+      conditionErrors.forEach(condition => {
+        condition.formulas.forEach(formula => {
+          if (Object.values(formula).some(error => !!error))
+            stillMissingValues = true;
+        });
+      });
+
+      if (!stillMissingValues) this.setState({ hasMissingValues: false });
+    }
+
+    // If filter or rule is being edited, manually set these some values here so
+    // that the DOM elements which depend on these form items are rendered (e.g.
+    // conditions depend on conditionKeys, and eachparameter gives an additional
+    // attribute to each condition).
+    if (!prevProps.selected && selected) {
+      setFieldsValue({
+        "rule.parameters": selected.parameters,
+        conditionKeys: selected.conditions.map(() => _.uniqueId())
+      });
+      // Create a clone of the selected object, which will be used to provide default
+      // form values. When parameters are added/removed, the clone is likewise modified.
+      // This progressively modified clone is used to provide default form values, so that
+      // updating a query (i.e. a selected is provided) does not cause unexpected behaviour.
+      //
+      // Example of such behaviour: Parameter at index i is deleted, therefore the conditions
+      // are updated (index i removed from list, DOM elements removed and therefore fields
+      // removed from form). A parameter is added, DOM elements for new condition index added,
+      // and the fields are added to the form with initialValue set by values from the
+      // *selected*. The user would actually expect these values to be null.
+      this.setState({ selectedClone: selected });
+    }
   }
 
   generateOptions = () => {
-    const { steps, datasources } = this.props;
+    const { modules } = this.props;
 
-    const typeMap = {};
+    const options = [];
+    modules.forEach((module, i) => {
+      options.push(
+        <OptGroup label={OptionTitle(module.type, module.name)} key={i}>
+          {module.fields.map(field => (
+            <Option key={field}>{field}</Option>
+          ))}
+        </OptGroup>
+      );
+    });
 
-    const computedFields = [];
-    const options = steps.reduce((options, mod) => {
-      if (mod.type === "datasource") {
-        const name = datasources.find(
-          datasource => datasource.id === mod[mod.type].id
-        ).name;
-
-        options.push(
-          <OptGroup label={OptionTitle("datasource", name)} key={name}>
-            {mod.datasource.fields.map(field => {
-              const label = mod.datasource.labels[field];
-              const type = mod.datasource.types[field];
-              typeMap[label] = type;
-              return <Option key={label}>{label}</Option>;
-            })}
-          </OptGroup>
-        );
-      }
-
-      if (mod.type === "form") {
-        options.push(
-          <OptGroup
-            label={OptionTitle("form", mod.form.name)}
-            key={mod.form.name}
-          >
-            {mod.form.fields.map(field => {
-              typeMap[field.name] = field.type;
-              return <Option key={field.name}>{field.name}</Option>;
-            })}
-          </OptGroup>
-        );
-      }
-
-      if (mod.type === "computed") {
-        computedFields.push(
-          ...mod.computed.fields.map(field => {
-            typeMap[field.name] = field.type;
-            return <Option key={field.name}>{field.name}</Option>;
-          })
-        );
-      }
-
-      return options;
-    }, []);
-
-    options.push(
-      <OptGroup
-        label={OptionTitle("computed", "Computed fields")}
-        key={"computed"}
-      >
-        {computedFields}
-      </OptGroup>
-    );
-
-    return [options, typeMap];
+    return options;
   };
 
-  Operations = (type, parameterIndex) => {
+  Operations = type => {
     let operations = [];
     if (type === "number" || type === "date")
       operations = [">", ">=", "<", "<=", "==", "!=", "between"];
@@ -165,66 +182,62 @@ class QueryBuilder extends React.Component {
       );
   };
 
-  Comparator = (type, operation, conditionIndex, parameterIndex) => {
+  Comparator = (type, conditionIndex, parameterIndex) => {
     const { form } = this.props;
-    const { getFieldDecorator } = form;
+    const { selectedClone } = this.state;
 
-    const fieldBase = `rule.conditions[${conditionIndex}][${parameterIndex}].`;
+    const { getFieldValue, getFieldDecorator } = form;
+
+    const fieldBase = `conditions[${conditionIndex}].formulas[${parameterIndex}].`;
+
+    const operation = getFieldValue(`rule.${fieldBase}operator`);
+
+    const initialValue = field => {
+      let value = _.get(selectedClone, field);
+      if (type === "date" && value) value = moment(value);
+      return value;
+    };
 
     if (operation === "between")
       return [
-        getFieldDecorator(`${fieldBase}from`, {
-          rules: [
-            {
-              required: true
-            }
-          ]
-        })(this.Element(type, `${fieldBase}from`)),
+        <FormItem key={`rule.${fieldBase}rangeFrom`}>
+          {getFieldDecorator(`rule.${fieldBase}rangeFrom`, {
+            rules: [
+              {
+                required: true
+              }
+            ],
+            initialValue: initialValue(`${fieldBase}rangeFrom`)
+          })(this.Element(type, `rule.${fieldBase}rangeFrom`))}
+        </FormItem>,
         <span className="and" key={`${fieldBase}and`}>
           and
         </span>,
-        getFieldDecorator(`${fieldBase}to`, {
+        <FormItem key={`rule.${fieldBase}rangeTo`}>
+          {getFieldDecorator(`rule.${fieldBase}rangeTo`, {
+            rules: [
+              {
+                required: true
+              }
+            ],
+            initialValue: initialValue(`${fieldBase}rangeTo`)
+          })(this.Element(type, `rule.${fieldBase}rangeTo`))}
+        </FormItem>
+      ];
+
+    return (
+      <FormItem>
+        {getFieldDecorator(`rule.${fieldBase}comparator`, {
           rules: [
             {
               required: true
             }
-          ]
-        })(this.Element(type, `${fieldBase}to`))
-      ];
-
-    return getFieldDecorator(`${fieldBase}comparator`, {
-      rules: [
-        {
-          required: true
-        }
-      ]
-    })(this.Element(type, `${fieldBase}comparator`));
+          ],
+          initialValue: initialValue(`${fieldBase}comparator`)
+        })(this.Element(type, `rule.${fieldBase}comparator`))}
+      </FormItem>
+    );
   };
-
-  componentDidUpdate() {
-    const { form } = this.props;
-    const { hasMissingValues } = this.state;
-
-    const { getFieldValue, setFieldsValue, getFieldError } = form;
-
-    const conditionKeys = getFieldValue("conditionKeys");
-
-    // Ensure that there is at least one condition in the rule
-    if (conditionKeys && conditionKeys.length < 1)
-      setFieldsValue({
-        conditionKeys: [_.uniqueId()]
-      });
-
-    // If the missing values error message is visible, then
-    // check whether it is still needed after form values change
-    if (hasMissingValues) {
-      const conditionErrors = getFieldError("rule.conditions")
-        .flat()
-        .some(condition => Object.values(condition).some(error => !!error));
-
-      if (!conditionErrors) this.setState({ hasMissingValues: false });
-    }
-  }
 
   addCondition = () => {
     const { form } = this.props;
@@ -239,6 +252,8 @@ class QueryBuilder extends React.Component {
 
   deleteCondition = conditionIndex => {
     const { form } = this.props;
+    const { selectedClone } = this.state;
+
     const { getFieldValue } = form;
 
     const conditionKeys = getFieldValue("conditionKeys");
@@ -251,6 +266,41 @@ class QueryBuilder extends React.Component {
       conditionKeys,
       "rule.conditions": conditions
     });
+    this.setState({ selectedClone: { ...selectedClone, conditions } });
+  };
+
+  modifyParameters = parameters => {
+    const { form } = this.props;
+    const { selectedClone } = this.state;
+
+    const { getFieldValue } = form;
+
+    const oldParameters = getFieldValue("rule.parameters");
+
+    // Detect whether any parameters have been *removed*
+    const deletedParameters = oldParameters
+      ? oldParameters.filter(oldParameter => !parameters.includes(oldParameter))
+      : [];
+
+    // If a parameter was removed, then update each of the conditions
+    // to remove that parameter from the condition formula
+    if (deletedParameters.length > 0) {
+      const conditions = getFieldValue("rule.conditions");
+
+      deletedParameters.forEach(deletedParameter => {
+        const deletedParameterIndex = oldParameters.indexOf(deletedParameter);
+        conditions.forEach(condition => {
+          condition.formulas.splice(deletedParameterIndex, 1);
+        });
+      });
+
+      // Update the conditions in the form
+      this.setState({ selectedClone: { ...selectedClone, conditions } }, () =>
+        // Update the form values as a second stage, so that the DOM is first
+        // re-rendered due to the selectedClone changes
+        form.setFieldsValue({ "rule.conditions": conditions })
+      );
+    }
   };
 
   hasOverlap = (formulas, type) => {
@@ -306,14 +356,17 @@ class QueryBuilder extends React.Component {
         if (formula.operator === "between") {
           if (type === "date") {
             // Convert moment datetimes to unix epoch
-            formula.from = formula.from.unix();
-            formula.to = formula.to.unix();
+            formula.rangeFrom = formula.rangeFrom.unix();
+            formula.rangeTo = formula.rangeTo.unix();
           }
           // Push an array of two expressions, one for each of "from" and "to"
-          expressionGroups.push([`x >= ${formula.from}`, `x <= ${formula.to}`]);
+          expressionGroups.push([
+            `x >= ${formula.rangeFrom}`,
+            `x <= ${formula.rangeTo}`
+          ]);
           [-1, 0, 1].forEach(i => {
-            values.add(formula.from + i);
-            values.add(formula.to + i);
+            values.add(formula.rangeFrom + i);
+            values.add(formula.rangeTo + i);
           });
         } else {
           if (type === "date") {
@@ -347,8 +400,7 @@ class QueryBuilder extends React.Component {
   };
 
   testOverlaps = () => {
-    const { form } = this.props;
-    const { typeMap } = this.state;
+    const { form, types } = this.props;
 
     const { rule } = form.getFieldsValue();
     const { parameters, conditions } = rule;
@@ -394,8 +446,11 @@ class QueryBuilder extends React.Component {
           bucket.slice(conditionIndex + 1).forEach(comparison => {
             // Check whether the condition overlaps
             const hasOverlap = this.hasOverlap(
-              [condition[parameterIndex], comparison[parameterIndex]],
-              typeMap[parameter]
+              [
+                condition.formulas[parameterIndex],
+                comparison.formulas[parameterIndex]
+              ],
+              types[parameter]
             );
 
             // If the condition being compared does overlap, add it to the new bucket.
@@ -427,7 +482,9 @@ class QueryBuilder extends React.Component {
   };
 
   handleOk = () => {
-    const { form } = this.props;
+    const { selected, type, form, onSubmit } = this.props;
+
+    this.setState({ error: null });
 
     form.validateFields((err, values) => {
       if (err) {
@@ -439,53 +496,47 @@ class QueryBuilder extends React.Component {
       this.setState({ overlappingConditions, hasMissingValues: false });
 
       if (overlappingConditions) return;
+
+      this.setState({ loading: true });
+
+      onSubmit({
+        [type]: values.rule,
+        method: selected ? "PUT" : "POST",
+        onSuccess: this.handleClose,
+        onError: error => this.setState({ error })
+      });
     });
   };
 
-  handleCancel = () => {
-    const { onClose } = this.props;
+  handleDelete = () => {
+    const { onSubmit } = this.props;
 
+    this.setState({ error: null, deleting: true });
+
+    onSubmit({
+      method: "DELETE",
+      onSuccess: this.handleClose,
+      onError: error => this.setState({ error })
+    });
+  };
+
+  handleClose = () => {
+    const { form, onClose } = this.props;
+
+    form.resetFields();
+    this.setState(defaultState);
     onClose();
   };
 
-  modifyParameters = parameters => {
-    const { form } = this.props;
-    const { getFieldValue } = form;
-
-    const oldParameters = getFieldValue("rule.parameters");
-
-    // Detect whether any parameters have been *removed*
-    const deletedParameters = oldParameters.filter(
-      oldParameter => !parameters.includes(oldParameter)
-    );
-
-    // If a parameter was removed, then update each of the conditions
-    // to remove that parameter from the condition formula
-    if (deletedParameters.length > 0) {
-      const conditions = getFieldValue("rule.conditions");
-
-      deletedParameters.forEach(deletedParameter => {
-        const deletedParameterIndex = oldParameters.indexOf(deletedParameter);
-
-        conditions.forEach(condition => {
-          condition.splice(deletedParameterIndex, 1);
-        });
-      });
-
-      // Update the conditions in the form
-      form.setFieldsValue({
-        "rule.conditions": conditions
-      });
-    }
-  };
-
   render() {
-    const { form, type, selected, visible } = this.props;
+    const { form, type, visible, types } = this.props;
     const {
       options,
-      typeMap,
       overlappingConditions,
-      hasMissingValues
+      hasMissingValues,
+      loading,
+      error,
+      selectedClone
     } = this.state;
     const { getFieldDecorator, getFieldValue } = form;
 
@@ -493,13 +544,35 @@ class QueryBuilder extends React.Component {
     const conditionKeys = getFieldValue("conditionKeys");
     const parameters = getFieldValue("rule.parameters");
 
+    selectedClone &&
+      getFieldDecorator("rule.catchAll", {
+        initialValue: selectedClone && selectedClone.catchAll
+      });
+
     return (
       <Modal
-        title={`${selected ? "Update" : "Create"} ${type}`}
+        title={`${selectedClone ? "Update" : "Create"} ${type}`}
         visible={visible}
-        onOk={this.handleOk}
-        onCancel={this.handleCancel}
         width={650}
+        onCancel={this.handleClose}
+        footer={[
+          <Button key="back" onClick={this.handleClose}>
+            Cancel
+          </Button>,
+          selectedClone && (
+            <Button key="delete" onClick={this.handleDelete} type="danger">
+              Delete
+            </Button>
+          ),
+          <Button
+            key="submit"
+            type="primary"
+            loading={loading}
+            onClick={this.handleOk}
+          >
+            {selectedClone ? "Update" : "Create"}
+          </Button>
+        ]}
       >
         <Form layout="horizontal" className="querybuilder">
           {type === "rule" && (
@@ -510,20 +583,21 @@ class QueryBuilder extends React.Component {
                     required: true,
                     message: "Rule name is required"
                   }
-                ]
+                ],
+                initialValue: selectedClone && selectedClone.name
               })(<Input />)}
             </FormItem>
           )}
 
           <FormItem label="Parameters" {...formItemLayout}>
             {getFieldDecorator("rule.parameters", {
+              // initialValue for parameters is set via componentDidUpdate
               rules: [
                 {
                   required: true,
                   message: "At least one parameter is required"
                 }
-              ],
-              initialValue: []
+              ]
             })(
               <Select
                 showSearch
@@ -538,16 +612,18 @@ class QueryBuilder extends React.Component {
           {parameters &&
             parameters.length > 0 && (
               <div>
-                <FormItem label="Conditions" {...formItemLayout}>
-                  <Tooltip title="Add condition">
-                    <Button
-                      icon="plus"
-                      size="small"
-                      type="primary"
-                      onClick={this.addCondition}
-                    />
-                  </Tooltip>
-                </FormItem>
+                {type === "rule" && (
+                  <FormItem label="Conditions" {...formItemLayout}>
+                    <Tooltip title="Add condition">
+                      <Button
+                        icon="plus"
+                        size="small"
+                        type="primary"
+                        onClick={this.addCondition}
+                      />
+                    </Tooltip>
+                  </FormItem>
+                )}
 
                 <ul className="conditions">
                   {conditionKeys.map((key, conditionIndex) => (
@@ -578,9 +654,16 @@ class QueryBuilder extends React.Component {
 
                       <div className="parameters">
                         {parameters.map((parameter, parameterIndex) => {
-                          const operation = getFieldValue(
-                            `rule.conditions[${conditionIndex}][${parameterIndex}].operator`
-                          );
+                          if (selectedClone)
+                            getFieldDecorator(
+                              `rule.conditions[${conditionIndex}].conditionId`,
+                              {
+                                initialValue: _.get(
+                                  selectedClone,
+                                  `conditions[${conditionIndex}].conditionId`
+                                )
+                              }
+                            );
 
                           return (
                             <div className="field" key={`${key}_${parameter}`}>
@@ -589,37 +672,35 @@ class QueryBuilder extends React.Component {
                               <div className="operation">
                                 <FormItem>
                                   {getFieldDecorator(
-                                    `rule.conditions[${conditionIndex}][${parameterIndex}].operator`,
+                                    `rule.conditions[${conditionIndex}].formulas[${parameterIndex}].operator`,
                                     {
                                       rules: [
                                         {
                                           required: true
                                         }
-                                      ]
+                                      ],
+                                      initialValue: _.get(
+                                        selectedClone,
+                                        `conditions[${conditionIndex}].formulas[${parameterIndex}].operator`
+                                      )
                                     }
                                   )(
                                     <Select
                                       showArrow={false}
                                       dropdownMatchSelectWidth={false}
                                     >
-                                      {this.Operations(
-                                        typeMap[parameter],
-                                        parameterIndex
-                                      )}
+                                      {this.Operations(types[parameter])}
                                     </Select>
                                   )}
                                 </FormItem>
                               </div>
 
                               <div className="comparator">
-                                <FormItem>
-                                  {this.Comparator(
-                                    typeMap[parameter],
-                                    operation,
-                                    conditionIndex,
-                                    parameterIndex
-                                  )}
-                                </FormItem>
+                                {this.Comparator(
+                                  types[parameter],
+                                  conditionIndex,
+                                  parameterIndex
+                                )}
                               </div>
                             </div>
                           );
@@ -651,6 +732,8 @@ class QueryBuilder extends React.Component {
               showIcon
             />
           )}
+
+          {error && <Alert message={error} type="error" showIcon />}
         </Form>
       </Modal>
     );

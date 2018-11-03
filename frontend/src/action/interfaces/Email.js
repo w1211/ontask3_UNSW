@@ -1,30 +1,28 @@
 import React from "react";
 import {
   Form,
-  Input,
-  Select,
   Button,
   Alert,
   Spin,
   Icon,
   Tooltip,
-  Checkbox,
   Divider,
   Table,
   Modal,
-  Popover
+  Popover,
+  notification
 } from "antd";
 import moment from "moment";
 import _ from "lodash";
 
-import * as ActionActions from "../ActionActions";
-
 import { narrowFormItemLayout } from "../../shared/FormItemLayout";
 
 import SchedulerModal from "../../scheduler/SchedulerModal";
+import EmailSettings from "./EmailSettings";
+
+import apiRequest from "../../shared/apiRequest";
 
 const FormItem = Form.Item;
-const Option = Select.Option;
 
 class Email extends React.Component {
   constructor(props) {
@@ -32,12 +30,10 @@ class Email extends React.Component {
     const { action } = props;
 
     const options = [];
-    action.datalab.steps.forEach(step => {
+    action.options.modules.forEach(step => {
       if (step.type === "datasource") {
-        step = step.datasource;
         step.fields.forEach(field => {
-          const label = step.labels[field];
-          options.push(label);
+          options.push(field);
         });
       }
     });
@@ -45,10 +41,9 @@ class Email extends React.Component {
     this.state = {
       index: 0,
       scheduler: { visible: false, selected: null, data: {} },
-      loading: { emailSettings: false, emailSend: false, preview: true },
+      previewing: true,
+      sending: false,
       options,
-      preview: null,
-      error: null,
       emailView: { visible: false }
     };
 
@@ -62,79 +57,90 @@ class Email extends React.Component {
       sun: { order: 6, label: "Sunday" }
     };
 
-    ActionActions.previewContent({
-      actionId: action.id,
-      payload: { blockMap: action.content, html: action.html },
-      onError: error =>
-        this.setState({
-          loading: { ...this.state.loading, preview: false },
-          error
-        }),
-      onSuccess: preview =>
-        this.setState({
-          preview,
-          loading: { ...this.state.loading, preview: false },
-          error: null
-        })
+    apiRequest(`/workflow/${action.id}/content/`, {
+      method: "GET",
+      onSuccess: populatedContent =>
+        this.setState({ populatedContent, previewing: false }),
+      onError: error => this.setState({ error, previewing: false })
     });
   }
 
   handleSubmit = () => {
     const { form, action } = this.props;
-    const { loading } = this.state;
 
     form.validateFields((err, payload) => {
       if (err) return;
 
-      this.setState({ loading: { ...loading, emailSend: true } });
+      const { emailSettings } = payload;
+      this.setState({ sending: true, error: null });
 
-      ActionActions.sendEmail({
-        actionId: action.id,
-        payload,
-        onError: error =>
-          this.setState({ loading: { ...loading, emailSend: false }, error }),
-        onSuccess: () =>
-          this.setState({
-            loading: { ...loading, emailSend: false },
-            error: null
-          })
+      apiRequest(`/workflow/${action.id}/email/`, {
+        method: "POST",
+        payload: { emailSettings },
+        onSuccess: () => {
+          notification["success"]({
+            message: "Email(s) successfully sent."
+          });
+          this.setState({ sending: false });
+        },
+        onError: error => this.setState({ error })
       });
     });
   };
 
-  updateEmailSettings = () => {
-    const { form, action, updateAction } = this.props;
-    const { loading, error } = this.state;
+  updateEmailSettings = ({ emailSettings, onSuccess, onError }) => {
+    const { action, updateAction } = this.props;
 
-    form.validateFields((err, payload) => {
-      if (err) return;
+    apiRequest(`/workflow/${action.id}/`, {
+      method: "PATCH",
+      payload: { emailSettings },
+      onSuccess: action => {
+        notification["success"]({
+          message: "Email settings successfully updated."
+        });
+        onSuccess();
+        updateAction(action);
+      },
+      onError: error => onError(error)
+    });
+  };
 
-      if (
-        payload.emailSettings.include_feedback &&
-        !payload.emailSettings.feedback_list &&
-        !payload.emailSettings.feedback_textbox
-      )
-        return;
+  updateSchedule = ({ payload, onSuccess, onError }) => {
+    const { action, updateAction } = this.props;
 
-      this.setState({ loading: { ...loading, emailSettings: true } });
+    const isCreate = !action.schedule;
 
-      ActionActions.updateEmailSettings({
-        actionId: action.id,
-        payload,
-        onError: () => {
-          this.setState({
-            loading: { ...loading, emailSettings: false },
-            error
-          });
-        },
-        onSuccess: action => {
-          this.setState({
-            loading: { ...loading, emailSettings: false },
-            error: null
-          });
-          updateAction(action);
-        }
-      });
+    apiRequest(`/workflow/${action.id}/schedule/`, {
+      method: "PUT",
+      payload,
+      onSuccess: action => {
+        notification["success"]({
+          message: `Schedule ${isCreate ? "created" : "updated"}`,
+          description: `The schedule was successfully ${
+            isCreate ? "created" : "updated"
+          }.`
+        });
+        onSuccess();
+        updateAction(action);
+      },
+      onError: error => onError(error)
+    });
+  };
+
+  deleteSchedule = ({ onSuccess, onError }) => {
+    const { action, updateAction } = this.props;
+
+    apiRequest(`/workflow/${action.id}/schedule/`, {
+      method: "DELETE",
+      onSuccess: action => {
+        notification["success"]({
+          message: "Schedule deleted",
+          description: "The schedule was successfully deleted."
+        });
+        onSuccess();
+        updateAction(action);
+      },
+      onError: error => onError(error)
     });
   };
 
@@ -259,203 +265,6 @@ class Email extends React.Component {
     />
   );
 
-  FeedbackConfiguration = () => {
-    const { action, form } = this.props;
-
-    form.getFieldDecorator("feedbackOptionKeys", {
-      initialValue:
-        _.get(action, "emailSettings.list_options", []).length > 0
-          ? action.emailSettings.list_options.map(() => null)
-          : [null]
-    });
-    const feedbackOptionKeys = form.getFieldValue("feedbackOptionKeys");
-
-    return (
-      <div
-        style={{
-          border: "1px dashed #e9e9e9",
-          background: "#F5F5F5",
-          borderRadius: 5,
-          margin: "20px -1px",
-          padding: "10px 20px 10px 0"
-        }}
-      >
-        <FormItem
-          {...narrowFormItemLayout}
-          className="checkbox"
-          label="Include list"
-        >
-          {form.getFieldDecorator("emailSettings.feedback_list", {
-            initialValue: _.get(action, "emailSettings.feedback_list") || false,
-            valuePropName: "checked"
-          })(<Checkbox />)}
-        </FormItem>
-
-        {form.getFieldValue("emailSettings.feedback_list") && (
-          <div>
-            <FormItem
-              {...narrowFormItemLayout}
-              label="List question"
-              style={{ margin: 0 }}
-              help={null}
-            >
-              {form.getFieldDecorator("emailSettings.list_question", {
-                rules: [
-                  {
-                    required: true
-                  }
-                ],
-                initialValue: _.get(action, "emailSettings.list_question")
-              })(
-                <Input placeholder="E.g. How would you rate this feedback?" />
-              )}
-            </FormItem>
-
-            <FormItem
-              {...narrowFormItemLayout}
-              label="List type"
-              style={{ margin: 0 }}
-              help={null}
-            >
-              {form.getFieldDecorator("emailSettings.list_type", {
-                rules: [
-                  {
-                    required: true
-                  }
-                ],
-                initialValue:
-                  _.get(action, "emailSettings.list_type") || "radio"
-              })(
-                <Select>
-                  <Option value="dropdown">Dropdown</Option>
-                  <Option value="radio">Radio boxes</Option>
-                </Select>
-              )}
-            </FormItem>
-
-            <FormItem
-              {...narrowFormItemLayout}
-              label="List options"
-              style={{ margin: 0 }}
-              help={null}
-            >
-              <Button
-                type="primary"
-                size="small"
-                onClick={() => {
-                  form.setFieldsValue({
-                    feedbackOptionKeys: [...feedbackOptionKeys, null]
-                  });
-                }}
-              >
-                Add option
-              </Button>
-
-              {feedbackOptionKeys.map((key, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    marginBottom: 5
-                  }}
-                >
-                  {form.getFieldDecorator(
-                    `emailSettings.list_options[${i}].label`,
-                    {
-                      rules: [
-                        {
-                          required: true
-                        }
-                      ],
-                      initialValue: _.get(
-                        action,
-                        `emailSettings.list_options[${i}].label`
-                      )
-                    }
-                  )(<Input style={{ marginRight: 10 }} placeholder="Label" />)}
-
-                  {form.getFieldDecorator(
-                    `emailSettings.list_options[${i}].value`,
-                    {
-                      rules: [{ required: true }],
-                      initialValue: _.get(
-                        action,
-                        `emailSettings.list_options[${i}].value`
-                      )
-                    }
-                  )(<Input style={{ marginRight: 10 }} placeholder="Value" />)}
-
-                  <Button
-                    type="danger"
-                    icon="delete"
-                    disabled={feedbackOptionKeys.length <= 1}
-                    onClick={() => {
-                      const feedbackOptions = form.getFieldValue(
-                        "emailSettings.list_options"
-                      );
-                      feedbackOptionKeys.pop();
-                      feedbackOptions.splice(i, 1);
-
-                      form.setFieldsValue({
-                        feedbackOptionKeys,
-                        "emailSettings.list_options": feedbackOptions
-                      });
-                    }}
-                  />
-                </div>
-              ))}
-            </FormItem>
-          </div>
-        )}
-
-        <FormItem
-          {...narrowFormItemLayout}
-          className="checkbox"
-          label="Include textbox"
-        >
-          {form.getFieldDecorator("emailSettings.feedback_textbox", {
-            initialValue:
-              _.get(action, "emailSettings.feedback_textbox") ||
-              form.getFieldValue("emailSettings.feedback_list")
-                ? false
-                : true,
-            valuePropName: "checked"
-          })(<Checkbox />)}
-        </FormItem>
-
-        {form.getFieldValue("emailSettings.feedback_textbox") && (
-          <FormItem
-            {...narrowFormItemLayout}
-            label="Textbox question"
-            style={{ margin: 0 }}
-            help={null}
-          >
-            {form.getFieldDecorator("emailSettings.textbox_question", {
-              rules: [
-                {
-                  required: true
-                }
-              ],
-              initialValue: _.get(action, "emailSettings.textbox_question")
-            })(
-              <Input placeholder="E.g. How useful was this correspondence?" />
-            )}
-          </FormItem>
-        )}
-
-        {!form.getFieldValue("emailSettings.feedback_textbox") &&
-          !form.getFieldValue("emailSettings.feedback_list") && (
-            <Alert
-              style={{ margin: "10px 0 0 15px" }}
-              type="error"
-              message="You must have at least a dropdown or a textbox in order to collect feedback"
-            />
-          )}
-      </div>
-    );
-  };
-
   EmailHistory = () => {
     const { action } = this.props;
     const { emailView } = this.state;
@@ -539,16 +348,23 @@ class Email extends React.Component {
   };
 
   render() {
-    const { action, form, updateAction } = this.props;
-    const { loading, error, scheduler, options, index, preview } = this.state;
+    const { action, form } = this.props;
+    const {
+      sending,
+      previewing,
+      error,
+      scheduler,
+      options,
+      index,
+      populatedContent
+    } = this.state;
 
     return (
       <div className="email">
         <SchedulerModal
           {...scheduler}
-          onUpdate={ActionActions.updateSchedule}
-          onDelete={ActionActions.deleteSchedule}
-          onSuccess={action => updateAction(action)}
+          onUpdate={this.updateSchedule}
+          onDelete={this.deleteSchedule}
           closeModal={this.closeSchedulerModal}
         />
 
@@ -619,76 +435,12 @@ class Email extends React.Component {
 
         <h3>Email settings</h3>
 
-        <Form layout="horizontal" className="panel">
-          <FormItem {...narrowFormItemLayout} label="Email field">
-            {form.getFieldDecorator("emailSettings.field", {
-              rules: [{ required: true, message: "Email field is required" }],
-              initialValue: _.get(action, "emailSettings.field")
-            })(
-              <Select>
-                {options.map((option, i) => {
-                  return (
-                    <Option value={option} key={i}>
-                      {option}
-                    </Option>
-                  );
-                })}
-              </Select>
-            )}
-          </FormItem>
-
-          <FormItem {...narrowFormItemLayout} label="Subject">
-            {form.getFieldDecorator("emailSettings.subject", {
-              rules: [{ required: true, message: "Subject is required" }],
-              initialValue: _.get(action, "emailSettings.subject")
-            })(<Input />)}
-          </FormItem>
-
-          <FormItem {...narrowFormItemLayout} label="Reply-to">
-            {form.getFieldDecorator("emailSettings.replyTo", {
-              rules: [{ required: true, message: "Reply-to is required" }],
-              initialValue: _.get(
-                action,
-                "emailSettings.replyTo",
-                localStorage.email
-              )
-            })(<Input />)}
-          </FormItem>
-
-          <FormItem
-            {...narrowFormItemLayout}
-            className="checkbox"
-            label={
-              <div className="field_label">
-                Feedback form
-                <Tooltip
-                  title={`Includes a hyperlink to a form that allows recipients to 
-                  provide feedback for this email`}
-                >
-                  <Icon type="question-circle-o" />
-                </Tooltip>
-              </div>
-            }
-          >
-            {form.getFieldDecorator("emailSettings.include_feedback", {
-              initialValue:
-                _.get(action, "emailSettings.include_feedback") || false,
-              valuePropName: "checked"
-            })(<Checkbox />)}
-          </FormItem>
-
-          {form.getFieldValue("emailSettings.include_feedback") &&
-            this.FeedbackConfiguration()}
-
-          <div className="button">
-            <Button
-              loading={loading.emailSettings}
-              onClick={this.updateEmailSettings}
-            >
-              Update
-            </Button>
-          </div>
-        </Form>
+        <EmailSettings
+          emailSettings={action.emailSettings}
+          updateEmailSettings={this.updateEmailSettings}
+          options={options}
+          form={form}
+        />
 
         <Divider dashed />
 
@@ -703,7 +455,7 @@ class Email extends React.Component {
         <div>
           <h3>Content preview</h3>
 
-          {preview && (
+          {populatedContent && (
             <div>
               <Button.Group>
                 <Button
@@ -715,7 +467,7 @@ class Email extends React.Component {
                 </Button>
 
                 <Button
-                  disabled={index === action.datalab.data.length - 1}
+                  disabled={index === action.data.records.length - 1}
                   onClick={() => this.setState({ index: index + 1 })}
                 >
                   Next
@@ -723,26 +475,26 @@ class Email extends React.Component {
                 </Button>
               </Button.Group>
               <span className="current_record">
-                Record {index + 1} of {action.datalab.data.length}
+                Record {index + 1} of {action.data.records.length}
               </span>
             </div>
           )}
         </div>
 
-        <div className={`preview ${loading.preview && "loading"}`}>
-          {loading.preview ? (
+        <div className={`preview ${previewing && "loading"}`}>
+          {previewing ? (
             <Spin size="large" />
           ) : (
             <div
               dangerouslySetInnerHTML={{
-                __html: preview && preview.populatedContent[index]
+                __html: populatedContent[index]
               }}
             />
           )}
         </div>
 
         <Button
-          loading={loading.emailSend}
+          loading={sending}
           type="primary"
           size="large"
           onClick={this.handleSubmit}
