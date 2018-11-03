@@ -1,0 +1,85 @@
+.querybuilder .field {
+    border: 1px solid rgb(117, 117, 117);
+    border-radius: 3px;
+    display: inline-flex;
+    align-items: center;
+    background: rgb(250, 250, 250);
+    margin: 2px 5px 2px 0px;
+}
+.querybuilder .field .name {
+    padding: 0px 5px;
+    cursor: default;
+}
+.querybuilder .field .name::after {
+    content: ":";
+    margin-left: 2px;
+    position: relative;
+    top: -0.5px;
+}
+.querybuilder .field .attributes { 
+    display :flex;
+}
+.querybuilder .field .operation {
+    min-width: 33px;
+}
+.querybuilder .field .operation div {
+    border-radius: 0px;
+}
+.querybuilder .field .comparator {
+    display: flex;
+    align-items: center;
+}
+.querybuilder .field .comparator .and {
+    padding: 0 5px;
+}
+.querybuilder .field .comparator > *,
+.querybuilder .field .comparator input {
+    border-radius: 0;
+}
+.querybuilder .field .comparator .field-input,
+.querybuilder .field .comparator .field-input input {
+    border-radius: 0 2px 2px 0;
+}
+.querybuilder .field .field-input {
+    max-width: 150px;
+    min-width: 60px;
+}
+.querybuilder .conditions {
+    list-style: none;
+    /* margin-top: -6px; */
+    max-height: 200px;
+    overflow-y: scroll;
+}
+.querybuilder .conditions li {
+    position: relative;
+}
+.querybuilder .conditions li:not(:last-child) {
+    margin-bottom: 10px;
+}
+.querybuilder .conditions .delete {
+    position: absolute;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    left: -30px;
+}
+.querybuilder .parameters  {
+    width: 100%;
+    display: inline-block;
+    padding: 7.5px;
+    background: rgba(236,239,241, 0.75);
+}
+.querybuilder .conditions li.overlap .parameters {
+    background: rgba(211,47,47, 0.20);
+}
+/* Override Ant Design styles so that field parameters (i.e. operator & comparator)
+    can get a red border on error (via FormItem) but hide error text and extra margins */
+.querybuilder .field .ant-form-item {
+    margin-bottom: 0;
+}
+.querybuilder .field .ant-form-item-control {
+    line-height: normal;
+}
+.querybuilder .field .ant-form-explain {
+    display: none;
+}

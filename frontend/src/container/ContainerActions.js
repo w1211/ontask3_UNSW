@@ -33,14 +33,13 @@ export const fetchContainers = accordionKey => dispatch => {
   dispatch({ type: START_FETCHING });
 
   const parameters = {
-    url: `/container/retrieve_containers/`,
+    url: `/container/`,
     method: "GET",
     errorFn: error => {
       dispatch({ type: FINISH_FETCHING });
       console.error(error);
     },
-    successFn: response => {
-      const { containers } = response;
+    successFn: containers => {
       dispatch({ type: FINISH_FETCHING });
       dispatch(storeContainers(containers, accordionKey));
     }

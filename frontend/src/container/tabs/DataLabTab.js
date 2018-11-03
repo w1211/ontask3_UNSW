@@ -127,9 +127,7 @@ class DataLabTab extends React.Component {
                 <Meta
                   description={
                     <div>
-                      {`${dataLab.steps.length} ${
-                        dataLab.steps.length > 1 ? "modules" : "module"
-                      }`}
+                      {`${dataLab.modules} module${dataLab.modules > 1 && "s"}`}
                     </div>
                   }
                 />

@@ -1,37 +1,22 @@
 import React from "react";
-import { bindActionCreators } from "redux";
-import { connect } from "react-redux";
 import { Link } from "react-router-dom";
 import { Switch, Route, Redirect } from "react-router-dom";
 import { Layout, Breadcrumb, Icon, Spin, Menu } from "antd";
-
-import * as ActionActionCreators from "./ActionActions";
+import queryString from "query-string";
 
 import Compose from "./interfaces/Compose";
 import Email from "./interfaces/Email";
 import Feedback from "./interfaces/Feedback";
 // import StaticPage from "./interfaces/StaticPage";
 
-import queryString from "query-string";
+import apiRequest from "../shared/apiRequest";
 
 import "./Action.css";
 
 const { Content, Sider } = Layout;
 
 class Action extends React.Component {
-  constructor(props) {
-    super(props);
-    const { dispatch } = props;
-
-    this.boundActionCreators = bindActionCreators(
-      ActionActionCreators,
-      dispatch
-    );
-
-    this.state = {
-      isFetching: true
-    };
-  }
+  state = { fetching: true };
 
   componentWillMount() {
     const { location, match } = this.props;
@@ -43,21 +28,20 @@ class Action extends React.Component {
     if (isFeedbackForm) {
       this.setState({ isFeedbackForm });
 
-      this.boundActionCreators.fetchFeedback({
-        actionId,
-        jobId,
-        onError: () => this.setState({ isFetching: false }),
+      apiRequest(`/workflow/${actionId}/feedback/?job=${jobId}`, {
+        method: "GET",
         onSuccess: feedback =>
           this.setState({
-            isFetching: false,
+            fetching: false,
             feedback: { ...feedback, actionId, jobId }
-          })
+          }),
+        onError: () => this.setState({ fetching: false })
       });
     } else {
-      this.boundActionCreators.fetchAction({
-        actionId,
-        onError: () => this.setState({ isFetching: false }),
-        onSuccess: action => this.setState({ isFetching: false, action })
+      apiRequest(`/workflow/${actionId}/`, {
+        method: "GET",
+        onSuccess: action => this.setState({ fetching: false, action }),
+        onError: () => this.setState({ fetching: false })
       });
     }
   }
@@ -68,7 +52,7 @@ class Action extends React.Component {
 
   render() {
     const { match, location } = this.props;
-    const { isFetching, action, isFeedbackForm, feedback } = this.state;
+    const { fetching, action, isFeedbackForm, feedback } = this.state;
 
     return (
       <div className={`action ${isFeedbackForm && "is_feedback_form"}`}>
@@ -121,7 +105,7 @@ class Action extends React.Component {
                       <Menu.Item key="static" disabled>
                         <Link to={`${match.url}/static`}>
                           <Icon type="link" />
-                          <span>Static page</span>
+                          <span>Static Page</span>
                           {/* <Tag style={{ marginLeft: 5 }} color="red" size="small">OFF</Tag> */}
                         </Link>
                       </Menu.Item>
@@ -132,7 +116,7 @@ class Action extends React.Component {
                 <Content className="content">
                   <h1>{action && action.name}</h1>
 
-                  {isFetching ? (
+                  {fetching ? (
                     <Spin size="large" />
                   ) : (
                     <Switch>
@@ -187,4 +171,4 @@ class Action extends React.Component {
   }
 }
 
-export default connect()(Action);
+export default Action;

@@ -3,7 +3,7 @@ version: '3'
 services:
   rabbitmq:
     restart: always
-    image: rabbitmq
+    image: rabbitmq:3.7
     environment:
       - RABBITMQ_MNESIA_BASE=/data/rabbitmq
     volumes: 
@@ -11,7 +11,7 @@ services:
 
   sql:
     restart: always
-    image: postgres
+    image: postgres:10.5
     environment:
       - POSTGRES_DB=ontask
       - POSTGRES_USER=ontask
@@ -22,7 +22,7 @@ services:
 
   nosql:
     restart: always
-    image: mongo
+    image: mongo:4
     ports:
       - "27017:27017"
     volumes:

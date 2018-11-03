@@ -50,15 +50,13 @@ class DatalabSerializer(DocumentSerializer):
 
     def get_datasources(self, datalab):
         datasources = Datasource.objects(container=datalab["container"].id)
-        datasources = [
-            DatasourceSerializer(instance=datasource).data for datasource in datasources
-        ]
-        return datasources
+        serializer = DatasourceSerializer(datasources, many=True)
+        return serializer.data
 
     def get_actions(self, datalab):
         actions = Workflow.objects(datalab=datalab.id)
-        actions = [ActionSerializer(instance=action).data for action in actions]
-        return actions
+        serializer = ActionSerializer(actions, many=True)
+        return serializer.data
 
     class Meta:
         model = Datalab

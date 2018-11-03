@@ -1,3 +1,6 @@
+.action .content {
+  overflow: hidden;
+}
 .action .editor {
   border: 1px solid #f1f1f1;
   padding: 0 10px;
@@ -161,4 +164,11 @@
 }
 .action .feedback {
   max-width: 750px;
+}
+
+.action .formlist_item > div {
+  margin-bottom: 0px;
+}
+.action .formlist_item .ant-form-explain {
+  display: none;
 }
