@@ -73,8 +73,8 @@ http {
             try_files $uri /index.html;
         }
 
-        location ~ ^/api/(.*)$ {
-            proxy_pass      http://127.0.0.1:8000/api/$1;
+        location ^~ /api/ {
+            proxy_pass      http://127.0.0.1:8000/api/;
         }
     }
 }
