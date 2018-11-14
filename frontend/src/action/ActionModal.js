@@ -1,11 +1,9 @@
 import React from "react";
 import { withRouter } from "react-router";
-import { bindActionCreators } from "redux";
-import { connect } from "react-redux";
-import { Modal, Form, Input, Alert, Select, Tooltip } from "antd";
+import { Modal, Form, Input, Alert, Select, Tooltip, notification } from "antd";
 import _ from "lodash";
 
-import * as ActionActionCreators from "./ActionActions";
+import apiRequest from "../shared/apiRequest";
 
 import formItemLayout from "../shared/FormItemLayout";
 
@@ -14,17 +12,7 @@ const { TextArea } = Input;
 const Option = Select.Option;
 
 class ActionModal extends React.Component {
-  constructor(props) {
-    super(props);
-    const { dispatch } = props;
-
-    this.boundActionCreators = bindActionCreators(
-      ActionActionCreators,
-      dispatch
-    );
-
-    this.state = { loading: false, error: null };
-  }
+  state = { loading: false, error: null };
 
   handleOk = () => {
     const { selected, form, data, closeModal, history } = this.props;
@@ -32,19 +20,30 @@ class ActionModal extends React.Component {
     form.validateFields((err, payload) => {
       if (err) return;
 
-      const callFn = selected ? "updateAction" : "createAction";
-      this.boundActionCreators[callFn]({
-        containerId: data && data.containerId,
-        actionId: selected && selected.id,
+      let url = "/workflow/";
+      if (selected) {
+        url += `${selected.id}/`;
+      } else {
+        payload.container = data.containerId;
+      }
+
+      apiRequest(url, {
+        method: selected ? "PATCH" : "POST",
         payload,
-        onError: error => this.setState({ loading: false, error }),
         onSuccess: action => {
           this.setState({ loading: false, error: null });
           form.resetFields();
           closeModal();
           // Redirect to action interface
           history.push({ pathname: `/action/${action.id}` });
-        }
+          notification["success"]({
+            message: `Action ${selected ? "updated" : "created"}`,
+            description: `The action was successfully ${
+              selected ? "updated" : "created"
+            }.`
+          });
+        },
+        onError: error => this.setState({ loading: false, error })
       });
     });
   };
@@ -103,9 +102,7 @@ class ActionModal extends React.Component {
             <FormItem {...formItemLayout} label="DataLab">
               {getFieldDecorator("datalab", {
                 initialValue: _.get(selected, "datalab"),
-                rules: [
-                  { required: !selected, message: "DataLab is required" }
-                ]
+                rules: [{ required: !selected, message: "DataLab is required" }]
               })(
                 <Select>
                   {dataLabs &&
@@ -130,6 +127,5 @@ class ActionModal extends React.Component {
 
 export default _.flow(
   withRouter,
-  connect(),
   Form.create()
 )(ActionModal);

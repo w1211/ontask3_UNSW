@@ -1,28 +1,18 @@
 import React from "react";
-import { bindActionCreators } from "redux";
-import { connect } from "react-redux";
-import { Input, Icon, Tooltip, Button, Card, Modal } from "antd";
+import { Input, Icon, Tooltip, Button, Card, Modal, notification } from "antd";
 import { Link } from "react-router-dom";
 
-import { deleteAction, cloneAction } from "../../action/ActionActions";
+import apiRequest from "../../shared/apiRequest";
 
 const { Meta } = Card;
 const confirm = Modal.confirm;
 
 class ActionTab extends React.Component {
-  constructor(props) {
-    super(props);
-    const { dispatch } = props;
-
-    this.boundActionCreators = bindActionCreators(
-      { deleteAction, cloneAction },
-      dispatch
-    );
-
-    this.state = { filter: null, deleting: {}, cloning: {} };
-  }
+  state = { filter: null, deleting: {}, cloning: {} };
 
   deleteAction = actionId => {
+    const { updateContainers } = this.props;
+
     confirm({
       title: "Confirm action deletion",
       content: "Are you sure you want to delete this action?",
@@ -34,10 +24,22 @@ class ActionTab extends React.Component {
           deleting: { [actionId]: true }
         });
 
-        this.boundActionCreators.deleteAction({
-          actionId,
-          onFinish: () => {
+        apiRequest(`/workflow/${actionId}`, {
+          method: "DELETE",
+          onSuccess: containers => {
             this.setState({ deleting: { [actionId]: false } });
+            updateContainers(containers);
+            notification["success"]({
+              message: "Action deleted",
+              description: "The action was successfully deleted."
+            });
+          },
+          onError: error => {
+            this.setState({ deleting: { [actionId]: false } });
+            notification["error"]({
+              message: "Action deletion failed",
+              description: error
+            });
           }
         });
       }
@@ -45,6 +47,8 @@ class ActionTab extends React.Component {
   };
 
   cloneAction = actionId => {
+    const { updateContainers } = this.props;
+
     confirm({
       title: "Confirm action clone",
       content: "Are you sure you want to clone this action?",
@@ -53,10 +57,22 @@ class ActionTab extends React.Component {
           cloning: { [actionId]: true }
         });
 
-        this.boundActionCreators.cloneAction({
-          actionId,
-          onFinish: () => {
+        apiRequest(`/workflow/${actionId}/clone_action/`, {
+          method: "POST",
+          onSuccess: containers => {
             this.setState({ cloning: { [actionId]: false } });
+            updateContainers(containers);
+            notification["success"]({
+              message: "Action cloned",
+              description: "The action was successfully cloned."
+            });
+          },
+          onError: error => {
+            this.setState({ cloning: { [actionId]: false } });
+            notification["error"]({
+              message: "Action cloning failed",
+              description: error
+            });
           }
         });
       }
@@ -69,26 +85,25 @@ class ActionTab extends React.Component {
 
     return (
       <div className="tab">
-        {actions &&
-          actions.length > 0 && (
-            <div className="filter_wrapper">
-              <div className="filter">
-                <Input
-                  placeholder="Filter actions by name"
-                  value={filter}
-                  addonAfter={
-                    <Tooltip title="Clear filter">
-                      <Icon
-                        type="close"
-                        onClick={() => this.setState({ filter: null })}
-                      />
-                    </Tooltip>
-                  }
-                  onChange={e => this.setState({ filter: e.target.value })}
-                />
-              </div>
+        {actions && actions.length > 0 && (
+          <div className="filter_wrapper">
+            <div className="filter">
+              <Input
+                placeholder="Filter actions by name"
+                value={filter}
+                addonAfter={
+                  <Tooltip title="Clear filter">
+                    <Icon
+                      type="close"
+                      onClick={() => this.setState({ filter: null })}
+                    />
+                  </Tooltip>
+                }
+                onChange={e => this.setState({ filter: e.target.value })}
+              />
             </div>
-          )}
+          </div>
+        )}
         {actions &&
           actions.map((action, i) => {
             if (filter && !action.name.includes(filter)) return null;
@@ -159,4 +174,4 @@ class ActionTab extends React.Component {
   }
 }
 
-export default connect()(ActionTab);
+export default ActionTab;
