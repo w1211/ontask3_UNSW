@@ -18,8 +18,8 @@ if os.environ.get('ONTASK_DEVELOPMENT') is not None:
     from config.dev import *
     DEBUG = True
     CELERY_BROKER_URL = 'amqp://rabbitmq'
-    FRONTEND_DOMAIN = 'http://localhost:3000' # For whitelisting CORS and authentication
-    BACKEND_DOMAIN = 'http://localhost:8000/api'
+    FRONTEND_DOMAIN = 'https://localhost:3000' # For whitelisting CORS and authentication
+    BACKEND_DOMAIN = 'https://localhost:8000'
     ALLOWED_HOSTS = ['localhost']
     SQL_DATABASE = {
         'ENGINE': 'django.db.backends.postgresql',
@@ -39,6 +39,11 @@ elif os.environ.get('ONTASK_DEMO') is not None:
 
 else:
     from config.prod import *
+
+
+LTI_URL = LTI_CONFIG.get('url')
+if LTI_URL:
+    X_FRAME_OPTIONS = f'ALLOW-FROM {LTI_URL}'
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -141,7 +146,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
-
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (

@@ -1,13 +1,10 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 from django.conf.urls import url
 
 from . import views
 
 urlpatterns = [
-    url(r'^user/local', views.LocalAuthRouter.as_view()),
-    url(r'^user/auth', views.AAFAuthRouter.as_view()),
-    url(r'^user/lti', views.LTIAuthRouter.as_view()),
-    url(r'^user/token', views.ValidateOneTimeToken.as_view())
+    url("local/", views.LocalAuth.as_view()),
+    url("aaf/", views.AAFAuth.as_view()),
+    url("lti/", views.LTIAuth.as_view()),
+    url("token/", views.ValidateOneTimeToken.as_view())
 ]
