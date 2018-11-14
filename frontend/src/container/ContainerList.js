@@ -26,6 +26,12 @@ class ContainerList extends React.Component {
     );
   }
 
+  updateContainers = containers => {
+    const { dispatch } = this.props;
+    
+    dispatch(ContainerActionCreators.storeContainers(containers));
+  };
+
   render() {
     const { containers, accordionKey, tabKey, openModal } = this.props;
 
@@ -82,6 +88,7 @@ class ContainerList extends React.Component {
                       dataLabs={container.datalabs}
                       actions={container.actions}
                       openModal={openModal}
+                      updateContainers={this.updateContainers}
                     />
                   </TabPane>
                 </Tabs>

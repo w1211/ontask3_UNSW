@@ -26,6 +26,7 @@ from .models import (
 from .permissions import WorkflowPermissions
 
 from container.views import ContainerViewSet
+from container.serializers import ContainerSerializer
 from audit.models import Audit
 from audit.serializers import AuditSerializer
 
@@ -64,7 +65,8 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         self.check_object_permissions(self.request, self.get_object())
         serializer.save()
 
-    def perform_destroy(self, action):
+    def destroy(self, request, id=None):
+        action = self.get_object()
         self.check_object_permissions(self.request, action)
 
         # If a schedule already exists for this action, then delete it
@@ -75,6 +77,12 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             remove_async_task(action["schedule"]["asyncTasks"])
             
         action.delete()
+
+        containers = ContainerViewSet.get_queryset(self)
+        serializer = ContainerSerializer(containers, many=True)
+
+        return Response(serializer.data)
+
 
     @detail_route(methods=["post", "put", "delete"])
     def filter(self, request, id=None):
@@ -340,7 +348,11 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         audit.is_valid()
         audit.save()
 
-        return JsonResponse({"success": 1})
+        containers = ContainerViewSet.get_queryset(self)
+        serializer = ContainerSerializer(containers, many=True)
+        
+        return Response(serializer.data)
+
 
     # # retrive email sending history and generate static page.
     # @detail_route(methods=["get"])
