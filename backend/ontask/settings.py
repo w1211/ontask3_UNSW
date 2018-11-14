@@ -18,8 +18,8 @@ if os.environ.get('ONTASK_DEVELOPMENT') is not None:
     from config.dev import *
     DEBUG = True
     CELERY_BROKER_URL = 'amqp://rabbitmq'
-    FRONTEND_DOMAIN = 'http://localhost:3000' # For whitelisting CORS and authentication
-    BACKEND_DOMAIN = 'http://localhost:8000/api'
+    FRONTEND_DOMAIN = 'https://localhost:3000' # For whitelisting CORS and authentication
+    BACKEND_DOMAIN = 'https://localhost:8000'
     ALLOWED_HOSTS = ['localhost']
     SQL_DATABASE = {
         'ENGINE': 'django.db.backends.postgresql',

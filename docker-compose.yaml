@@ -31,8 +31,6 @@ services:
   backend:
     restart: always
     build: ./backend
-    ports:
-      - "8000:8000"
     volumes:
       - ./backend:/backend
     environment:
@@ -42,6 +40,17 @@ services:
       - nosql
     command: uwsgi --ini uwsgi.dev.ini --lazy-apps
 
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./dev/nginx.conf:/etc/nginx/nginx.conf
+      - ./dev/localhost.crt:/localhost.crt
+      - ./dev/localhost.key:/localhost.key
+    depends_on:
+      - backend
+    ports:
+      - "8000:443"
+    
   celery:
     restart: always
     build: ./backend
@@ -68,6 +77,8 @@ services:
       - "3000:3000"
     volumes:
       - ./frontend:/frontend
+    environment:
+      - HTTPS=true
     depends_on:
       - backend
     command: npm start
