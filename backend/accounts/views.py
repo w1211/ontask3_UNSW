@@ -1,45 +1,47 @@
-""" VIEWS FOR USER AUTHENTICATION """
-from __future__ import unicode_literals
 from rest_framework.views import APIView
-from .auth_wrapper import LocalAuthHandler, AAFAuthHandler, LTIAuthHandler
-from .auth_router import AuthRouter
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
+from rest_framework.authtoken.models import Token
 from rest_framework.status import HTTP_401_UNAUTHORIZED, HTTP_400_BAD_REQUEST
 
-import jwt
-import os
-from ontask.settings import SECRET_KEY
-from .models import OneTimeToken
-from django.contrib.auth import get_user_model
-from rest_framework.authtoken.models import Token
-from .auth_handler import UserAuthHandler
-
+from django.shortcuts import redirect
+from django.contrib.auth import authenticate, get_user_model
 from django.db.utils import IntegrityError
 
+from pylti.common import LTIException, verify_request_common
+from jwt import decode
+import os
 
-class LocalAuthRouter(APIView):
-    """Hosts the logic to handle the post request from frontend and authenticate the
-    user to the application locally"""
+from .models import OneTimeToken
+from .utils import get_or_create_user, generate_one_time_token
 
-    authentication_classes = ()
-    permission_classes = ()
+from ontask.settings import SECRET_KEY, AAF_CONFIG, LTI_CONFIG, FRONTEND_DOMAIN
+
+
+User = get_user_model()
+
+
+class LocalAuth(APIView):
+    permission_classes = (AllowAny,)
 
     def put(self, request, format=None):
-        """Handles local user creation from the frontend"""
-        email = request.data["email"]
-        password = request.data["password"]
-        fullname = request.data["fullname"]
-
-        if not os.environ.get("ONTASK_DEMO") and not os.environ.get(
-            "ONTASK_DEVELOPMENT"
-        ):
+        is_production = not (
+            os.environ.get("ONTASK_DEMO") or os.environ.get("ONTASK_DEVELOPMENT")
+        )
+        if is_production:
             return Response(
                 {"error": "User registration is disabled"}, status=HTTP_400_BAD_REQUEST
             )
 
+        credentials = {
+            "email": request.data["email"],
+            "password": request.data["password"],
+            "name": request.data["fullname"],
+        }
+
         try:
-            UserAuthHandler.create(email, password, fullname)
-        except IntegrityError as err:
+            User.objects.create_user(**credentials)
+        except IntegrityError:
             return Response(
                 {"error": "Email is already being used"}, status=HTTP_400_BAD_REQUEST
             )
@@ -47,77 +49,116 @@ class LocalAuthRouter(APIView):
         return Response({"success": "User creation successful"})
 
     def post(self, request, format=None):
-        """Handles the post request from the frontend and routes the user
-        to the landing page of the application"""
-        local_authhandler = LocalAuthHandler()
-        auth_router = AuthRouter()
-        return auth_router.authenticate(request, local_authhandler, "LOCAL")
+        credentials = {
+            "username": request.data["email"],
+            "password": request.data["password"],
+        }
+        user = authenticate(**credentials)
+
+        if not user:
+            return Response(
+                {"error": "Invalid credentials"}, status=HTTP_401_UNAUTHORIZED
+            )
+
+        long_term_token, _ = Token.objects.get_or_create(user=user)
+        return Response({"token": str(long_term_token), "email": user.email})
 
 
-class AAFAuthRouter(APIView):
-    """Hosts the logic to handle the post request from AAF and authenticate the
-    user to the application"""
-
-    authentication_classes = ()
-    permission_classes = ()
-
-    def post(self, request, format=None):
-        """Handles the post request from AAF Rapid Connect and routes the user
-        to the landing page of the application"""
-        aaf_authhandler = AAFAuthHandler()
-        auth_router = AuthRouter()
-        return auth_router.authenticate(request, aaf_authhandler, "AAF")
-
-
-class LTIAuthRouter(APIView):
-    """Hosts the logic to handle the post request from LTI and authenticate the
-    user to the application"""
-
-    authentication_classes = ()
-    permission_classes = ()
+class AAFAuth(APIView):
+    permission_classes = (AllowAny,)
 
     def post(self, request, format=None):
-        """Handles the post request from LTI and routes the user
-        to the landing page of the application"""
-        lti_authhandler = LTIAuthHandler()
-        auth_router = AuthRouter()
-        return auth_router.authenticate(request, lti_authhandler, "LTI")
+        # Decrypt the payload sent by AAF
+        try:
+            verified_jwt = decode(
+                request.data["assertion"],
+                AAF_CONFIG["secret_key"],
+                issuer=AAF_CONFIG["aaf.edu.au"]["iss"],
+                audience=AAF_CONFIG["aaf.edu.au"]["aud"],
+            )
+        except:
+            return Response(
+                {"error": "Invalid AAF token"}, status=HTTP_401_UNAUTHORIZED
+            )
+
+        user_attributes = verified_jwt["https://aaf.edu.au/attributes"]
+        email = user_attributes["mail"]
+        fullname = user_attributes["displayname"]
+
+        user = get_or_create_user(email, fullname)
+
+        # Update the user's role to staff if necessary
+        roles = user_attributes["edupersonscopedaffiliation"][0].split(";")
+        if (
+            any(role in AAF_CONFIG["role_mappings"]["staff"] for role in roles)
+            and not user.is_staff
+        ):
+            user.is_staff = True
+            user.save()
+
+        token = generate_one_time_token(user)
+
+        return redirect(FRONTEND_DOMAIN + "?tkn=" + token)
+
+
+class LTIAuth(APIView):
+    permission_classes = (AllowAny,)
+
+    def post(self, request, format=None):
+        url = request.build_absolute_uri()
+        consumers = LTI_CONFIG["consumers"]
+        method = request.method
+        headers = request.META
+        payload = request.POST.dict()
+
+        # Verify that the payload received from LTI is valid
+        try:
+            verify_request_common(consumers, url, method, headers, payload)
+        # If not, redirect to the error page
+        # This page would be displayed in an iframe on Moodle
+        except LTIException:
+            # TODO: Implement logging of this error
+            return redirect(FRONTEND_DOMAIN + "/error")
+
+        email = payload["lis_person_contact_email_primary"]
+        fullname = payload["lis_person_name_full"]
+
+        user = get_or_create_user(email, fullname)
+        token = generate_one_time_token(user)
+
+        return redirect(FRONTEND_DOMAIN + "?tkn=" + token)
 
 
 class ValidateOneTimeToken(APIView):
-    """Validates the one time token received and returns a long term token"""
-
-    authentication_classes = ()
-    permission_classes = ()
+    permission_classes = (AllowAny,)
 
     def post(self, request, format=None):
         one_time_token = request.data["token"]
 
-        # Ensure that the token has not expired
+        # Validate the token
         try:
-            decrypted_token = jwt.decode(
-                one_time_token, SECRET_KEY, algorithms=["HS256"]
+            decrypted_token = decode(one_time_token, SECRET_KEY, algorithms=["HS256"])
+        except:
+            return Response(
+                {"error": "Invalid AAF token"}, status=HTTP_401_UNAUTHORIZED
             )
-        except jwt.ExpiredSignatureError as e:
-            return Response({"error": "Token expired"}, status=HTTP_401_UNAUTHORIZED)
 
-        # Ensure that the token exists in the one time token document
-        # Otherwise it must have already been used, or was never generated (is fake)
+        # Ensure that the token exists in the one time token table
+        # Otherwise it must have already been used
         try:
             token = OneTimeToken.objects.get(token=one_time_token)
-        except Exception as e:
+        except:
             return Response(
-                {"error": "Token does not exist"}, status=HTTP_401_UNAUTHORIZED
+                {"error": "Token already used"}, status=HTTP_401_UNAUTHORIZED
             )
 
-        if token:
-            # Delete the one time token so that it cannot be used again
-            token.delete()
-            # Get the user from the one time token
-            User = get_user_model()
-            user = User.objects.get(id=decrypted_token["id"])
-            # Get or create a long term token for this user
-            long_term_token, _ = Token.objects.get_or_create(user=user)
-            # Convert the token into string format, to be sent as a JSON object in the response body
-            long_term_token = str(long_term_token)
-            return Response({"token": long_term_token, "email": user.email})
+        # Delete the one time token so that it cannot be used again
+        token.delete()
+
+        # Get the user from the one time token
+        user = User.objects.get(id=decrypted_token["id"])
+
+        # Get or create a long term token for this user
+        long_term_token, _ = Token.objects.get_or_create(user=user)
+
+        return Response({"token": str(long_term_token), "email": user.email})

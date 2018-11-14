@@ -13,11 +13,14 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
-from django.conf.urls import url, include
+from django.conf.urls import url
+from django.urls import include, path
 from django.contrib import admin
+from django.conf import settings
+from django.conf.urls.static import static
+import os
 
 from rest_framework import routers
-from rest_framework.authtoken import views
 
 from container.views import ContainerViewSet
 from datasource.views import DatasourceViewSet
@@ -25,21 +28,17 @@ from datalab.views import DatalabViewSet
 from workflow.views import WorkflowViewSet
 from audit.views import AuditViewSet
 
-import accounts.urls
-
-# this is DRF router for REST API viewsets
 router = routers.DefaultRouter()
+router.register("container", ContainerViewSet, "container")
+router.register("datasource", DatasourceViewSet, "datasource")
+router.register("datalab", DatalabViewSet, "datalab")
+router.register("workflow", WorkflowViewSet, "workflow")
+router.register("audit", AuditViewSet, "audit")
 
-# register REST API endpoints with DRF router
-router.register(r'container', ContainerViewSet, r"container")
-router.register(r'datasource', DatasourceViewSet, r"datasource")
-router.register(r'datalab', DatalabViewSet, r"datalab")
-router.register(r'workflow', WorkflowViewSet, r"workflow")
-router.register(r'audit', AuditViewSet, r"audit")
+urlpatterns = [path("auth/", include("accounts.urls"))]
 
-urlpatterns = [
-    url(r'^api/', include((router.urls, 'api'), namespace='api')),
-    url(r'^admin/', admin.site.urls),
-    url(r'^token/', views.obtain_auth_token),
-    url(r'^api/', include((accounts.urls, 'accounts'), namespace='accounts')),
-]
+urlpatterns += router.urls
+
+if os.environ.get("ONTASK_DEVELOPMENT"):
+    urlpatterns += [path("admin/", admin.site.urls)]
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

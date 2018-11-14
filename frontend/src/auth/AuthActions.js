@@ -2,7 +2,7 @@ import requestWrapper from "../shared/requestWrapper";
 
 export const register = ({ payload, onError, onFinish }) => {
   const parameters = {
-    url: `/user/local/`,
+    url: `/auth/local/`,
     method: "PUT",
     errorFn: response => {
       const { error } = response;
@@ -10,7 +10,7 @@ export const register = ({ payload, onError, onFinish }) => {
     },
     successFn: () => onFinish(),
     payload,
-    isUnauthenticated: false
+    isUnauthenticated: true
   };
 
   requestWrapper(parameters);
@@ -18,7 +18,7 @@ export const register = ({ payload, onError, onFinish }) => {
 
 export const login = (values, beginLogin, finishLogin, onError) => {
   const parameters = {
-    url: `/user/local/`,
+    url: `/auth/local/`,
     method: "POST",
     initialFn: () => {
       beginLogin();
@@ -30,7 +30,7 @@ export const login = (values, beginLogin, finishLogin, onError) => {
       finishLogin(response);
     },
     payload: values,
-    isUnauthenticated: false
+    isUnauthenticated: true
   };
 
   requestWrapper(parameters);
@@ -38,14 +38,14 @@ export const login = (values, beginLogin, finishLogin, onError) => {
 
 export const requestToken = (token, finishLogin) => {
   const parameters = {
-    url: `/user/token/`,
+    url: `/auth/token/`,
     method: "POST",
     errorFn: () => {},
     successFn: response => {
       finishLogin(response);
     },
     payload: { token },
-    isUnauthenticated: false
+    isUnauthenticated: true
   };
 
   requestWrapper(parameters);

@@ -19,3 +19,4 @@ requests==2.19.1
 passlib==1.7.1
 python-dateutil==2.6.1
 numexpr==2.6.8
+PyLTI==0.7.0
