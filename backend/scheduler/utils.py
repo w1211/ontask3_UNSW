@@ -50,10 +50,10 @@ def create_crontab(schedule):
     return periodic_schedule
 
 
-def send_email(recipient, subject, content, reply_to=None):
+def send_email(recipient, subject, content, reply_to=None, force_send=False):
     '''Generic service to send email from the application'''
 
-    if os.environ.get('ONTASK_DEMO') is not None:
+    if not force_send and os.environ.get('ONTASK_DEMO') is not None:
         raise Exception("Email sending is disabled in the demo")
 
     try:
