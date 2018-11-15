@@ -4,8 +4,9 @@ from passlib.hash import pbkdf2_sha256
 from jwt import encode
 from random import randint
 from bson import ObjectId
+import os
 
-from ontask.settings import SECRET_KEY, DEMO_BUCKET
+from ontask.settings import SECRET_KEY, DEMO_BUCKET, ADMINS
 
 from .models import OneTimeToken
 
@@ -24,6 +25,7 @@ from datalab.models import (
 from datalab.utils import combine_data
 from workflow.models import Workflow, Filter, Rule, Condition, Formula
 
+from scheduler.utils import send_email
 
 User = get_user_model()
 
@@ -38,6 +40,8 @@ def get_or_create_user(email, fullname):
     except User.DoesNotExist:
         password = pbkdf2_sha256.hash(email)
         user = User.objects.create_user(email=email, password=password, name=fullname)
+        # Send a notification to admins on user signup, if OnTask is in demo mode
+        user_signup_notification(user)
 
     return user
 
@@ -57,6 +61,22 @@ def generate_one_time_token(user):
     OneTimeToken.objects(user=user.id).update_one(token=token, upsert=True)
 
     return token
+
+
+def user_signup_notification(user):
+    # Notify admins of user sign-up
+    if os.environ.get("ONTASK_DEMO"):
+        recipients = ", ".join(ADMINS)
+        send_email(
+            recipients,
+            "OnTask - new user signup",
+            (
+                "<p>A new user has signed up with the following details:</p>"
+                "<p>Name: " + user.name + "</p>"
+                "<p>Email: " + user.email + "</p>"
+            ),
+            force_send=True
+        )
 
 
 def seed_data(user):

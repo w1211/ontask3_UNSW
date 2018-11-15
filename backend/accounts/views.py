@@ -13,10 +13,14 @@ from jwt import decode
 import os
 
 from .models import OneTimeToken
-from .utils import get_or_create_user, generate_one_time_token, seed_data
+from .utils import (
+    get_or_create_user,
+    generate_one_time_token,
+    seed_data,
+    user_signup_notification,
+)
 
 from ontask.settings import SECRET_KEY, AAF_CONFIG, LTI_CONFIG, FRONTEND_DOMAIN
-
 
 User = get_user_model()
 
@@ -48,7 +52,10 @@ class LocalAuth(APIView):
 
         # Give the user a container with example datasources, datalabs, actions, etc
         seed_data(user)
-        
+
+        # Send a notification to admins on user signup, if OnTask is in demo mode
+        user_signup_notification(user)
+
         return Response({"success": "User creation successful"})
 
     def post(self, request, format=None):
