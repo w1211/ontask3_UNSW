@@ -40,8 +40,12 @@ def get_or_create_user(email, fullname):
     except User.DoesNotExist:
         password = pbkdf2_sha256.hash(email)
         user = User.objects.create_user(email=email, password=password, name=fullname)
+
         # Send a notification to admins on user signup, if OnTask is in demo mode
         user_signup_notification(user)
+        
+        # Give the user a container with example datasources, datalabs, actions, etc
+        seed_data(user)
 
     return user
 
