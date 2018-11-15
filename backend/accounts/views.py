@@ -13,7 +13,7 @@ from jwt import decode
 import os
 
 from .models import OneTimeToken
-from .utils import get_or_create_user, generate_one_time_token
+from .utils import get_or_create_user, generate_one_time_token, seed_data
 
 from ontask.settings import SECRET_KEY, AAF_CONFIG, LTI_CONFIG, FRONTEND_DOMAIN
 
@@ -40,12 +40,15 @@ class LocalAuth(APIView):
         }
 
         try:
-            User.objects.create_user(**credentials)
+            user = User.objects.create_user(**credentials)
         except IntegrityError:
             return Response(
                 {"error": "Email is already being used"}, status=HTTP_400_BAD_REQUEST
             )
 
+        # Give the user a container with example datasources, datalabs, actions, etc
+        seed_data(user)
+        
         return Response({"success": "User creation successful"})
 
     def post(self, request, format=None):

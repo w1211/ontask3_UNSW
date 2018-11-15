@@ -12,7 +12,6 @@ import {
   Input
 } from "antd";
 import moment from "moment";
-import _ from "lodash";
 
 import * as DataLabActionCreators from "../DataLabActions";
 
@@ -47,19 +46,12 @@ class Data extends React.Component {
 
     if (!data || !build) return [];
 
-    const visibleFields = build.order.reduce((result, item) => {
-      if (item.visible) result.push(item.field);
-      return result;
-    }, []);
-
-    const currentData = data.map(row => _.pick(row, visibleFields));
-
     const term = searchTerm.trim().toLowerCase();
 
     const tableData =
       term === ""
-        ? currentData
-        : currentData.filter(row =>
+        ? data
+        : data.filter(row =>
           String(Object.values(row))
             .toLowerCase()
             .includes(term)

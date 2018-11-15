@@ -64,49 +64,6 @@ class Compose extends React.Component {
       });
   }
 
-  // handleContent = fn => {
-  //   const { action, updateAction } = this.props;
-  //   const { preview, value } = this.state;
-
-  //   const payload = {
-  //     blockMap: value.toJSON(),
-  //     html: this.generateHtml()
-  //   };
-
-  //   if (fn === "preview") {
-  //     this.setState({ preview: { ...preview, loading: true } });
-  //     ActionActionCreators.previewContent({
-  //       actionId: action.id,
-  //       payload,
-  //       onError: error =>
-  //         this.setState({ preview: { ...preview, loading: false }, error }),
-  //       onSuccess: response => {
-  //         const { populatedContent } = response;
-  //         this.setState({
-  //           preview: {
-  //             ...preview,
-  //             visible: true,
-  //             loading: false,
-  //             populatedContent
-  //           },
-  //           error: null
-  //         });
-  //       }
-  //     });
-  //   } else if (fn === "submit") {
-  //     this.setState({ contentLoading: true });
-  //     this.boundActionCreators.updateContent({
-  //       actionId: action.id,
-  //       payload,
-  //       onError: error => this.setState({ contentLoading: false, error }),
-  //       onSuccess: action => {
-  //         this.setState({ contentLoading: false, error: null });
-  //         updateAction(action);
-  //       }
-  //     });
-  //   }
-  // };
-
   updateFilter = ({ filter, method, onSuccess, onError }) => {
     const { action, updateAction } = this.props;
 
