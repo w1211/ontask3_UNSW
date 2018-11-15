@@ -8,7 +8,7 @@ export const STORE_CONTAINERS = "STORE_CONTAINERS";
 export const CHANGE_CONTAINER_ACCORDION = "CHANGE_CONTAINER_ACCORDION";
 export const CHANGE_CONTAINER_TAB = "CHANGE_CONTAINER_TAB";
 
-const storeContainers = (containers, accordionKey) => ({
+export const storeContainers = (containers, accordionKey) => ({
   type: STORE_CONTAINERS,
   containers,
   accordionKey

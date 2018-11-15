@@ -13,7 +13,7 @@ import {
 import moment from "moment";
 import _ from "lodash";
 
-import { submitFeedback } from "../ActionActions";
+import apiRequest from "../../shared/apiRequest";
 
 class Feedback extends React.Component {
   state = { loading: false, dropdown: null, textbox: null };
@@ -43,9 +43,9 @@ class Feedback extends React.Component {
     }
 
     this.setState({ loading: true, error: null });
-    submitFeedback({
-      actionId,
-      jobId,
+
+    apiRequest(`/workflow/${actionId}/submit_feedback/?job=${jobId}`, {
+      method: "POST",
       payload: { dropdown, textbox },
       onSuccess: response => {
         if ("error" in response) {

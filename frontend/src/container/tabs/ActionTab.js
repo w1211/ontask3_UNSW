@@ -1,15 +1,8 @@
 import React from "react";
-import {
-  Input,
-  Icon,
-  Tooltip,
-  Button,
-  Card,
-  Modal,
-  Select
-} from "antd";
+import { Input, Icon, Tooltip, Button, Card, Modal, Select, notification } from "antd";
 import { Link } from "react-router-dom";
 
+import apiRequest from "../../shared/apiRequest";
 
 const { Meta } = Card;
 const confirm = Modal.confirm;
@@ -20,6 +13,8 @@ class ActionTab extends React.Component {
   state = { filter: null, filter_category: "name", deleting: {}, cloning: {} };
 
   deleteAction = actionId => {
+    const { updateContainers } = this.props;
+
     confirm({
       title: "Confirm action deletion",
       content: "Are you sure you want to delete this action?",
@@ -31,10 +26,22 @@ class ActionTab extends React.Component {
           deleting: { [actionId]: true }
         });
 
-        this.boundActionCreators.deleteAction({
-          actionId,
-          onFinish: () => {
+        apiRequest(`/workflow/${actionId}`, {
+          method: "DELETE",
+          onSuccess: containers => {
             this.setState({ deleting: { [actionId]: false } });
+            updateContainers(containers);
+            notification["success"]({
+              message: "Action deleted",
+              description: "The action was successfully deleted."
+            });
+          },
+          onError: error => {
+            this.setState({ deleting: { [actionId]: false } });
+            notification["error"]({
+              message: "Action deletion failed",
+              description: error
+            });
           }
         });
       }
@@ -42,6 +49,8 @@ class ActionTab extends React.Component {
   };
 
   cloneAction = actionId => {
+    const { updateContainers } = this.props;
+
     confirm({
       title: "Confirm action clone",
       content: "Are you sure you want to clone this action?",
@@ -50,10 +59,22 @@ class ActionTab extends React.Component {
           cloning: { [actionId]: true }
         });
 
-        this.boundActionCreators.cloneAction({
-          actionId,
-          onFinish: () => {
+        apiRequest(`/workflow/${actionId}/clone_action/`, {
+          method: "POST",
+          onSuccess: containers => {
             this.setState({ cloning: { [actionId]: false } });
+            updateContainers(containers);
+            notification["success"]({
+              message: "Action cloned",
+              description: "The action was successfully cloned."
+            });
+          },
+          onError: error => {
+            this.setState({ cloning: { [actionId]: false } });
+            notification["error"]({
+              message: "Action cloning failed",
+              description: error
+            });
           }
         });
       }
