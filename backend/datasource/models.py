@@ -12,6 +12,13 @@ from datetime import datetime
 
 from container.models import Container
 
+from .utils import (
+    retrieve_csv_data,
+    retrieve_excel_data,
+    retrieve_file_from_s3,
+    retrieve_sql_data,
+)
+
 
 class Connection(EmbeddedDocument):
     dbType = StringField(
@@ -42,9 +49,7 @@ class Schedule(EmbeddedDocument):
     startTime = DateTimeField()
     endTime = DateTimeField()
     time = DateTimeField(required=True)
-    frequency = StringField(
-        required=True, choices=("daily", "weekly", "monthly")
-    )
+    frequency = StringField(required=True, choices=("daily", "weekly", "monthly"))
     dayFrequency = IntField(min_value=1)  # I.e. every n days
     # List of shorthand day names, e.g. ['mon', 'wed', 'fri']
     dayOfWeek = ListField(StringField())
@@ -66,3 +71,36 @@ class Datasource(Document):
     lastUpdated = DateTimeField(default=datetime.utcnow)
     fields = ListField(StringField())
     types = DictField()
+
+    def retrieve_data(self, connection=None, file=None):
+        if not connection:
+            connection = self.connection
+
+        data = []
+
+        if self.connection.dbType in ["mysql", "postgresql", "sqlite", "mssql"]:
+            data = retrieve_sql_data(connection)
+
+        elif self.connection.dbType == "s3BucketFile":
+            data = retrieve_file_from_s3(connection)
+
+        elif self.connection.dbType == "xlsXlsxFile":
+            sheetname = connection.get("sheetname")
+            data = retrieve_excel_data(file, sheetname)
+
+        elif self.connection.dbType == "csvTextFile":
+            delimiter = connection.get("delimiter")
+            data = retrieve_csv_data(file, delimiter)
+
+        return data
+
+    def refresh_data(self):
+        if self.connection.dbType in [
+            "s3BucketFile",
+            "mysql",
+            "postgresql",
+            "sqlite",
+            "mssql",
+        ]:
+            self.data = self.retrieve_data()
+            self.save()
