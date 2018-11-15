@@ -132,6 +132,7 @@ class Workflow(Document):
     def options(self):
         modules = []
         types = {}
+        labels = []
 
         # Create a "pseudo" module to hold the computed fields
         computed = {"type": "computed", "fields": []}
@@ -139,6 +140,7 @@ class Workflow(Document):
         # Iterate over the modules of the datalab
         for step in self.datalab.steps:
             module = {"type": step.type, "fields": []}
+            module_labels = {}
 
             if step.type == "datasource":
                 module["name"] = Datasource.objects.get(id=step.datasource.id).name
@@ -146,30 +148,38 @@ class Workflow(Document):
                     label = step.datasource.labels[field]
                     module["fields"].append(label)
                     types[label] = step.datasource.types[field]
+                    module_labels[field] = label
                 modules.append(module)
+                labels.append(module_labels)
 
             if step.type == "form":
                 module["name"] = step.form.name
                 for field in step.form.fields:
                     module["fields"].append(field.name)
                     types[field.name] = field.type
+                    module_labels[field.name] = field.name
                 modules.append(module)
+                labels.append(module_labels)
 
             if step.type == "computed":
                 for field in step.computed.fields:
                     computed["fields"].append(field.name)
                     types[field.name] = field.type
+                    module_labels[field.name] = field.name
+                    labels.append(module_labels)
 
         modules.append(computed)
 
-        return {"modules": modules, "types": types}
+        return {"modules": modules, "types": types, "labels": labels}
 
     @property
     def data(self):
+        options = self.options
+
         if self.filter:
             filtered_data = []
 
-            types = self.options["types"]
+            types = options["types"]
             parameters = self.filter.parameters
             condition = self.filter.conditions[0]
 
@@ -189,7 +199,12 @@ class Workflow(Document):
         else:
             filtered_data = self.datalab.data
 
-        column_order = [item["field"] for item in self.datalab.order]
+        labels = options["labels"]
+        column_order = []
+        for item in self.datalab.order:
+            step_index = item["stepIndex"]
+            field = item["field"]
+            column_order.append(labels[step_index][field])
 
         return {
             "records": filtered_data,
@@ -199,7 +214,9 @@ class Workflow(Document):
         }
 
     def populate_content(self, content=None):
-        if not content:
+        if not content and not self.content:
+            return []
+        elif not content:
             content = self.content
 
         filtered_data = self.data["records"]
