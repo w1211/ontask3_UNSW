@@ -1,7 +1,7 @@
 import React from "react";
 import { bindActionCreators } from "redux";
 import { connect } from "react-redux";
-import { Input, Icon, Tooltip, Button, Card, Modal } from "antd";
+import { Input, Icon, Tooltip, Button, Card, Modal, Select } from "antd";
 import { Link } from "react-router-dom";
 
 import { deleteAction, cloneAction } from "../../action/ActionActions";
@@ -19,7 +19,12 @@ class ActionTab extends React.Component {
       dispatch
     );
 
-    this.state = { filter: null, deleting: {}, cloning: {} };
+    this.state = {
+      filter: null,
+      deleting: {},
+      cloning: {},
+      filter_category: "Name"
+    };
   }
 
   deleteAction = actionId => {
@@ -65,16 +70,26 @@ class ActionTab extends React.Component {
 
   render() {
     const { containerId, actions, dataLabs, openModal } = this.props;
-    const { filter, deleting, cloning } = this.state;
+    const { filter, deleting, cloning, filter_category } = this.state;
+    const InputGroup = Input.Group;
+    const Option = Select.Option;
 
     return (
       <div className="tab">
-        {actions &&
-          actions.length > 0 && (
-            <div className="filter_wrapper">
-              <div className="filter">
+        {actions && actions.length > 0 && (
+          <div className="filter_wrapper">
+            <div className="filter">
+              <InputGroup compact>
+                <Select
+                  defaultValue="Name"
+                  onChange={value => this.setState({ filter_category: value })}
+                >
+                  <Option value="Name">Name</Option>
+                  <Option value="DataLab">DataLab</Option>
+                </Select>
                 <Input
-                  placeholder="Filter actions by name"
+                  style={{ width: "80%" }}
+                  placeholder="Enter a value to filter by"
                   value={filter}
                   addonAfter={
                     <Tooltip title="Clear filter">
@@ -86,12 +101,36 @@ class ActionTab extends React.Component {
                   }
                   onChange={e => this.setState({ filter: e.target.value })}
                 />
-              </div>
+              </InputGroup>
+              {/* <Input
+                placeholder="Filter actions by name"
+                value={filter}
+                addonAfter={
+                  <Tooltip title="Clear filter">
+                    <Icon
+                      type="close"
+                      onClick={() => this.setState({ filter: null })}
+                    />
+                  </Tooltip>
+                }
+                onChange={e => this.setState({ filter: e.target.value })}
+              /> */}
             </div>
-          )}
+          </div>
+        )}
         {actions &&
           actions.map((action, i) => {
-            if (filter && !action.name.includes(filter)) return null;
+            let name = action.name.toLowerCase();
+            let datalab = action.datalab.toLowerCase();
+            if (
+              (filter &&
+                !name.includes(filter.toLowerCase()) &&
+                filter_category === "Name") ||
+              (filter &&
+                !action.datalab.includes(filter.toLowerCase()) &&
+                filter_category === "DataLab")
+            )
+              return null;
 
             return (
               <Card
