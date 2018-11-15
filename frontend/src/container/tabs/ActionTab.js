@@ -127,7 +127,7 @@ class ActionTab extends React.Component {
                 !name.includes(filter.toLowerCase()) &&
                 filter_category === "Name") ||
               (filter &&
-                !action.datalab.includes(filter.toLowerCase()) &&
+                !datalab.includes(filter.toLowerCase()) &&
                 filter_category === "DataLab")
             )
               return null;
