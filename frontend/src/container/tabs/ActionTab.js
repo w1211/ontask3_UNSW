@@ -1,14 +1,16 @@
 import React from "react";
-import { Input, Icon, Tooltip, Button, Card, Modal, notification } from "antd";
+import { Input, Icon, Tooltip, Button, Card, Modal, Select, notification } from "antd";
 import { Link } from "react-router-dom";
 
 import apiRequest from "../../shared/apiRequest";
 
 const { Meta } = Card;
 const confirm = Modal.confirm;
+const InputGroup = Input.Group;
+const Option = Select.Option;
 
 class ActionTab extends React.Component {
-  state = { filter: null, deleting: {}, cloning: {} };
+  state = { filter: null, filter_category: "name", deleting: {}, cloning: {} };
 
   deleteAction = actionId => {
     const { updateContainers } = this.props;
@@ -81,32 +83,52 @@ class ActionTab extends React.Component {
 
   render() {
     const { containerId, actions, dataLabs, openModal } = this.props;
-    const { filter, deleting, cloning } = this.state;
+    const { filter, deleting, cloning, filter_category } = this.state;
 
     return (
       <div className="tab">
         {actions && actions.length > 0 && (
           <div className="filter_wrapper">
             <div className="filter">
-              <Input
-                placeholder="Filter actions by name"
-                value={filter}
-                addonAfter={
-                  <Tooltip title="Clear filter">
-                    <Icon
-                      type="close"
-                      onClick={() => this.setState({ filter: null })}
-                    />
-                  </Tooltip>
-                }
-                onChange={e => this.setState({ filter: e.target.value })}
-              />
+              <InputGroup compact>
+                <Select
+                  defaultValue="Name"
+                  onChange={value => this.setState({ filter_category: value })}
+                >
+                  <Option value="name">Name</Option>
+                  <Option value="datalab">DataLab</Option>
+                </Select>
+                <Input
+                  style={{ width: "80%" }}
+                  placeholder="Enter a value to filter by"
+                  value={filter}
+                  addonAfter={
+                    <Tooltip title="Clear filter">
+                      <Icon
+                        type="close"
+                        onClick={() => this.setState({ filter: null })}
+                      />
+                    </Tooltip>
+                  }
+                  onChange={e => this.setState({ filter: e.target.value })}
+                />
+              </InputGroup>
             </div>
           </div>
         )}
         {actions &&
           actions.map((action, i) => {
-            if (filter && !action.name.includes(filter)) return null;
+            const name = action.name.toLowerCase();
+            const datalab = action.datalab.toLowerCase();
+            if (
+              (filter &&
+                !name.includes(filter.toLowerCase()) &&
+                filter_category === "name") ||
+              (filter &&
+                !datalab.includes(filter.toLowerCase()) &&
+                filter_category === "datalab")
+            )
+              return null;
 
             return (
               <Card

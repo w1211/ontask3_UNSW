@@ -69,3 +69,7 @@
   color: #9E9E9E;
   margin-right: 10px;
 }
+
+.container .container_list .filter .ant-input-group input {
+  border-radius: 0;
+}
