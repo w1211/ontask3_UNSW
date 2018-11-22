@@ -14,9 +14,8 @@ from ontask.settings import (
     SECRET_KEY,
     DB_DRIVER_MAPPING,
     SMTP,
-    AWS_ACCESS_KEY_ID,
-    AWS_SECRET_ACCESS_KEY,
-    AWS_REGION,
+    AWS_PROFILE_NAME,
+    AWS_REGION
 )
 
 
@@ -135,9 +134,7 @@ def retrieve_file_from_s3(connection):
         if os.environ.get('ONTASK_DEVELOPMENT'):
             # Connect to the specified bucket using the AWS credentials specified in the config
             session = boto3.Session(
-                aws_access_key_id=AWS_ACCESS_KEY_ID,
-                aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-                region_name=AWS_REGION,
+                profile_name=AWS_PROFILE_NAME
             )
             # Get the specified file from the bucket
             s3 = session.resource("s3")
