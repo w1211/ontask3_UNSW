@@ -8,14 +8,10 @@ import json
 import boto3
 from xlrd import open_workbook
 from datetime import datetime
+import os
 
 from cryptography.fernet import Fernet
-from ontask.settings import (
-    SECRET_KEY,
-    AWS_ACCESS_KEY_ID,
-    AWS_SECRET_ACCESS_KEY,
-    AWS_REGION,
-)
+from ontask.settings import SECRET_KEY
 
 from .serializers import DatasourceSerializer
 from .models import Datasource
@@ -274,7 +270,7 @@ class DatasourceViewSet(viewsets.ModelViewSet):
         requires_save = False
 
         diff = {}
-        if is_update: 
+        if is_update:
             # Identify the changes made to the datasource schedule
             for field in datasource["schedule"]:
                 old_value = datasource["schedule"][field]
@@ -295,7 +291,7 @@ class DatasourceViewSet(viewsets.ModelViewSet):
                 diff["taskName"] = {"from": None, "to": None}
                 diff["asyncTasks"] = {"from": None, "to": None}
 
-                # If a schedule already exists for this datasource, then delete it                
+                # If a schedule already exists for this datasource, then delete it
                 if "taskName" in datasource["schedule"]:
                     remove_scheduled_task(datasource["schedule"]["taskName"])
                     diff["taskName"]["from"] = datasource["schedule"]["taskName"]
@@ -320,9 +316,9 @@ class DatasourceViewSet(viewsets.ModelViewSet):
             audit_data = {
                 "model": "datasource",
                 "document": str(datasource.id),
-                "user": self.request.user.email
+                "user": self.request.user.email,
             }
-            
+
             if is_update:
                 audit_data["action"] = "update_schedule"
                 diff["taskName"]["to"] = task_name
@@ -412,12 +408,7 @@ class DatasourceViewSet(viewsets.ModelViewSet):
 
         else:
             try:
-                session = boto3.Session(
-                    aws_access_key_id=AWS_ACCESS_KEY_ID,
-                    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-                    region_name=AWS_REGION,
-                )
-                s3 = session.resource("s3")
+                s3 = boto3.resource("s3")
                 obj = s3.Object(request.data["bucket"], request.data["fileName"])
                 file = obj.get()["Body"]
             except:

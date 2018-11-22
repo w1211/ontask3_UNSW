@@ -35,27 +35,22 @@ services:
       - ./backend:/backend
     environment:
       - ONTASK_DEVELOPMENT=true
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_SESSION_TOKEN
     depends_on:
       - sql
       - nosql
     command: uwsgi --ini uwsgi.dev.ini --lazy-apps
 
-  nginx:
-    image: nginx:alpine
-    volumes:
-      - ./dev/nginx.conf:/etc/nginx/nginx.conf
-      - ./dev/localhost.crt:/localhost.crt
-      - ./dev/localhost.key:/localhost.key
-    depends_on:
-      - backend
-    ports:
-      - "8000:443"
-    
   celery:
     restart: always
     build: ./backend
     environment:
       - ONTASK_DEVELOPMENT=true
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_SESSION_TOKEN
     depends_on:
       - rabbitmq
       - backend
@@ -70,6 +65,17 @@ services:
       - celery
     command: celery -A ontask beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
 
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./dev/nginx.conf:/etc/nginx/nginx.conf
+      - ./dev/localhost.crt:/localhost.crt
+      - ./dev/localhost.key:/localhost.key
+    depends_on:
+      - backend
+    ports:
+      - "8000:443"
+    
   frontend:
     restart: always
     build: ./frontend

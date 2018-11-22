@@ -158,7 +158,7 @@ class Data extends React.Component {
 
   DatasourceColumns = stepIndex => {
     const { build } = this.props;
-    const { sort } = this.state;
+    // const { sort } = this.state;
 
     const step = build.steps[stepIndex]["datasource"];
     const columns = [];
@@ -211,7 +211,8 @@ class Data extends React.Component {
 
   FormColumns = stepIndex => {
     const { build } = this.props;
-    const { sort, edit } = this.state;
+    // const { sort, edit } = this.state;
+    const { edit } = this.state;
 
     const step = build.steps[stepIndex]["form"];
     const columns = [];
@@ -298,7 +299,7 @@ class Data extends React.Component {
 
   ComputedColumns = stepIndex => {
     const { build } = this.props;
-    const { sort } = this.state;
+    // const { sort } = this.state;
 
     const step = build.steps[stepIndex]["computed"];
     const columns = [];
