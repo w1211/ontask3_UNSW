@@ -195,12 +195,12 @@ class Data extends React.Component {
         field,
         dataIndex: label,
         key: label,
-        sorter: (a, b) => {
-          a = label in a && a[label];
-          b = label in b && b[label];
-          return a.localeCompare(b);
-        },
-        sortOrder: sort && sort.field === label && sort.order,
+        // sorter: (a, b) => {
+        //   a = label in a && a[label];
+        //   b = label in b && b[label];
+        //   return a.localeCompare(b);
+        // },
+        // sortOrder: sort && sort.field === label && sort.order,
         title,
         render: text => text
       });
@@ -246,10 +246,10 @@ class Data extends React.Component {
                   </Tooltip>
                 </Menu.Item>
 
-                <Menu.Item key="visualise">
+                {/* <Menu.Item key="visualise">
                   <Icon type="area-chart" style={{ marginRight: 5 }} />
                   Visualise
-                </Menu.Item>
+                </Menu.Item> */}
               </Menu>
             }
           >
@@ -280,14 +280,14 @@ class Data extends React.Component {
         title,
         dataIndex: label,
         key: label,
-        sorter: (a, b) => {
-          a = label in a ? a[label] : "";
-          b = label in b ? b[label] : "";
-          if (typeof a === "number" && typeof b === "number")
-            return a < b
-          return a.toString().localeCompare(b.toString());
-        },
-        sortOrder: sort && sort.field === label && sort.order,
+        // sorter: (a, b) => {
+        //   a = label in a ? a[label] : "";
+        //   b = label in b ? b[label] : "";
+        //   if (typeof a === "number" && typeof b === "number")
+        //     return a < b
+        //   return a.toString().localeCompare(b.toString());
+        // },
+        // sortOrder: sort && sort.field === label && sort.order,
         render: (text, record) =>
           this.renderFormField(stepIndex, field, text, record[step.primary])
       });
@@ -309,7 +309,7 @@ class Data extends React.Component {
 
       const title = (
         <div className="column_header">
-          <Dropdown
+          {/* <Dropdown
             trigger={["click"]}
             overlay={
               <Menu onClick={e => this.handleHeaderClick(e, stepIndex, field)}>
@@ -319,9 +319,9 @@ class Data extends React.Component {
                 </Menu.Item>
               </Menu>
             }
-          >
+          > */}
             <a className="computed">{truncatedLabel}</a>
-          </Dropdown>
+          {/* </Dropdown> */}
         </div>
       );
 
@@ -332,14 +332,14 @@ class Data extends React.Component {
         title,
         dataIndex: label,
         key: label,
-        sorter: (a, b) => {
-          a = label in a ? a[label] : "";
-          b = label in b ? b[label] : "";
-          if (typeof a === "number" && typeof b === "number")
-            return a < b
-          return a.toString().localeCompare(b.toString());
-        },
-        sortOrder: sort && sort.field === label && sort.order,
+        // sorter: (a, b) => {
+        //   a = label in a ? a[label] : "";
+        //   b = label in b ? b[label] : "";
+        //   if (typeof a === "number" && typeof b === "number")
+        //     return a < b
+        //   return a.toString().localeCompare(b.toString());
+        // },
+        // sortOrder: sort && sort.field === label && sort.order,
         render: text => {
           if (Array.isArray(text)) return text.join(", ");
           return text;
