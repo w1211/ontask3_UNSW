@@ -3,6 +3,7 @@ from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
 from rest_framework.decorators import list_route, detail_route
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 import json
 import boto3
@@ -34,6 +35,7 @@ from scheduler.methods import (
 
 from audit.serializers import AuditSerializer
 from container.views import ContainerViewSet
+from container.serializers import ContainerSerializer
 from datalab.models import Datalab
 
 
@@ -225,10 +227,8 @@ class DatasourceViewSet(viewsets.ModelViewSet):
             audit.is_valid()
             audit.save()
 
-    def perform_destroy(self, datasource):
-        request_user = self.request.user.email
-
-        # Ensure that the request.user is the owner of the object
+    def destroy(self, request, id=None):
+        datasource = self.get_object()
         self.check_object_permissions(self.request, datasource)
 
         # Ensure that no data lab is currently using this datasource
@@ -248,11 +248,16 @@ class DatasourceViewSet(viewsets.ModelViewSet):
                 "model": "datasource",
                 "document": str(datasource.id),
                 "action": "delete",
-                "user": request_user,
+                "user": request.user.email,
             }
         )
         audit.is_valid()
         audit.save()
+
+        containers = ContainerViewSet.get_queryset(self)
+        serializer = ContainerSerializer(containers, many=True)
+
+        return Response(serializer.data)
 
     @detail_route(methods=["patch"])
     def update_schedule(self, request, id):
