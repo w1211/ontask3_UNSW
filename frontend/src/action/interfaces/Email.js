@@ -174,8 +174,9 @@ class Email extends React.Component {
         </div>
       )}
 
-      {record.list_feedback &&
-        record.textbox_feedback && <Divider style={{ margin: "6px 0" }} />}
+      {record.list_feedback && record.textbox_feedback && (
+        <Divider style={{ margin: "6px 0" }} />
+      )}
 
       {record.textbox_feedback && (
         <div style={{ maxWidth: 400, wordBreak: "break-word" }}>
@@ -242,7 +243,8 @@ class Email extends React.Component {
           dataIndex: "content",
           key: "content",
           render: (text, record) => (
-            <a
+            <span
+              style={{ cursor: "pointer", color: "#2196F3" }}
               onClick={() =>
                 this.setState({
                   emailView: {
@@ -255,7 +257,7 @@ class Email extends React.Component {
               }
             >
               View
-            </a>
+            </span>
           )
         }
       ]}

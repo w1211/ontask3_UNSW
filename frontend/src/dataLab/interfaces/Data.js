@@ -52,10 +52,10 @@ class Data extends React.Component {
       term === ""
         ? data
         : data.filter(row =>
-          String(Object.values(row))
-            .toLowerCase()
-            .includes(term)
-        );
+            String(Object.values(row))
+              .toLowerCase()
+              .includes(term)
+          );
 
     return tableData;
   };
@@ -115,18 +115,17 @@ class Data extends React.Component {
         dataIndex: 0,
         key: 0,
         render: (index, value) => (
-          <a>
-            <Icon
-              type="area-chart"
-              onClick={() =>
-                this.boundActionCreators.openVisualisationModal(
-                  defaultVisualisation,
-                  true,
-                  value
-                )
-              }
-            />
-          </a>
+          <Button
+            style={{ border: 0 }}
+            icon="area-chart"
+            onClick={() =>
+              this.boundActionCreators.openVisualisationModal(
+                defaultVisualisation,
+                true,
+                value
+              )
+            }
+          />
         )
       });
     }
@@ -153,8 +152,8 @@ class Data extends React.Component {
     label.length > 15 ? (
       <Popover content={label}>{`${label.slice(0, 15)}...`}</Popover>
     ) : (
-        label
-      );
+      label
+    );
 
   DatasourceColumns = stepIndex => {
     const { build } = this.props;
@@ -172,22 +171,24 @@ class Data extends React.Component {
       const title = isPrimaryOrMatching ? (
         truncatedLabel
       ) : (
-          <div className="column_header">
-            <Dropdown
-              trigger={["click"]}
-              overlay={
-                <Menu onClick={e => this.handleHeaderClick(e, stepIndex, field)}>
-                  <Menu.Item key="visualise">
-                    <Icon type="area-chart" style={{ marginRight: 5 }} />
-                    Visualise
+        <div className="column_header">
+          <Dropdown
+            trigger={["click"]}
+            overlay={
+              <Menu onClick={e => this.handleHeaderClick(e, stepIndex, field)}>
+                <Menu.Item key="visualise">
+                  <Icon type="area-chart" style={{ marginRight: 5 }} />
+                  Visualise
                 </Menu.Item>
-                </Menu>
-              }
-            >
-              <a className="datasource">{label}</a>
-            </Dropdown>
-          </div>
-        );
+              </Menu>
+            }
+          >
+            <span style={{ cursor: "pointer" }} className="datasource">
+              {label}
+            </span>
+          </Dropdown>
+        </div>
+      );
 
       columns.push({
         className: "column",
@@ -254,7 +255,9 @@ class Data extends React.Component {
               </Menu>
             }
           >
-            <a className="form">{truncatedLabel}</a>
+            <span style={{ cursor: "pointer" }} className="form">
+              {truncatedLabel}
+            </span>
           </Dropdown>
 
           {edit.field === field.name && (
@@ -321,7 +324,7 @@ class Data extends React.Component {
               </Menu>
             }
           > */}
-            <a className="computed">{truncatedLabel}</a>
+          <span className="computed">{truncatedLabel}</span>
           {/* </Dropdown> */}
         </div>
       );

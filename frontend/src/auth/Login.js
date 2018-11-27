@@ -81,11 +81,16 @@ class Login extends React.Component {
                     <div className="register">
                       New to OnTask?
                       <br />
-                      <a
+                      <span
+                        style={{
+                          cursor: "pointer",
+                          color: "#2196F3",
+                          textDecoration: "underline"
+                        }}
                         onClick={() => this.setState({ registerVisible: true })}
                       >
                         Click here to register an account
-                      </a>
+                      </span>
                     </div>
 
                     <Register
