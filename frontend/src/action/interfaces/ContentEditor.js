@@ -77,7 +77,11 @@ const rules = [
             return <li>{children}</li>;
           case "link":
             return (
-              <a href={obj.data.get("href")} target="_blank">
+              <a
+                href={obj.data.get("href")}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 {children}
               </a>
             );
@@ -503,6 +507,7 @@ class ContentEditor extends React.Component {
                   <a
                     href={href}
                     target="_blank"
+                    rel="noopener noreferrer"
                     style={{ color: "rgba(0, 0, 0, 0.65)" }}
                   >
                     <i className="material-icons">public</i>

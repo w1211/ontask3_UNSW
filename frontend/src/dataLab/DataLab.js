@@ -108,49 +108,49 @@ class DataLab extends React.Component {
                 </div>
               )}
 
-              {selectedId &&
-                !isForm && (
-                  <div className="actions">
-                    <RadioGroup
-                      size="large"
-                      style={{ marginRight: 15 }}
-                      onChange={e =>
-                        history.push(`${match.url}/${e.target.value}`)
-                      }
-                      value={location.pathname.split("/").slice(-1)[0]}
-                    >
-                      <RadioButton value="data">Data</RadioButton>
-                      <RadioButton value="details">Details</RadioButton>
-                      <RadioButton value="model">Model</RadioButton>
-                    </RadioGroup>
+              {selectedId && !isForm && (
+                <div className="actions">
+                  <RadioGroup
+                    size="large"
+                    style={{ marginRight: 15 }}
+                    onChange={e =>
+                      history.push(`${match.url}/${e.target.value}`)
+                    }
+                    value={location.pathname.split("/").slice(-1)[0]}
+                  >
+                    <RadioButton value="data">Data</RadioButton>
+                    <RadioButton value="details">Details</RadioButton>
+                    <RadioButton value="model">Model</RadioButton>
+                  </RadioGroup>
 
-                    {webForms.length > 0 && (
-                      <Dropdown
-                        trigger={["click"]}
-                        overlay={
-                          <Menu>
-                            {webForms.map((form, i) => (
-                              <Menu.Item key={i}>
-                                <a
-                                  target="_blank"
-                                  href={`/datalab/${selectedId}/form/${
-                                    form.index
-                                  }`}
-                                >
-                                  {form.name}
-                                </a>
-                              </Menu.Item>
-                            ))}
-                          </Menu>
-                        }
-                      >
-                        <Button icon="global" size="large">
-                          Web forms ({webForms.length})
-                        </Button>
-                      </Dropdown>
-                    )}
-                  </div>
-                )}
+                  {webForms.length > 0 && (
+                    <Dropdown
+                      trigger={["click"]}
+                      overlay={
+                        <Menu>
+                          {webForms.map((form, i) => (
+                            <Menu.Item key={i}>
+                              <a
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                href={`/datalab/${selectedId}/form/${
+                                  form.index
+                                }`}
+                              >
+                                {form.name}
+                              </a>
+                            </Menu.Item>
+                          ))}
+                        </Menu>
+                      }
+                    >
+                      <Button icon="global" size="large">
+                        Web forms ({webForms.length})
+                      </Button>
+                    </Dropdown>
+                  )}
+                </div>
+              )}
 
               {isFetching ? (
                 <Spin size="large" />

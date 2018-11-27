@@ -410,14 +410,13 @@ class FormModule extends React.Component {
           </Tooltip>
         </FormItem>
 
-        {_.get(currentStep, "webForm.active") &&
-          didChangeActive && (
-            <Alert
-              showIcon
-              type="info"
-              message="This web form will not be accessible until the DataLab is saved"
-            />
-          )}
+        {_.get(currentStep, "webForm.active") && didChangeActive && (
+          <Alert
+            showIcon
+            type="info"
+            message="This web form will not be accessible until the DataLab is saved"
+          />
+        )}
       </div>
     );
   };
@@ -448,7 +447,7 @@ class FormModule extends React.Component {
               field: "import",
               value: importExport.importValue,
               isNotField: true
-            })
+            });
           }
 
           this.setState({ importExport: { visible: false } });
@@ -525,7 +524,11 @@ class FormModule extends React.Component {
     )
       actions.push(
         <Tooltip title="Access URL">
-          <a href={`/datalab/${selectedId}/form/${stepIndex}`} target="_blank">
+          <a
+            href={`/datalab/${selectedId}/form/${stepIndex}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <Icon type="global" />
           </a>
         </Tooltip>

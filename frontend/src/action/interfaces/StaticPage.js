@@ -38,7 +38,7 @@ class StaticPage extends React.Component{
         <h3>
           View auditing history
           { workflow &&
-            <Link target="_blank" to={`/staticPageHistoryStaff/${workflow.id}`}>
+            <Link target="_blank" rel="noopener noreferrer" to={`/staticPageHistoryStaff/${workflow.id}`}>
               <Button style={{ marginLeft: '10px' }} shape="circle" icon="link"/>
             </Link>
           }
