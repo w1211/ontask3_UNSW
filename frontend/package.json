@@ -13,14 +13,14 @@
     "memoize-one": "^4.0.2",
     "moment": "^2.22.2",
     "query-string": "^5.1.1",
-    "react": "^16.4.1",
+    "react": "^16.6.3",
     "react-dnd": "^2.6.0",
     "react-dnd-html5-backend": "^2.6.0",
-    "react-dom": "^16.4.1",
+    "react-dom": "^16.6.3",
     "react-draggable": "^3.0.5",
     "react-redux": "^5.0.7",
     "react-router-dom": "^4.3.1",
-    "react-scripts": "^1.1.5",
+    "react-scripts": "2.1.1",
     "redux": "^3.7.2",
     "redux-thunk": "^2.3.0",
     "sanitize-html": "^1.18.4",
@@ -34,5 +34,11 @@
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject"
-  }
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ]
 }
