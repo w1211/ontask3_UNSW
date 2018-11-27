@@ -65,8 +65,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         self.check_object_permissions(self.request, self.get_object())
         serializer.save()
 
-    def destroy(self, request, id=None):
-        action = self.get_object()
+    def perform_destroy(self, action):
         self.check_object_permissions(self.request, action)
 
         # If a schedule already exists for this action, then delete it
@@ -75,14 +74,8 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         if "schedule" in action and "asyncTasks" in action["schedule"]:
             remove_async_task(action["schedule"]["asyncTasks"])
-            
+
         action.delete()
-
-        containers = ContainerViewSet.get_queryset(self)
-        serializer = ContainerSerializer(containers, many=True)
-
-        return Response(serializer.data)
-
 
     @detail_route(methods=["post", "put", "delete"])
     def filter(self, request, id=None):
@@ -350,9 +343,8 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         containers = ContainerViewSet.get_queryset(self)
         serializer = ContainerSerializer(containers, many=True)
-        
-        return Response(serializer.data)
 
+        return Response(serializer.data)
 
     # # retrive email sending history and generate static page.
     # @detail_route(methods=["get"])

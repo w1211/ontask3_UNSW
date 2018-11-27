@@ -227,8 +227,7 @@ class DatasourceViewSet(viewsets.ModelViewSet):
             audit.is_valid()
             audit.save()
 
-    def destroy(self, request, id=None):
-        datasource = self.get_object()
+    def perform_destroy(self, datasource):
         self.check_object_permissions(self.request, datasource)
 
         # Ensure that no data lab is currently using this datasource
@@ -248,16 +247,11 @@ class DatasourceViewSet(viewsets.ModelViewSet):
                 "model": "datasource",
                 "document": str(datasource.id),
                 "action": "delete",
-                "user": request.user.email,
+                "user": self.request.user.email,
             }
         )
         audit.is_valid()
         audit.save()
-
-        containers = ContainerViewSet.get_queryset(self)
-        serializer = ContainerSerializer(containers, many=True)
-
-        return Response(serializer.data)
 
     @detail_route(methods=["patch"])
     def update_schedule(self, request, id):
