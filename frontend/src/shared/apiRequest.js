@@ -44,6 +44,12 @@ const apiRequest = async (
     return;
   }
 
+  // If the request method was a DELETE, then the response body is empty
+  if (response.status === 204) {
+    onSuccess();
+    return;
+  }
+
   // Parse the response as JSON
   let result;
   try {
