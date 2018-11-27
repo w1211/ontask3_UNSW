@@ -9,7 +9,7 @@ export default class DataPreview extends Component {
 
   render() {
     const { visible, data } = this.props;
-    const { columns, datasource } = data;
+    const { columns, preview } = data;
     
     return (
       <div>
@@ -27,7 +27,7 @@ export default class DataPreview extends Component {
           <Table
             rowKey={(record, index) => index}
             columns={columns}
-            dataSource={datasource}
+            dataSource={preview}
             pagination={{ pageSize: 5 }}
           />
         </Modal>

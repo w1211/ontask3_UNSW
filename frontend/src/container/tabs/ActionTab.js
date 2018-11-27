@@ -1,8 +1,18 @@
 import React from "react";
-import { Input, Icon, Tooltip, Button, Card, Modal, Select, notification } from "antd";
+import {
+  Input,
+  Icon,
+  Tooltip,
+  Button,
+  Card,
+  Modal,
+  Select,
+  notification
+} from "antd";
 import { Link } from "react-router-dom";
 
 import apiRequest from "../../shared/apiRequest";
+import ContainerContext from "../ContainerContext";
 
 const { Meta } = Card;
 const confirm = Modal.confirm;
@@ -10,10 +20,12 @@ const InputGroup = Input.Group;
 const Option = Select.Option;
 
 class ActionTab extends React.Component {
-  state = { filter: null, filter_category: "name", deleting: {}, cloning: {} };
+  static contextType = ContainerContext;
+
+  state = { filter: null, filterCategory: "name", deleting: {}, cloning: {} };
 
   deleteAction = actionId => {
-    const { updateContainers } = this.props;
+    const { updateContainers } = this.context;
 
     confirm({
       title: "Confirm action deletion",
@@ -28,9 +40,9 @@ class ActionTab extends React.Component {
 
         apiRequest(`/workflow/${actionId}`, {
           method: "DELETE",
-          onSuccess: containers => {
+          onSuccess: () => {
             this.setState({ deleting: { [actionId]: false } });
-            updateContainers(containers);
+            updateContainers();
             notification["success"]({
               message: "Action deleted",
               description: "The action was successfully deleted."
@@ -49,7 +61,7 @@ class ActionTab extends React.Component {
   };
 
   cloneAction = actionId => {
-    const { updateContainers } = this.props;
+    const { updateContainers } = this.context;
 
     confirm({
       title: "Confirm action clone",
@@ -61,9 +73,9 @@ class ActionTab extends React.Component {
 
         apiRequest(`/workflow/${actionId}/clone_action/`, {
           method: "POST",
-          onSuccess: containers => {
+          onSuccess: () => {
             this.setState({ cloning: { [actionId]: false } });
-            updateContainers(containers);
+            updateContainers();
             notification["success"]({
               message: "Action cloned",
               description: "The action was successfully cloned."
@@ -83,7 +95,7 @@ class ActionTab extends React.Component {
 
   render() {
     const { containerId, actions, dataLabs, openModal } = this.props;
-    const { filter, deleting, cloning, filter_category } = this.state;
+    const { filter, deleting, cloning, filterCategory } = this.state;
 
     return (
       <div className="tab">
@@ -93,7 +105,7 @@ class ActionTab extends React.Component {
               <InputGroup compact>
                 <Select
                   defaultValue="Name"
-                  onChange={value => this.setState({ filter_category: value })}
+                  onChange={filterCategory => this.setState({ filterCategory })}
                 >
                   <Option value="name">Name</Option>
                   <Option value="datalab">DataLab</Option>
@@ -123,10 +135,10 @@ class ActionTab extends React.Component {
             if (
               (filter &&
                 !name.includes(filter.toLowerCase()) &&
-                filter_category === "name") ||
+                filterCategory === "name") ||
               (filter &&
                 !datalab.includes(filter.toLowerCase()) &&
-                filter_category === "datalab")
+                filterCategory === "datalab")
             )
               return null;
 

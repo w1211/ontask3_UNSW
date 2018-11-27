@@ -1,22 +1,18 @@
 import React from "react";
 import { bindActionCreators } from "redux";
 import { connect } from "react-redux";
+import * as ContainerActionCreators from "./ContainerActions";
+
 import { Link } from "react-router-dom";
 import { Layout, Breadcrumb, Icon, Button, Spin } from "antd";
-
-import * as ContainerActionCreators from "./ContainerActions";
-import {
-  updateSchedule,
-  deleteSchedule
-} from "../datasource/DatasourceActions";
 
 import ContainerModal from "./ContainerModal";
 import ContainerList from "./ContainerList";
 import ContainerShare from "./ContainerShare";
 import DatasourceModal from "../datasource/DatasourceModal";
 import ActionModal from "../action/ActionModal";
-import SchedulerModal from "../scheduler/SchedulerModal";
-import DataPreview from "../datasource/DataPreview";
+
+import ContainerContext from "./ContainerContext";
 
 import "./Container.css";
 
@@ -28,17 +24,15 @@ class Container extends React.Component {
     const { dispatch } = props;
 
     this.boundActionCreators = bindActionCreators(
-      { ...ContainerActionCreators, updateSchedule, deleteSchedule },
+      ContainerActionCreators,
       dispatch
     );
 
     this.state = {
       container: { visible: false, selected: null },
       datasource: { visible: false, selected: null, data: {} },
-      scheduler: { visible: false, selected: null, data: {} },
       action: { visible: false, selected: null, data: {} },
-      sharing: { visible: false, selected: null },
-      dataPreview: { visible: false, selected: null, data: {} }
+      sharing: { visible: false, selected: null }
     };
   }
 
@@ -69,93 +63,90 @@ class Container extends React.Component {
     });
   };
 
+  updateContainers = containers => {
+    const { dispatch } = this.props;
+
+    if (containers) {
+      dispatch(ContainerActionCreators.storeContainers(containers));
+    } else {
+      this.boundActionCreators.fetchContainers();
+    }
+  };
+
   render() {
     const { isFetching, containers } = this.props;
-    const {
-      container,
-      datasource,
-      scheduler,
-      action,
-      sharing,
-      dataPreview
-    } = this.state;
+    const { container, datasource, action, sharing } = this.state;
 
     return (
-      <div className="container">
-        <Content className="wrapper">
-          <Breadcrumb className="breadcrumbs">
-            <Breadcrumb.Item>
-              <Link to="/">Dashboard</Link>
-            </Breadcrumb.Item>
-            <Breadcrumb.Item>Containers</Breadcrumb.Item>
-          </Breadcrumb>
+      <ContainerContext.Provider
+        value={{
+          updateContainers: this.updateContainers
+        }}
+      >
+        <div className="container">
+          <Content className="wrapper">
+            <Breadcrumb className="breadcrumbs">
+              <Breadcrumb.Item>
+                <Link to="/">Dashboard</Link>
+              </Breadcrumb.Item>
+              <Breadcrumb.Item>Containers</Breadcrumb.Item>
+            </Breadcrumb>
 
-          <Layout className="layout">
-            <Content className="content">
-              <h1>Containers</h1>
+            <Layout className="layout">
+              <Content className="content">
+                <h1>Containers</h1>
 
-              {isFetching ? (
-                <Spin size="large" />
-              ) : (
-                <div>
-                  <Button
-                    onClick={() => this.openModal({ type: "container" })}
-                    type="primary"
-                    icon="plus"
-                    size="large"
-                    className="create_container"
-                  >
-                    New container
-                  </Button>
+                {isFetching ? (
+                  <Spin size="large" />
+                ) : (
+                  <div>
+                    <Button
+                      onClick={() => this.openModal({ type: "container" })}
+                      type="primary"
+                      icon="plus"
+                      size="large"
+                      className="create_container"
+                    >
+                      New container
+                    </Button>
 
-                  <ContainerModal
-                    {...container}
-                    closeModal={() => this.closeModal("container")}
-                  />
+                    <ContainerModal
+                      {...container}
+                      closeModal={() => this.closeModal("container")}
+                    />
 
-                  <DatasourceModal
-                    {...datasource}
-                    closeModal={() => this.closeModal("datasource")}
-                    datasource={datasource}
-                    containers={containers}
-                  />
+                    <DatasourceModal
+                      {...datasource}
+                      closeModal={() => this.closeModal("datasource")}
+                      datasource={datasource}
+                      containers={containers}
+                    />
 
-                  <DataPreview
-                    {...dataPreview}
-                    closeModal={() => this.closeModal("dataPreview")}
-                  />
+                    <ActionModal
+                      {...action}
+                      closeModal={() => this.closeModal("action")}
+                    />
 
-                  <ActionModal
-                    {...action}
-                    closeModal={() => this.closeModal("action")}
-                  />
+                    <ContainerShare
+                      {...sharing}
+                      closeModal={() => this.closeModal("sharing")}
+                    />
 
-                  <ContainerShare
-                    {...sharing}
-                    closeModal={() => this.closeModal("sharing")}
-                  />
-
-                  <SchedulerModal
-                    {...scheduler}
-                    onUpdate={this.boundActionCreators.updateSchedule}
-                    onDelete={this.boundActionCreators.deleteSchedule}
-                    closeModal={() => this.closeModal("scheduler")}
-                  />
-
-                  {containers && containers.length > 0 ? (
-                    <ContainerList openModal={this.openModal} />
-                  ) : (
-                    <h2>
-                      <Icon type="info-circle-o" className="info_icon" />
-                      Get started by creating your first container.
-                    </h2>
-                  )}
-                </div>
-              )}
-            </Content>
-          </Layout>
-        </Content>
-      </div>
+                    {containers && containers.length > 0 ? (
+                      <ContainerList openModal={this.openModal} />
+                    ) : (
+                      <h2>
+                        <Icon type="info-circle-o" className="info_icon" />
+                        Get started by creating your first container.
+                      </h2>
+                    )}
+                  </div>
+                )}
+              </Content>
+            </Layout>
+          </Content>
+        </div>
+      </ContainerContext.Provider>
     );
   }
 }

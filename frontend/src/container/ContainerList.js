@@ -12,10 +12,14 @@ import ActionTab from "./tabs/ActionTab";
 
 import ContainerHeader from "./ContainerHeader";
 
+import ContainerContext from "./ContainerContext";
+
 const TabPane = Tabs.TabPane;
 const Panel = Collapse.Panel;
 
 class ContainerList extends React.Component {
+  static contextType = ContainerContext;
+
   constructor(props) {
     super(props);
     const { dispatch } = props;
@@ -25,12 +29,6 @@ class ContainerList extends React.Component {
       dispatch
     );
   }
-
-  updateContainers = containers => {
-    const { dispatch } = this.props;
-    
-    dispatch(ContainerActionCreators.storeContainers(containers));
-  };
 
   render() {
     const { containers, accordionKey, tabKey, openModal } = this.props;
@@ -88,7 +86,6 @@ class ContainerList extends React.Component {
                       dataLabs={container.datalabs}
                       actions={container.actions}
                       openModal={openModal}
-                      updateContainers={this.updateContainers}
                     />
                   </TabPane>
                 </Tabs>

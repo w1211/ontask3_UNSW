@@ -1,6 +1,5 @@
 import React from "react";
-import { bindActionCreators } from "redux";
-import { connect } from "react-redux";
+import apiRequest from "../shared/apiRequest";
 import {
   Button,
   Modal,
@@ -11,15 +10,15 @@ import {
   Upload,
   Icon,
   Tooltip,
-  message
+  message,
+  notification
 } from "antd";
 import _ from "lodash";
-
-import * as DatasourceActionCreators from "./DatasourceActions";
 
 import formItemLayout from "../shared/FormItemLayout";
 
 import "./Datasource.css";
+import ContainerContext from "../container/ContainerContext";
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
@@ -27,14 +26,10 @@ const Option = Select.Option;
 const Dragger = Upload.Dragger;
 
 class DatasourceModal extends React.Component {
+  static contextType = ContainerContext;
+
   constructor(props) {
     super(props);
-    const { dispatch } = props;
-
-    this.boundActionCreators = bindActionCreators(
-      DatasourceActionCreators,
-      dispatch
-    );
 
     this.state = {
       file: null,
@@ -48,12 +43,13 @@ class DatasourceModal extends React.Component {
   handleOk = () => {
     const { form, selected, data, closeModal } = this.props;
     const { file, fileError } = this.state;
+    const { updateContainers } = this.context;
 
-    form.validateFields((err, payload) => {
+    form.validateFields((err, values) => {
       if (err || fileError) return;
 
       if (
-        ["xlsXlsxFile", "csvTextFile"].includes(payload.connection.dbType) &&
+        ["xlsXlsxFile", "csvTextFile"].includes(values.connection.dbType) &&
         !file &&
         !selected
       ) {
@@ -63,18 +59,44 @@ class DatasourceModal extends React.Component {
 
       this.setState({ loading: true });
 
-      const callFn = selected ? "updateDatasource" : "createDatasource";
-      this.boundActionCreators[callFn]({
-        containerId: data && data.containerId,
-        datasourceId: selected && selected.id,
+      let payload = new FormData();
+      if (file) {
+        payload = new FormData();
+        payload.append("file", file, file.name);
+        payload.append("name", values.name);
+        payload.append("payload", JSON.stringify(values));
+      } else {
+        payload = values;
+      }
+
+      let url = "/datasource/";
+      if (selected) {
+        url += `${selected.id}/`;
+      } else {
+        if (file) {
+          payload.append("container", data.containerId);
+        } else {
+          payload.container = data.containerId;
+        }
+      }
+
+      apiRequest(url, {
+        method: selected ? "PATCH" : "POST",
         payload,
-        file,
-        onError: error => this.setState({ loading: false, error }),
+        isJSON: !file,
         onSuccess: () => {
           this.setState({ loading: false, error: null });
           form.resetFields();
           closeModal();
-        }
+          updateContainers();
+          notification["success"]({
+            message: `Datasource ${selected ? "updated" : "created"}`,
+            description: `The datasource was successfully ${
+              selected ? "updated" : "created"
+            }.`
+          });
+        },
+        onError: error => this.setState({ loading: false, error })
       });
     });
   };
@@ -96,14 +118,25 @@ class DatasourceModal extends React.Component {
   fetchSheetnames = (file, payload) => {
     this.setState({ loading: true });
 
-    this.boundActionCreators.fetchSheetnames({
-      file,
-      payload,
+    let data;
+    if (file) {
+      data = new FormData();
+      data.append("file", file, file.name);
+    } else {
+      data = payload;
+    }
+
+    const parameters = {
+      method: "POST",
       onError: error => this.setState({ loading: false, error }),
       onSuccess: sheetnames => {
         this.setState({ loading: false, sheetnames });
-      }
-    });
+      },
+      payload: data,
+      isJSON: !file
+    };
+
+    apiRequest(`/datasource/get_sheetnames/`, parameters);
   };
 
   handleFileDrop = e => {
@@ -226,7 +259,8 @@ class DatasourceModal extends React.Component {
 
         <Alert
           className="info"
-          message="If your file is inside a folder, add the folder to the file name (e.g. 2018s1/class.csv)"
+          message="If your file is inside a folder, add the folder to 
+          the file name (e.g. 2018s1/class.csv)"
           type="info"
           showIcon
         />
@@ -235,7 +269,8 @@ class DatasourceModal extends React.Component {
           Please copy following policy to your bucket permission:
           <Tooltip
             placement="right"
-            title="Adding this policy to your bucket permission is neccessary in order to provide OnTask with access to your file."
+            title="Adding this policy to your bucket permission is neccessary 
+            in order to provide OnTask with access to your file."
           >
             <Icon type="question-circle-o" className="info_tooltip" />
           </Tooltip>
@@ -469,7 +504,4 @@ class DatasourceModal extends React.Component {
   }
 }
 
-export default _.flow(
-  connect(),
-  Form.create()
-)(DatasourceModal);
+export default Form.create()(DatasourceModal);
