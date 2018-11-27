@@ -73,7 +73,7 @@ export const generateCountPercentField = (dataView, type, interval, colNameSelec
     .transform({
       type: 'map',
       callback(row){
-        row['percent']=row['percent'];
+        // row['percent']=row['percent'];
         return row;
       }
     });
