@@ -81,8 +81,7 @@ class Container extends React.Component {
     } = this.state;
 
     return (
-      <div className="container">
-        <Content className="wrapper">
+      <Layout className="container">
           <Breadcrumb className="breadcrumbs">
             <Breadcrumb.Item>
               <Link to="/">Dashboard</Link>
@@ -154,8 +153,7 @@ class Container extends React.Component {
               )}
             </Content>
           </Layout>
-        </Content>
-      </div>
+      </Layout>
     );
   }
 }

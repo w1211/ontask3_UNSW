@@ -15,6 +15,8 @@ import ContainerHeader from "./ContainerHeader";
 const TabPane = Tabs.TabPane;
 const Panel = Collapse.Panel;
 
+const smallScreenWidth = 768;
+
 class ContainerList extends React.Component {
   constructor(props) {
     super(props);
@@ -24,11 +26,25 @@ class ContainerList extends React.Component {
       ContainerActionCreators,
       dispatch
     );
+
+    this.state = { width: 0 };
   }
+
+  componentDidMount() {
+    this.updateWindowWidth();
+    window.addEventListener("resize", this.updateWindowWidth);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener("resize", this.updateWindowWidth);
+  }
+
+  updateWindowWidth = () => {
+    this.setState({ width: window.innerWidth });
+  };
 
   updateContainers = containers => {
     const { dispatch } = this.props;
-    
     dispatch(ContainerActionCreators.storeContainers(containers));
   };
 
@@ -36,6 +52,9 @@ class ContainerList extends React.Component {
     const { containers, accordionKey, tabKey, openModal } = this.props;
 
     const currentUser = localStorage.getItem("email");
+
+    const { width } = this.state;
+    const tabStyle = width >= smallScreenWidth ? "left" : "top";
 
     return (
       <div className="container_list">
@@ -62,7 +81,7 @@ class ContainerList extends React.Component {
               >
                 <Tabs
                   activeKey={tabKey}
-                  tabPosition="left"
+                  tabPosition={tabStyle}
                   tabBarStyle={{ minWidth: 160 }}
                   onChange={this.boundActionCreators.changeContainerTab}
                 >

@@ -1,7 +1,7 @@
 import React from "react";
 import { Switch, Route, Redirect } from "react-router-dom";
 import { withRouter } from "react-router";
-import { Layout, Menu, Button } from "antd";
+import { Layout, Menu, Button, Icon } from "antd";
 import queryString from "query-string";
 import _ from "lodash";
 
@@ -16,14 +16,29 @@ import Action from "./action/Action";
 
 import "./App.css";
 
-const { Header, Footer } = Layout;
+const { Header, Footer, Sider, Content } = Layout;
+
+const smallScreenWidth = 768;
 
 class App extends React.Component {
   constructor(props) {
     super(props);
 
-    this.state = { hasToken: false };
+    this.state = { hasToken: false, width: 0 };
   }
+
+  componentDidMount() {
+    this.updateWindowWidth();
+    window.addEventListener("resize", this.updateWindowWidth);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener("resize", this.updateWindowWidth);
+  }
+
+  updateWindowWidth = () => {
+    this.setState({ width: window.innerWidth });
+  };
 
   logout = () => {
     localStorage.removeItem("token");
@@ -79,9 +94,40 @@ class App extends React.Component {
     );
   };
 
+  menuComponent = (menuKey, webForm) => {
+    const { history } = this.props;
+    const { width } = this.state;
+
+    const mode = width >= smallScreenWidth ? "horizontal" : "inline";
+
+    return (
+      <Menu
+        mode={mode}
+        defaultSelectedKeys={[menuKey]}
+        theme="light"
+        className="navigation"
+        onSelect={({ key }) =>
+          history.push(
+            key === "dashboard" ? (webForm ? webForm : "/") : `/${key}`
+          )
+        }
+      >
+        <Menu.Item key="dashboard">{webForm ? "Form" : "Dashboard"}</Menu.Item>
+        <Menu.Item key="about">About</Menu.Item>
+        <Menu.Item key="help">Help</Menu.Item>
+        <Menu.Item key="contact">Contact</Menu.Item>
+        {mode === "inline" && (
+          <Menu.Item key="logout">
+            Logout <Icon type="logout" />
+          </Menu.Item>
+        )}
+      </Menu>
+    );
+  };
+
   render() {
-    const { location, history } = this.props;
-    const { hasToken } = this.state;
+    const { location } = this.props;
+    const { hasToken, width } = this.state;
 
     const pathName = location.pathname.slice(1).split("/");
     let menuKey;
@@ -102,67 +148,62 @@ class App extends React.Component {
 
     return (
       <Layout className="app">
-        <Header className="header">
-          <img src={logo} alt="OnTask" className="logo" />
+        {width >= smallScreenWidth ? (
+          <Header className="header">
+            <img src={logo} alt="OnTask" className="logo" />
 
-          {hasToken && (
-            <div className="logout">
-              <Button icon="logout" onClick={this.logout} />
-            </div>
-          )}
+            {hasToken && (
+              <div className="logout">
+                <Button icon="logout" onClick={this.logout} />
+              </div>
+            )}
 
-          {!feedbackForm && (
-            <Menu
-              mode="horizontal"
-              defaultSelectedKeys={[menuKey]}
-              className="navigation"
-              onSelect={({ key }) =>
-                history.push(
-                  key === "dashboard" ? (webForm ? webForm : "/") : `/${key}`
+            {!feedbackForm && this.menuComponent(menuKey, webForm)}
+          </Header>
+        ) : (
+          <Sider
+            breakpoint="md"
+            collapsedWidth="0"
+            className="sider-navigation"
+          >
+            <img src={logo} alt="OnTask" className="sider-logo" />
+            {!feedbackForm && this.menuComponent(menuKey, webForm)}
+          </Sider>
+        )}
+
+        <Content>
+          <Switch>
+            <Route
+              exact
+              path="/"
+              render={() =>
+                !hasToken ? (
+                  <Login onLogin={() => this.setState({ hasToken: true })} />
+                ) : (
+                  <Redirect to={redirectTo ? redirectTo : "/containers"} />
                 )
               }
-            >
-              <Menu.Item key="dashboard">
-                {webForm ? "Form" : "Dashboard"}
-              </Menu.Item>
-              <Menu.Item key="about">About</Menu.Item>
-              <Menu.Item key="help">Help</Menu.Item>
-              <Menu.Item key="contact">Contact</Menu.Item>
-            </Menu>
-          )}
-        </Header>
+            />
 
-        <Switch>
-          <Route
-            exact
-            path="/"
-            render={() =>
-              !hasToken ? (
-                <Login onLogin={() => this.setState({ hasToken: true })} />
-              ) : (
-                <Redirect to={redirectTo ? redirectTo : "/containers"} />
-              )
-            }
-          />
+            {this.AuthenticatedRoute({
+              path: "/containers",
+              component: Container
+            })}
 
-          {this.AuthenticatedRoute({
-            path: "/containers",
-            component: Container
-          })}
+            {this.AuthenticatedRoute({
+              path: "/datalab/:id?",
+              component: DataLab
+            })}
 
-          {this.AuthenticatedRoute({
-            path: "/datalab/:id?",
-            component: DataLab
-          })}
+            {this.AuthenticatedRoute({
+              path: "/action/:id",
+              component: Action,
+              feedbackForm
+            })}
+          </Switch>
 
-          {this.AuthenticatedRoute({
-            path: "/action/:id",
-            component: Action,
-            feedbackForm
-          })}
-        </Switch>
-
-        <Footer className="footer">© OnTask Project 2018</Footer>
+          <Footer className="footer">© OnTask Project 2018</Footer>
+        </Content>
       </Layout>
     );
   }

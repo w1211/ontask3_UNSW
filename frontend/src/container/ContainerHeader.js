@@ -67,7 +67,7 @@ class ContainerHeader extends React.Component {
     const isOwner = currentUser === container.owner;
 
     return (
-      <div>
+      <div className="container_header">
         {container.code}
 
         <div className="header_buttons">

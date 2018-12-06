@@ -4,17 +4,35 @@
 .container .info_icon {
   margin-right: 10px;
 }
-.container .container_list .header_buttons {
-  float: right;
-  margin-right: 10px;
-  margin-top: -5px;
+
+.container .content {
+  margin-top: 15px;
 }
-.container .container_list .header_buttons button {
-  display: inline-flex;
+
+.container .breadcrumbs {
+  padding-left: 20px;
+}
+
+.container .container_header {
+  display: flex;
   align-items: center;
-  vertical-align: middle;
+  flex-wrap: wrap;
+  overflow: hidden;
+}
+
+.container .container_list .header_buttons {
+  margin-left: auto;
+}
+
+.container .container_list .header_buttons button {
   margin-right: 10px;
 }
+
+.container .layout {
+  margin: 0px 16px;
+  border-radius: 5px;
+}
+
 .container .container_list .tab {
   display: flex;
   flex-direction: row;
@@ -72,4 +90,10 @@
 
 .container .container_list .filter .ant-input-group input {
   border-radius: 0;
+}
+
+@media screen and (max-width: 576px) {
+  .container .layout {
+    margin: 0px;
+  }
 }
