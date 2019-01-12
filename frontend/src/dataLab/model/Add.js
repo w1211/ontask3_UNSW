@@ -1,22 +1,13 @@
 import React, { Component } from "react";
-import PropTypes from "prop-types";
 import { DropTarget } from "react-dnd";
 import { Icon, Tooltip } from "antd";
-import flow from "lodash/flow";
-import { connect } from "react-redux";
-
-import { addModule } from "../DataLabActions";
 
 const dropTarget = {
   drop(props, monitor, component) {
-    const { dispatch } = props;
+    const { addModule } = props;
 
     const item = monitor.getItem();
-    dispatch(addModule(item));
-
-    // Return a value to monitor.getDropResult()
-    // in the drag source's endDrag() method
-    return { dropped: true };
+    addModule(item.type);
   }
 };
 
@@ -31,14 +22,8 @@ const collect = (connect, monitor) => {
 };
 
 class Add extends Component {
-  static propTypes = {
-    connectDropTarget: PropTypes.func.isRequired,
-    hovered: PropTypes.bool.isRequired,
-    type: PropTypes.string
-  };
-
   render() {
-    const { connectDropTarget, type, hovered } = this.props;
+    const { connectDropTarget, hovered, type } = this.props;
 
     return connectDropTarget(
       <div>
@@ -56,7 +41,4 @@ class Add extends Component {
   }
 }
 
-export default flow(
-  DropTarget("module", dropTarget, collect),
-  connect()
-)(Add);
+export default DropTarget("module", dropTarget, collect)(Add);

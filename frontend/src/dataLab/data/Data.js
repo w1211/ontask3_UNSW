@@ -1,6 +1,4 @@
 import React from "react";
-import { bindActionCreators } from "redux";
-import { connect } from "react-redux";
 import {
   Table,
   Icon,
@@ -9,42 +7,33 @@ import {
   Popover,
   Tooltip,
   Button,
-  Input
+  Input,
+  message,
+  notification
 } from "antd";
 import moment from "moment";
 
-import * as DataLabActionCreators from "../DataLabActions";
+// import VisualisationModal from "./VisualisationModal";
 
-import VisualisationModal from "../visualisation/VisualisationModal";
-
-import EditableField from "../data-manipulation/EditableField";
+import apiRequest from "../../shared/apiRequest";
+import Field from "../../shared/Field";
 
 const Search = Input.Search;
 
 class Data extends React.Component {
-  constructor(props) {
-    super(props);
-    const { dispatch } = props;
-
-    this.boundActionCreators = bindActionCreators(
-      DataLabActionCreators,
-      dispatch
-    );
-
-    this.state = {
-      sort: {},
-      editable: {},
-      edit: { field: null, primary: null },
-      saved: {},
-      searchTerm: ""
-    };
-  }
+  state = {
+    sort: {},
+    editable: {},
+    edit: { field: null, primary: null },
+    saved: {},
+    searchTerm: ""
+  };
 
   initialiseData = () => {
-    const { data, build } = this.props;
+    const { data, steps } = this.props;
     const { searchTerm } = this.state;
 
-    if (!data || !build) return [];
+    if (!data || !steps) return [];
 
     const term = searchTerm.trim().toLowerCase();
 
@@ -61,13 +50,13 @@ class Data extends React.Component {
   };
 
   initialiseColumns = () => {
-    const { build } = this.props;
+    const { steps, order } = this.props;
 
-    if (!build) return [];
+    if (!steps) return [];
 
     // Initialise the columns of the data table
     const columns = [];
-    build.steps.forEach((step, stepIndex) => {
+    steps.forEach((step, stepIndex) => {
       if (step.type === "datasource")
         columns.push(...this.DatasourceColumns(stepIndex));
 
@@ -80,7 +69,7 @@ class Data extends React.Component {
     // Order the columns
     const unPinnedColumns = [];
     const pinnedColumns = [];
-    build.order.forEach(orderItem => {
+    order.forEach(orderItem => {
       const column = columns.find(
         column =>
           column.stepIndex === orderItem.stepIndex &&
@@ -96,7 +85,7 @@ class Data extends React.Component {
 
     // Identify the first non-primary field
     const firstNonPrimaryField = orderedColumns.find(column => {
-      const step = build.steps[column.stepIndex];
+      const step = steps[column.stepIndex];
       return column.field !== step[step.type].primary;
     });
 
@@ -118,12 +107,13 @@ class Data extends React.Component {
           <Button
             style={{ border: 0 }}
             icon="area-chart"
-            onClick={() =>
-              this.boundActionCreators.openVisualisationModal(
-                defaultVisualisation,
-                true,
-                value
-              )
+            onClick={
+              () => {}
+              // this.boundActionCreators.openVisualisationModal(
+              //   defaultVisualisation,
+              //   true,
+              //   value
+              // )
             }
           />
         )
@@ -136,7 +126,7 @@ class Data extends React.Component {
   handleHeaderClick = (e, stepIndex, field, primary) => {
     switch (e.key) {
       case "visualise":
-        this.boundActionCreators.openVisualisationModal({ stepIndex, field });
+        // this.boundActionCreators.openVisualisationModal({ stepIndex, field });
         break;
 
       case "edit":
@@ -156,10 +146,10 @@ class Data extends React.Component {
     );
 
   DatasourceColumns = stepIndex => {
-    const { build } = this.props;
+    const { steps } = this.props;
     // const { sort } = this.state;
 
-    const step = build.steps[stepIndex]["datasource"];
+    const step = steps[stepIndex]["datasource"];
     const columns = [];
 
     step.fields.forEach(field => {
@@ -203,7 +193,9 @@ class Data extends React.Component {
         // },
         // sortOrder: sort && sort.field === label && sort.order,
         title,
-        render: text => text
+        render: text => (
+          <Field readOnly field={{ type: step.types[field] }} value={text} />
+        )
       });
     });
 
@@ -211,11 +203,11 @@ class Data extends React.Component {
   };
 
   FormColumns = stepIndex => {
-    const { build } = this.props;
+    const { steps } = this.props;
     // const { sort, edit } = this.state;
     const { edit } = this.state;
 
-    const step = build.steps[stepIndex]["form"];
+    const step = steps[stepIndex]["form"];
     const columns = [];
 
     let isActive = true;
@@ -301,10 +293,10 @@ class Data extends React.Component {
   };
 
   ComputedColumns = stepIndex => {
-    const { build } = this.props;
+    const { steps } = this.props;
     // const { sort } = this.state;
 
-    const step = build.steps[stepIndex]["computed"];
+    const step = steps[stepIndex]["computed"];
     const columns = [];
 
     step.fields.forEach(field => {
@@ -345,8 +337,7 @@ class Data extends React.Component {
         // },
         // sortOrder: sort && sort.field === label && sort.order,
         render: text => {
-          if (Array.isArray(text)) return text.join(", ");
-          return text;
+          return <Field readOnly field={field} value={text} />;
         }
       });
     });
@@ -359,12 +350,17 @@ class Data extends React.Component {
 
     return (
       <div className="editable-field">
-        <EditableField
+        <Field
           field={field}
-          originalValue={text ? text : null}
-          editMode={edit.field === field.name}
+          value={text}
+          readOnly={edit.field !== field.name}
           onSave={value => {
-            const payload = { stepIndex, field: field.name, primary, value };
+            const payload = {
+              stepIndex,
+              field: field.name,
+              primary,
+              value
+            };
             this.handleFormUpdate(payload);
           }}
         />
@@ -373,27 +369,37 @@ class Data extends React.Component {
   };
 
   handleFormUpdate = payload => {
-    const { selectedId } = this.props;
+    const { selectedId, updateDatalab } = this.props;
     const { saved } = this.state;
 
-    this.boundActionCreators.updateDataLabForm({
-      dataLabId: selectedId,
-      payload,
-      onFinish: () => {
+    apiRequest(`/datalab/${selectedId}/update_datalab_form/`, {
+      method: "PATCH",
+      onSuccess: dataLab => {
         this.setState({ saved: { ...saved, [payload.primary]: true } }, () => {
-          setTimeout(
+          this.updateSuccess = setTimeout(
             () =>
               this.setState({ saved: { ...saved, [payload.primary]: false } }),
             1500
           );
         });
-      }
+        message.success("Form updated.");
+        updateDatalab(dataLab);
+      },
+      onError: error =>
+        notification["error"]({
+          message: "Failed to update form"
+        }),
+      payload
     });
   };
 
   handleChange = (pagination, filter, sort) => {
     this.setState({ filter, sort });
   };
+
+  componentWillUnmount() {
+    clearTimeout(this.updateSuccess);
+  }
 
   render() {
     const { visualisation, edit, saved, searchTerm } = this.state;
@@ -429,12 +435,12 @@ class Data extends React.Component {
           />
         </div>
         <div className="data_manipulation">
-          <VisualisationModal
+          {/* <VisualisationModal
             {...visualisation}
             closeModal={() =>
               this.setState({ visualisation: { visible: false } })
             }
-          />
+          /> */}
 
           <Table
             rowKey={(record, index) => index}
@@ -458,14 +464,4 @@ class Data extends React.Component {
   }
 }
 
-const mapStateToProps = state => {
-  const { build, data, selectedId } = state.dataLab;
-
-  return {
-    build,
-    data,
-    selectedId
-  };
-};
-
-export default connect(mapStateToProps)(Data);
+export default Data;

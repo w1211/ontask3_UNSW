@@ -2,7 +2,9 @@ from django.http import JsonResponse
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import list_route, detail_route
+from rest_framework.decorators import action, list_route, detail_route
+from rest_framework.response import Response
+from rest_framework.status import HTTP_401_UNAUTHORIZED
 
 import json
 
@@ -13,7 +15,6 @@ from .utils import bind_column_types, combine_data, update_form_data, retrieve_f
 
 from container.views import ContainerViewSet
 from datasource.models import Datasource
-from workflow.models import Workflow
 from audit.serializers import AuditSerializer
 
 
@@ -51,7 +52,9 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 order.append(
                     {
                         "stepIndex": step_index,
-                        "field": field["name"] if step["type"] in ["form", "computed"] else field,
+                        "field": field["name"]
+                        if step["type"] in ["form", "computed"]
+                        else field,
                     }
                 )
 
@@ -127,119 +130,6 @@ class DatalabViewSet(viewsets.ModelViewSet):
 
         serializer.save(steps=steps, data=data, order=order)
 
-        # Identify the changes made to the datasource
-        diff = {"steps": []}
-        updated_datalab = serializer.instance
-        removed_module = None
-
-        if datalab["name"] != updated_datalab["name"]:
-            diff["name"] = {"from": datalab["name"], "to": updated_datalab["name"]}
-
-        for step_index, step in enumerate(datalab["steps"]):
-            is_outside_bound = step_index >= len(updated_datalab["steps"])
-            does_not_match = (
-                is_outside_bound
-                or datalab["steps"][step_index]["type"]
-                != updated_datalab["steps"][step_index]["type"]
-            )
-
-            # If the type of module at a given index has changed, then the user must have
-            # deleted all modules from that index onwards. This is because the module type
-            # can only be changed by placing a module of different type in its place, and
-            # only the righter-most module can be deleted at any given time.
-            if does_not_match:
-                removed_module = step_index
-                # Mark all modules from this point onwards as having been deleted
-                for step in datalab["steps"][step_index:]:
-                    diff["steps"].append({"remove": step.to_mongo()})
-                # Break out of the initial enumerate loop, NOT the second loop
-                # since we don't need to check any modules after this index, because
-                # we already know they must have been deleted (following the logic above)
-                break
-
-            # Otherwise, if its the same module, check for any changes to the module parameters
-            else:
-                module = datalab["steps"][step_index].to_mongo()
-                updated_module = updated_datalab["steps"][step_index].to_mongo()
-                module_changes = {"type": module["type"], module["type"]: {}}
-
-                # If the module is a form, and its form data has gone from having values to
-                # not having any, then the form module must have been removed (with another
-                # form added in its place). The type difference check (does_not_match) performed
-                # above would not have detected this, since both modules are of the same type.
-                # This is only relevant for forms, since we want to emphasise the fact that a form
-                # module was REMOVED in case we want to trace data loss
-                if module["type"] == "form" and (
-                    len(module["form"]["data"])
-                    and not len(updated_module["form"]["data"])
-                ):
-                    removed_module = step_index
-                    diff["steps"].append({"remove": step.to_mongo()})
-                    # Break out of the enumerate loop, since all modules after this one must
-                    # have been newly added
-                    break
-
-                for field in module[module["type"]]:
-                    old_value = (
-                        module[module["type"]][field]
-                        if field in module[module["type"]]
-                        else None
-                    )
-                    new_value = (
-                        updated_module[updated_module["type"]][field]
-                        if field in updated_module[updated_module["type"]]
-                        else None
-                    )
-                    if old_value != new_value:
-                        module_changes[module["type"]][field] = {
-                            "from": old_value,
-                            "to": new_value,
-                        }
-
-                # Perform an additional check on web form specifically. If the user is adding
-                # web form details for the first time, then the document will not have web form
-                # in its keys, and so the above check would have missed it.
-                if (
-                    module["type"] == "form"
-                    and not "webForm" in module["form"]
-                    and "webForm" in updated_module["form"]
-                ):
-                    module_changes["form"]["webForm"] = {
-                        "from": None,
-                        "to": updated_module["form"]["webForm"],
-                    }
-
-                if len(module_changes[module["type"]].keys()):
-                    diff["steps"].append({"update": module_changes})
-
-        # If a module was removed, then we know that any module from this index onwards
-        # in the updated datalab must have been newly added
-        if removed_module:
-            for step in updated_datalab["steps"][removed_module:]:
-                diff["steps"].append({"add": step.to_mongo()})
-        # Otherwise if no module was removed, but the number of modules in the updated
-        # datalab is more than the original, then those modules must have been newly added
-        elif len(updated_datalab["steps"]) > len(datalab["steps"]):
-            for step in updated_datalab["steps"][len(datalab["steps"]) :]:
-                diff["steps"].append({"add": step.to_mongo()})
-
-        if not len(diff["steps"]):
-            del diff["steps"]
-
-        # If changes were detected, add a record to the audit collection
-        if len(diff.keys()):
-            audit = AuditSerializer(
-                data={
-                    "model": "datalab",
-                    "document": str(datalab.id),
-                    "action": "edit",
-                    "user": self.request.user.email,
-                    "diff": diff,
-                }
-            )
-            audit.is_valid()
-            audit.save()
-
     def perform_destroy(self, datalab):
         self.check_object_permissions(self.request, datalab)
         datalab.delete()
@@ -255,13 +145,12 @@ class DatalabViewSet(viewsets.ModelViewSet):
         audit.is_valid()
         audit.save()
 
-    @list_route(methods=["post"])
+    @action(detail=False, methods=["post"])
     def check_discrepencies(self, request):
-        datalab_id = self.request.data["dataLabId"] 
-        partial_build = self.request.data["partialBuild"]
-        check_module = self.request.data["checkModule"]["datasource"]
+        check_module = request.data["partial"][-1]["datasource"]
+        partial_build = request.data["partial"][:-1]
 
-        data = combine_data(partial_build, datalab_id)
+        data = combine_data(partial_build)
         datasource = Datasource.objects.get(id=check_module["id"])
 
         primary_records = {item[check_module["primary"]] for item in datasource.data}
@@ -271,42 +160,33 @@ class DatalabViewSet(viewsets.ModelViewSet):
             if check_module["matching"] in item
         }
 
-        response = {}
-
-        # If there are already values, then add them to the response
-        if "discrepencies" in check_module:
-            response["values"] = {}
-            if "primary" in check_module["discrepencies"]:
-                response["values"]["primary"] = check_module["discrepencies"]["primary"]
-            if "matching" in check_module["discrepencies"]:
-                response["values"]["matching"] = check_module["discrepencies"][
-                    "matching"
-                ]
-
         # Values which are in the primary datasource but not the matching
         primary_discrepencies = primary_records - matching_records
-        if len(primary_discrepencies) > 0:
-            response["primary"] = list(primary_discrepencies)
-
         # Values which are in the matching datasource but not the primary
         matching_discrepencies = matching_records - primary_records
-        if len(matching_discrepencies) > 0:
-            response["matching"] = list(matching_discrepencies)
 
-        return JsonResponse(response)
+        return Response(
+            {
+                "primary": list(primary_discrepencies)
+                if len(primary_discrepencies) > 0
+                else [],
+                "matching": list(matching_discrepencies)
+                if len(matching_discrepencies) > 0
+                else [],
+            }
+        )
 
-    @list_route(methods=["post"])
+    @action(detail=False, methods=["post"])
     def check_uniqueness(self, request):
-        datalab_id = self.request.data["dataLabId"] 
-        partial_build = self.request.data["partialBuild"]
-        primary_key = self.request.data["primaryKey"]
+        partial_build = self.request.data["partial"]
+        primary_key = self.request.data["primary"]
 
-        data = combine_data(partial_build, datalab_id)
+        data = combine_data(partial_build)
 
         all_records = [item[primary_key] for item in data if primary_key in item]
         unique_records = set(all_records)
 
-        return JsonResponse({"isUnique": len(all_records) == len(unique_records)})
+        return Response({"isUnique": len(all_records) == len(unique_records)})
 
     @detail_route(methods=["patch"])
     def change_column_order(self, request, id=None):
@@ -515,12 +395,13 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 step=int(request.data["stepIndex"]),
                 field=request.data["field"],
                 primary=request.data["primary"],
-                value=request.data["value"],
+                value=request.data.get("value", None),
                 request_user=request_user,
             )
         except:
-            return JsonResponse(
-                {"error": "You are not authorized to modify this record"}
+            return Response(
+                {"error": "You are not authorized to modify this record"},
+                status=HTTP_401_UNAUTHORIZED,
             )
 
         serializer = DatalabSerializer(instance=updated_datalab)
@@ -582,4 +463,3 @@ class DatalabViewSet(viewsets.ModelViewSet):
         audit.save()
 
         return JsonResponse({"success": 1})
-

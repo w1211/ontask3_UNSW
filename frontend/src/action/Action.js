@@ -28,7 +28,7 @@ class Action extends React.Component {
     if (isFeedbackForm) {
       this.setState({ isFeedbackForm });
 
-      apiRequest(`/workflow/${actionId}/feedback/?job=${jobId}`, {
+      apiRequest(`/feedback/${actionId}/?job=${jobId}`, {
         method: "GET",
         onSuccess: feedback =>
           this.setState({

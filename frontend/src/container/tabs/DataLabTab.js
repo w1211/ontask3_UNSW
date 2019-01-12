@@ -1,28 +1,21 @@
 import React from "react";
-import { bindActionCreators } from "redux";
-import { connect } from "react-redux";
-import { Input, Icon, Tooltip, Button, Card, Modal } from "antd";
+import { Input, Icon, Tooltip, Button, Card, Modal, notification } from "antd";
 import { Link } from "react-router-dom";
 
-import { deleteDataLab, cloneDataLab } from "../../dataLab/DataLabActions";
+import apiRequest from "../../shared/apiRequest";
+import ContainerContext from "../ContainerContext";
 
 const { Meta } = Card;
 const confirm = Modal.confirm;
 
 class DataLabTab extends React.Component {
-  constructor(props) {
-    super(props);
-    const { dispatch } = props;
+  static contextType = ContainerContext;
 
-    this.boundActionCreators = bindActionCreators(
-      { deleteDataLab, cloneDataLab },
-      dispatch
-    );
-
-    this.state = { filter: null, deleting: {}, cloning: {} };
-  }
+  state = { filter: null, deleting: {}, cloning: {} };
 
   deleteDataLab = dataLabId => {
+    const { updateContainers } = this.context;
+
     confirm({
       title: "Confirm DataLab deletion",
       content:
@@ -35,29 +28,55 @@ class DataLabTab extends React.Component {
           deleting: { [dataLabId]: true }
         });
 
-        this.boundActionCreators.deleteDataLab({
-          dataLabId,
-          onFinish: () => {
+        apiRequest(`/datalab/${dataLabId}`, {
+          method: "DELETE",
+          onSuccess: () => {
             this.setState({ deleting: { [dataLabId]: false } });
+            updateContainers();
+            notification["success"]({
+              message: "DataLab deleted",
+              description: "The DataLab was successfully deleted."
+            });
+          },
+          onError: error => {
+            this.setState({ deleting: { [dataLabId]: false } });
+            notification["error"]({
+              message: "DataLab deletion failed",
+              description: error
+            });
           }
         });
       }
     });
   };
 
-  cloneDataLab = dataLabId => {
+  cloneDataLab = datalabId => {
+    const { updateContainers } = this.context;
+
     confirm({
       title: "Confirm DataLab clone",
       content: "Are you sure you want to clone this DataLab?",
       onOk: () => {
         this.setState({
-          cloning: { [dataLabId]: true }
+          cloning: { [datalabId]: true }
         });
 
-        this.boundActionCreators.cloneDataLab({
-          dataLabId,
-          onFinish: () => {
-            this.setState({ cloning: { [dataLabId]: false } });
+        apiRequest(`/datalab/${datalabId}/clone_datalab/`, {
+          method: "POST",
+          onSuccess: () => {
+            this.setState({ cloning: { [datalabId]: false } });
+            updateContainers();
+            notification["success"]({
+              message: "DataLab cloned",
+              description: "The DataLab was successfully cloned."
+            });
+          },
+          onError: error => {
+            this.setState({ cloning: { [datalabId]: false } });
+            notification["error"]({
+              message: "DataLab cloning failed",
+              description: error
+            });
           }
         });
       }
@@ -127,7 +146,7 @@ class DataLabTab extends React.Component {
                 <Meta
                   description={
                     <div>
-                      {`${dataLab.modules} module${dataLab.modules > 1 && "s"}`}
+                      {`${dataLab.modules} module${dataLab.modules > 1 ? "s" : ""}`}
                     </div>
                   }
                 />
@@ -150,4 +169,4 @@ class DataLabTab extends React.Component {
   }
 }
 
-export default connect()(DataLabTab);
+export default DataLabTab;

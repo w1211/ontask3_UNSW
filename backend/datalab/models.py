@@ -51,7 +51,7 @@ class FormField(EmbeddedDocument):
 
 
 class WebForm(EmbeddedDocument):
-    permission = StringField(required=True)
+    permission = StringField()
     visibleFields = ListField(StringField())
     layout = StringField(choices=("vertical", "table"), default="vertical")
     showAll = BooleanField(default=False)

@@ -1,11 +1,6 @@
 import React, { Component } from "react";
-import PropTypes from "prop-types";
 import { DragSource } from "react-dnd";
 import { Icon } from "antd";
-import flow from "lodash/flow";
-import { connect } from "react-redux";
-
-import { addModule } from "../DataLabActions";
 
 const dragSource = {
   beginDrag(props) {
@@ -23,26 +18,20 @@ const collect = (connect, monitor) => {
 };
 
 class Module extends Component {
-  static propTypes = {
-    connectDragSource: PropTypes.func.isRequired,
-    isDragging: PropTypes.bool.isRequired,
-    type: PropTypes.string.isRequired
-  };
-
   render() {
     const {
-      dispatch,
       isDragging,
       connectDragSource,
       type,
       label,
-      icon
+      icon,
+      addModule
     } = this.props;
 
     return connectDragSource(
       <div
         className={`module ${type} ${isDragging ? "dragging" : ""}`}
-        onClick={() => dispatch(addModule({ type }))}
+        onClick={() => addModule(type)}
       >
         <Icon type={icon} />
         <span>{label}</span>
@@ -51,7 +40,4 @@ class Module extends Component {
   }
 }
 
-export default flow(
-  DragSource("module", dragSource, collect),
-  connect()
-)(Module);
+export default DragSource("module", dragSource, collect)(Module);

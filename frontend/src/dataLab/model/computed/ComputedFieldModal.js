@@ -1,5 +1,4 @@
 import React from "react";
-import { connect } from "react-redux";
 import {
   Modal,
   Button,
@@ -16,9 +15,10 @@ import {
 } from "antd";
 import { Editor } from "slate-react";
 import { Value } from "slate";
-import _ from "lodash";
 
-import FormItemLayout from "../../shared/FormItemLayout";
+import ModelContext from "../ModelContext";
+
+import FormItemLayout from "../../../shared/FormItemLayout";
 
 const FormItem = Form.Item;
 const confirm = Modal.confirm;
@@ -41,60 +41,65 @@ const initialValue = Value.fromJSON({
 });
 
 class ComputedFieldModal extends React.Component {
-  constructor(props) {
-    super(props);
+  static contextType = ModelContext;
 
-    this.state = {
-      value: initialValue,
-      error: null,
-      treeData: null
-    };
-  }
+  state = {
+    value: initialValue,
+    error: null,
+    treeData: null
+  };
 
   generateTreeData = () => {
-    const { datasources, build, stepIndex, actions } = this.props;
+    const { stepIndex } = this.props;
+    const { datasources, form, actions } = this.context;
+    const { getFieldValue } = form;
 
     const treeData = [];
 
-    build.steps.slice(0, stepIndex).forEach((step, i) => {
-      if (step.type === "datasource") {
-        step = step.datasource;
+    getFieldValue("steps")
+      .slice(0, stepIndex)
+      .forEach((step, i) => {
+        if (step.type === "datasource") {
+          step = step.datasource;
 
-        const name = datasources.find(datasource => datasource.id === step.id)
-          .name;
-        treeData.push({
-          title: (
-            <span style={{ color: "#2196F3" }}>
-              <Icon type="database" style={{ marginRight: 5 }} />
-              {name}
-            </span>
-          ),
-          value: `${i}`,
-          children: step.fields.map((field, j) => ({
-            title: step.labels[field],
-            value: `${i}_${j}`
-          }))
-        });
-      }
+          const datasource = datasources.find(
+            datasource => datasource.id === step.id
+          );
+          if (!datasource) return;
 
-      if (step.type === "form") {
-        step = step.form;
+          treeData.push({
+            title: (
+              <span style={{ color: "#2196F3" }}>
+                <Icon type="database" style={{ marginRight: 5 }} />
+                {datasource.name}
+              </span>
+            ),
+            value: `${i}`,
+            children: (step.fields || []).map((field, j) => ({
+              title: step.labels[field],
+              value: `${i}_${j}`
+            }))
+          });
+        }
 
-        treeData.push({
-          title: (
-            <span style={{ color: "#5E35B1" }}>
-              <Icon type="form" style={{ marginRight: 5 }} />
-              {step.name}
-            </span>
-          ),
-          value: `${i}`,
-          children: step.fields.map((field, j) => ({
-            title: field.name,
-            value: `${i}_${j}`
-          }))
-        });
-      }
-    });
+        if (step.type === "form") {
+          step = step.form;
+
+          treeData.push({
+            title: (
+              <span style={{ color: "#5E35B1" }}>
+                <Icon type="form" style={{ marginRight: 5 }} />
+                {step.name}
+              </span>
+            ),
+            value: `${i}`,
+            children: (step.fields || []).map((field, j) => ({
+              title: field.name,
+              value: `${i}_${j}`
+            }))
+          });
+        }
+      });
 
     let tracking = [];
     if (actions && actions.length > 0)
@@ -175,7 +180,7 @@ class ComputedFieldModal extends React.Component {
   }
 
   handleOk = () => {
-    const { fieldIndex, updateBuild, field, form } = this.props;
+    const { onOk, form } = this.props;
     const { value, error } = this.state;
 
     const blockMap = value.toJSON();
@@ -214,17 +219,13 @@ class ComputedFieldModal extends React.Component {
       if (err) return;
 
       values.formula = blockMap;
-      if (field) {
-        updateBuild(`fields[${fieldIndex}]`, values);
-      } else {
-        updateBuild("add", values, true);
-      }
+      onOk(values);
       this.handleClose();
     });
   };
 
   handleClose = () => {
-    const { closeComputedFieldModal, form } = this.props;
+    const { closeModal, form } = this.props;
 
     this.setState({
       value: initialValue,
@@ -232,17 +233,17 @@ class ComputedFieldModal extends React.Component {
       treeData: null
     });
     form.resetFields();
-    closeComputedFieldModal();
+    closeModal();
   };
 
   handleDelete = () => {
-    const { fieldIndex, updateBuild } = this.props;
+    const { fieldIndex, onDelete } = this.props;
 
     confirm({
       title: "Confirm field deletion",
       content: "Are you sure you want to delete this computed field?",
       onOk: () => {
-        updateBuild("delete", fieldIndex, true);
+        onDelete(fieldIndex);
         this.handleClose();
       }
     });
@@ -500,7 +501,7 @@ class ComputedFieldModal extends React.Component {
     const handleMenuClick = e => {
       change.insertBlock({
         type: "aggregation",
-        data: { type: e.key }
+        data: { type: e.key, delimiter: e.key === "concat" && "," }
       });
       this.onChange(change);
     };
@@ -555,7 +556,7 @@ class ComputedFieldModal extends React.Component {
         {treeData &&
           treeData.map((step, i) => {
             if (step.value === "tracking") return null;
-            
+
             return (
               <Menu.SubMenu
                 key={i}
@@ -646,10 +647,16 @@ class ComputedFieldModal extends React.Component {
   };
 
   render() {
-    const { visible, field, usedLabels, form } = this.props;
+    const { visible, field, form } = this.props;
+    const { labelsUsed } = this.context;
     const { value, error } = this.state;
 
     const { getFieldDecorator } = form;
+    
+    // Retrieve the labels before the field name validator consumes it
+    // So that the results are cached, and the field does not get
+    // mistakenly marked as duplicate (due to comparing against itself)
+    const labels = labelsUsed();
 
     return (
       <Modal
@@ -689,7 +696,7 @@ class ComputedFieldModal extends React.Component {
                 message: "Field name is already being used in the DataLab",
                 validator: (rule, value, cb) => {
                   if (field && field.name === value) cb();
-                  usedLabels.includes(value) ? cb(true) : cb();
+                  labels.some(label => label === value) ? cb(true) : cb();
                 }
               }
             ],
@@ -731,13 +738,4 @@ class ComputedFieldModal extends React.Component {
   }
 }
 
-const mapStateToProps = state => {
-  const { datasources, build, actions } = state.dataLab;
-
-  return { datasources, build, actions };
-};
-
-export default _.flow(
-  connect(mapStateToProps),
-  Form.create()
-)(ComputedFieldModal);
+export default Form.create()(ComputedFieldModal);

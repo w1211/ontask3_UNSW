@@ -45,3 +45,8 @@
 .app .content .heading a {
   width: fit-content;
 }
+
+/* Hide the warning text for a given field in an Ant Design form */
+.no-explain .ant-form-explain {
+  display: none;
+}

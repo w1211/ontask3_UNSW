@@ -33,11 +33,9 @@ services:
     build: ./backend
     volumes:
       - ./backend:/backend
+      - ~/.aws:/root/.aws
     environment:
       - ONTASK_DEVELOPMENT=true
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
-      - AWS_SESSION_TOKEN
     depends_on:
       - sql
       - nosql
@@ -46,11 +44,11 @@ services:
   celery:
     restart: always
     build: ./backend
+    volumes:
+      - ./backend:/backend
+      - ~/.aws:/root/.aws
     environment:
       - ONTASK_DEVELOPMENT=true
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
-      - AWS_SESSION_TOKEN
     depends_on:
       - rabbitmq
       - backend

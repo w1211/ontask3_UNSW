@@ -15,7 +15,7 @@ def bind_column_types(steps):
             datasource = None
 
             fields = step["fields"]
-            types = step["types"]
+            types = step["types"] if "types" in step else {}
 
             for field in fields:
                 if field not in types:
@@ -23,6 +23,8 @@ def bind_column_types(steps):
                         datasource_id = step["id"]
                         datasource = Datasource.objects.get(id=datasource_id)
                     types[field] = datasource["types"][field]
+
+            step["types"] = types
 
         elif step["type"] == "computed":
             step = step["computed"]
@@ -35,7 +37,7 @@ def bind_column_types(steps):
                             aggregation_type = node["data"]["type"]
                             if aggregation_type == "list":
                                 field_type = "list"
-                            elif aggregation_type ==  "concat":
+                            elif aggregation_type == "concat":
                                 field_type = "text"
                             elif aggregation_type == "last" and not len(nodes) > 2:
                                 field_type = "text"
@@ -187,8 +189,9 @@ def combine_data(steps, datalab_id=None):
                 build_fields[i].append(step["datasource"]["labels"][field])
         if step["type"] in ["form", "computed"]:
             step = step[step["type"]]
-            for field in step["fields"]:
-                build_fields[i].append(field["name"])
+            if "fields" in step:
+                for field in step["fields"]:
+                    build_fields[i].append(field["name"])
 
     # Gather all tracking and feedback data for associated actions
     # Consumed by the computed column
@@ -275,7 +278,9 @@ def combine_data(steps, datalab_id=None):
                         and "primary" in module["discrepencies"]
                         and module["discrepencies"]["primary"]
                     ):
-                        new_record = {}
+                        new_record = {
+                            module["matching"]: match_value
+                        }
                         for field, value in item.items():
                             if field in fields:
                                 new_record[label_map[field]] = value
@@ -304,10 +309,10 @@ def combine_data(steps, datalab_id=None):
                 if module["primary"] in item:
                     match_value = item[module["primary"]]
                     data_map[match_value].append(item)
-
+                    
             # Update keys in the data map with this form's data
             for item in module["data"]:
-                match_value = item[module["primary"]]
+                match_value = item.get(module["primary"])
                 if match_value in data_map:
                     for matched_record in data_map[match_value]:
                         matched_record.update(item)
@@ -327,7 +332,6 @@ def combine_data(steps, datalab_id=None):
             for match in data_map.values():
                 for item in match:
                     data.append(item)
-
     return data
 
 
@@ -342,7 +346,7 @@ def update_form_data(
     }
 
     not_accessible = (
-        (is_web_form and not web_form or (web_form and not web_form["active"]))
+        (is_web_form and (not web_form or (web_form and not web_form["active"])))
         or (
             "activeFrom" in form
             and form["activeFrom"] is not None
@@ -474,7 +478,7 @@ def retrieve_form_data(datalab, step, request_user):
             has_access
             or web_form["showAll"]
             and request_user in permissable_users
-            or item[permission_field].strip() == request_user
+            or item.get(permission_field, "").strip() == request_user
         ):
             record = {field: item.get(field) for field in columns}
             data.append(record)

@@ -1,3 +1,4 @@
+from rest_framework.views import APIView
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
 from rest_framework.decorators import detail_route, list_route
@@ -237,9 +238,56 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         return HttpResponse(PIXEL_GIF_DATA, content_type="image/gif")
 
-    @detail_route(methods=["get"], permission_classes=[IsAuthenticated])
-    def feedback(self, request, id=None):
+    @detail_route(methods=["post"])
+    def clone_action(self, request, id=None):
         action = self.get_object()
+        self.check_object_permissions(self.request, action)
+
+        action = action.to_mongo()
+        action["name"] = action["name"] + "_cloned"
+        action.pop("_id")
+        # The scheduled tasks in Celery are not cloned, therefore remove the schedule
+        # information from the cloned action
+        action.pop("schedule")
+        # Ensure that the new action is not bound to the original action's Moodle link Id
+        action.pop("linkId")
+
+        serializer = ActionSerializer(data=action)
+        serializer.is_valid()
+        serializer.save()
+
+        audit = AuditSerializer(
+            data={
+                "model": "action",
+                "document": str(id),
+                "action": "clone",
+                "user": self.request.user.email,
+                "diff": {"new_document": str(serializer.instance.id)},
+            }
+        )
+        audit.is_valid()
+        audit.save()
+
+        containers = ContainerViewSet.get_queryset(self)
+        serializer = ContainerSerializer(containers, many=True)
+
+        return Response(serializer.data)
+
+
+
+class FeedbackView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, format=None, *args, **kwargs):
+        try:
+            action = Workflow.objects.get(id=kwargs.get("datalab_id"))
+        except:
+            return JsonResponse(
+                {
+                    "error": "Correspondence does not exist"
+                }
+            )
+
         job_id = request.GET.get("job")
 
         payload = None
@@ -278,9 +326,8 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         return JsonResponse(payload)
 
-    @detail_route(methods=["post"], permission_classes=[IsAuthenticated])
-    def submit_feedback(self, request, id=None):
-        action = Workflow.objects.get(id=id)
+    def post(self, request, format=None, *args, **kwargs):
+        action = Workflow.objects.get(id=kwargs.get("datalab_id"))
         job_id = request.GET.get("job")
 
         dropdown = request.data["dropdown"]
@@ -310,41 +357,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             )
 
         return JsonResponse({"success": 1})
-
-    @detail_route(methods=["post"])
-    def clone_action(self, request, id=None):
-        action = self.get_object()
-        self.check_object_permissions(self.request, action)
-
-        action = action.to_mongo()
-        action["name"] = action["name"] + "_cloned"
-        action.pop("_id")
-        # The scheduled tasks in Celery are not cloned, therefore remove the schedule
-        # information from the cloned action
-        action.pop("schedule")
-        # Ensure that the new action is not bound to the original action's Moodle link Id
-        action.pop("linkId")
-
-        serializer = ActionSerializer(data=action)
-        serializer.is_valid()
-        serializer.save()
-
-        audit = AuditSerializer(
-            data={
-                "model": "action",
-                "document": str(id),
-                "action": "clone",
-                "user": self.request.user.email,
-                "diff": {"new_document": str(serializer.instance.id)},
-            }
-        )
-        audit.is_valid()
-        audit.save()
-
-        containers = ContainerViewSet.get_queryset(self)
-        serializer = ContainerSerializer(containers, many=True)
-
-        return Response(serializer.data)
 
     # # retrive email sending history and generate static page.
     # @detail_route(methods=["get"])

@@ -1,38 +1,26 @@
 import React from "react";
-import { bindActionCreators } from "redux";
-import { connect } from "react-redux";
-import { Spin, Table, Select, Divider } from "antd";
+import { Spin, Table, Select, Divider, message, notification } from "antd";
 import _ from "lodash";
 
-import * as DataLabActionCreators from "../DataLabActions";
-
-import EditableField from "../data-manipulation/EditableField";
+import apiRequest from "../../shared/apiRequest";
+import Field from "../../shared/Field";
 
 const Option = Select.Option;
 
 class WebForm extends React.Component {
-  constructor(props) {
-    super(props);
-    const { dispatch } = props;
-
-    this.boundActionCreators = bindActionCreators(
-      DataLabActionCreators,
-      dispatch
-    );
-
-    this.state = {
-      isFetching: true,
-      saved: {}
-    };
-  }
+  state = {
+    isFetching: true,
+    saved: {}
+  };
 
   componentDidMount() {
     const { match, dataLabId, showBreadcrumbs } = this.props;
     const { moduleIndex } = match.params;
 
-    this.boundActionCreators.fetchForm({
+    apiRequest(`/datalab/retrieve_form/`, {
+      method: "POST",
       payload: { dataLabId, moduleIndex },
-      onFinish: form => {
+      onSuccess: form => {
         if ("error" in form) {
           this.setState({ isFetching: false, error: form.error });
         } else {
@@ -48,7 +36,8 @@ class WebForm extends React.Component {
           });
           if (form.is_owner_or_shared) showBreadcrumbs();
         }
-      }
+      },
+      onError: () => this.setState({ isFetching: false })
     });
   }
 
@@ -64,10 +53,10 @@ class WebForm extends React.Component {
         const primary = record[form.primary_key];
 
         return (
-          <EditableField
-            field={field}
-            editMode={!!field}
-            originalValue={text ? text : null}
+          <Field
+            readOnly={!field}
+            field={{ field }}
+            value={text}
             onSave={value => this.onOk(primary, field.name, value)}
           />
         );
@@ -88,17 +77,17 @@ class WebForm extends React.Component {
         title: "Value",
         dataIndex: "value",
         render: (text, record) => {
-          const editableField = form.editable_fields.find(
+          const field = form.editable_fields.find(
             field => field.name === record.field
           );
 
           const primary = form.data[singleRecordIndex][form.primary_key];
 
           return (
-            <EditableField
-              field={editableField}
-              editMode={!!editableField}
-              originalValue={text}
+            <Field
+              readOnly={!field}
+              field={field}
+              value={text}
               onSave={value => this.onOk(primary, record.field, value)}
             />
           );
@@ -122,20 +111,30 @@ class WebForm extends React.Component {
       value
     };
 
-    this.boundActionCreators.updateWebForm({
+    apiRequest(`/datalab/update_web_form/`, {
+      method: "PATCH",
       payload,
-      onFinish: form => {
+      onSuccess: form => {
         const value = _.get(saved, primary, {});
         value[field] = true;
         this.setState({ form, saved: { ...saved, [primary]: value } }, () => {
-          setTimeout(() => {
+          this.updateSuccess = setTimeout(() => {
             value[field] = false;
             this.setState({ saved: { ...saved, [primary]: value } });
           }, 1500);
         });
-      }
+        message.success("Form updated.");
+      },
+      onError: error =>
+        notification["error"]({
+          message: "Failed to update form"
+        })
     });
   };
+
+  componentWillUnmount() {
+    clearTimeout(this.updateSuccess);
+  }
 
   DataTable = () => {
     const { form, saved } = this.state;
@@ -239,4 +238,4 @@ class WebForm extends React.Component {
   }
 }
 
-export default connect()(WebForm);
+export default WebForm;

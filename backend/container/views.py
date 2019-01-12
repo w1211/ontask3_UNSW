@@ -2,8 +2,9 @@ from django.http import JsonResponse
 from mongoengine.queryset.visitor import Q
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
-from rest_framework.decorators import detail_route, list_route
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 from .serializers import ContainerSerializer
 from .models import Container
@@ -11,8 +12,9 @@ from .permissions import ContainerPermissions
 
 from datasource.models import Datasource
 from datalab.models import Datalab
-from datasource.serializers import DatasourceSerializer
 from audit.serializers import AuditSerializer
+ # The below serializer only uses fields that are relevant to datalabs
+from datalab.serializers import DatasourceSerializer
 
 
 class ContainerViewSet(viewsets.ModelViewSet):
@@ -125,22 +127,8 @@ class ContainerViewSet(viewsets.ModelViewSet):
         )
         audit.is_valid()
         audit.save()
-
-    @detail_route(methods=["get"])
-    def retrieve_datasources(self, request, id=None):
-        """Retrieve all datasources associated with the given container"""
-        container = Container.objects.get(id=id)
-
-        self.check_object_permissions(self.request, container)
-
-        datasources = Datasource.objects(container=id).only("id", "name", "fields")
-        serialized_datasources = [
-            DatasourceSerializer(datasource).data for datasource in datasources
-        ]
-
-        return JsonResponse({"datasources": serialized_datasources})
-
-    @detail_route(methods=["post"])
+        
+    @action(detail=True, methods=["post"])
     def surrender_access(self, request, id=None):
         """Revoke the requesting user's access to the given container"""
         container = Container.objects.get(id=id)
@@ -165,3 +153,15 @@ class ContainerViewSet(viewsets.ModelViewSet):
             audit.save()
 
         return JsonResponse({"success": 1})
+
+    @action(detail=True, methods=["get"])
+    def datasources(self, request, id=None):
+        container = self.get_object()
+        self.check_object_permissions(request, container)
+
+        datasources = Datasource.objects(container=container.id).only(
+            "id", "name", "fields"
+        )
+        serializer = DatasourceSerializer(datasources, many=True)
+
+        return Response(serializer.data)

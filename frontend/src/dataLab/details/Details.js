@@ -1,42 +1,41 @@
 import React from "react";
-import { bindActionCreators } from "redux";
-import { connect } from "react-redux";
-import { Table, Icon, Checkbox, Select } from "antd";
+import { Table, Icon, Checkbox, Select, message, notification } from "antd";
 
-import * as DataLabActionCreators from "../DataLabActions";
+import apiRequest from "../../shared/apiRequest";
 
-import components from "../draggable/Column";
+import components from "./Column";
 
 const { Option } = Select;
 
 class Details extends React.Component {
-  constructor(props) {
-    super(props);
-    const { dispatch } = props;
-
-    this.boundActionCreators = bindActionCreators(
-      DataLabActionCreators,
-      dispatch
-    );
-  }
-
   moveRow = (dragIndex, hoverIndex) => {
-    const { selectedId } = this.props;
+    const { selectedId, updateDatalab } = this.props;
 
-    this.boundActionCreators.changeColumnOrder(selectedId, {
-      dragIndex,
-      hoverIndex
+    apiRequest(`/datalab/${selectedId}/change_column_order/`, {
+      method: "PATCH",
+      onSuccess: dataLab => {
+        message.success("Column order successfully updated.");
+        updateDatalab(dataLab);
+      },
+      onError: error =>
+        notification["error"]({
+          message: "Failed to change column order"
+        }),
+      payload: {
+        dragIndex,
+        hoverIndex
+      }
     });
   };
 
   render() {
-    const { build, datasources, selectedId } = this.props;
+    const { datasources, selectedId, order, steps, updateDatalab } = this.props;
 
     let columns = [];
     let tableData = [];
     let orderedTableData = [];
 
-    if (build) {
+    if (steps) {
       columns = [
         { title: "Field", dataIndex: "label", key: "label" },
         {
@@ -78,10 +77,21 @@ class Details extends React.Component {
                   size="small"
                   defaultValue={text}
                   onChange={e =>
-                    this.boundActionCreators.updateFieldType(selectedId, {
-                      stepIndex: record.stepIndex,
-                      field: record.field,
-                      type: e
+                    apiRequest(`/datalab/${selectedId}/update_field_type/`, {
+                      method: "PATCH",
+                      onSuccess: dataLab => {
+                        message.success("Field type successfully updated.");
+                        updateDatalab(dataLab);
+                      },
+                      onError: error =>
+                        notification["error"]({
+                          message: "Failed to update field type"
+                        }),
+                      payload: {
+                        stepIndex: record.stepIndex,
+                        field: record.field,
+                        type: e
+                      }
                     })
                   }
                 >
@@ -106,9 +116,20 @@ class Details extends React.Component {
             <Checkbox
               defaultChecked={text}
               onChange={e =>
-                this.boundActionCreators.changeColumnVisibility(selectedId, {
-                  columnIndex: row,
-                  visible: e.target.checked
+                apiRequest(`/datalab/${selectedId}/change_column_visibility/`, {
+                  method: "PATCH",
+                  onSuccess: dataLab => {
+                    message.success("Column visibility successfully updated.");
+                    updateDatalab(dataLab);
+                  },
+                  onError: error =>
+                    notification["error"]({
+                      message: "Failed to update column visibility"
+                    }),
+                  payload: {
+                    columnIndex: row,
+                    visible: e.target.checked
+                  }
                 })
               }
             />
@@ -122,9 +143,20 @@ class Details extends React.Component {
             <Checkbox
               defaultChecked={text}
               onChange={e =>
-                this.boundActionCreators.changePinState(selectedId, {
-                  columnIndex: row,
-                  pinned: e.target.checked
+                apiRequest(`/datalab/${selectedId}/change_pinned_status/`, {
+                  method: "PATCH",
+                  onSuccess: dataLab => {
+                    message.success("Pinned status successfully updated.");
+                    updateDatalab(dataLab);
+                  },
+                  onError: error =>
+                    notification["error"]({
+                      message: "Failed to update pinned status"
+                    }),
+                  payload: {
+                    columnIndex: row,
+                    pinned: e.target.checked
+                  }
                 })
               }
             />
@@ -133,11 +165,11 @@ class Details extends React.Component {
       ];
 
       const getOrder = (stepIndex, field) =>
-        build.order.find(
+        order.find(
           column => column.stepIndex === stepIndex && column.field === field
         );
 
-      build.steps.forEach((step, stepIndex) => {
+      steps.forEach((step, stepIndex) => {
         if (step.type === "datasource") {
           const module = step.type;
           step = step.datasource;
@@ -184,7 +216,7 @@ class Details extends React.Component {
       });
 
       // Order the columns
-      build.order.forEach(field => {
+      order.forEach(field => {
         const column = tableData.find(
           column =>
             column.stepIndex === field.stepIndex && column.field === field.field
@@ -210,16 +242,4 @@ class Details extends React.Component {
   }
 }
 
-const mapStateToProps = state => {
-  const { loading, error, build, datasources, selectedId } = state.dataLab;
-
-  return {
-    loading,
-    error,
-    build,
-    datasources,
-    selectedId
-  };
-};
-
-export default connect(mapStateToProps)(Details);
+export default Details;

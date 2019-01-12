@@ -13,7 +13,8 @@ from dateutil import parser
 from ontask.settings import (
     SECRET_KEY,
     DB_DRIVER_MAPPING,
-    SMTP
+    SMTP,
+    AWS_PROFILE
 )
 
 
@@ -128,7 +129,13 @@ def retrieve_file_from_s3(connection):
         raise Exception("Invalid connection settings")
 
     try:
-        s3 = boto3.resource("s3")
+        s3 = None
+        if AWS_PROFILE:
+            session = boto3.Session(profile_name=AWS_PROFILE)
+            s3 = session.resource("s3")
+        else:
+            s3 = boto3.resource("s3")
+
         obj = s3.Object(bucket, file_name)
         file = obj.get()["Body"]
 

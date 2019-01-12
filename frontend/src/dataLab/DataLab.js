@@ -1,6 +1,4 @@
 import React from "react";
-import { bindActionCreators } from "redux";
-import { connect } from "react-redux";
 import { Link } from "react-router-dom";
 import { Switch, Route } from "react-router-dom";
 import {
@@ -17,28 +15,21 @@ import { DragDropContext } from "react-dnd";
 import HTML5Backend from "react-dnd-html5-backend";
 import _ from "lodash";
 
-import * as DataLabActionCreators from "./DataLabActions";
-
 import "./DataLab.css";
 
-import { Model, Details, Data, WebForm } from "./interfaces";
+import Model from "./model/Model";
+import Details from "./details/Details";
+import Data from "./data/Data";
+import WebForm from "./webform/WebForm";
+
+import apiRequest from "../shared/apiRequest";
 
 const { Content } = Layout;
 const RadioButton = Radio.Button;
 const RadioGroup = Radio.Group;
 
 class DataLab extends React.Component {
-  constructor(props) {
-    super(props);
-    const { dispatch } = props;
-
-    this.boundActionCreators = bindActionCreators(
-      DataLabActionCreators,
-      dispatch
-    );
-
-    this.state = { route: null, isForm: false };
-  }
+  state = { fetching: true, isForm: false };
 
   componentDidMount() {
     const { match, location, history } = this.props;
@@ -46,15 +37,32 @@ class DataLab extends React.Component {
     const route = location.pathname.split("/");
     const isForm = route[route.length - 2] === "form";
 
+    const containerId = _.get(location, "state.containerId");
+
     if (isForm) {
-      this.setState({ isForm: true });
+      this.setState({ isForm: true, fetching: false });
     } else {
-      if (location.state && "containerId" in location.state) {
-        // User pressed "Create DataLab", as the containerId is only set in the
-        // location state when the navigation occurs
-        this.boundActionCreators.fetchDatasources(location.state.containerId);
+      // User pressed "Create DataLab", as the containerId is only set in the
+      // location state when the navigation occurs
+      if (containerId) {
+        apiRequest(`/container/${containerId}/datasources/`, {
+          method: "GET",
+          onSuccess: datasources =>
+            this.setState({ fetching: false, datasources, containerId }),
+          onError: () => this.setState({ fetching: false })
+        });
       } else if (match.params.id) {
-        this.boundActionCreators.fetchDataLab(match.params.id);
+        apiRequest(`/datalab/${match.params.id}/`, {
+          method: "GET",
+          onSuccess: datalab => {
+            this.setState({
+              fetching: false,
+              selectedId: match.params.id,
+              ...datalab
+            });
+          },
+          onError: () => this.setState({ fetching: false })
+        });
       } else {
         // The user must have cold-loaded the URL, so we have no container to reference
         // Therefore redirect the user back to the container list
@@ -63,23 +71,29 @@ class DataLab extends React.Component {
     }
   }
 
+  updateDatalab = datalab => {
+    this.setState({ ...datalab });
+  };
+
   render() {
+    const { match, history, location } = this.props;
     const {
-      isFetching,
-      selectedId,
-      match,
-      history,
-      location,
-      build
-    } = this.props;
-    const { isForm, showBreadcrumbs } = this.state;
+      isForm,
+      showBreadcrumbs,
+      fetching,
+      datasources,
+      name,
+      steps,
+      order,
+      data,
+      selectedId
+    } = this.state;
 
     const webForms = [];
-    build &&
-      build.steps.forEach((step, stepIndex) => {
-        if (_.get(step, "form.webForm.active"))
-          webForms.push({ name: step.form.name, index: stepIndex });
-      });
+    steps && steps.forEach((step, stepIndex) => {
+      if (_.get(step, "form.webForm.active"))
+        webForms.push({ name: step.form.name, index: stepIndex });
+    });
 
     return (
       <div className={`dataLab ${isForm && !showBreadcrumbs && "is_web_form"}`}>
@@ -152,14 +166,64 @@ class DataLab extends React.Component {
                 </div>
               )}
 
-              {isFetching ? (
+              {fetching ? (
                 <Spin size="large" />
               ) : (
                 <Switch>
-                  <Route exact path={`${match.url}`} component={Model} />
-                  <Route path={`${match.url}/model`} component={Model} />
-                  <Route path={`${match.url}/details`} component={Details} />
-                  <Route path={`${match.url}/data`} component={Data} />
+                  <Route
+                    exact
+                    path={`${match.url}`}
+                    render={props => (
+                      <Model
+                        {...props}
+                        datasources={datasources}
+                        updateDatalab={this.updateDatalab}
+                      />
+                    )}
+                  />
+
+                  <Route
+                    path={`${match.url}/model`}
+                    render={props => (
+                      <Model
+                        {...props}
+                        datasources={datasources}
+                        selectedId={selectedId}
+                        name={name}
+                        steps={steps}
+                        updateDatalab={this.updateDatalab}
+                      />
+                    )}
+                  />
+
+                  <Route
+                    path={`${match.url}/details`}
+                    render={props => (
+                      <Details
+                        {...props}
+                        datasources={datasources}
+                        selectedId={selectedId}
+                        steps={steps}
+                        order={order}
+                        updateDatalab={this.updateDatalab}
+                      />
+                    )}
+                  />
+
+                  <Route
+                    path={`${match.url}/data`}
+                    render={props => (
+                      <Data
+                        {...props}
+                        steps={steps}
+                        data={data}
+                        order={order}
+                        selectedId={selectedId}
+                        updateDatalab={this.updateDatalab}
+                      />
+                    )}
+                  />
+
                   <Route
                     path={`${match.url}/form/:moduleIndex`}
                     render={props => (
@@ -182,17 +246,4 @@ class DataLab extends React.Component {
   }
 }
 
-const mapStateToProps = state => {
-  const { isFetching, selectedId, build } = state.dataLab;
-
-  return {
-    isFetching,
-    selectedId,
-    build
-  };
-};
-
-export default _.flow(
-  connect(mapStateToProps),
-  DragDropContext(HTML5Backend)
-)(DataLab);
+export default DragDropContext(HTML5Backend)(DataLab);
