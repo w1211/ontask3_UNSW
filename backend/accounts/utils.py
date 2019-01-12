@@ -22,7 +22,7 @@ from datalab.models import (
     FormField,
     Column,
 )
-from datalab.utils import combine_data
+from datalab.utils import bind_column_types, combine_data
 from workflow.models import Workflow, Filter, Rule, Condition, Formula
 
 from scheduler.utils import send_email
@@ -43,7 +43,7 @@ def get_or_create_user(email, fullname):
 
         # Send a notification to admins on user signup, if OnTask is in demo mode
         user_signup_notification(user)
-        
+
         # Give the user a container with example datasources, datalabs, actions, etc
         seed_data(user)
 
@@ -79,8 +79,25 @@ def user_signup_notification(user):
                 "<p>Name: " + user.name + "</p>"
                 "<p>Email: " + user.email + "</p>"
             ),
-            force_send=True
+            force_send=True,
         )
+
+
+TYPES = {
+    "Students": {
+        "zid": "text",
+        "first_name": "text",
+        "last_name": "text",
+        "email": "text",
+    },
+    "Classes": {"ID": "text", "CLASS": "number"},
+    "Tutors": {
+        "class": "number",
+        "first_name": "text",
+        "last_name": "text",
+        "email": "text",
+    },
+}
 
 
 def seed_data(user):
@@ -103,6 +120,7 @@ def seed_data(user):
         )
         datasource.data = datasource.retrieve_data()
         datasource.fields = [field for field in datasource.data[0]]
+        datasource.types = TYPES[name]
         datasource.save()
 
         return datasource
@@ -128,12 +146,7 @@ def seed_data(user):
                     "last_name": "last_name",
                     "email": "email",
                 },
-                types={
-                    "zid": "text",
-                    "first_name": "text",
-                    "last_name": "text",
-                    "email": "text",
-                },
+                types=TYPES["Students"],
             ),
         )
     )
@@ -147,8 +160,8 @@ def seed_data(user):
                 matching="zId",
                 fields=["CLASS"],
                 labels={"CLASS": "class"},
-                types={"CLASS": "number"},
                 discrepencies={"primary": False},
+                types=TYPES["Classes"],
             ),
         )
     )
@@ -166,7 +179,7 @@ def seed_data(user):
                     "last_name": "tutor_last_name",
                     "email": "tutor_email",
                 },
-                types={"first_name": "text", "last_name": "text", "email": "text"},
+                types=TYPES["Tutors"],
             ),
         )
     )
