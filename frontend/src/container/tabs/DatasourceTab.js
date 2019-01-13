@@ -7,6 +7,8 @@ import DataPreview from "../../datasource/DataPreview";
 import apiRequest from "../../shared/apiRequest";
 import ContainerContext from "../ContainerContext";
 
+import moment from "moment";
+
 const { Meta } = Card;
 const confirm = Modal.confirm;
 
@@ -247,7 +249,17 @@ class DatasourceTab extends React.Component {
               >
                 <Meta
                   description={
-                    <span>{TYPEMAP[datasource.connection.dbType]}</span>
+                    <div>
+                      <div>{TYPEMAP[datasource.connection.dbType]}</div>
+                      <div style={{ fontSize: 12 }}>
+                        <Tooltip title="Data last updated">
+                          <Icon type="clock-circle" style={{ marginRight: 5 }} />
+                        </Tooltip>
+                        {moment(datasource.lastUpdated).format(
+                          "DD/MM/YYYY, HH:mm"
+                        )}
+                      </div>
+                    </div>
                   }
                 />
               </Card>
