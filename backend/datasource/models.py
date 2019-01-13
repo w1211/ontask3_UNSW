@@ -103,4 +103,7 @@ class Datasource(Document):
             "mssql",
         ]:
             self.data = self.retrieve_data()
+            self.fields = [field for field in self.data[0]]
+            self.lastUpdated = datetime.utcnow
+            
             self.save()

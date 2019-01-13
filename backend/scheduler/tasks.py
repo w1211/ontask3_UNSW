@@ -7,7 +7,8 @@ from bson.objectid import ObjectId
 import json
 from datetime import datetime
 
-from datasource.utils import retrieve_sql_data, retrieve_file_from_s3
+from datasource.models import Datasource
+# from datasource.utils import retrieve_sql_data, retrieve_file_from_s3
 from workflow.models import Workflow
 from .utils import create_crontab, send_email
 
@@ -51,31 +52,8 @@ def remove_periodic_task(task_name):
 def refresh_datasource_data(datasource_id):
     """ Reads the query data from the external source and
         inserts the data into the datasource """
-
-    # Retrieve the datasource object from the application database
-    client = MongoClient(NOSQL_DATABASE["HOST"])
-    db = client[NOSQL_DATABASE["DB"]]
-
-    # Project only the connection details of the datasource, and exclude all other fields
-    datasource = db.datasource.find_one(
-        {"_id": ObjectId(datasource_id)}, {"connection": 1}
-    )
-
-    connection = datasource["connection"]
-
-    # Retrieve the query data based on the datasource type
-    datasource_type = connection["dbType"]
-    if datasource_type in ["mysql", "postgresql"]:
-        data = retrieve_sql_data(connection)
-    elif datasource_type == "s3BucketFile":
-        data = retrieve_file_from_s3(connection)
-
-    fields = list(data[0].keys())
-
-    db.datasource.update(
-        {"_id": ObjectId(datasource_id)},
-        {"$set": {"data": data, "fields": fields, "lastUpdated": datetime.utcnow()}},
-    )
+    datasource = Datasource.objects.get(id=ObjectId(datasource_id))
+    datasource.refresh_data()
 
     return "Data imported successfully"
 
