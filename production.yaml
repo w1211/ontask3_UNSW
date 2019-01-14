@@ -2,6 +2,7 @@ version: '3'
 
 services:
   rabbitmq:
+    restart: always
     image: rabbitmq:3.7
     environment:
       - RABBITMQ_MNESIA_BASE=/data/rabbitmq
@@ -9,6 +10,7 @@ services:
       - ./data/rabbitmq:/data/rabbitmq
 
   sql:
+    restart: always
     image: postgres:10.5
     environment:
       - POSTGRES_DB=ontask
@@ -19,63 +21,49 @@ services:
       - ./data/sql:/data/db
 
   nosql:
+    restart: always
     image: mongo:4
-    ports:
-      - "27017:27017"
     volumes:
       - ./data/nosql:/data/db
 
   backend:
+    restart: always 
     build: ./backend
+    ports:
+      - "8000:8000"
     volumes:
       - ./backend:/backend
-      - ~/.aws:/root/.aws
-    environment:
-      - ONTASK_DEVELOPMENT=true
     depends_on:
       - sql
       - nosql
     command: uwsgi --ini uwsgi.ini --lazy-apps
 
   celery:
+    restart: always
     build: ./backend
+    ports:
+      - "8001:8000"
     volumes:
       - ./backend:/backend
-      - ~/.aws:/root/.aws
-    environment:
-      - ONTASK_DEVELOPMENT=true
     depends_on:
       - rabbitmq
       - backend
     command: celery worker -A ontask --loglevel=INFO
 
   celery_beat:
+    restart: always
     build: ./backend
-    environment:
-      - ONTASK_DEVELOPMENT=true
     depends_on:
       - celery
     command: celery -A ontask beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
 
-  nginx:
-    image: nginx:alpine
-    volumes:
-      - ./dev/nginx.conf:/etc/nginx/nginx.conf
-      - ./dev/localhost.crt:/localhost.crt
-      - ./dev/localhost.key:/localhost.key
-    depends_on:
-      - backend
-    ports:
-      - "8000:443"
-    
   frontend:
+    restart: always
     build: ./frontend
     ports:
       - "3000:3000"
     volumes:
       - ./frontend:/frontend
-    environment:
-      - HTTPS=true
     depends_on:
       - backend
     command: npm start
