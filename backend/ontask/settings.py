@@ -40,6 +40,7 @@ elif os.environ.get('ONTASK_DEMO') is not None:
 else:
     from config.prod import *
 
+AWS_PROFILE = None
 
 LTI_URL = LTI_CONFIG.get('url')
 if LTI_URL:
