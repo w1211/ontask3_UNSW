@@ -38,7 +38,7 @@ class ActionTab extends React.Component {
           deleting: { [actionId]: true }
         });
 
-        apiRequest(`/workflow/${actionId}`, {
+        apiRequest(`/workflow/${actionId}/`, {
           method: "DELETE",
           onSuccess: () => {
             this.setState({ deleting: { [actionId]: false } });

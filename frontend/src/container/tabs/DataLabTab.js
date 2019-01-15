@@ -28,7 +28,7 @@ class DataLabTab extends React.Component {
           deleting: { [dataLabId]: true }
         });
 
-        apiRequest(`/datalab/${dataLabId}`, {
+        apiRequest(`/datalab/${dataLabId}/`, {
           method: "DELETE",
           onSuccess: () => {
             this.setState({ deleting: { [dataLabId]: false } });
