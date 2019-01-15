@@ -5,9 +5,9 @@ services:
     restart: always
     image: rabbitmq:3.7
     environment:
-      - RABBITMQ_MNESIA_BASE=/data/rabbitmq
+      - RABBITMQ_MNESIA_BASE=/var/lib/rabbitmq/mnesia
     volumes: 
-      - ./data/rabbitmq:/data/rabbitmq
+      - ./data/rabbitmq:/var/lib/rabbitmq/mnesia
 
   sql:
     restart: always
@@ -16,9 +16,9 @@ services:
       - POSTGRES_DB=ontask
       - POSTGRES_USER=ontask
       - POSTGRES_PASSWORD=ontask
-      - PGDATA=/data/db
+      - PGDATA=/var/lib/postgresql/data
     volumes:
-      - ./data/sql:/data/db
+      - ./data/sql:/var/lib/postgresql/data
 
   nosql:
     restart: always
