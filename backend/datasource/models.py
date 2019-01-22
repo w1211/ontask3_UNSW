@@ -9,6 +9,7 @@ from mongoengine.fields import (
     DateTimeField,
 )
 from datetime import datetime
+import pandas as pd
 
 from container.models import Container
 
@@ -92,6 +93,13 @@ class Datasource(Document):
             delimiter = connection.get("delimiter")
             data = retrieve_csv_data(file, delimiter)
 
+        # Process the data to correctly parse percentages as numbers
+        df = pd.DataFrame(data)
+        df = df.applymap(
+            lambda x: x.rstrip("%") if isinstance(x, str) and x.endswith("%") else x
+        )
+        data = df.to_dict("records")
+        
         return data
 
     def refresh_data(self):

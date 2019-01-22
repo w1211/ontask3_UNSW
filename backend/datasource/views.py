@@ -10,6 +10,7 @@ import boto3
 from xlrd import open_workbook
 from datetime import datetime
 import os
+import pandas as pd
 
 from cryptography.fernet import Fernet
 from ontask.settings import SECRET_KEY
@@ -92,6 +93,13 @@ class DatasourceViewSet(viewsets.ModelViewSet):
         if not len(data):
             raise ValidationError("No data was returned from the datasource")
 
+        # Process the data to correctly parse percentages as numbers
+        df = pd.DataFrame(data)
+        df = df.applymap(
+            lambda x: x.rstrip("%") if isinstance(x, str) and x.endswith("%") else x
+        )
+        data = df.to_dict("records")
+        
         # Identify the field names from the keys of the first row of the data
         # This is sufficient, as we can assume that all rows have the same keys
         fields = list(data[0].keys())
@@ -174,6 +182,13 @@ class DatasourceViewSet(viewsets.ModelViewSet):
                 data = retrieve_sql_data(connection)
 
         if data:
+            # Process the data to correctly parse percentages as numbers
+            df = pd.DataFrame(data)
+            df = df.applymap(
+                lambda x: x.rstrip("%") if isinstance(x, str) and x.endswith("%") else x
+            )
+            data = df.to_dict("records")
+
             # Identify the field names from the keys of the first row of the data
             # This is sufficient, as we can assume that all rows have the same keys
             fields = list(data[0].keys())
