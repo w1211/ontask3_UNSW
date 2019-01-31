@@ -317,7 +317,7 @@ class FieldDesign extends React.Component {
               }
             ],
             initialValue: _.get(field, "name")
-          })(<Input style={{ width: "87.5%" }} />)}
+          })(<Input style={{ flex: 1 }} />)}
 
           <Tooltip title="Delete this field">
             <Button
