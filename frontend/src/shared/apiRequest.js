@@ -61,7 +61,7 @@ const apiRequest = async (
   // If an error code was returned by the request (other than 401)
   if (response.status >= 400 && response.status < 600) {
     // Return the response as an error
-    onError(result);
+    onError(result, response.status);
   } else {
     onSuccess(result);
   }

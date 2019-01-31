@@ -99,7 +99,7 @@ class DatasourceViewSet(viewsets.ModelViewSet):
             lambda x: x.rstrip("%") if isinstance(x, str) and x.endswith("%") else x
         )
         data = df.to_dict("records")
-        
+
         # Identify the field names from the keys of the first row of the data
         # This is sufficient, as we can assume that all rows have the same keys
         fields = list(data[0].keys())
@@ -108,17 +108,6 @@ class DatasourceViewSet(viewsets.ModelViewSet):
         datasource = serializer.save(
             connection=connection, data=data, fields=fields, types=types
         )
-
-        audit = AuditSerializer(
-            data={
-                "model": "datasource",
-                "document": str(datasource.id),
-                "action": "create",
-                "user": self.request.user.email,
-            }
-        )
-        audit.is_valid()
-        audit.save()
 
     def perform_update(self, serializer):
         datasource = self.get_object()
@@ -181,6 +170,15 @@ class DatasourceViewSet(viewsets.ModelViewSet):
 
                 data = retrieve_sql_data(connection)
 
+        if connection["dbType"] not in [
+            "mysql",
+            "postgresql",
+            "sqlite",
+            "mssql",
+            "s3BucketFile",
+        ]:
+            self.delete_schedule(self.request, datasource.id)
+
         if data:
             # Process the data to correctly parse percentages as numbers
             df = pd.DataFrame(data)
@@ -204,44 +202,6 @@ class DatasourceViewSet(viewsets.ModelViewSet):
         else:
             serializer.save(connection=connection)
 
-        # Identify the changes made to the datasource
-        diff = {}
-
-        if datasource["name"] != serializer.instance["name"]:
-            diff["name"] = {
-                "from": datasource["name"],
-                "to": serializer.instance["name"],
-            }
-
-        for field in datasource["connection"]:
-            old_value = datasource["connection"][field]
-            new_value = serializer.instance["connection"][field]
-
-            if old_value != new_value:
-                if "connection" not in diff:
-                    diff["connection"] = {}
-
-                if field == "password":
-                    # Don't actually store the password changes in the audit table
-                    # (even though the datasource password is hashed when saved)
-                    diff["connection"][field] = "changed"
-                else:
-                    diff["connection"][field] = {"from": old_value, "to": new_value}
-
-        # If changes were detected, add a record to the audit collection
-        if len(diff.keys()):
-            audit = AuditSerializer(
-                data={
-                    "model": "datasource",
-                    "document": str(datasource.id),
-                    "action": "edit",
-                    "user": self.request.user.email,
-                    "diff": diff,
-                }
-            )
-            audit.is_valid()
-            audit.save()
-
     def perform_destroy(self, datasource):
         self.check_object_permissions(self.request, datasource)
 
@@ -257,95 +217,39 @@ class DatasourceViewSet(viewsets.ModelViewSet):
         self.delete_schedule(self.request, datasource.id)
         datasource.delete()
 
-        audit = AuditSerializer(
-            data={
-                "model": "datasource",
-                "document": str(datasource.id),
-                "action": "delete",
-                "user": self.request.user.email,
-            }
-        )
-        audit.is_valid()
-        audit.save()
-
     @detail_route(methods=["patch"])
     def update_schedule(self, request, id):
         datasource = self.get_object()
 
         self.check_object_permissions(self.request, datasource)
 
+        # If a schedule already exists for this datasource, then delete it
+        if "schedule" in datasource:
+            if "taskName" in datasource["schedule"]:
+                remove_scheduled_task(datasource["schedule"]["taskName"])
+
+            if "asyncTasks" in datasource["schedule"]:
+                remove_async_task(datasource["schedule"]["asyncTasks"])
+
         schedule = request.data
+
+        # Create new schedule tasks
+        arguments = json.dumps({"datasource_id": id})
+        task_name, async_tasks = create_scheduled_task(
+            "refresh_datasource_data", schedule, arguments
+        )
+
+        schedule["taskName"] = task_name
+        schedule["asyncTasks"] = async_tasks
+        
+        datasource.update(unset__schedule=1)
         serializer = DatasourceSerializer(
             datasource, data={"schedule": schedule}, partial=True
         )
         serializer.is_valid()
+        serializer.save()
 
-        is_update = "schedule" in datasource and datasource["schedule"] is not None
-        requires_save = False
-
-        diff = {}
-        if is_update:
-            # Identify the changes made to the datasource schedule
-            for field in datasource["schedule"]:
-                old_value = datasource["schedule"][field]
-                new_value = serializer.validated_data["schedule"].get(field, old_value)
-
-                # Strip timezone information from the new value if it is a datetime
-                # The db model does not include tz info, whereas the validated data does.
-                # Therefore even if the time is identical (both always in UTC), the
-                # comparison will produce a false negative
-                if type(new_value) == datetime:
-                    new_value = new_value.replace(tzinfo=None)
-
-                if old_value != new_value:
-                    diff[field] = {"from": old_value, "to": new_value}
-
-            # If changes were detected, then continue
-            if len(diff.keys()):
-                diff["taskName"] = {"from": None, "to": None}
-                diff["asyncTasks"] = {"from": None, "to": None}
-
-                # If a schedule already exists for this datasource, then delete it
-                if "taskName" in datasource["schedule"]:
-                    remove_scheduled_task(datasource["schedule"]["taskName"])
-                    diff["taskName"]["from"] = datasource["schedule"]["taskName"]
-
-                if "asyncTasks" in datasource["schedule"]:
-                    remove_async_task(datasource["schedule"]["asyncTasks"])
-                    diff["asyncTasks"]["from"] = datasource["schedule"]["asyncTasks"]
-
-                requires_save = True
-
-        if not is_update or requires_save:
-            # Create new schedule tasks
-            arguments = json.dumps({"datasource_id": id})
-            task_name, async_tasks = create_scheduled_task(
-                "refresh_datasource_data", request.data, arguments
-            )
-
-            serializer.validated_data["schedule"]["taskName"] = task_name
-            serializer.validated_data["schedule"]["asyncTasks"] = async_tasks
-            serializer.save()
-
-            audit_data = {
-                "model": "datasource",
-                "document": str(datasource.id),
-                "user": self.request.user.email,
-            }
-
-            if is_update:
-                audit_data["action"] = "update_schedule"
-                diff["taskName"]["to"] = task_name
-                diff["asyncTasks"]["to"] = async_tasks
-                audit_data["diff"] = diff
-            else:
-                audit_data["action"] = "create_schedule"
-
-            audit = AuditSerializer(data=audit_data)
-            audit.is_valid()
-            audit.save()
-
-        return JsonResponse({"success": True})
+        return Response(serializer.data)
 
     @detail_route(methods=["patch"])
     def delete_schedule(self, request, id=None):
@@ -361,18 +265,8 @@ class DatasourceViewSet(viewsets.ModelViewSet):
 
         datasource.update(unset__schedule=1)
 
-        audit = AuditSerializer(
-            data={
-                "model": "datasource",
-                "document": str(datasource.id),
-                "action": "delete_schedule",
-                "user": self.request.user.email,
-            }
-        )
-        audit.is_valid()
-        audit.save()
-
-        return JsonResponse({"success": True})
+        serializer = DatasourceSerializer(self.get_object())
+        return JsonResponse(serializer.data)
 
     @list_route(methods=["post"])
     def compare_matched_fields(self, request):

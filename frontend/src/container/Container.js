@@ -9,7 +9,6 @@ import { Layout, Breadcrumb, Icon, Button, Spin } from "antd";
 import ContainerModal from "./ContainerModal";
 import ContainerList from "./ContainerList";
 import ContainerShare from "./ContainerShare";
-import DatasourceModal from "../datasource/DatasourceModal";
 import ActionModal from "../action/ActionModal";
 
 import ContainerContext from "./ContainerContext";
@@ -30,7 +29,6 @@ class Container extends React.Component {
 
     this.state = {
       container: { visible: false, selected: null },
-      datasource: { visible: false, selected: null, data: {} },
       action: { visible: false, selected: null, data: {} },
       sharing: { visible: false, selected: null }
     };
@@ -74,13 +72,14 @@ class Container extends React.Component {
   };
 
   render() {
-    const { isFetching, containers } = this.props;
-    const { container, datasource, action, sharing } = this.state;
+    const { isFetching, containers, history } = this.props;
+    const { container, action, sharing } = this.state;
 
     return (
       <ContainerContext.Provider
         value={{
-          updateContainers: this.updateContainers
+          updateContainers: this.updateContainers,
+          history
         }}
       >
         <div className="container">
@@ -113,13 +112,6 @@ class Container extends React.Component {
                     <ContainerModal
                       {...container}
                       closeModal={() => this.closeModal("container")}
-                    />
-
-                    <DatasourceModal
-                      {...datasource}
-                      closeModal={() => this.closeModal("datasource")}
-                      datasource={datasource}
-                      containers={containers}
                     />
 
                     <ActionModal

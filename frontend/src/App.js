@@ -11,6 +11,7 @@ import { requestToken } from "./auth/AuthActions";
 
 import Login from "./auth/Login";
 import Container from "./container/Container";
+import Datasource from "./datasource/Datasource";
 import DataLab from "./dataLab/DataLab";
 import Action from "./action/Action";
 
@@ -150,6 +151,11 @@ class App extends React.Component {
           {this.AuthenticatedRoute({
             path: "/containers",
             component: Container
+          })}
+
+          {this.AuthenticatedRoute({
+            path: "/datasource/:id?",
+            component: Datasource
           })}
 
           {this.AuthenticatedRoute({

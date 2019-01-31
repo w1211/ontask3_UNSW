@@ -47,8 +47,8 @@ class Connection(EmbeddedDocument):
 
 
 class Schedule(EmbeddedDocument):
-    startTime = DateTimeField()
-    endTime = DateTimeField()
+    startTime = DateTimeField(null=True)
+    endTime = DateTimeField(null=True)
     time = DateTimeField(required=True)
     frequency = StringField(required=True, choices=("daily", "weekly", "monthly"))
     dayFrequency = IntField(min_value=1)  # I.e. every n days
