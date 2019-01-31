@@ -14,6 +14,8 @@ import Container from "./container/Container";
 import DataLab from "./dataLab/DataLab";
 import Action from "./action/Action";
 
+import Forbidden from "./error/Forbidden";
+
 import "./App.css";
 
 const { Header, Footer } = Layout;
@@ -160,6 +162,12 @@ class App extends React.Component {
             component: Action,
             feedbackForm
           })}
+
+          <Route
+            exact
+            path="/forbidden"
+            component={Forbidden}
+          />
         </Switch>
 
         <Footer className="footer">© OnTask Project 2018</Footer>
