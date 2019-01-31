@@ -1,16 +1,6 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { Switch, Route } from "react-router-dom";
-import {
-  Spin,
-  Layout,
-  Breadcrumb,
-  Icon,
-  Radio,
-  Dropdown,
-  Menu,
-  Button
-} from "antd";
+import { Switch, Route, Link, Redirect } from "react-router-dom";
+import { Spin, Layout, Breadcrumb, Icon, Menu } from "antd";
 import { DragDropContext } from "react-dnd";
 import HTML5Backend from "react-dnd-html5-backend";
 import _ from "lodash";
@@ -24,9 +14,8 @@ import WebForm from "./webform/WebForm";
 
 import apiRequest from "../shared/apiRequest";
 
-const { Content } = Layout;
-const RadioButton = Radio.Button;
-const RadioGroup = Radio.Group;
+const { Content, Sider } = Layout;
+const SubMenu = Menu.SubMenu;
 
 class DataLab extends React.Component {
   state = { fetching: true, isForm: false };
@@ -40,7 +29,7 @@ class DataLab extends React.Component {
     const containerId = _.get(location, "state.containerId");
 
     if (isForm) {
-      this.setState({ isForm: true, fetching: false });
+      this.setState({ fetching: false });
     } else {
       // User pressed "Create DataLab", as the containerId is only set in the
       // location state when the navigation occurs
@@ -57,7 +46,6 @@ class DataLab extends React.Component {
           onSuccess: datalab => {
             this.setState({
               fetching: false,
-              selectedId: match.params.id,
               ...datalab
             });
           },
@@ -71,6 +59,22 @@ class DataLab extends React.Component {
     }
   }
 
+  componentDidUpdate(prevState) {
+    const { match } = this.props;
+    const { showBreadcrumbs, name } = this.state;
+
+    if (!prevState.showBreadcrumbs && showBreadcrumbs && !name) {
+      apiRequest(`/datalab/${match.params.id}/`, {
+        method: "GET",
+        onSuccess: datalab => {
+          this.setState({
+            ...datalab
+          });
+        }
+      });
+    }
+  }
+
   updateDatalab = datalab => {
     this.setState({ ...datalab });
   };
@@ -78,22 +82,29 @@ class DataLab extends React.Component {
   render() {
     const { match, history, location } = this.props;
     const {
-      isForm,
       showBreadcrumbs,
       fetching,
       datasources,
       name,
       steps,
       order,
-      data,
-      selectedId
+      data
     } = this.state;
 
+    const route = location.pathname.split("/");
+    const isForm = route[route.length - 2] === "form";
+
     const webForms = [];
-    steps && steps.forEach((step, stepIndex) => {
-      if (_.get(step, "form.webForm.active"))
-        webForms.push({ name: step.form.name, index: stepIndex });
-    });
+    steps &&
+      steps.forEach((step, stepIndex) => {
+        if (_.get(step, "form.webForm.active"))
+          webForms.push({ name: step.form.name, index: stepIndex });
+      });
+
+    const selectedId = match.params.id;
+
+    let menuKey = [location.pathname.split("/")[3]];
+    if (menuKey[0] === "form") menuKey.push(location.pathname.split("/")[4]);
 
     return (
       <div className={`dataLab ${isForm && !showBreadcrumbs && "is_web_form"}`}>
@@ -112,132 +123,160 @@ class DataLab extends React.Component {
 
           <Layout className="layout">
             <Content className="content">
-              {!isForm && (
-                <div className="heading">
-                  <h1>{`${selectedId ? "Update" : "Create"} DataLab`}</h1>
-                  <Link to="/containers">
-                    <Icon type="arrow-left" />
-                    <span>Back to containers</span>
-                  </Link>
-                </div>
-              )}
+              <Layout className="content_body">
+                {(!isForm || showBreadcrumbs) && selectedId && (
+                  <Sider width={200}>
+                    <Menu
+                      mode="inline"
+                      selectedKeys={menuKey}
+                      style={{ height: "100%" }}
+                      defaultOpenKeys={menuKey.includes("form") ? ["form"] : []}
+                    >
+                      <Menu.Item key="back">
+                        <Link to="/containers">
+                          <Icon type="arrow-left" />
+                          <span>Back to containers</span>
+                        </Link>
+                      </Menu.Item>
 
-              {selectedId && !isForm && (
-                <div className="actions">
-                  <RadioGroup
-                    size="large"
-                    style={{ marginRight: 15 }}
-                    onChange={e =>
-                      history.push(`${match.url}/${e.target.value}`)
-                    }
-                    value={location.pathname.split("/").slice(-1)[0]}
-                  >
-                    <RadioButton value="data">Data</RadioButton>
-                    <RadioButton value="details">Details</RadioButton>
-                    <RadioButton value="model">Model</RadioButton>
-                  </RadioGroup>
+                      <Menu.Divider />
 
-                  {webForms.length > 0 && (
-                    <Dropdown
-                      trigger={["click"]}
-                      overlay={
-                        <Menu>
-                          {webForms.map((form, i) => (
-                            <Menu.Item key={i}>
-                              <a
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                href={`/datalab/${selectedId}/form/${
-                                  form.index
-                                }`}
-                              >
-                                {form.name}
-                              </a>
+                      <Menu.Item key="settings">
+                        <Link to={`${match.url}/settings`}>
+                          <Icon type="setting" />
+                          <span>Settings</span>
+                        </Link>
+                      </Menu.Item>
+
+                      <Menu.Item key="data">
+                        <Link to={`${match.url}/data`}>
+                          <Icon type="table" />
+                          <span>Data</span>
+                        </Link>
+                      </Menu.Item>
+
+                      <Menu.Item key="details">
+                        <Link to={`${match.url}/details`}>
+                          <Icon type="profile" />
+                          <span>Details</span>
+                        </Link>
+                      </Menu.Item>
+
+                      {webForms.length > 0 && (
+                        <SubMenu
+                          key="form"
+                          title={
+                            <span>
+                              <Icon type="global" />
+                              <span>Web forms ({webForms.length})</span>
+                            </span>
+                          }
+                        >
+                          {webForms.map(webForm => (
+                            <Menu.Item key={webForm.index}>
+                              <Link to={`${match.url}/form/${webForm.index}`}>
+                                <span>{webForm.name}</span>
+                              </Link>
                             </Menu.Item>
                           ))}
-                        </Menu>
-                      }
-                    >
-                      <Button icon="global" size="large">
-                        Web forms ({webForms.length})
-                      </Button>
-                    </Dropdown>
+                        </SubMenu>
+                      )}
+                    </Menu>
+                  </Sider>
+                )}
+
+                <Content className="content" style={{ overflowY: "hidden" }}>
+                  {fetching ? (
+                    <Spin size="large" />
+                  ) : (
+                    <div>
+                      {!isForm && <h1>{name ? name : "Create DataLab"}</h1>}
+
+                      {!selectedId && (
+                        <Link
+                          to="/containers"
+                          style={{ display: "inline-block", marginBottom: 20 }}
+                        >
+                          <Icon type="arrow-left" />
+                          <span>Back to containers</span>
+                        </Link>
+                      )}
+
+                      {selectedId ? (
+                        <Switch>
+                          <Redirect
+                            exact
+                            from={match.url}
+                            to={`${match.url}/settings`}
+                          />
+
+                          <Route
+                            path={`${match.url}/settings`}
+                            render={props => (
+                              <Model
+                                {...props}
+                                datasources={datasources}
+                                selectedId={selectedId}
+                                name={name}
+                                steps={steps}
+                                updateDatalab={this.updateDatalab}
+                              />
+                            )}
+                          />
+
+                          <Route
+                            path={`${match.url}/data`}
+                            render={props => (
+                              <Data
+                                {...props}
+                                steps={steps}
+                                data={data}
+                                order={order}
+                                selectedId={selectedId}
+                                updateDatalab={this.updateDatalab}
+                              />
+                            )}
+                          />
+
+                          <Route
+                            path={`${match.url}/details`}
+                            render={props => (
+                              <Details
+                                {...props}
+                                datasources={datasources}
+                                selectedId={selectedId}
+                                steps={steps}
+                                order={order}
+                                updateDatalab={this.updateDatalab}
+                              />
+                            )}
+                          />
+
+                          <Route
+                            path={`${match.url}/form/:moduleIndex`}
+                            render={props => (
+                              <WebForm
+                                {...props}
+                                dataLabId={match.params.id}
+                                showBreadcrumbs={() =>
+                                  this.setState({ showBreadcrumbs: true })
+                                }
+                              />
+                            )}
+                          />
+                        </Switch>
+                      ) : (
+                        <Model
+                          history={history}
+                          location={location}
+                          datasources={datasources}
+                          updateDatalab={this.updateDatalab}
+                        />
+                      )}
+                    </div>
                   )}
-                </div>
-              )}
-
-              {fetching ? (
-                <Spin size="large" />
-              ) : (
-                <Switch>
-                  <Route
-                    exact
-                    path={`${match.url}`}
-                    render={props => (
-                      <Model
-                        {...props}
-                        datasources={datasources}
-                        updateDatalab={this.updateDatalab}
-                      />
-                    )}
-                  />
-
-                  <Route
-                    path={`${match.url}/model`}
-                    render={props => (
-                      <Model
-                        {...props}
-                        datasources={datasources}
-                        selectedId={selectedId}
-                        name={name}
-                        steps={steps}
-                        updateDatalab={this.updateDatalab}
-                      />
-                    )}
-                  />
-
-                  <Route
-                    path={`${match.url}/details`}
-                    render={props => (
-                      <Details
-                        {...props}
-                        datasources={datasources}
-                        selectedId={selectedId}
-                        steps={steps}
-                        order={order}
-                        updateDatalab={this.updateDatalab}
-                      />
-                    )}
-                  />
-
-                  <Route
-                    path={`${match.url}/data`}
-                    render={props => (
-                      <Data
-                        {...props}
-                        steps={steps}
-                        data={data}
-                        order={order}
-                        selectedId={selectedId}
-                        updateDatalab={this.updateDatalab}
-                      />
-                    )}
-                  />
-
-                  <Route
-                    path={`${match.url}/form/:moduleIndex`}
-                    render={props => (
-                      <WebForm
-                        {...props}
-                        dataLabId={match.params.id}
-                        showBreadcrumbs={() =>
-                          this.setState({ showBreadcrumbs: true })
-                        }
-                      />
-                    )}
-                  />
-                </Switch>
-              )}
+                </Content>
+              </Layout>
             </Content>
           </Layout>
         </Content>

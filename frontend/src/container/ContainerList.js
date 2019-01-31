@@ -75,6 +75,7 @@ class ContainerList extends React.Component {
                   <TabPane tab={`DataLabs (${numDataLabs})`} key="2">
                     <DataLabTab
                       containerId={container.id}
+                      datasources={container.datasources}
                       dataLabs={container.datalabs}
                       openModal={openModal}
                     />

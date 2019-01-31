@@ -357,36 +357,25 @@
 .dataLab .filter {
   display: flex;
   align-items: center;
-  position: absolute;
-  top: -60px;
-  right: 0;
+  margin: -10px 0px 15px 0px;
 }
 .dataLab .searchbar {
   width: 200px;
-  margin-left: 20px;
+  margin: 0 10px;
 }
 .dataLab .data_manipulation .saved {
   background: #E8F5E9;
 }
-/* Fix visual bug in Firefox where column sorter appears below header text */
-.dataLab .data_manipulation .column > span {
-  display: inline-flex;
-  align-items: center;
-}
-.dataLab .data_manipulation .column .ant-table-column-sorter {
-  margin-top: 4px;
-}
-/* ---- */
 .dataLab .data_manipulation .column_header {
   display: inline;
 }
-.dataLab .data_manipulation .column_header .datasource {
+.dataLab .data_manipulation .column_header.datasource {
   color: #2196F3;
 }
-.dataLab .data_manipulation .column_header .form {
+.dataLab .data_manipulation .column_header.form {
   color: #9C27B0;
 }
-.dataLab .data_manipulation .column_header .computed {
+.dataLab .data_manipulation .column_header.computed {
   color: #66BB6A;
 }
 .dataLab .data_manipulation .menu_icon {
@@ -471,4 +460,11 @@
 
 .field-design .ant-form-item {
   margin-bottom: 3px;
+}
+
+.field-design .ant-form-item-children {
+  display: flex;
+}
+.field-design .ant-form-item-children input {
+  flex: 1;
 }

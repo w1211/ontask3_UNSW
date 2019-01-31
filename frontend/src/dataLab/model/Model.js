@@ -118,7 +118,8 @@ class Model extends React.Component {
           });
           this.setState({ loading: false });
           updateDatalab(dataLab);
-          history.push({ pathname: `/datalab/${dataLab.id}/data` });
+          if (!selectedId)
+            history.push({ pathname: `/datalab/${dataLab.id}/settings` });
         },
         onError: error => {
           console.log(error);
@@ -260,12 +261,11 @@ class Model extends React.Component {
           )}
 
           <Button
-            size="large"
             type="primary"
             onClick={this.handleSave}
             loading={loading}
           >
-            Save
+            {selectedId ? "Save" : "Submit"}
           </Button>
 
           <div className="module_toolbox">
