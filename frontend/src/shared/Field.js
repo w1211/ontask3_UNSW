@@ -24,6 +24,11 @@ class Field extends React.Component {
     };
   }
 
+  componentDidUpdate(prevProps) {
+    if (prevProps.value !== this.props.value)
+      this.setState({ value: this.props.value });
+  }
+
   handleChange = (value, shouldSave) => {
     this.setState({ value }, () => {
       if (shouldSave) this.handleSave(value);
@@ -218,7 +223,7 @@ class Field extends React.Component {
         {readOnly &&
           (() => {
             if (!field) return value;
-            
+
             switch (field.type) {
               case "number":
                 return value !== undefined && value !== null
@@ -261,7 +266,7 @@ class Field extends React.Component {
           ) : (
             (() => {
               if (!field) return this.TextField();
-              
+
               switch (field.type) {
                 case "list":
                   return this.ListField();
