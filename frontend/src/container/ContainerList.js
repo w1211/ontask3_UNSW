@@ -57,6 +57,7 @@ class ContainerList extends React.Component {
                   />
                 }
                 key={i}
+                style={{ background: i.toString() === accordionKey && "#eee" }}
               >
                 <Tabs
                   activeKey={tabKey}
