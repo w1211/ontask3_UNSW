@@ -457,6 +457,9 @@
   display: flex;
   align-items: center;
 }
+.data_manipulation .ant-table-fixed {
+  width: auto !important;
+}
 
 .field-design .ant-form-item {
   margin-bottom: 3px;
