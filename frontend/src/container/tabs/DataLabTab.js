@@ -103,7 +103,7 @@ class DataLabTab extends React.Component {
           return steps.map((step, stepIndex) => {
             if (step.type === "datasource")
               return (
-                <Tag color="blue" key={stepIndex}>
+                <Tag color="blue" key={stepIndex} style={{ margin: 3 }}>
                   <Icon type="database" style={{ marginRight: 5 }} />
                   {
                     datasources.find(
@@ -114,7 +114,7 @@ class DataLabTab extends React.Component {
               );
             else if (step.type === "form")
               return (
-                <Tag color="purple" key={stepIndex}>
+                <Tag color="purple" key={stepIndex} style={{ margin: 3 }}>
                   <Icon type="edit" style={{ marginRight: 5 }} />
                   {step.form.name}
                 </Tag>
@@ -122,7 +122,7 @@ class DataLabTab extends React.Component {
             else if (step.type === "computed" && !didIncludeComputed) {
               didIncludeComputed = true;
               return (
-                <Tag color="green" key={stepIndex}>
+                <Tag color="green" key={stepIndex} style={{ margin: 3 }}>
                   <Icon type="calculator" style={{ marginRight: 5 }} />
                   Computed
                 </Tag>
@@ -139,7 +139,7 @@ class DataLabTab extends React.Component {
           <div>
             <Tooltip title="Edit DataLab settings">
               <Button
-                style={{ marginRight: 5 }}
+                style={{ margin: 3 }}
                 icon="setting"
                 onClick={() => {
                   history.push(`/datalab/${dataLab.id}/settings`);
@@ -149,7 +149,7 @@ class DataLabTab extends React.Component {
 
             <Tooltip title="View DataLab data">
               <Button
-                style={{ marginRight: 5 }}
+                style={{ margin: 3 }}
                 icon="table"
                 onClick={() => {
                   history.push(`/datalab/${dataLab.id}/data`);
@@ -159,7 +159,7 @@ class DataLabTab extends React.Component {
 
             <Tooltip title="Clone DataLab">
               <Button
-                style={{ marginRight: 5 }}
+                style={{ margin: 3 }}
                 icon="copy"
                 loading={dataLab.id in cloning && cloning[dataLab.id]}
                 onClick={() => this.cloneDataLab(dataLab.id)}
@@ -168,6 +168,7 @@ class DataLabTab extends React.Component {
 
             <Tooltip title="Delete DataLab">
               <Button
+                style={{ margin: 3 }}
                 type="danger"
                 icon="delete"
                 loading={dataLab.id in deleting && deleting[dataLab.id]}

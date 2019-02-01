@@ -119,8 +119,8 @@ class ActionTab extends React.Component {
             <div>
               <Tooltip title="Enter action">
                 <Button
-                  style={{ marginRight: 5 }}
-                  icon="arrow-right"
+                  style={{ margin: 3 }}
+                  icon="setting"
                   onClick={() => {
                     history.push(`/action/${action.id}`);
                   }}
@@ -129,7 +129,7 @@ class ActionTab extends React.Component {
 
               <Tooltip title="Edit action">
                 <Button
-                  style={{ marginRight: 5 }}
+                  style={{ margin: 3 }}
                   icon="edit"
                   onClick={() => {
                     openModal({
@@ -142,7 +142,7 @@ class ActionTab extends React.Component {
 
               <Tooltip title="Clone action">
                 <Button
-                  style={{ marginRight: 5 }}
+                  style={{ margin: 3 }}
                   icon="copy"
                   loading={action.id in cloning && cloning[action.id]}
                   onClick={() => this.cloneAction(action.id)}
@@ -151,6 +151,7 @@ class ActionTab extends React.Component {
 
               <Tooltip title="Delete action">
                 <Button
+                  style={{ margin: 3 }}
                   type="danger"
                   icon="delete"
                   loading={action.id in deleting && deleting[action.id]}

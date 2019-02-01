@@ -131,7 +131,7 @@ class DatasourceTab extends React.Component {
             <div>
               <Tooltip title="Edit datasource settings">
                 <Button
-                  style={{ marginRight: 5 }}
+                  style={{ margin: 3 }}
                   icon="setting"
                   onClick={() => {
                     history.push(`/datasource/${datasource.id}/settings`);
@@ -147,7 +147,7 @@ class DatasourceTab extends React.Component {
                 }
               >
                 <Button
-                  style={{ marginRight: 5 }}
+                  style={{ margin: 3 }}
                   disabled={!canScheduleUpdates}
                   icon="calendar"
                   onClick={() => {
@@ -158,7 +158,7 @@ class DatasourceTab extends React.Component {
 
               <Tooltip title="Preview datasource data">
                 <Button
-                  style={{ marginRight: 5 }}
+                  style={{ margin: 3 }}
                   icon="database"
                   onClick={() => {
                     history.push(`/datasource/${datasource.id}/preview`);
@@ -168,6 +168,7 @@ class DatasourceTab extends React.Component {
 
               <Tooltip title="Delete datasource">
                 <Button
+                  style={{ margin: 3 }}
                   type="danger"
                   icon="delete"
                   loading={deleting[datasource.id] || false}
