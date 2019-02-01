@@ -293,24 +293,24 @@ class VisualisationModal extends React.Component {
               binsNumber
             }
           },
-          tooltip: {
-            pointFormat: `
-              <span style="font-size:10px">
-                {point.x:.2f} - {point.x2:.2f}
-              </span>
-              <br/>
-              <span style="color:{point.color}">
-                \u25CF
-              </span>
-              {series.name} <b>{point.y}</b>`
-          },
           series: [
             {
               name: "Histogram",
               type: "histogram",
               xAxis: 1,
               yAxis: 1,
-              baseSeries: "dataSeries"
+              baseSeries: "dataSeries",
+              tooltip: {
+                pointFormat: `
+                  <span style="font-size:10px">
+                    {point.x:.2f} - {point.x2:.2f}
+                  </span>
+                  <br/>
+                  <span style="color:{point.color}">
+                    \u25CF
+                  </span>
+                  {series.name} <b>{point.y}</b>`
+              }
             },
             {
               name: "Data",
@@ -453,7 +453,9 @@ class VisualisationModal extends React.Component {
         <Option value="pieChart">Pie chart</Option>
         {/* <Option value="table">Table</Option> */}
         {this.type(getFieldValue("column")) === "number" && (
-          <Option value="boxPlot" disabled>Box plot</Option>
+          <Option value="boxPlot" disabled>
+            Box plot
+          </Option>
         )}
       </Select>
     );
