@@ -1,5 +1,5 @@
 import React from "react";
-import { Tooltip, Button, Modal, notification, Table } from "antd";
+import { Tooltip, Button, Modal, notification, Table, Tag } from "antd";
 
 import apiRequest from "../../shared/apiRequest";
 import ContainerContext from "../ContainerContext";
@@ -64,6 +64,11 @@ class DatasourceTab extends React.Component {
     const { deleting } = this.state;
     const { history } = this.context;
 
+    const canScheduleUpdates = dbType =>
+      ["mysql", "postgresql", "sqlite", "mssql", "s3BucketFile"].includes(
+        dbType
+      );
+
     const columns = [
       {
         title: "Name",
@@ -101,32 +106,36 @@ class DatasourceTab extends React.Component {
         title: "Scheduled data updates",
         dataIndex: "schedule",
         key: "schedule",
-        render: schedule => (schedule ? "Yes" : "No"),
+        render: (schedule, datasource) => {
+          return canScheduleUpdates(datasource.connection.dbType) ? (
+            schedule ? (
+              <Tag color="green">On</Tag>
+            ) : (
+              <Tag color="red">Off</Tag>
+            )
+          ) : (
+            <Tag>Not applicable</Tag>
+          );
+        },
         filters: [
           {
-            text: "Yes",
+            text: "On",
             value: true
           },
           {
-            text: "No",
+            text: "Off",
             value: false
           }
         ],
-        sorter: (a, b) => !!a.schedule,
-        onFilter: (value, record) => !!record.schedule === (value === "true")
+        onFilter: (value, datasource) =>
+          canScheduleUpdates(datasource.connection.dbType) &&
+          (!!datasource.schedule === (value === "true") ||
+            !datasource.schedule === (value === "false"))
       },
       {
         title: "Actions",
         key: "actions",
         render: (text, datasource) => {
-          const canScheduleUpdates = [
-            "mysql",
-            "postgresql",
-            "sqlite",
-            "mssql",
-            "s3BucketFile"
-          ].includes(datasource.connection.dbType);
-
           return (
             <div>
               <Tooltip title="Edit datasource settings">
@@ -141,14 +150,14 @@ class DatasourceTab extends React.Component {
 
               <Tooltip
                 title={
-                  canScheduleUpdates
+                  canScheduleUpdates(datasource.connection.dbType)
                     ? "Configure scheduled data updates"
                     : "This datasource type does not support scheduled data updates"
                 }
               >
                 <Button
                   style={{ margin: 3 }}
-                  disabled={!canScheduleUpdates}
+                  disabled={!canScheduleUpdates(datasource.connection.dbType)}
                   icon="calendar"
                   onClick={() => {
                     history.push(`/datasource/${datasource.id}/schedule`);

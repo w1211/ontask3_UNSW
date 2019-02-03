@@ -150,11 +150,16 @@ class Datasource extends React.Component {
                         <Link to={`${match.url}/schedule`}>
                           <Icon type="calendar" />
                           <span>Schedule</span>
-                          {canScheduleUpdates && (
-                            <Tag style={{ marginLeft: 5 }}>
-                              {scheduleIsActive ? "ON" : "OFF"}
-                            </Tag>
-                          )}
+                          {canScheduleUpdates &&
+                            (scheduleIsActive ? (
+                              <Tag style={{ marginLeft: 5 }} color="green">
+                                On
+                              </Tag>
+                            ) : (
+                              <Tag style={{ marginLeft: 5 }} color="red">
+                                Off
+                              </Tag>
+                            ))}
                         </Link>
                       </Menu.Item>
 
