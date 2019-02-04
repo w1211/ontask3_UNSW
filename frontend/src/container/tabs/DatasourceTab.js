@@ -21,7 +21,7 @@ const TYPEMAP = {
 class DatasourceTab extends React.Component {
   static contextType = ContainerContext;
 
-  state = { deleting: {} };
+  state = { deleting: {}, refreshing: {} };
 
   deleteDatasource = datasourceId => {
     const { updateContainers } = this.context;
@@ -59,9 +59,36 @@ class DatasourceTab extends React.Component {
     });
   };
 
+  forceRefresh = datasourceId => {
+    const { updateContainers } = this.context;
+
+    this.setState({
+      refreshing: { [datasourceId]: true }
+    });
+
+    apiRequest(`/datasource/${datasourceId}/force_refresh/`, {
+      method: "POST",
+      onError: error => {
+        this.setState({ refreshing: { [datasourceId]: false } });
+        notification["error"]({
+          message: "Data refresh failed",
+          description: error
+        });
+      },
+      onSuccess: () => {
+        this.setState({ refreshing: { [datasourceId]: false } });
+        updateContainers();
+        notification["success"]({
+          message: "Datasource data refreshed",
+          description: "The datasource data was successfully refreshed."
+        });
+      }
+    });
+  };
+
   render() {
     const { containerId, datasources } = this.props;
-    const { deleting } = this.state;
+    const { deleting, refreshing } = this.state;
     const { history } = this.context;
 
     const canScheduleUpdates = dbType =>
@@ -108,11 +135,21 @@ class DatasourceTab extends React.Component {
         key: "schedule",
         render: (schedule, datasource) => {
           return canScheduleUpdates(datasource.connection.dbType) ? (
-            schedule ? (
-              <Tag color="green">On</Tag>
-            ) : (
-              <Tag color="red">Off</Tag>
-            )
+            <div>
+              {schedule ? (
+                <Tag color="green">On</Tag>
+              ) : (
+                <Tag color="red">Off</Tag>
+              )}
+              <Button
+                size="small"
+                icon="thunderbolt"
+                loading={refreshing[datasource.id] || false}
+                onClick={() => this.forceRefresh(datasource.id)}
+              >
+                Refresh now
+              </Button>
+            </div>
           ) : (
             <Tag>Not applicable</Tag>
           );
@@ -203,7 +240,7 @@ class DatasourceTab extends React.Component {
             })
           }
         >
-          Add datasource
+          Add Datasource
         </Button>
 
         <Table

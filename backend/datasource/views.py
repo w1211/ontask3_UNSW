@@ -330,3 +330,12 @@ class DatasourceViewSet(viewsets.ModelViewSet):
         except:
             raise ValidationError("Error reading Excel file")
 
+
+    @detail_route(methods=["post"])
+    def force_refresh(self, request, id=None):
+        datasource = self.get_object()
+        self.check_object_permissions(self.request, datasource)
+
+        datasource.refresh_data()
+        serializer = DatasourceSerializer(datasource)
+        return Response(serializer.data)
