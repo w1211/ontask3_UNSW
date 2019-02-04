@@ -1,5 +1,14 @@
 import React from "react";
-import { Icon, Tooltip, Button, Modal, notification, Table, Tag } from "antd";
+import {
+  Icon,
+  Tooltip,
+  Button,
+  Modal,
+  notification,
+  Table,
+  Tag,
+  Drawer
+} from "antd";
 
 import apiRequest from "../../shared/apiRequest";
 import ContainerContext from "../ContainerContext";
@@ -9,7 +18,7 @@ const confirm = Modal.confirm;
 class DataLabTab extends React.Component {
   static contextType = ContainerContext;
 
-  state = { filter: null, deleting: {}, cloning: {} };
+  state = { filter: null, deleting: {}, cloning: {}, drawer: {} };
 
   deleteDataLab = dataLabId => {
     const { updateContainers } = this.context;
@@ -81,9 +90,31 @@ class DataLabTab extends React.Component {
     });
   };
 
+  previewDatasource = datasourceId => {
+    apiRequest(`/datasource/${datasourceId}/`, {
+      method: "GET",
+      onSuccess: datasource =>
+        this.setState({
+          drawer: {
+            title: datasource.name,
+            visible: true,
+            content: (
+              <Table
+                rowKey={(record, index) => index}
+                columns={Object.keys(datasource.data[0]).map(k => {
+                  return { title: k, dataIndex: k };
+                })}
+                dataSource={datasource.data}
+              />
+            )
+          }
+        })
+    });
+  };
+
   render() {
     const { containerId, dataLabs, datasources } = this.props;
-    const { deleting, cloning } = this.state;
+    const { deleting, cloning, drawer } = this.state;
     const { history } = this.context;
 
     const columns = [
@@ -103,7 +134,12 @@ class DataLabTab extends React.Component {
           return steps.map((step, stepIndex) => {
             if (step.type === "datasource")
               return (
-                <Tag color="blue" key={stepIndex} style={{ margin: 3 }}>
+                <Tag
+                  color="blue"
+                  key={stepIndex}
+                  style={{ margin: 3 }}
+                  onClick={() => this.previewDatasource(step.datasource.id)}
+                >
                   <Icon type="database" style={{ marginRight: 5 }} />
                   {
                     datasources.find(
@@ -195,6 +231,16 @@ class DataLabTab extends React.Component {
         >
           Create DataLab
         </Button>
+
+        <Drawer
+          className="datalab-drawer"
+          title={drawer.title}
+          placement="right"
+          onClose={() => this.setState({ drawer: { visible: false } })}
+          visible={drawer.visible}
+        >
+          {drawer.content}
+        </Drawer>
 
         <Table
           bordered

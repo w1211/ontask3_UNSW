@@ -73,3 +73,8 @@
 .container .container_list .filter .ant-input-group input {
   border-radius: 0;
 }
+
+.datalab-drawer .ant-drawer-content-wrapper {
+  width: 80% !important;
+  max-width: 800px;
+}
