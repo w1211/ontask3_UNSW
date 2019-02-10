@@ -112,6 +112,28 @@ class DataLabTab extends React.Component {
     });
   };
 
+  previewForm = form => {
+    this.setState({
+      drawer: {
+        title: form.name,
+        visible: true,
+        content: (
+          <Table
+            rowKey={(record, index) => index}
+            columns={
+              form.data.length > 0
+                ? Object.keys(form.data[0]).map(k => {
+                    return { title: k, dataIndex: k };
+                  })
+                : []
+            }
+            dataSource={form.data}
+          />
+        )
+      }
+    });
+  };
+
   render() {
     const { containerId, dataLabs, datasources } = this.props;
     const { deleting, cloning, drawer } = this.state;
@@ -148,14 +170,19 @@ class DataLabTab extends React.Component {
                   }
                 </Tag>
               );
-            else if (step.type === "form")
+            else if (step.type === "form") {
               return (
-                <Tag color="purple" key={stepIndex} style={{ margin: 3 }}>
+                <Tag
+                  color="purple"
+                  key={stepIndex}
+                  style={{ margin: 3 }}
+                  onClick={() => this.previewForm(step.form)}
+                >
                   <Icon type="edit" style={{ marginRight: 5 }} />
                   {step.form.name}
                 </Tag>
               );
-            else if (step.type === "computed" && !didIncludeComputed) {
+            } else if (step.type === "computed" && !didIncludeComputed) {
               didIncludeComputed = true;
               return (
                 <Tag color="green" key={stepIndex} style={{ margin: 3 }}>
