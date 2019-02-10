@@ -64,7 +64,7 @@ class ContainerModal extends React.Component {
     return (
       <Modal
         visible={visible}
-        title={selected ? "Update container" : "Create container"}
+        title={selected ? "Update Container" : "Create Container"}
         okText={selected ? "Update" : "Create"}
         onCancel={this.handleCancel}
         onOk={this.handleOk}

@@ -6,6 +6,9 @@ from .models import Datalab
 from datasource.models import Datasource
 from audit.serializers import AuditSerializer
 from workflow.models import Workflow
+from form.models import Form
+
+import pandas as pd
 
 
 def bind_column_types(steps):
@@ -179,146 +182,69 @@ def calculate_computed_field(formula, record, build_fields, tracking_feedback_da
         return None
 
 
-def combine_data(steps, datalab_id=None):
-    # Identify the fields used in the build
-    # Consumed by the computed column calculation
-    build_fields = [[] for x in range(len(steps))]
-    for i, step in enumerate(steps):
-        if step["type"] == "datasource":
-            for field in step["datasource"]["fields"]:
-                build_fields[i].append(step["datasource"]["labels"][field])
-        if step["type"] in ["form", "computed"]:
-            step = step[step["type"]]
-            if "fields" in step:
-                for field in step["fields"]:
-                    build_fields[i].append(field["name"])
+def set_relations(datalab):
+    required_fields = set()
 
-    # Gather all tracking and feedback data for associated actions
-    # Consumed by the computed column
-    tracking_feedback_data = {}
-    if datalab_id:
-        actions = Workflow.objects(datalab=datalab_id)
-        for action in actions:
-            action_id = str(action.id)
-            if not "emailSettings" in action or not len(action["emailJobs"]):
-                continue
+    # Identify the fields used in any associated forms or actions
+    forms = Form.objects(datalab=datalab)
+    for form in forms:
+        required_fields.add(form.primary)
+        required_fields.add(form.permission)
 
-            tracking_feedback_data[action_id] = {
-                "email_field": action["emailSettings"]["field"],
-                "jobs": {},
-            }
-            for email_job in action["emailJobs"]:
-                job_id = str(email_job.job_id)
+    # Identify the fields used as matching keys for datasource modules
+    datasource_steps = [
+        step.datasource for step in datalab.steps if step.type == "datasource"
+    ]
 
-                tracking_feedback_data[action_id]["jobs"][job_id] = {
-                    "tracking": {
-                        email["recipient"]: email["track_count"]
-                        for email in email_job["emails"]
-                    }
-                }
+    for step_index, step in enumerate(datasource_steps):
+        # Always add the primary key of the first module
+        # Use its label if provided, otherwise just use the field name
+        if step_index == 0:
+            required_fields.add(step.labels.get(step.primary, step.primary))
+        else:
+            required_fields.add(step.matching)
 
-    # Initialize the dataset using the first module, which is always a datasource
-    first_module = steps[0]["datasource"]
-    datasource = Datasource.objects.get(id=first_module["id"])
-    fields = first_module["fields"]
-    label_map = first_module["labels"]
+    relations = pd.DataFrame()
+    for step_index, step in enumerate(datasource_steps):
+        datasource = Datasource.objects.get(id=step.id)
 
-    data = []
-    for item in datasource.data:
-        record = {}
-        for field, value in item.items():
-            if field in fields:
-                # Add the field to the record object using the field's label
-                record[label_map[field]] = value
-        data.append(record)
+        # If this datasource has fields that are used by forms, actions, or datasources,
+        # then ensure that these fields are included in the relation table
+        used_fields = []
+        for field, label in step.labels.items():
+            if label in required_fields:
+                used_fields.append(field)
 
-    # For each of the remaining modules, incrementally add to the dataset
-    for step in steps[1:]:
-        # Instantiate an object that will be a map of the data generated thus far,
-        # with the key being the matching field specified for this step. This allows
-        #  us to efficiently lookup based on the primary key and find which record
-        # should be extended, instead of having to iterate over the list to find the
-        # matching record for every record in this datasource
-        data_map = defaultdict(list)
+        data = (
+            pd.DataFrame(data=datasource.data)
+            .set_index(step.primary)
+            .filter(items=used_fields)  # Only include required fields
+            .rename(columns={field: step.labels[field] for field in used_fields})
+        )
 
-        if step["type"] == "datasource":
-            module = step["datasource"]
-            datasource = Datasource.objects.get(id=module["id"])
-            fields = module["fields"]
-            label_map = module["labels"]
+        if step_index == 0:
+            relations = data.reset_index().rename(
+                columns={
+                    step.primary: step.labels.get(step.primary, step.primary)
+                }  # Rename the primary key if it has a label
+            )
+        else:
+            if step.discrepencies.primary and step.discrepencies.matching:
+                # Full outer join
+                how = "outer"
+            elif step.discrepencies.primary:
+                how = "right"
+            elif step.discrepencies.matching:
+                how = "left"
+            else:
+                how = "inner"
 
-            # Populate the data map before merging in this datasource module's data
-            for item in data:
-                # If the item has a value for this module's specified matching field
-                # Note that the matching field uses labels and not the original field names
-                if module["matching"] in item:
-                    match_value = item[module["matching"]]
-                    data_map[match_value].append(item)
+            relations = relations.merge(
+                data, how=how, left_on=step.matching, right_index=True
+            ).reset_index(drop=True)
 
-            # For each record in this datasource's data, extend the matching record in the data map
-            for item in datasource.data:
-                match_value = item[module["primary"]]
-                # If the match value for this record is in the data map, then extend
-                # each of the matched records with the chosen fields from this datasource module
-                if match_value in data_map:
-                    for matched_record in data_map[match_value]:
-                        for field, value in item.items():
-                            if field in fields:
-                                matched_record[label_map[field]] = value
-
-                # If the match value is not in the data map, then there is a discrepency.
-                # The user would have been prompted on how to deal with discrepencies after they
-                # chose the matching field for this module in the model interface of the DataLab
-                else:
-                    # If the primary discrepency setting is set to True, then the user wants to keep
-                    # the record even with values missing for the previous modules
-                    if (
-                        "discrepencies" in module
-                        and module["discrepencies"] is not None
-                        and "primary" in module["discrepencies"]
-                        and module["discrepencies"]["primary"]
-                    ):
-                        new_record = {
-                            module["matching"]: match_value
-                        }
-                        for field, value in item.items():
-                            if field in fields:
-                                new_record[label_map[field]] = value
-                        data_map[match_value].append(new_record)
-
-            # If the matching discrepency setting is set to True, then the user wants to keep
-            # any records whose matching keys do not exist in this datasource module.
-            if not (
-                "discrepencies" in module
-                and module["discrepencies"] is not None
-                and "matching" in module["discrepencies"]
-                and module["discrepencies"]["matching"]
-            ):
-                primary_records = {
-                    item.get(module["primary"]) for item in datasource.data
-                }
-                matching_records = {item.get(module["matching"]) for item in data}
-                for record in matching_records - primary_records:
-                    data_map.pop(record, None)
-
-        if step["type"] == "form" and "data" in step["form"]:
-            module = step["form"]
-
-            # Populate the data map before merging in this form module's data
-            for item in data:
-                if module["primary"] in item:
-                    match_value = item[module["primary"]]
-                    data_map[match_value].append(item)
-                    
-            # Update keys in the data map with this form's data
-            for item in module["data"]:
-                match_value = item.get(module["primary"])
-                if match_value in data_map:
-                    for matched_record in data_map[match_value]:
-                        matched_record.update(item)
-
-        if step["type"] == "computed":
-            module = step["computed"]
+    # Replace NaN values with None to make it storable in MongoDB
+    relations.replace({pd.np.nan: None}, inplace=True)
 
             for item in data:
                 for field in module["fields"]:
@@ -326,13 +252,7 @@ def combine_data(steps, datalab_id=None):
                         field["formula"], item, build_fields, tracking_feedback_data
                     )
 
-        # Create the data (list of dicts, with each dict representing a record) based on the updated data map
-        if len(data_map):
-            data = []
-            for match in data_map.values():
-                for item in match:
-                    data.append(item)
-    return data
+    return relations.to_dict("records")
 
 
 def update_form_data(

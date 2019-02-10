@@ -11,11 +11,12 @@ import json
 from .serializers import DatalabSerializer
 from .permissions import DatalabPermissions
 from .models import Datalab
-from .utils import bind_column_types, combine_data, update_form_data, retrieve_form_data
+from .utils import bind_column_types, update_form_data, retrieve_form_data, set_relations
 
 from container.views import ContainerViewSet
 from datasource.models import Datasource
 from audit.serializers import AuditSerializer
+from form.models import Form
 
 
 class DatalabViewSet(viewsets.ModelViewSet):
@@ -43,7 +44,6 @@ class DatalabViewSet(viewsets.ModelViewSet):
 
         steps = self.request.data["steps"]
         steps = bind_column_types(steps)
-        data = combine_data(steps)
 
         order = []
         for (step_index, step) in enumerate(steps):
@@ -58,7 +58,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
                     }
                 )
 
-        datalab = serializer.save(steps=steps, data=data, order=order)
+        datalab = serializer.save(steps=steps, order=order)
 
         audit = AuditSerializer(
             data={
@@ -87,8 +87,6 @@ class DatalabViewSet(viewsets.ModelViewSet):
         steps = self.request.data["steps"]
         steps = bind_column_types(steps)
 
-        data = combine_data(steps, datalab.id)
-
         order = [
             {
                 "stepIndex": item["stepIndex"],
@@ -102,9 +100,14 @@ class DatalabViewSet(viewsets.ModelViewSet):
         # Check for any removed fields and remove from order list
         for item in order:
             step = steps[item["stepIndex"]] if item["stepIndex"] < len(steps) else None
-            fields = step[step["type"]]["fields"] if step else []
-            if step and step["type"] in ["form", "computed"]:
+            if step and step["type"] == "form":
+                fields = Form.objects.get(id=step["form"]).fields
+            else:
+                fields = step[step["type"]]["fields"] if step else []
+
+            if step and step["type"] == "computed":
                 fields = [field["name"] for field in fields]
+
             if item["field"] not in fields:
                 order = [
                     x
@@ -114,7 +117,12 @@ class DatalabViewSet(viewsets.ModelViewSet):
 
         # Check for any added fields and append to end of order list
         for (step_index, step) in enumerate(steps):
-            for field in step[step["type"]]["fields"]:
+            if step["type"] == "form":
+                fields = Form.objects.get(id=step["form"]).fields
+            else:
+                fields = step[step["type"]]["fields"]
+
+            for field in fields:
                 if step["type"] in ["form", "computed"]:
                     field = field["name"]
                 already_exists = next(
@@ -128,7 +136,9 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 if not already_exists:
                     order.append({"stepIndex": step_index, "field": field})
 
-        serializer.save(steps=steps, data=data, order=order)
+        relations = set_relations(datalab)
+        
+        serializer.save(steps=steps, order=order, relations=relations)
 
     def perform_destroy(self, datalab):
         self.check_object_permissions(self.request, datalab)
@@ -150,7 +160,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
         check_module = request.data["partial"][-1]["datasource"]
         partial_build = request.data["partial"][:-1]
 
-        data = combine_data(partial_build)
+        data = [] # combine_data(partial_build)
         datasource = Datasource.objects.get(id=check_module["id"])
 
         primary_records = {item[check_module["primary"]] for item in datasource.data}
@@ -181,7 +191,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
         partial_build = self.request.data["partial"]
         primary_key = self.request.data["primary"]
 
-        data = combine_data(partial_build)
+        data = [] # combine_data(partial_build)
 
         all_records = [item[primary_key] for item in data if primary_key in item]
         unique_records = set(all_records)

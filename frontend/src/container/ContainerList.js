@@ -69,7 +69,6 @@ class ContainerList extends React.Component {
                     <DatasourceTab
                       containerId={container.id}
                       datasources={container.datasources}
-                      openModal={openModal}
                     />
                   </TabPane>
 
@@ -78,7 +77,6 @@ class ContainerList extends React.Component {
                       containerId={container.id}
                       datasources={container.datasources}
                       dataLabs={container.datalabs}
-                      openModal={openModal}
                     />
                   </TabPane>
 

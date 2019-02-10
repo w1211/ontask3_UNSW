@@ -11,8 +11,10 @@ from mongoengine.fields import (
     DateTimeField,
     FloatField,
 )
+import pandas as pd
 
 from container.models import Container
+from datasource.models import Datasource
 
 
 class Column(EmbeddedDocument):
@@ -77,3 +79,97 @@ class Datalab(Document):
     steps = EmbeddedDocumentListField(Module)
     order = EmbeddedDocumentListField(Column)
     charts = EmbeddedDocumentListField(Chart)
+
+    relations = ListField(DictField())
+
+    @property
+    def data(self):
+        from form.models import Form
+        from .utils import calculate_computed_field
+
+        build_fields = []
+        combined_data = pd.DataFrame(self.relations)
+
+    # # Gather all tracking and feedback data for associated actions
+    # # Consumed by the computed column
+    # tracking_feedback_data = {}
+    # if datalab_id:
+    #     actions = Workflow.objects(datalab=datalab_id)
+    #     for action in actions:
+    #         action_id = str(action.id)
+    #         if not "emailSettings" in action or not len(action["emailJobs"]):
+    #             continue
+
+    #         tracking_feedback_data[action_id] = {
+    #             "email_field": action["emailSettings"]["field"],
+    #             "jobs": {},
+    #         }
+    #         for email_job in action["emailJobs"]:
+    #             job_id = str(email_job.job_id)
+
+    #             tracking_feedback_data[action_id]["jobs"][job_id] = {
+    #                 "tracking": {
+    #                     email["recipient"]: email["track_count"]
+    #                     for email in email_job["emails"]
+    #                 }
+    #             }
+                
+        for step_index, step in enumerate(self.steps):
+            if step.type == "datasource":
+                step = step.datasource
+                datasource = Datasource.objects.get(id=step.id)
+
+                build_fields.append([step.labels[field] for field in step.fields])
+
+                data = (
+                    pd.DataFrame(data=datasource.data)
+                    .set_index(step.primary)
+                    .filter(
+                        items=[
+                            field
+                            for field in step.fields
+                            # Skip columns that are already included in the relations table
+                            if step.labels[field] not in list(combined_data)
+                        ]
+                    )
+                    .rename(
+                        columns={field: step.labels[field] for field in step.fields}
+                    )
+                )
+
+                combined_data = combined_data.join(
+                    data,
+                    on=step.matching
+                    if step_index != 0
+                    else step.labels.get(step.primary, step.primary),
+                )
+
+            elif step.type == "form":
+                form = Form.objects.get(id=step.form)
+                data = pd.DataFrame(data=form.data)
+
+                build_fields.append([field.name for field in form.fields])
+
+                if form.primary in data:
+                    data.set_index(form.primary, inplace=True)
+                    combined_data = combined_data.join(data, on=form.primary)
+
+            elif step.type == "computed":
+                step = step.computed
+
+                build_fields.append([field.name for field in step.fields])
+
+                computed_fields = {
+                    field.name: combined_data.apply(
+                        lambda item: calculate_computed_field(
+                            field.formula, item, build_fields, {}
+                        ),
+                        axis=1,
+                    ).values
+                    for field in step.fields
+                }
+                combined_data = combined_data.assign(**computed_fields)
+
+        combined_data.replace({pd.np.nan: None}, inplace=True)
+
+        return combined_data.to_dict("records")
