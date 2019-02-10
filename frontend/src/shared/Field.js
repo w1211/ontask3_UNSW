@@ -25,7 +25,10 @@ class Field extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    if (prevProps.value !== this.props.value)
+    if (
+      prevProps.value !== this.props.value ||
+      prevProps.primaryKey !== this.props.primaryKey
+    )
       this.setState({ value: this.props.value });
   }
 
