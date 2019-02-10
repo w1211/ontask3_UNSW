@@ -561,7 +561,14 @@ class DatasourceModule extends React.Component {
 
                       return (
                         <Option
-                          disabled={editing.isEditing}
+                          disabled={
+                            editing.isEditing ||
+                            (stepIndex > 0 &&
+                              field ===
+                                getFieldValue(
+                                  `steps[${stepIndex}].datasource.primary`
+                                ))
+                          }
                           value={field}
                           key={`${datasource.id}_${field}_field`}
                           className={isEditing ? "editing_field" : ""}
