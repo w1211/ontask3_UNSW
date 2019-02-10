@@ -43,12 +43,12 @@ class LocalAuth(APIView):
             "name": request.data["fullname"],
         }
 
-        try:
-            user = User.objects.create_user(**credentials)
-        except IntegrityError:
+        if User.objects.filter(email=request.data["email"]).first():
             return Response(
                 {"error": "Email is already being used"}, status=HTTP_400_BAD_REQUEST
             )
+
+        user = User.objects.create_user(**credentials)
 
         # Give the user a container with example datasources, datalabs, actions, etc
         seed_data(user)

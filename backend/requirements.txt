@@ -21,3 +21,4 @@ python-dateutil==2.6.1
 numexpr==2.6.8
 PyLTI==0.7.0
 pandas==0.23.4
+djongo==1.2.31

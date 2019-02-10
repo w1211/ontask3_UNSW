@@ -21,17 +21,10 @@ if os.environ.get('ONTASK_DEVELOPMENT') is not None:
     FRONTEND_DOMAIN = 'https://localhost:3000' # For whitelisting CORS and authentication
     BACKEND_DOMAIN = 'https://localhost:8000'
     ALLOWED_HOSTS = ['localhost']
-    SQL_DATABASE = {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'ontask',
-        'USER': 'ontask',
-        'PASSWORD': 'ontask',
-        'HOST': 'sql',
-        'PORT': '5432'
-    }
     NOSQL_DATABASE = {
-        'HOST': 'nosql',
-        'DB': 'ontask'
+        'ENGINE': 'djongo',
+        'HOST': 'db',
+        'NAME': 'ontask'
     }
 
 elif os.environ.get('ONTASK_DEMO') is not None:
@@ -108,10 +101,10 @@ WSGI_APPLICATION = 'ontask.wsgi.application'
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
 DATABASES = {
-    'default': SQL_DATABASE
+    'default': NOSQL_DATABASE
 }
 
-mongoengine.connect(NOSQL_DATABASE['DB'], host=NOSQL_DATABASE['HOST'])
+mongoengine.connect(NOSQL_DATABASE['NAME'], host=NOSQL_DATABASE['HOST'])
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
