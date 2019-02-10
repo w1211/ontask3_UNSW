@@ -93,7 +93,7 @@ class Field extends React.Component {
           onBlur={this.handleSave}
         >
           {(field.options || []).map(option => (
-            <Option key={option.value}>
+            <Option key={option.value ? option.value : option.label}>
               {field.useIcon ? <Icon type={option.label} /> : option.label}
             </Option>
           ))}
