@@ -6,8 +6,9 @@ from rest_framework_mongoengine.serializers import (
 
 from .models import Container
 from datasource.models import Datasource
-from datalab.models import Datalab, Module, DatasourceModule, FormModule
+from datalab.models import Datalab, Module, DatasourceModule
 from workflow.models import Workflow
+from form.models import Form
 
 
 class DatasourceSerializer(EmbeddedDocumentSerializer):
@@ -15,23 +16,34 @@ class DatasourceSerializer(EmbeddedDocumentSerializer):
         model = Datasource
         fields = ["id", "name", "connection", "schedule", "lastUpdated"]
 
+
 class DatasourceModuleSerializer(EmbeddedDocumentSerializer):
     class Meta:
         model = DatasourceModule
         fields = ["id"]
 
-class FormModuleSerializer(EmbeddedDocumentSerializer):
+
+class FormSerializer(DocumentSerializer):
     class Meta:
-        model = FormModule
-        fields = ["name"]
+        model = Form
+        fields = ["name", "data"]
+
 
 class ModuleSerializer(EmbeddedDocumentSerializer):
     datasource = DatasourceModuleSerializer()
-    form = FormModuleSerializer()
+    form = serializers.SerializerMethodField()
 
     class Meta:
         model = Module
         fields = ["type", "datasource", "form"]
+
+    def get_form(self, module):
+        return (
+            FormSerializer(Form.objects.get(id=module.form)).data
+            if "form" in module
+            else None
+        )
+
 
 class DatalabSerializer(EmbeddedDocumentSerializer):
     steps = ModuleSerializer(many=True)

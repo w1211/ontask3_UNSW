@@ -464,10 +464,15 @@
 .field-design .ant-form-item {
   margin-bottom: 3px;
 }
-
-.field-design .ant-form-item-children {
+.field-design .option {
   display: flex;
+  align-items: center;
 }
-.field-design .ant-form-item-children input {
-  flex: 1;
+.form-drawer .ant-drawer-content-wrapper {
+  width: 80% !important;
+  max-width: 1000px;
+}
+
+.dataLab .form .ant-select-disabled .ant-select-selection {
+  background: none;
 }

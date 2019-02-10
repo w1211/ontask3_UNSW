@@ -14,9 +14,7 @@ import _ from "lodash";
 
 import { IconName } from "./IconName";
 
-import ModelContext from "../ModelContext";
-
-import FormItemLayout from "../../../shared/FormItemLayout";
+import FormItemLayout from "../../shared/FormItemLayout";
 
 const FormItem = Form.Item;
 const Option = Select.Option;
@@ -24,14 +22,12 @@ const RadioButton = Radio.Button;
 const RadioGroup = Radio.Group;
 
 class FieldDesign extends React.Component {
-  static contextType = ModelContext;
-
   constructor(props) {
     super(props);
     const { field } = props;
 
     this.state = {
-      optionKeys: _.get(field, "options", []).map(() => _.uniqueId())
+      optionKeys: _.get(field, "options", [null]).map(() => _.uniqueId())
     };
   }
 
@@ -60,13 +56,7 @@ class FieldDesign extends React.Component {
   };
 
   ListField = () => {
-    const {
-      field,
-      fieldIndex,
-      form,
-      confirmOnClose,
-      updateClonedField
-    } = this.props;
+    const { field, fieldIndex, form, updateClonedField } = this.props;
     const { optionKeys } = this.state;
     const { getFieldDecorator, getFieldValue, setFieldsValue } = form;
 
@@ -119,7 +109,6 @@ class FieldDesign extends React.Component {
                 this.setState({
                   optionKeys: [...optionKeys, _.uniqueId()]
                 });
-                confirmOnClose();
               }}
             >
               Add option
@@ -127,10 +116,7 @@ class FieldDesign extends React.Component {
 
             {optionKeys.map((key, i) => (
               <div key={`option_${i}`} className="option">
-                <FormItem
-                  className="no-explain"
-                  style={{ marginBottom: 0, width: "45%" }}
-                >
+                <FormItem className="no-explain" style={{ marginBottom: 0 }}>
                   {getFieldDecorator(
                     `fields[${fieldIndex}].options[${i}].label`,
                     {
@@ -157,10 +143,7 @@ class FieldDesign extends React.Component {
                   )}
                 </FormItem>
 
-                <FormItem
-                  className="no-explain"
-                  style={{ marginBottom: 0, width: "45%" }}
-                >
+                <FormItem className="no-explain" style={{ margin: "0 5px" }}>
                   {getFieldDecorator(
                     `fields[${fieldIndex}].options[${i}].value`,
                     {
@@ -187,7 +170,6 @@ class FieldDesign extends React.Component {
                       setFieldsValue({
                         [`fields[${fieldIndex}].options`]: options
                       });
-                      confirmOnClose();
                       updateClonedField({ ...field, options });
                     }}
                   />
@@ -262,8 +244,10 @@ class FieldDesign extends React.Component {
               {
                 message: "Maximum must be greater than minimum",
                 validator: (rule, value, cb) => {
-                  const min = getFieldValue(`fields[${fieldIndex}].minimum`) || undefined;
-                  const max = getFieldValue(`fields[${fieldIndex}].maximum`) || undefined;
+                  const min =
+                    getFieldValue(`fields[${fieldIndex}].minimum`) || undefined;
+                  const max =
+                    getFieldValue(`fields[${fieldIndex}].maximum`) || undefined;
                   if (max <= min) cb(true);
                   cb();
                 }
@@ -290,26 +274,18 @@ class FieldDesign extends React.Component {
   };
 
   render() {
-    const { field, fieldIndex, visible, deleteField, form } = this.props;
-    const { labelsUsed } = this.context;
+    const { labels, field, fieldIndex, deleteField, form } = this.props;
     const { getFieldDecorator, getFieldValue } = form;
 
-    // Retrieve the labels before the field name validator consumes it
-    // So that the results are cached, and the field does not get
-    // mistakenly marked as duplicate (due to comparing against itself)
-    const labels = labelsUsed();
-
     return (
-      <div
-        className="field-design"
-        style={{ width: "100%", display: visible ? "block" : "none" }}
-      >
+      <div className="field-design" style={{ width: "100%" }}>
         <FormItem {...FormItemLayout} label="Field name">
           {getFieldDecorator(`fields[${fieldIndex}].name`, {
             rules: [
               { required: true, message: "Field name is required" },
               {
-                message: "Field name is already being used in the DataLab",
+                message:
+                  "Field name is already being used in the DataLab or form",
                 validator: (rule, value, cb) => {
                   if (_.get(field, "name") === value) cb();
                   labels.some(label => label === value) ? cb(true) : cb();
@@ -317,7 +293,7 @@ class FieldDesign extends React.Component {
               }
             ],
             initialValue: _.get(field, "name")
-          })(<Input style={{ flex: 1 }} />)}
+          })(<Input style={{ width: "calc(100% - 37px)" }} />)}
 
           <Tooltip title="Delete this field">
             <Button

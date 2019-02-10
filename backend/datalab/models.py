@@ -27,37 +27,6 @@ class Discrepencies(EmbeddedDocument):
     primary = BooleanField()
 
 
-class Option(EmbeddedDocument):
-    label = StringField(required=True)
-    value = StringField(required=True)
-
-
-class FormField(EmbeddedDocument):
-    name = StringField(required=True)
-    type = StringField(required=True)
-    textDisplay = StringField(null=True)
-    textArea = BooleanField(null=True)
-    maxLength = IntField(null=True)
-    multiSelect = BooleanField(null=True)
-    options = EmbeddedDocumentListField(Option)
-    listStyle = StringField(null=True)
-    alignment = StringField(null=True)
-    minimum = IntField(null=True)
-    maximum = IntField(null=True)
-    precision = IntField(null=True)
-    interval = FloatField(null=True)
-    numberDisplay = StringField(null=True)
-    useIcon = BooleanField(null=True)
-
-
-class WebForm(EmbeddedDocument):
-    permission = StringField()
-    visibleFields = ListField(StringField())
-    layout = StringField(choices=("vertical", "table"), default="vertical")
-    showAll = BooleanField(default=False)
-    active = BooleanField(default=False)
-
-
 class DatasourceModule(EmbeddedDocument):
     id = StringField(required=True)
     primary = StringField(required=True)
@@ -66,16 +35,6 @@ class DatasourceModule(EmbeddedDocument):
     labels = DictField()
     types = DictField()
     discrepencies = EmbeddedDocumentField(Discrepencies)
-
-
-class FormModule(EmbeddedDocument):
-    primary = StringField(required=True)
-    name = StringField(required=True)
-    activeFrom = DateTimeField(null=True)
-    activeTo = DateTimeField(null=True)
-    fields = EmbeddedDocumentListField(FormField, required=True)
-    webForm = EmbeddedDocumentField(WebForm)
-    data = ListField(DictField())
 
 
 class ComputedField(EmbeddedDocument):
@@ -91,7 +50,7 @@ class ComputedModule(EmbeddedDocument):
 class Module(EmbeddedDocument):
     type = StringField(choices=("datasource", "computed", "form"), required=True)
     datasource = EmbeddedDocumentField(DatasourceModule)
-    form = EmbeddedDocumentField(FormModule)
+    form = StringField(null=True)  # a Form model object ID will be passed in
     computed = EmbeddedDocumentField(ComputedModule)
 
 
@@ -110,11 +69,11 @@ class Chart(EmbeddedDocument):
     selections = ListField(StringField())
     filterCols = ListField(StringField())
 
+
 class Datalab(Document):
     # Cascade delete if container is deleted
     container = ReferenceField(Container, required=True, reverse_delete_rule=2)
     name = StringField(required=True)
     steps = EmbeddedDocumentListField(Module)
-    data = ListField(DictField())
     order = EmbeddedDocumentListField(Column)
     charts = EmbeddedDocumentListField(Chart)

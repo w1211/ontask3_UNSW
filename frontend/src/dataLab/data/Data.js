@@ -11,7 +11,6 @@ import {
   message,
   notification
 } from "antd";
-import moment from "moment";
 import memoize from "memoize-one";
 
 import Visualisation from "./Visualisation";
@@ -110,8 +109,8 @@ class Data extends React.Component {
         dataIndex: label,
         key: label,
         sorter: (a, b) => {
-          a = label in a ? a[label] : "";
-          b = label in b ? b[label] : "";
+          a = label in a && a[label] !== null ? a[label] : "";
+          b = label in b && b[label] !== null ? b[label] : "";
           return a.toString().localeCompare(b.toString());
         },
         sortOrder: sort && sort.field === label && sort.order,
@@ -128,18 +127,16 @@ class Data extends React.Component {
   };
 
   FormColumns = stepIndex => {
-    const { steps } = this.props;
+    const { steps, forms } = this.props;
     // const { sort, edit } = this.state;
     const { edit } = this.state;
 
-    const step = steps[stepIndex]["form"];
+    const formId = steps[stepIndex]["form"];
     const columns = [];
 
-    let isActive = true;
-    if (step.activeFrom && !moment().isAfter(step.activeFrom)) isActive = false;
-    if (step.activeTo && !moment().isBefore(step.activeTo)) isActive = false;
+    const form = forms.find(form => form.id === formId);
 
-    step.fields.forEach(field => {
+    form.fields.forEach(field => {
       const label = field.name;
       const truncatedLabel = this.TruncatedLabel(label);
 
@@ -156,26 +153,14 @@ class Data extends React.Component {
                     });
                   else if (e.key === "edit")
                     this.setState({
-                      edit: { field: field.name, primary: step.primary }
+                      edit: { field: field.name, primary: form.primary }
                     });
                 }}
               >
-                <Menu.Item key="edit" disabled={!isActive}>
-                  <Tooltip
-                    title={
-                      !isActive &&
-                      "This column cannot be edited as it belongs to a form that is no longer active"
-                    }
-                  >
-                    <Icon type="edit" style={{ marginRight: 5 }} />
-                    Enter data
-                  </Tooltip>
+                <Menu.Item key="edit">
+                  <Icon type="edit" style={{ marginRight: 5 }} />
+                  Enter data
                 </Menu.Item>
-                {/* 
-                <Menu.Item key="visualise">
-                  <Icon type="area-chart" style={{ marginRight: 5 }} />
-                  Visualise
-                </Menu.Item> */}
               </Menu>
             }
           >
@@ -215,7 +200,7 @@ class Data extends React.Component {
         // },
         // sortOrder: sort && sort.field === label && sort.order,
         render: (text, record) =>
-          this.renderFormField(stepIndex, field, text, record[step.primary])
+          this.renderFormField(stepIndex, field, text, record[form.primary])
       });
     });
 
@@ -241,8 +226,8 @@ class Data extends React.Component {
         dataIndex: label,
         key: label,
         sorter: (a, b) => {
-          a = label in a ? a[label] : "";
-          b = label in b ? b[label] : "";
+          a = label in a && a[label] !== null ? a[label] : "";
+          b = label in b && b[label] !== null ? b[label] : "";
           return a.toString().localeCompare(b.toString());
         },
         sortOrder: sort && sort.field === label && sort.order,
@@ -312,7 +297,7 @@ class Data extends React.Component {
   }
 
   render() {
-    const { data, order, steps } = this.props;
+    const { data, order, steps, forms } = this.props;
     const { visualisation, edit, saved, searchTerm } = this.state;
 
     const totalDataAmount = data ? data.length : 0;
@@ -366,6 +351,7 @@ class Data extends React.Component {
               field: item.field
             }))}
             closeModal={() => this.setState({ visualisation: false })}
+            forms={forms}
           />
 
           <Table

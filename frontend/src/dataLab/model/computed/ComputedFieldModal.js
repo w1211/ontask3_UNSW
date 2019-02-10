@@ -51,7 +51,7 @@ class ComputedFieldModal extends React.Component {
 
   generateTreeData = () => {
     const { stepIndex } = this.props;
-    const { datasources, form, actions } = this.context;
+    const { datasources, form, actions, forms } = this.context;
     const { getFieldValue } = form;
 
     const treeData = [];
@@ -83,7 +83,7 @@ class ComputedFieldModal extends React.Component {
         }
 
         if (step.type === "form") {
-          step = step.form;
+          step = (forms || []).find(form => form.id === step.form);
 
           treeData.push({
             title: (
@@ -652,7 +652,7 @@ class ComputedFieldModal extends React.Component {
     const { value, error } = this.state;
 
     const { getFieldDecorator } = form;
-    
+
     // Retrieve the labels before the field name validator consumes it
     // So that the results are cached, and the field does not get
     // mistakenly marked as duplicate (due to comparing against itself)

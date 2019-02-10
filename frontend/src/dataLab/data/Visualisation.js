@@ -42,7 +42,7 @@ class VisualisationModal extends React.Component {
   chartKey = 0;
 
   type = memoize(column => {
-    const { fields, steps } = this.props;
+    const { fields, steps, forms } = this.props;
 
     const fieldItem = fields.find(item => item.label === column);
     if (!fieldItem) return;
@@ -50,7 +50,13 @@ class VisualisationModal extends React.Component {
     const { stepIndex, field } = fieldItem;
     const step = steps[stepIndex];
     if (step.type === "datasource") return step.datasource.types[field];
-    if (["form", "computed"].includes(step.type))
+
+    if (step.type === "form")
+      return forms
+        .find(form => form.id === step.form)
+        .fields.find(field => field.name === column).type;
+
+    if (step.type === "computed")
       return step[step.type].fields.find(field => field.name === column).type;
   });
 
@@ -393,7 +399,7 @@ class VisualisationModal extends React.Component {
   }
 
   onColumnChange = column => {
-    const { form } = this.props;
+    const { form, forms } = this.props;
     const { getFieldValue, setFieldsValue, resetFields } = form;
 
     const fieldType = this.type(column);

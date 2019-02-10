@@ -4,8 +4,10 @@ from rest_framework_mongoengine.serializers import (
     EmbeddedDocumentSerializer,
 )
 
-from .models import Datalab
+from .models import Datalab, Column
 from datasource.models import Datasource
+from form.models import Form
+from form.serializers import FormSerializer
 from workflow.models import Workflow, EmailJob, Email
 
 
@@ -21,7 +23,6 @@ class EmailJobSerializer(EmbeddedDocumentSerializer):
     class Meta:
         model = EmailJob
         fields = "__all__"
-
 
 class ActionSerializer(DocumentSerializer):
     emailJobs = EmailJobSerializer(many=True, allow_null=True, read_only=True)
@@ -44,19 +45,48 @@ class DatasourceSerializer(DocumentSerializer):
         fields = ["id", "name", "fields"]
 
 
+class OrderItemSerializer(EmbeddedDocumentSerializer):
+    label = serializers.SerializerMethodField()
+
+    def get_label(self, order_item):
+        module = self.context["steps"][order_item.stepIndex]
+
+        if module.type == "datasource":
+            return module.datasource.labels.get(order_item.field)
+
+        return order_item.field
+        
+    class Meta:
+        model = Column
+        fields = "__all__"
+
+
 class DatalabSerializer(DocumentSerializer):
     datasources = serializers.SerializerMethodField()
+    forms = serializers.SerializerMethodField()
     actions = serializers.SerializerMethodField()
+    columns = serializers.SerializerMethodField()
+    data = serializers.ReadOnlyField()
 
     def get_datasources(self, datalab):
         datasources = Datasource.objects(container=datalab["container"].id)
         serializer = DatasourceSerializer(datasources, many=True)
         return serializer.data
 
+    def get_forms(self, datalab):
+        forms = Form.objects(datalab=datalab.id)
+        serializer = FormSerializer(forms, many=True)
+        return serializer.data
+
     def get_actions(self, datalab):
         actions = Workflow.objects(datalab=datalab.id)
         serializer = ActionSerializer(actions, many=True)
         return serializer.data
+
+    def get_columns(self, datalab):
+        return OrderItemSerializer(
+            datalab.order, many=True, context={"steps": datalab.steps}
+        ).data
 
     class Meta:
         model = Datalab

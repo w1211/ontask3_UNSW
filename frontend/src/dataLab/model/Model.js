@@ -133,7 +133,7 @@ class Model extends React.Component {
     const { form } = this.props;
     const { stepKeys } = this.state;
     const { getFieldDecorator } = form;
-    
+
     // Force the first module to be a datasource
     if (stepKeys.length === 0 && type !== "datasource") {
       message.error("The first module of a DataLab must be a datasource.");
@@ -142,9 +142,8 @@ class Model extends React.Component {
 
     getFieldDecorator(`steps[${stepKeys.length}].type`, {
       initialValue: type
-    });    
+    });
     this.setState({ stepKeys: [...stepKeys, _.uniqueId()], error: null });
-
   };
 
   deleteModule = () => {
@@ -178,7 +177,7 @@ class Model extends React.Component {
   };
 
   render() {
-    const { form, datasources, actions, name, selectedId } = this.props;
+    const { form, datasources, forms, actions, name, selectedId } = this.props;
     const { loading, error, stepKeys, steps } = this.state;
     const { getFieldDecorator, getFieldValue } = form;
 
@@ -190,6 +189,7 @@ class Model extends React.Component {
           stepKeys,
           labelsUsed: this.labelsUsed,
           datasources,
+          forms,
           actions,
           deleteModule: this.deleteModule,
           hasDependency: this.hasDependency,
@@ -253,18 +253,14 @@ class Model extends React.Component {
               );
             })}
 
-            <Add addModule={this.addModule}/>
+            <Add addModule={this.addModule} />
           </div>
 
           {error && (
             <Alert message={error} type="error" style={{ marginBottom: 10 }} />
           )}
 
-          <Button
-            type="primary"
-            onClick={this.handleSave}
-            loading={loading}
-          >
+          <Button type="primary" onClick={this.handleSave} loading={loading}>
             {selectedId ? "Save" : "Submit"}
           </Button>
 
