@@ -35,7 +35,10 @@ router.register("datalab", DatalabViewSet, "datalab")
 router.register("workflow", WorkflowViewSet, "workflow")
 router.register("audit", AuditViewSet, "audit")
 
-urlpatterns = [path("auth/", include("accounts.urls"))]
+urlpatterns = [
+    path("auth/", include("accounts.urls")),
+    path("administration/", include("administration.urls"))
+    ]
 
 urlpatterns += router.urls
 urlpatterns += [url(r"feedback/(?P<datalab_id>[a-z\d]+)/", FeedbackView.as_view())]

@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'rest_framework_mongoengine',
     'authtools',
     'accounts',
+    'administration',
     'scheduler',
     'corsheaders'
 ]

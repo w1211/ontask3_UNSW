@@ -6,6 +6,7 @@ from rest_framework.status import HTTP_401_UNAUTHORIZED, HTTP_400_BAD_REQUEST
 
 from django.shortcuts import redirect
 from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth.models import Group
 from django.db.utils import IntegrityError
 
 from pylti.common import LTIException, verify_request_common
@@ -45,6 +46,9 @@ class LocalAuth(APIView):
 
         try:
             user = User.objects.create_user(**credentials)
+            users_group = Group.objects.get(name='users')
+            user.groups.add(users_group)
+
         except IntegrityError:
             return Response(
                 {"error": "Email is already being used"}, status=HTTP_400_BAD_REQUEST
@@ -96,6 +100,8 @@ class AAFAuth(APIView):
         fullname = user_attributes["displayname"]
 
         user = get_or_create_user(email, fullname)
+        users_group = Group.objects.get(name='users')
+        user.groups.add(users_group)
 
         # Update the user's role to staff if necessary
         roles = user_attributes["edupersonscopedaffiliation"][0].split(";")
@@ -135,6 +141,8 @@ class LTIAuth(APIView):
 
         user = get_or_create_user(email, fullname)
         token = generate_one_time_token(user)
+        users_group = Group.objects.get(name='users')
+        user.groups.add(users_group)
 
         return redirect(FRONTEND_DOMAIN + "?tkn=" + token)
 
