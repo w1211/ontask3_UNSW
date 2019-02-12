@@ -2,6 +2,8 @@ import React from "react";
 import { Form, Modal, Input, Icon, Alert, notification } from "antd";
 import { register } from "./AuthActions";
 
+import formItemLayout from "../shared/FormItemLayout";
+
 const FormItem = Form.Item;
 
 class Register extends React.Component {
@@ -10,13 +12,15 @@ class Register extends React.Component {
     error: null
   };
 
-  handleOk= () => {
+  handleOk = () => {
     const { form, closeModal } = this.props;
 
     form.validateFields((err, payload) => {
       if (err) return;
 
       this.setState({ loading: true });
+
+      delete payload.confirmPassword;
 
       register({
         payload,
@@ -53,45 +57,39 @@ class Register extends React.Component {
         onCancel={this.handleCancel}
         onOk={this.handleOk}
       >
-        <FormItem>
-          {getFieldDecorator("fullname", {
-            rules: [{ required: true, message: "Full name is required" }]
-          })(<Input prefix={<Icon type="user" />} placeholder="Full name" />)}
-        </FormItem>
-
-        <FormItem>
+        <FormItem {...formItemLayout} label="Email">
           {getFieldDecorator("email", {
             validateTrigger: "onBlur",
             rules: [
               { type: "email", message: "Email is invalid" },
               { required: true, message: "Email is required" }
             ]
-          })(
-            <Input
-              prefix={<Icon type="mail" />}
-              type="email"
-              placeholder="Email"
-            />
-          )}
+          })(<Input type="email" />)}
         </FormItem>
 
-        <FormItem>
+        <FormItem {...formItemLayout} label="First name">
+          {getFieldDecorator("first_name", {
+            rules: [{ required: true, message: "First name is required" }]
+          })(<Input />)}
+        </FormItem>
+
+        <FormItem {...formItemLayout} label="Last name">
+          {getFieldDecorator("last_name", {
+            rules: [{ required: true, message: "Last name is required" }]
+          })(<Input />)}
+        </FormItem>
+
+        <FormItem {...formItemLayout} label="Password">
           {getFieldDecorator("password", {
             validateTrigger: "onBlur",
             rules: [
               { min: 8, message: "Password must be at least 8 characters" },
               { required: true, message: "Password is required" }
             ]
-          })(
-            <Input
-              prefix={<Icon type="lock" />}
-              type="password"
-              placeholder="Password"
-            />
-          )}
+          })(<Input type="password" />)}
         </FormItem>
 
-        <FormItem>
+        <FormItem {...formItemLayout} label="Confirm password">
           {getFieldDecorator("confirmPassword", {
             validateTrigger: "onBlur",
             rules: [
@@ -107,13 +105,7 @@ class Register extends React.Component {
                 message: "Password confirmation is required"
               }
             ]
-          })(
-            <Input
-              prefix={<Icon type="lock" />}
-              type="password"
-              placeholder="Confirm password"
-            />
-          )}
+          })(<Input type="password" />)}
         </FormItem>
 
         {error && <Alert message={error} type="error" className="error" />}

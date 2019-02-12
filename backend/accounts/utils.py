@@ -30,7 +30,9 @@ from scheduler.utils import send_email
 User = get_user_model()
 
 
-def get_or_create_user(email, fullname):
+def get_or_create_user(data):
+    email = data["email"]
+
     # Find the user based on the email provided in the payload
     # The user is implicitly being authenticated simply because we trust
     # the assertions received from AAF/LTI
@@ -38,8 +40,8 @@ def get_or_create_user(email, fullname):
         user = User.objects.get(email=email)
     # If the user doesn't exist, then create them
     except User.DoesNotExist:
-        password = pbkdf2_sha256.hash(email)
-        user = User.objects.create_user(email=email, password=password, name=fullname)
+        data["password"] = email
+        user = User.objects.create_user(email, **data)
 
         # Send a notification to admins on user signup, if OnTask is in demo mode
         user_signup_notification(user)

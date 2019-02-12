@@ -45,6 +45,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Application definition
 
 INSTALLED_APPS = [
+    'accounts',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -55,8 +56,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_mongoengine',
-    'authtools',
-    'accounts',
     'scheduler',
     'corsheaders'
 ]
@@ -151,7 +150,7 @@ REST_FRAMEWORK = {
     )
 }
 
-AUTH_USER_MODEL = 'authtools.User'
+AUTH_USER_MODEL = 'accounts.User'
 
 # Default celery broker 
 # http://docs.celeryproject.org/en/latest/getting-started/brokers/rabbitmq.html
