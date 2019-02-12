@@ -66,7 +66,7 @@ class Email extends React.Component {
   }
 
   handleSubmit = () => {
-    const { form, action } = this.props;
+    const { form, action, history } = this.props;
 
     form.validateFields((err, payload) => {
       if (err) return;
@@ -79,9 +79,11 @@ class Email extends React.Component {
         payload: { emailSettings },
         onSuccess: () => {
           notification["success"]({
-            message: "Email job successfully initiated."
+            message: "Email job successfully initiated",
+            description: "Upon completion, you will receive an email outlining the job summary"
           });
           this.setState({ sending: false });
+          history.push("/containers");
         },
         onError: error => this.setState({ error })
       });
