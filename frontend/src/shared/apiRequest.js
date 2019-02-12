@@ -50,12 +50,16 @@ const apiRequest = async (
     return;
   }
 
-  // Parse the response as JSON
   let result;
-  try {
-    result = await response.json();
-  } catch (err) {
-    onError("Failed to parse response from server.");
+
+  const responseType = response.headers.get("content-type");
+  if (responseType && responseType.indexOf("application/json") !== -1) {
+    try {
+      result = await response.json();
+    } catch (err) {
+      onError("Failed to parse response from server.");
+      return;
+    }
   }
 
   // If an error code was returned by the request (other than 401)
