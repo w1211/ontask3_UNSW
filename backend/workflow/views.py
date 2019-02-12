@@ -200,8 +200,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         if not action.content:
             raise ValidationError("Email content cannot be empty.")
 
-        email_settings = EmailSettings(**request.data["emailSettings"])
-        action.send_email("Manual", email_settings)
+        action.send_email()
 
         return Response({"success": "true"})
 

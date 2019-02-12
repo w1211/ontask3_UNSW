@@ -79,7 +79,7 @@ class Email extends React.Component {
         payload: { emailSettings },
         onSuccess: () => {
           notification["success"]({
-            message: "Email(s) successfully sent."
+            message: "Email job successfully initiated."
           });
           this.setState({ sending: false });
         },

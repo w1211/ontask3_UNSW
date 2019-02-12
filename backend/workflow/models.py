@@ -23,7 +23,7 @@ from datalab.models import Datalab
 from datasource.models import Datasource
 
 from .utils import did_pass_test, parse_content_line
-from scheduler.utils import send_email
+from scheduler.tasks import workflow_send_email
 
 from ontask.settings import SECRET_KEY, BACKEND_DOMAIN, FRONTEND_DOMAIN
 
@@ -282,72 +282,5 @@ class Workflow(Document):
 
         return self.content
 
-    def send_email(self, job_type, email_settings=None):
-        if not email_settings:
-            email_settings = self.emailSettings
-
-        populated_content = self.populate_content()
-
-        job_id = ObjectId()
-        job = EmailJob(
-            job_id=job_id,
-            subject=email_settings.subject,
-            type=job_type,
-            included_feedback=email_settings.include_feedback and True,
-            emails=[],
-        )
-
-        failed_emails = False
-        for index, item in enumerate(self.data["records"]):
-            recipient = item.get(email_settings.field)
-            email_content = populated_content[index]
-
-            tracking_token = jwt.encode(
-                {
-                    "action_id": str(self.id),
-                    "job_id": str(job_id),
-                    "recipient": recipient,
-                },
-                SECRET_KEY,
-                algorithm="HS256",
-            ).decode("utf-8")
-
-            tracking_link = (
-                f"{BACKEND_DOMAIN}/workflow/read_receipt/?email={tracking_token}"
-            )
-            tracking_pixel = f"<img src='{tracking_link}'/>"
-            email_content += tracking_pixel
-
-            if email_settings.include_feedback:
-                feedback_link = (
-                    f"{FRONTEND_DOMAIN}/action/{self.id}/feedback/?job={job_id}"
-                )
-                email_content += (
-                    "<p>Did you find this correspondence useful? Please provide your "
-                    f"feedback by <a href='{feedback_link}'>clicking here</a>.</p>"
-                )
-
-            email_sent = send_email(
-                recipient, email_settings.subject, email_content, email_settings.replyTo
-            )
-
-            if email_sent:
-                job.emails.append(
-                    Email(
-                        recipient=recipient,
-                        # Content without the tracking pixel
-                        content=populated_content[index],
-                    )
-                )
-            else:
-                failed_emails = True
-
-        # if failed_emails:
-        # TODO: Make these records identifiable, e.g. allow user to specify the primary key of the DataLab?
-        # And send back a list of the specific records that we failed to send an email to
-        # raise ValidationError('Emails to the some records failed to send: ' + str(failed_emails).strip('[]').strip("'"))
-
-        self.emailJobs.append(job)
-        self.emailSettings = email_settings
-
-        self.save()
+    def send_email(self):
+        workflow_send_email.delay(str(self.id), job_type="Manual")
