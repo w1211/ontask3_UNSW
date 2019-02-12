@@ -28,11 +28,10 @@ class DataLab extends React.Component {
     // User pressed "Create DataLab", as the containerId is only set in the
     // location state when the navigation occurs
     if (containerId) {
-      apiRequest(`/container/${containerId}/datasources/`, {
-        method: "GET",
-        onSuccess: datasources =>
-          this.setState({ fetching: false, datasources, containerId }),
-        onError: () => this.setState({ fetching: false })
+      this.setState({
+        fetching: false,
+        datasources: _.get(location, "state.datasources", []),
+        containerId
       });
     } else if (match.params.id) {
       apiRequest(`/datalab/${match.params.id}/`, {
@@ -116,7 +115,7 @@ class DataLab extends React.Component {
                       defaultOpenKeys={["form"]}
                     >
                       <Menu.Item key="back">
-                        <Link to="/containers">
+                        <Link to="/dashboard">
                           <Icon type="arrow-left" />
                           <span>Back to containers</span>
                         </Link>
@@ -183,7 +182,7 @@ class DataLab extends React.Component {
 
                       {!selectedId && (
                         <Link
-                          to="/containers"
+                          to="/dashboard"
                           style={{ display: "inline-block", marginBottom: 20 }}
                         >
                           <Icon type="arrow-left" />
