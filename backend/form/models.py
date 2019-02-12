@@ -61,6 +61,7 @@ class Form(Document):
     permitted_users = ListField(StringField())
     restriction = StringField(choices=("private", "limited", "open"), default="private")
 
+    # Flat representation of which users should see this form when they load the dashboard
     def refresh_access(self):
         users = set(record.get(self.permission) for record in self.datalab.relations)
         users.remove(None)

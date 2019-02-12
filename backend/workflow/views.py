@@ -26,7 +26,7 @@ from .models import (
 )
 from .permissions import WorkflowPermissions
 
-from container.views import ContainerViewSet
+# from container.views import ContainerViewSet
 from container.serializers import ContainerSerializer
 from audit.models import Audit
 from audit.serializers import AuditSerializer
@@ -51,10 +51,10 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # Get the containers this user owns or has access to
-        containers = ContainerViewSet.get_queryset(self)
+        # containers = ContainerViewSet.get_queryset(self)
 
         # Retrieve only the DataLabs that belong to these containers
-        actions = Workflow.objects(container__in=containers)
+        actions = Workflow.objects.all()#(container__in=containers)
 
         return actions
 

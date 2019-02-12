@@ -35,7 +35,7 @@ from scheduler.methods import (
 )
 
 from audit.serializers import AuditSerializer
-from container.views import ContainerViewSet
+# from container.views import ContainerViewSet
 from container.serializers import ContainerSerializer
 from datalab.models import Datalab
 
@@ -47,10 +47,10 @@ class DatasourceViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # Get the containers this user owns or has access to
-        containers = ContainerViewSet.get_queryset(self)
+        # containers = ContainerViewSet.get_queryset(self)
 
         # Retrieve only the datasources that belong to these containers
-        datasources = Datasource.objects(container__in=containers)
+        datasources = Datasource.objects.all()#(container__in=containers)
 
         return datasources
 

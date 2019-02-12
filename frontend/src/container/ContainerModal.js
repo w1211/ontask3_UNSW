@@ -1,50 +1,49 @@
 import React from "react";
-import { bindActionCreators } from "redux";
-import { connect } from "react-redux";
-import { Modal, Form, Input, Alert } from "antd";
+import { Modal, Form, Input, Alert, notification } from "antd";
 import _ from "lodash";
 
-import * as ContainerActionCreators from "./ContainerActions";
-
+import apiRequest from "../shared/apiRequest";
 import formItemLayout from "../shared/FormItemLayout";
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
 
 class ContainerModal extends React.Component {
-  constructor(props) {
-    super(props);
-    const { dispatch } = props;
-
-    this.boundActionCreators = bindActionCreators(
-      ContainerActionCreators,
-      dispatch
-    );
-
-    this.state = { loading: null, error: null };
-  }
+  state = { loading: null, error: null };
 
   handleOk = () => {
-    const { form, selected, closeModal } = this.props;
+    const {
+      form,
+      selected,
+      closeModal,
+      fetchDashboard,
+      updateAccordionKey
+    } = this.props;
 
     form.validateFields((err, payload) => {
       if (err) return;
 
       this.setState({ loading: true });
 
-      const callFn = selected ? 'updateContainer' : 'createContainer';
-      this.boundActionCreators[callFn]({
-        containerId: selected && selected.id,
+      apiRequest(selected ? `/container/${selected.id}/` : "/container/", {
+        method: selected ? "PATCH" : "POST",
         payload,
-        onError: error => this.setState({ loading: false, error }),
-        onSuccess: () => {
+        onSuccess: container => {
           this.setState({ loading: false, error: null });
+          if (!selected) updateAccordionKey(container.id);
           form.resetFields();
           closeModal();
-        }
+          fetchDashboard();
+          notification["success"]({
+            message: `Container ${selected ? "updated" : "added"}`,
+            description: `The container was successfully ${
+              selected ? "updated" : "created"
+            }.`
+          });
+        },
+        onError: error => this.setState({ loading: false, error })
       });
     });
-
   };
 
   handleCancel = () => {
@@ -103,7 +102,4 @@ class ContainerModal extends React.Component {
   }
 }
 
-export default _.flow(
-  connect(),
-  Form.create()
-)(ContainerModal);
+export default Form.create()(ContainerModal);

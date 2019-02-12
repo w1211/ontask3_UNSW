@@ -10,7 +10,7 @@ import logo from "./img/logo.png";
 import { requestToken } from "./auth/AuthActions";
 
 import Login from "./auth/Login";
-import Container from "./container/Container";
+import Dashboard from "./container/Dashboard";
 import Datasource from "./datasource/Datasource";
 import DataLab from "./dataLab/DataLab";
 import Action from "./action/Action";
@@ -143,14 +143,14 @@ class App extends React.Component {
               !hasToken ? (
                 <Login onLogin={() => this.setState({ hasToken: true })} />
               ) : (
-                <Redirect to={redirectTo ? redirectTo : "/containers"} />
+                <Redirect to={redirectTo ? redirectTo : "/dashboard"} />
               )
             }
           />
 
           {this.AuthenticatedRoute({
-            path: "/containers",
-            component: Container
+            path: "/dashboard",
+            component: Dashboard,
           })}
 
           {this.AuthenticatedRoute({
@@ -169,11 +169,7 @@ class App extends React.Component {
             feedbackForm
           })}
 
-          <Route
-            exact
-            path="/forbidden"
-            component={Forbidden}
-          />
+          <Route exact path="/forbidden" component={Forbidden} />
         </Switch>
 
         <Footer className="footer">© OnTask Project 2018</Footer>

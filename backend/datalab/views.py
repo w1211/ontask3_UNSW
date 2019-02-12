@@ -13,7 +13,6 @@ from .permissions import DatalabPermissions
 from .models import Datalab
 from .utils import bind_column_types, update_form_data, retrieve_form_data, set_relations
 
-from container.views import ContainerViewSet
 from datasource.models import Datasource
 from audit.serializers import AuditSerializer
 from form.models import Form
@@ -26,10 +25,10 @@ class DatalabViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # Get the containers this user owns or has access to
-        containers = ContainerViewSet.get_queryset(self)
+        # containers = ContainerViewSet.get_queryset(self)
 
         # Retrieve only the DataLabs that belong to these containers
-        datalabs = Datalab.objects(container__in=containers)
+        datalabs = Datalab.objects.all()#(container__in=containers)
 
         return datalabs
 

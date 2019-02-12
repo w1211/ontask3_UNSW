@@ -17,10 +17,11 @@ class FormViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # Get the containers this user owns or has access to
-        containers = ContainerViewSet.get_queryset(self)
+        # containers = ContainerViewSet.get_queryset(self)
 
         # Retrieve only the forms that belong to these containers
-        forms = Form.objects(container__in=containers)
+        # TODO: filter this 
+        forms = Form.objects.all()#(container__in=containers)
 
         return forms
 

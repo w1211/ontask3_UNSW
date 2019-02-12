@@ -11,10 +11,16 @@ from workflow.models import Workflow
 from form.models import Form
 
 
+class ContainerSerializer(DocumentSerializer):
+    class Meta:
+        model = Container
+        fields = "__all__"
+
+
 class DatasourceSerializer(EmbeddedDocumentSerializer):
     class Meta:
         model = Datasource
-        fields = ["id", "name", "connection", "schedule", "lastUpdated"]
+        fields = ["id", "name", "connection", "schedule", "lastUpdated", "fields"]
 
 
 class DatasourceModuleSerializer(EmbeddedDocumentSerializer):
@@ -61,7 +67,7 @@ class ActionSerializer(EmbeddedDocumentSerializer):
         fields = ["id", "name", "description", "datalab"]
 
 
-class ContainerSerializer(DocumentSerializer):
+class DashboardSerializer(DocumentSerializer):
     datasources = serializers.SerializerMethodField()
     datalabs = serializers.SerializerMethodField()
     actions = serializers.SerializerMethodField()

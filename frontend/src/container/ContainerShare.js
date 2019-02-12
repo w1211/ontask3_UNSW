@@ -1,25 +1,13 @@
 import React from "react";
-import { bindActionCreators } from "redux";
-import { connect } from "react-redux";
 import { Modal, Form, Select, Alert, Button, notification } from "antd";
 import _ from "lodash";
 
-import * as ContainerActionCreators from "./ContainerActions";
+import apiRequest from "../shared/apiRequest";
 
 const FormItem = Form.Item;
 
 class ContainerShare extends React.Component {
-  constructor(props) {
-    super(props);
-    const { dispatch } = props;
-
-    this.boundActionCreators = bindActionCreators(
-      ContainerActionCreators,
-      dispatch
-    );
-
-    this.state = { loading: null, error: null };
-  }
+  state = { loading: null, error: null };
 
   validateEmail = values => {
     const { form } = this.props;
@@ -38,19 +26,28 @@ class ContainerShare extends React.Component {
   };
 
   handleOk = () => {
-    const { form, selected, closeModal } = this.props;
+    const { form, selected, closeModal, fetchDashboard } = this.props;
 
     const payload = form.getFieldsValue();
     this.setState({ loading: true });
 
-    this.boundActionCreators.updateContainer({
-      containerId: selected.id,
+    apiRequest(`/container/${selected.id}/`, {
+      method: "PATCH",
       payload,
-      onError: error => this.setState({ loading: false, error }),
       onSuccess: () => {
+        notification["success"]({
+          message: "Container sharing updated"
+        });
         this.setState({ loading: false, error: null });
         form.resetFields();
         closeModal();
+        fetchDashboard();
+      },
+      onError: () => {
+        notification["error"]({
+          message: "Failed to update sharing"
+        });
+        this.setState({ loading: false, error: null });
       }
     });
   };
@@ -108,7 +105,4 @@ class ContainerShare extends React.Component {
   }
 }
 
-export default _.flow(
-  connect(),
-  Form.create()
-)(ContainerShare);
+export default Form.create()(ContainerShare);
