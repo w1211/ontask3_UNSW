@@ -4,9 +4,6 @@
   flex-direction: column;
   margin-bottom: 20px;
 }
-.dataLab .model {
-  padding-right: 180px;
-}
 .dataLab .actions {
   margin-bottom: 20px;
 }
@@ -475,4 +472,39 @@
 
 .dataLab .form .ant-select-disabled .ant-select-selection {
   background: none;
+}
+
+.dataLab .components {
+  text-align: center;
+  display: inline-flex;
+  flex-direction: column;
+  border: 1px solid #d9d9d9;
+  border-radius: 5px;
+  padding: 10px;
+  background: #fafafa;
+}
+.dataLab .components > div:first-child {
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+.dataLab .components button {
+  padding: 0 11px !important;
+}
+.dataLab .components button:not(:first-child):not(:last-child) {
+  margin: 0 10px;
+}
+.dataLab .components button.datasource {
+  background: #e6f7ff;
+  border-color: #91d5ff;
+  color: #1890ff;
+}
+.dataLab .components button.form {
+  background: #f6ffed;
+  border-color: #b7eb8f;
+  color: #52c41a;
+}
+.dataLab .components button.computed {
+  background: #f9f0ff;
+  border-color: #d3adf7;
+  color: #722ed1;
 }
