@@ -1,5 +1,5 @@
 import React from "react";
-import { Form, Modal, Input, Icon, Alert, notification } from "antd";
+import { Form, Modal, Input, Alert, notification } from "antd";
 import { register } from "./AuthActions";
 
 import formItemLayout from "../shared/FormItemLayout";

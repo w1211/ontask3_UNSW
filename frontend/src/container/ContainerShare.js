@@ -1,6 +1,5 @@
 import React from "react";
 import { Modal, Form, Select, Alert, Button, notification } from "antd";
-import _ from "lodash";
 
 import apiRequest from "../shared/apiRequest";
 

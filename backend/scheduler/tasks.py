@@ -2,7 +2,6 @@ from celery import shared_task
 from celery.execute import send_task
 from django_celery_beat.models import PeriodicTask
 
-from pymongo import MongoClient
 from bson.objectid import ObjectId
 import json
 from datetime import datetime

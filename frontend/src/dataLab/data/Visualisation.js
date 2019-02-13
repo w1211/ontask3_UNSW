@@ -399,7 +399,7 @@ class VisualisationModal extends React.Component {
   }
 
   onColumnChange = column => {
-    const { form, forms } = this.props;
+    const { form } = this.props;
     const { getFieldValue, setFieldsValue, resetFields } = form;
 
     const fieldType = this.type(column);
