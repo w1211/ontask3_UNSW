@@ -4,11 +4,9 @@ from mongoengine.queryset.visitor import Q
 from rest_framework.decorators import list_route
 from django.http import JsonResponse
 
-import requests
 import json
 import re
 import dateutil.parser
-import requests
 from .serializers import AuditSerializer
 from .models import Audit
 from .permissions import AuditPermissions
