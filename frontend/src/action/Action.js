@@ -19,21 +19,20 @@ class Action extends React.Component {
   state = { fetching: true };
 
   componentWillMount() {
-    const { location, match } = this.props;
+    const { match, isFeedbackForm } = this.props;
 
-    const isFeedbackForm = location.pathname.split("/")[3] === "feedback";
     const actionId = match.params.id;
     const jobId = queryString.parse(window.location.search).job;
+    const emailId = queryString.parse(window.location.search).email;
 
     if (isFeedbackForm) {
-      this.setState({ isFeedbackForm });
-
-      apiRequest(`/feedback/${actionId}/?job=${jobId}`, {
+      apiRequest(`/feedback/${actionId}/?job=${jobId}&email=${emailId}`, {
         method: "GET",
+        isAuthenticated: false,
         onSuccess: feedback =>
           this.setState({
             fetching: false,
-            feedback: { ...feedback, actionId, jobId }
+            feedback: { ...feedback, actionId, jobId, emailId }
           }),
         onError: () => this.setState({ fetching: false })
       });
@@ -51,8 +50,8 @@ class Action extends React.Component {
   };
 
   render() {
-    const { match, location } = this.props;
-    const { fetching, action, isFeedbackForm, feedback } = this.state;
+    const { match, location, isFeedbackForm } = this.props;
+    const { fetching, action, feedback } = this.state;
 
     return (
       <div className={`action ${isFeedbackForm && "is_feedback_form"}`}>
@@ -118,6 +117,13 @@ class Action extends React.Component {
 
                   {fetching ? (
                     <Spin size="large" />
+                  ) : isFeedbackForm ? (
+                    <Route
+                      path={`${match.url}`}
+                      render={props => (
+                        <Feedback {...props} feedback={feedback} />
+                      )}
+                    />
                   ) : (
                     <Switch>
                       <Redirect
@@ -145,13 +151,6 @@ class Action extends React.Component {
                             action={action}
                             updateAction={this.updateAction}
                           />
-                        )}
-                      />
-
-                      <Route
-                        path={`${match.url}/feedback`}
-                        render={props => (
-                          <Feedback {...props} feedback={feedback} />
                         )}
                       />
 

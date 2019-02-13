@@ -95,7 +95,7 @@ class App extends React.Component {
     }
 
     const webForm = pathName[2] === "form";
-    const feedbackForm = pathName[2] === "feedback";
+    const feedbackForm = pathName[0] === "feedback";
 
     const redirectTo = _.get(location, "state.redirectTo");
     const shouldRedirectToAAF = _.get(location, "state.shouldRedirectToAAF");
@@ -165,11 +165,15 @@ class App extends React.Component {
 
           {this.AuthenticatedRoute({
             path: "/action/:id",
-            component: Action,
-            feedbackForm
+            component: Action
           })}
 
           <Route exact path="/forbidden" component={Forbidden} />
+          
+          <Route
+            path="/feedback/:id"
+            render={props => <Action {...props} isFeedbackForm />}
+          />
         </Switch>
 
         <Footer className="footer">© OnTask Project 2018</Footer>

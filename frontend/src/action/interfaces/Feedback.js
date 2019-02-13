@@ -32,7 +32,7 @@ class Feedback extends React.Component {
   submitFeedback = () => {
     const { feedback } = this.props;
     const { dropdown, textbox } = this.state;
-    const { actionId, jobId } = feedback;
+    const { actionId, jobId, emailId } = feedback;
 
     if (!dropdown && !textbox) {
       notification["warning"]({
@@ -44,8 +44,9 @@ class Feedback extends React.Component {
 
     this.setState({ loading: true, error: null });
 
-    apiRequest(`/feedback/${actionId}/?job=${jobId}`, {
+    apiRequest(`/feedback/${actionId}/?job=${jobId}&email=${emailId}`, {
       method: "POST",
+      isAuthenticated: false,
       payload: { dropdown, textbox },
       onSuccess: response => {
         if ("error" in response) {
@@ -171,14 +172,14 @@ class Feedback extends React.Component {
               <div className="value">
                 {moment(feedback.email_datetime).format("DD/MM/YYYY, HH:mm")}
               </div>
-              <div className="field">Correspondence:</div>
+              {/* <div className="field">Correspondence:</div>
               <div
                 style={{ marginTop: 10 }}
                 className="email_content"
                 dangerouslySetInnerHTML={{
                   __html: feedback.content
                 }}
-              />
+              /> */}
             </div>
           </div>
         )}
