@@ -80,7 +80,8 @@ class Email extends React.Component {
         onSuccess: () => {
           notification["success"]({
             message: "Email job successfully initiated",
-            description: "Upon completion, you will receive an email outlining the job summary"
+            description:
+              "Upon completion, you will receive an email outlining the job summary"
           });
           this.setState({ sending: false });
           history.push("/containers");
@@ -264,7 +265,7 @@ class Email extends React.Component {
         }
       ]}
       dataSource={job.emails}
-      rowKey="recipient"
+      rowKey="email_id"
       pagination={{ size: "small", pageSize: 5 }}
     />
   );

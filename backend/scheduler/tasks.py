@@ -7,6 +7,7 @@ from bson.objectid import ObjectId
 import json
 from datetime import datetime
 import jwt
+import uuid
 
 from datasource.models import Datasource
 
@@ -62,6 +63,8 @@ def refresh_datasource_data(datasource_id):
 @shared_task
 def workflow_send_email(action_id, job_type="Scheduled"):
     """ Send email based on the schedule in workflow model """
+    print("Email job initiated")
+    
     from workflow.models import Workflow, EmailJob, Email
 
     action = Workflow.objects.get(id=ObjectId(action_id))
@@ -85,8 +88,13 @@ def workflow_send_email(action_id, job_type="Scheduled"):
         recipient = item.get(email_settings.field)
         email_content = populated_content[index]
 
+        email_id = uuid.uuid4().hex
         tracking_token = jwt.encode(
-            {"action_id": str(action.id), "job_id": str(job_id), "recipient": recipient},
+            {
+                "action_id": str(action.id),
+                "job_id": str(job_id),
+                "email_id": str(email_id),
+            },
             SECRET_KEY,
             algorithm="HS256",
         ).decode("utf-8")
@@ -98,7 +106,9 @@ def workflow_send_email(action_id, job_type="Scheduled"):
         email_content += tracking_pixel
 
         if email_settings.include_feedback:
-            feedback_link = f"{FRONTEND_DOMAIN}/action/{action.id}/feedback/?job={job_id}"
+            feedback_link = (
+                f"{FRONTEND_DOMAIN}/feedback/{action.id}/?job={job_id}&email={email_id}"
+            )
             email_content += (
                 "<p>Did you find this correspondence useful? Please provide your "
                 f"feedback by <a href='{feedback_link}'>clicking here</a>.</p>"
@@ -113,6 +123,7 @@ def workflow_send_email(action_id, job_type="Scheduled"):
         if email_sent:
             job.emails.append(
                 Email(
+                    email_id=email_id,
                     recipient=recipient,
                     # Content without the tracking pixel
                     content=populated_content[index],
@@ -125,17 +136,22 @@ def workflow_send_email(action_id, job_type="Scheduled"):
     action.emailJobs.append(job)
 
     action.save()
+    if len(failures) == 0:
+        send_email(
+            email_settings.replyTo,
+            "Email job completed",
+            f"All {len(successes)} emails were successfully sent",
+        )
+    else:
+        failures_concat = ", ".join(failures)
+        send_email(
+            email_settings.replyTo,
+            "Email job completed",
+            f"""
+                The following {len(failures)} emails were unsuccessful: {failures_concat}
+                <br><br>
+                The other {len(successes)} emails were successfully sent
+            """,
+        )
 
-    successes = ", ".join(successes)
-    failures = ", ".join(failures)
-    send_email(
-        email_settings.replyTo,
-        "Email job completed",
-        f"""
-            The following emails sent successfully: {successes}
-            <br><br>
-            The following emails were unsuccessful: {failures}
-        """,
-    )
-
-    return "Emails sent successfully"
+    return "Email job completed"

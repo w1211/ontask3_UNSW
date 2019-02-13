@@ -92,6 +92,7 @@ class EmailSettings(EmbeddedDocument):
 
 
 class Email(EmbeddedDocument):
+    email_id = StringField()
     recipient = StringField()
     content = StringField()
     list_feedback = StringField()

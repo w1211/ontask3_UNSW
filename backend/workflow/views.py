@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
 from rest_framework.decorators import detail_route, list_route
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.http import HttpResponse, JsonResponse
 
@@ -204,7 +204,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         return Response({"success": "true"})
 
-    @list_route(methods=["get"], permission_classes=[])
+    @list_route(methods=["get"], permission_classes=[AllowAny])
     def read_receipt(self, request):
         token = request.GET.get("email")
         decrypted_token = None
@@ -220,9 +220,9 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
             did_update = False
             for job in action.emailJobs:
-                if job.job_id == ObjectId(decrypted_token["job_id"]):
+                if str(job.job_id) == decrypted_token["job_id"]:
                     for email in job.emails:
-                        if email.recipient == decrypted_token["recipient"]:
+                        if email.email_id == decrypted_token["email_id"]:
                             if not email.first_tracked:
                                 email.first_tracked = datetime.utcnow()
                             else:
@@ -275,7 +275,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
 
 class FeedbackView(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = [AllowAny]
 
     def get(self, request, format=None, *args, **kwargs):
         try:
@@ -288,12 +288,13 @@ class FeedbackView(APIView):
             )
 
         job_id = request.GET.get("job")
+        email_id = request.GET.get("email")
 
         payload = None
         for job in action.emailJobs:
             if str(job.job_id) == job_id and job.included_feedback:
                 for email in job.emails:
-                    if email.recipient == request.user.email:
+                    if email.email_id == email_id:
                         payload = {
                             "dropdown": {
                                 "enabled": action.emailSettings.feedback_list,
@@ -312,14 +313,14 @@ class FeedbackView(APIView):
                             },
                             "subject": job.subject,
                             "email_datetime": job.initiated_at,
-                            "content": email.content,
+                            # "content": email.content,
                             "feedback_datetime": email.feedback_datetime,
                         }
 
         if not payload:
             return JsonResponse(
                 {
-                    "error": "You are not authorized to provide feedback for this correspondence"
+                    "error": "Invalid feedback URL"
                 }
             )
 
@@ -328,6 +329,7 @@ class FeedbackView(APIView):
     def post(self, request, format=None, *args, **kwargs):
         action = Workflow.objects.get(id=kwargs.get("datalab_id"))
         job_id = request.GET.get("job")
+        email_id = request.GET.get("email")
 
         dropdown = request.data["dropdown"]
         textbox = request.data["textbox"]
@@ -339,7 +341,7 @@ class FeedbackView(APIView):
         for job in action.emailJobs:
             if str(job.job_id) == job_id and job.included_feedback:
                 for email in job.emails:
-                    if email.recipient == request.user.email:
+                    if email.email_id == email_id:
                         email.textbox_feedback = textbox
                         email.list_feedback = dropdown
                         email.feedback_datetime = datetime.utcnow()
