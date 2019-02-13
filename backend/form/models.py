@@ -53,8 +53,6 @@ class Form(Document):
     activeFrom = DateTimeField(null=True)
     activeTo = DateTimeField(null=True)
     ltiAccess = BooleanField(default=False)
-    ltiPermission = StringField(null=True)
-    ltiResourceId = StringField(null=True)
     emailAccess = BooleanField(default=False)
     permission = StringField(null=True)
     data = ListField(DictField())

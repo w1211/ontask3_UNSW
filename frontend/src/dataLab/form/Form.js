@@ -594,29 +594,6 @@ class DataLabForm extends React.Component {
           })(<Checkbox />)}
         </Form.Item>
 
-        {getFieldValue("ltiAccess") && (
-          <Form.Item {...formItemLayout} label="LTI permission field">
-            {getFieldDecorator("ltiPermission", {
-              rules: [
-                { required: true, message: "LTI permission field is required" }
-              ],
-              initialValue: _.get(formDetails, "ltiPermission")
-            })(
-              <Select>
-                <Select.Option value="ext_user_username" key="username">
-                  Username (zID)
-                </Select.Option>
-                <Select.Option
-                  value="lis_person_contact_email_primary"
-                  key="email"
-                >
-                  Email
-                </Select.Option>
-              </Select>
-            )}
-          </Form.Item>
-        )}
-
         {(getFieldValue("ltiAccess") || getFieldValue("emailAccess")) && (
           <div>
             <Form.Item
