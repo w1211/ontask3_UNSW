@@ -84,7 +84,7 @@ class Email extends React.Component {
               "Upon completion, you will receive an email outlining the job summary"
           });
           this.setState({ sending: false });
-          history.push("/containers");
+          history.push("/dashboard");
         },
         onError: error => this.setState({ error })
       });

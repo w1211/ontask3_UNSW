@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Switch, Route, Redirect } from "react-router-dom";
-import { Layout, Breadcrumb, Icon, Spin, Menu } from "antd";
+import { Layout, Icon, Spin, Menu } from "antd";
 import queryString from "query-string";
 
 import Compose from "./interfaces/Compose";
@@ -56,18 +56,6 @@ class Action extends React.Component {
     return (
       <div className={`action ${isFeedbackForm && "is_feedback_form"}`}>
         <Content className="wrapper">
-          {!isFeedbackForm && (
-            <Breadcrumb className="breadcrumbs">
-              <Breadcrumb.Item>
-                <Link to="/">Dashboard</Link>
-              </Breadcrumb.Item>
-              <Breadcrumb.Item>
-                <Link to="/containers">Containers</Link>
-              </Breadcrumb.Item>
-              <Breadcrumb.Item>Action</Breadcrumb.Item>
-            </Breadcrumb>
-          )}
-
           <Layout className="layout">
             <Content className="content">
               <Layout className="content_body">
@@ -79,9 +67,9 @@ class Action extends React.Component {
                       style={{ height: "100%" }}
                     >
                       <Menu.Item key="back">
-                        <Link to="/containers">
+                        <Link to="/dashboard">
                           <Icon type="arrow-left" />
-                          <span>Back to containers</span>
+                          <span>Back to dashboard</span>
                         </Link>
                       </Menu.Item>
 

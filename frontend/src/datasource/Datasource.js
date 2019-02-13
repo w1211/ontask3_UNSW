@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Switch, Route, Redirect } from "react-router-dom";
-import { Layout, Breadcrumb, Icon, Spin, Menu, notification, Tag } from "antd";
+import { Layout, Icon, Spin, Menu, notification, Tag } from "antd";
 import _ from "lodash";
 
 import Settings from "./interfaces/DatasourceSettings";
@@ -39,7 +39,7 @@ class Datasource extends React.Component {
     } else if (!_.get(location, "state.containerId")) {
       // The user must have cold-loaded the URL, so we have no container to reference
       // Therefore redirect the user back to the container list
-      history.push("/containers");
+      history.push("/dashboard");
     }
   }
 
@@ -110,16 +110,6 @@ class Datasource extends React.Component {
     return (
       <div>
         <Content className="wrapper">
-          <Breadcrumb className="breadcrumbs">
-            <Breadcrumb.Item>
-              <Link to="/">Dashboard</Link>
-            </Breadcrumb.Item>
-            <Breadcrumb.Item>
-              <Link to="/containers">Containers</Link>
-            </Breadcrumb.Item>
-            <Breadcrumb.Item>Datasource</Breadcrumb.Item>
-          </Breadcrumb>
-
           <Layout className="layout">
             <Content className="content">
               <Layout className="content_body">
@@ -131,9 +121,9 @@ class Datasource extends React.Component {
                       style={{ height: "100%" }}
                     >
                       <Menu.Item key="back">
-                        <Link to="/containers">
+                        <Link to="/dashboard">
                           <Icon type="arrow-left" />
-                          <span>Back to containers</span>
+                          <span>Back to dashboard</span>
                         </Link>
                       </Menu.Item>
 
@@ -182,11 +172,11 @@ class Datasource extends React.Component {
 
                       {!datasourceId && (
                         <Link
-                          to="/containers"
+                          to="/dashboard"
                           style={{ display: "inline-block", marginBottom: 20 }}
                         >
                           <Icon type="arrow-left" />
-                          <span>Back to containers</span>
+                          <span>Back to dashboard</span>
                         </Link>
                       )}
 

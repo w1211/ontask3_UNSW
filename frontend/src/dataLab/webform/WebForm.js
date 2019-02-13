@@ -14,7 +14,7 @@ class WebForm extends React.Component {
   };
 
   componentDidMount() {
-    const { match, dataLabId, showBreadcrumbs } = this.props;
+    const { match, dataLabId } = this.props;
     const { moduleIndex } = match.params;
 
     apiRequest(`/datalab/retrieve_form/`, {
@@ -34,7 +34,6 @@ class WebForm extends React.Component {
             // to their own record (based on the email they logged in with).
             singleRecordIndex: form.data.length === 1 ? 0 : null
           });
-          if (form.is_owner_or_shared) showBreadcrumbs();
         }
       },
       onError: () => this.setState({ isFetching: false })

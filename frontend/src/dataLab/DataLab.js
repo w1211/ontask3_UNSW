@@ -1,6 +1,6 @@
 import React from "react";
 import { Switch, Route, Link, Redirect } from "react-router-dom";
-import { Spin, Layout, Breadcrumb, Icon, Menu } from "antd";
+import { Spin, Layout, Icon, Menu } from "antd";
 import { DragDropContext } from "react-dnd";
 import HTML5Backend from "react-dnd-html5-backend";
 import _ from "lodash";
@@ -47,7 +47,7 @@ class DataLab extends React.Component {
     } else {
       // The user must have cold-loaded the URL, so we have no container to reference
       // Therefore redirect the user back to the container list
-      history.push("/containers");
+      history.push("/dashboard");
     }
   }
 
@@ -93,16 +93,6 @@ class DataLab extends React.Component {
     return (
       <div className="dataLab">
         <Content className="wrapper">
-          <Breadcrumb className="breadcrumbs">
-            <Breadcrumb.Item>
-              <Link to="/">Dashboard</Link>
-            </Breadcrumb.Item>
-            <Breadcrumb.Item>
-              <Link to="/containers">Containers</Link>
-            </Breadcrumb.Item>
-            <Breadcrumb.Item>DataLab</Breadcrumb.Item>
-          </Breadcrumb>
-
           <Layout className="layout">
             <Content className="content">
               <Layout className="content_body">
@@ -117,7 +107,7 @@ class DataLab extends React.Component {
                       <Menu.Item key="back">
                         <Link to="/dashboard">
                           <Icon type="arrow-left" />
-                          <span>Back to containers</span>
+                          <span>Back to dashboard</span>
                         </Link>
                       </Menu.Item>
 
@@ -186,7 +176,7 @@ class DataLab extends React.Component {
                           style={{ display: "inline-block", marginBottom: 20 }}
                         >
                           <Icon type="arrow-left" />
-                          <span>Back to containers</span>
+                          <span>Back to dashboard</span>
                         </Link>
                       )}
 
