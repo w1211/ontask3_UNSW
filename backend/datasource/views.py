@@ -34,7 +34,6 @@ from scheduler.methods import (
     remove_async_task,
 )
 
-from audit.serializers import AuditSerializer
 # from container.views import ContainerViewSet
 from container.serializers import ContainerSerializer
 from datalab.models import Datalab

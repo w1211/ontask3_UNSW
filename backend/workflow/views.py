@@ -28,8 +28,6 @@ from .permissions import WorkflowPermissions
 
 # from container.views import ContainerViewSet
 from container.serializers import ContainerSerializer
-from audit.models import Audit
-from audit.serializers import AuditSerializer
 
 from scheduler.methods import (
     create_scheduled_task,
@@ -254,18 +252,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         serializer = ActionSerializer(data=action)
         serializer.is_valid()
         serializer.save()
-
-        audit = AuditSerializer(
-            data={
-                "model": "action",
-                "document": str(id),
-                "action": "clone",
-                "user": self.request.user.email,
-                "diff": {"new_document": str(serializer.instance.id)},
-            }
-        )
-        audit.is_valid()
-        audit.save()
 
         containers = ContainerViewSet.get_queryset(self)
         serializer = ContainerSerializer(containers, many=True)

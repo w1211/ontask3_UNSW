@@ -4,7 +4,6 @@ import numexpr as ne
 
 from .models import Datalab
 from datasource.models import Datasource
-from audit.serializers import AuditSerializer
 from workflow.models import Workflow
 from form.models import Form
 

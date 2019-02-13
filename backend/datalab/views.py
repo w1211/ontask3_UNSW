@@ -14,7 +14,6 @@ from .models import Datalab
 from .utils import bind_column_types, update_form_data, retrieve_form_data, set_relations
 
 from datasource.models import Datasource
-from audit.serializers import AuditSerializer
 from form.models import Form
 
 
@@ -58,17 +57,9 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 )
 
         datalab = serializer.save(steps=steps, order=order)
-
-        audit = AuditSerializer(
-            data={
-                "model": "datalab",
-                "document": str(datalab.id),
-                "action": "create",
-                "user": self.request.user.email,
-            }
-        )
-        audit.is_valid()
-        audit.save()
+        relations = set_relations(datalab)
+        datalab.relations = relations
+        datalab.save()
 
     def perform_update(self, serializer):
         datalab = self.get_object()
@@ -143,16 +134,6 @@ class DatalabViewSet(viewsets.ModelViewSet):
         self.check_object_permissions(self.request, datalab)
         datalab.delete()
 
-        audit = AuditSerializer(
-            data={
-                "model": "datalab",
-                "document": str(datalab.id),
-                "action": "delete",
-                "user": self.request.user.email,
-            }
-        )
-        audit.is_valid()
-        audit.save()
 
     @action(detail=False, methods=["post"])
     def check_discrepencies(self, request):
@@ -223,22 +204,6 @@ class DatalabViewSet(viewsets.ModelViewSet):
         serializer.is_valid()
         serializer.save()
 
-        audit = AuditSerializer(
-            data={
-                "model": "datalab",
-                "document": str(datalab.id),
-                "action": "change_column_order",
-                "user": self.request.user.email,
-                "diff": {
-                    "field": field["field"],
-                    "from": drag_index,
-                    "to": hover_index,
-                },
-            }
-        )
-        audit.is_valid()
-        audit.save()
-
         return JsonResponse(serializer.data)
 
     @detail_route(methods=["patch"])
@@ -266,22 +231,6 @@ class DatalabViewSet(viewsets.ModelViewSet):
         serializer.is_valid()
         serializer.save()
 
-        audit = AuditSerializer(
-            data={
-                "model": "datalab",
-                "document": str(datalab.id),
-                "action": "change_column_visibility",
-                "user": self.request.user.email,
-                "diff": {
-                    "field": order[column_index]["field"],
-                    "from": not visible,
-                    "to": visible,
-                },
-            }
-        )
-        audit.is_valid()
-        audit.save()
-
         return JsonResponse(serializer.data)
 
     @detail_route(methods=["patch"])
@@ -308,22 +257,6 @@ class DatalabViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid()
         serializer.save()
-
-        audit = AuditSerializer(
-            data={
-                "model": "datalab",
-                "document": str(datalab.id),
-                "action": "change_pinned_status",
-                "user": self.request.user.email,
-                "diff": {
-                    "field": order[column_index]["field"],
-                    "from": not pinned,
-                    "to": pinned,
-                },
-            }
-        )
-        audit.is_valid()
-        audit.save()
 
         return JsonResponse(serializer.data)
 
@@ -458,17 +391,5 @@ class DatalabViewSet(viewsets.ModelViewSet):
         serializer = DatalabSerializer(data=datalab)
         serializer.is_valid()
         serializer.save()
-
-        audit = AuditSerializer(
-            data={
-                "model": "datalab",
-                "document": str(id),
-                "action": "clone",
-                "user": self.request.user.email,
-                "diff": {"new_document": str(serializer.instance.id)},
-            }
-        )
-        audit.is_valid()
-        audit.save()
 
         return JsonResponse({"success": 1})

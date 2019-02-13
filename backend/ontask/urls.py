@@ -26,14 +26,12 @@ from datasource.views import DatasourceViewSet
 from datalab.views import DatalabViewSet
 from form.views import FormViewSet
 from workflow.views import WorkflowViewSet, FeedbackView
-from audit.views import AuditViewSet
 
 router = routers.DefaultRouter()
 router.register("datasource", DatasourceViewSet, "datasource")
 router.register("datalab", DatalabViewSet, "datalab")
 router.register("form", FormViewSet, "form")
 router.register("workflow", WorkflowViewSet, "workflow")
-router.register("audit", AuditViewSet, "audit")
 
 urlpatterns = [
     path("auth/", include("accounts.urls")),
