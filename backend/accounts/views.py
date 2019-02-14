@@ -12,13 +12,15 @@ from pylti.common import LTIException, verify_request_common
 from jwt import decode
 import os
 
-from .models import OneTimeToken
+from .models import OneTimeToken, lti
 from .utils import (
     get_or_create_user,
     generate_one_time_token,
     seed_data,
     user_signup_notification,
 )
+
+from container.models import Container
 
 from ontask.settings import SECRET_KEY, AAF_CONFIG, LTI_CONFIG, FRONTEND_DOMAIN
 
@@ -61,7 +63,13 @@ class LocalAuth(APIView):
             )
 
         long_term_token, _ = Token.objects.get_or_create(user=user)
-        return Response({"token": str(long_term_token), "email": user.email})
+        return Response(
+            {
+                "token": str(long_term_token),
+                "email": user.email,
+                "name": f"{user.first_name} {user.last_name}",
+            }
+        )
 
 
 class AAFAuth(APIView):
@@ -85,7 +93,7 @@ class AAFAuth(APIView):
         data = {
             "email": user_attributes["mail"],
             "first_name": user_attributes["givenname"],
-            "last_name": user_attributes["surname"]
+            "last_name": user_attributes["surname"],
         }
         user = get_or_create_user(data)
 
@@ -125,13 +133,33 @@ class LTIAuth(APIView):
         data = {
             "email": payload["lis_person_contact_email_primary"],
             "first_name": payload["lis_person_name_given"],
-            "last_name": payload["lis_person_name_family"]
+            "last_name": payload["lis_person_name_family"],
         }
         user = get_or_create_user(data)
 
         token = generate_one_time_token(user)
 
-        return redirect(FRONTEND_DOMAIN + "?tkn=" + token)
+        # Store the important LTI fields for this user
+        # These fields be used to grant permissions in containers
+        lti_payload = {
+            "user_id": payload["user_id"],
+            "ext_user_username": payload["ext_user_username"],
+        }
+        lti.objects(user=user.id).update_one(payload=lti_payload, upsert=True)
+
+        # If any containers have been bound to this LTI resource, then
+        # redirect to that container
+        # Otherwise, prompt the user to choose a container for binding
+        lti_resource_id = payload["resource_link_id"]
+        try:
+            container = Container.objects.get(lti_resource=lti_resource_id)
+            return redirect(
+                FRONTEND_DOMAIN + "?tkn=" + token + "&container=" + str(container.id)
+            )
+        except:
+            return redirect(
+                FRONTEND_DOMAIN + "?tkn=" + token + "&lti=" + lti_resource_id
+            )
 
 
 class ValidateOneTimeToken(APIView):
@@ -166,4 +194,10 @@ class ValidateOneTimeToken(APIView):
         # Get or create a long term token for this user
         long_term_token, _ = Token.objects.get_or_create(user=user)
 
-        return Response({"token": str(long_term_token), "email": user.email})
+        return Response(
+            {
+                "token": str(long_term_token),
+                "email": user.email,
+                "name": f"{user.first_name} {user.last_name}",
+            }
+        )

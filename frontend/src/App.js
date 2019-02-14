@@ -31,13 +31,14 @@ class App extends React.Component {
   logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("email");
+    localStorage.removeItem("name");
     this.setState({ hasToken: false });
   };
 
   finishRequestToken = response => {
     localStorage.setItem("token", response.token);
     localStorage.setItem("email", response.email);
-    this.setState({ hasToken: true });
+    localStorage.setItem("name", response.name);
   };
 
   componentWillMount() {
@@ -110,11 +111,16 @@ class App extends React.Component {
 
           {hasToken && (
             <div className="logout">
+              <span style={{ marginRight: 10 }}>
+                Logged in as: <strong>{localStorage.getItem("name")}</strong>
+              </span>
+              <Tooltip title="Logout">
               <Button icon="logout" onClick={this.logout} />
+              </Tooltip>
             </div>
           )}
 
-          {!feedbackForm && (
+          {/* {!feedbackForm && (
             <Menu
               mode="horizontal"
               defaultSelectedKeys={[menuKey]}
@@ -132,7 +138,7 @@ class App extends React.Component {
               <Menu.Item key="help">Help</Menu.Item>
               <Menu.Item key="contact">Contact</Menu.Item>
             </Menu>
-          )}
+          )} */}
         </Header>
 
         <Switch>

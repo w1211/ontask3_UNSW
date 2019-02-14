@@ -498,12 +498,12 @@
   border-color: #91d5ff;
   color: #1890ff;
 }
-.dataLab .components button.form {
+.dataLab .components button.computed {
   background: #f6ffed;
   border-color: #b7eb8f;
   color: #52c41a;
 }
-.dataLab .components button.computed {
+.dataLab .components button.form {
   background: #f9f0ff;
   border-color: #d3adf7;
   color: #722ed1;
