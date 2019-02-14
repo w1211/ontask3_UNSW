@@ -7,11 +7,12 @@ import {
   Modal,
   Select,
   Tooltip,
-  Tabs,
+  List,
   Collapse,
-  notification
+  notification,
+  Menu,
+  Card
 } from "antd";
-import _ from "lodash";
 
 import ContainerModal from "./ContainerModal";
 import ContainerShare from "./ContainerShare";
@@ -28,7 +29,6 @@ import apiRequest from "../shared/apiRequest";
 import "./Container.css";
 
 const { Content } = Layout;
-const TabPane = Tabs.TabPane;
 const Panel = Collapse.Panel;
 
 class Dashboard extends React.Component {
@@ -52,7 +52,11 @@ class Dashboard extends React.Component {
 
         if (!accordionKey || !tabKey) {
           accordionKey = dashboard[0].id;
-          tabKey = "datasources" in dashboard[0] && "datasources";
+          tabKey = dashboard[0].has_full_permission
+            ? "datasources"
+            : ["information_submission"].find(
+                type => dashboard[0][type].length > 0
+              );
         }
 
         this.setState({
@@ -257,69 +261,72 @@ class Dashboard extends React.Component {
       <div>
         {container.code}
 
-        <div className="header_buttons">
-          {!isOwner ? (
-            <Tooltip title={`This container is owned by ${container.owner}`}>
-              <span className="shared">SHARED</span>
-            </Tooltip>
-          ) : (
-            <Tooltip title="Share container">
+        {container.has_full_permission && (
+          <div className="header_buttons">
+            {!isOwner ? (
+              <Tooltip title={`This container is owned by ${container.owner}`}>
+                <span className="shared">SHARED</span>
+              </Tooltip>
+            ) : (
+              <Tooltip title="Share container">
+                <Button
+                  icon="share-alt"
+                  onClick={e => {
+                    e.stopPropagation();
+                    this.openModal({ type: "sharing", selected: container });
+                  }}
+                />
+              </Tooltip>
+            )}
+
+            <Tooltip title="Edit container">
               <Button
-                icon="share-alt"
+                icon="edit"
                 onClick={e => {
                   e.stopPropagation();
-                  this.openModal({ type: "sharing", selected: container });
+                  this.openModal({ type: "container", selected: container });
                 }}
               />
             </Tooltip>
-          )}
 
-          <Tooltip title="Edit container">
-            <Button
-              icon="edit"
-              onClick={e => {
-                e.stopPropagation();
-                this.openModal({ type: "container", selected: container });
-              }}
-            />
-          </Tooltip>
+            {container.lti_resource && (
+              <Tooltip title="Remove resource binding">
+                <Button
+                  type="danger"
+                  icon="disconnect"
+                  onClick={e => {
+                    e.stopPropagation();
+                    this.removeBinding(container.id);
+                  }}
+                >
+                  Remove binding
+                </Button>
+              </Tooltip>
+            )}
 
-          {container.lti_resource && (
-            <Tooltip title="Remove resource binding">
+            <Tooltip title={isOwner ? "Delete container" : "Remove sharing"}>
               <Button
                 type="danger"
-                icon="disconnect"
+                icon={isOwner ? "delete" : "close"}
+                loading={container.id in deleting && deleting[container.id]}
                 onClick={e => {
                   e.stopPropagation();
-                  this.removeBinding(container.id);
+                  if (isOwner) {
+                    this.deleteContainer(container.id);
+                  } else {
+                    this.surrenderAccess(container.id);
+                  }
                 }}
-              >
-                Remove binding
-              </Button>
+              />
             </Tooltip>
-          )}
-
-          <Tooltip title={isOwner ? "Delete container" : "Remove sharing"}>
-            <Button
-              type="danger"
-              icon={isOwner ? "delete" : "close"}
-              loading={container.id in deleting && deleting[container.id]}
-              onClick={e => {
-                e.stopPropagation();
-                if (isOwner) {
-                  this.deleteContainer(container.id);
-                } else {
-                  this.surrenderAccess(container.id);
-                }
-              }}
-            />
-          </Tooltip>
-        </div>
+          </div>
+        )}
       </div>
     );
   };
 
   ContainerList = () => {
+    const { history } = this.props;
     const { accordionKey, tabKey, dashboard } = this.state;
 
     return (
@@ -328,10 +335,15 @@ class Dashboard extends React.Component {
           accordion
           onChange={accordionKey => {
             if (accordionKey) {
-              const tabKey =
-                "datasources" in
-                  dashboard.find(container => container.id === accordionKey) &&
-                "datasources";
+              const container = dashboard.find(
+                container => container.id === accordionKey
+              );
+
+              const tabKey = container.has_full_permission
+                ? "datasources"
+                : ["information_submission"].find(
+                    type => container[type].length > 0
+                  );
 
               this.setState({ accordionKey, tabKey });
               localStorage.setItem("accordionKey", accordionKey);
@@ -344,55 +356,102 @@ class Dashboard extends React.Component {
           }}
           activeKey={accordionKey}
         >
-          {dashboard.map((container, i) => {
-            const numDatasources = _.get(container, "datasources.length", 0);
-            const numDataLabs = _.get(container, "datalabs.length", 0);
-            const numActions = _.get(container, "actions.length", 0);
-
-            return (
-              <Panel
-                header={this.Header(container)}
-                key={container.id}
-                style={{ background: i.toString() === accordionKey && "#eee" }}
-              >
-                <Tabs
-                  activeKey={tabKey}
-                  tabPosition="left"
-                  tabBarStyle={{ minWidth: 160 }}
-                  onChange={tabKey => {
+          {dashboard.map((container, i) => (
+            <Panel
+              header={this.Header(container)}
+              key={container.id}
+              style={{ background: i.toString() === accordionKey && "#eee" }}
+            >
+              <div style={{ display: "flex" }}>
+                <Menu
+                  mode="inline"
+                  selectedKeys={[tabKey]}
+                  onSelect={e => {
+                    const tabKey = e.key;
                     this.setState({ tabKey });
                     localStorage.setItem("tabKey", tabKey);
                   }}
+                  style={{ maxWidth: 250 }}
                 >
-                  <TabPane
-                    tab={`Datasources (${numDatasources})`}
-                    key="datasources"
-                  >
-                    <DatasourceTab
-                      containerId={container.id}
-                      datasources={container.datasources}
-                    />
-                  </TabPane>
+                  {container.has_full_permission && [
+                    <Menu.Item key="datasources">
+                      Datasources ({container.datasources.length})
+                    </Menu.Item>,
+                    <Menu.Item key="datalabs">
+                      DataLabs ({container.datalabs.length})
+                    </Menu.Item>,
+                    <Menu.Item key="actions">
+                      Actions ({container.actions.length})
+                    </Menu.Item>
+                  ]}
 
-                  <TabPane tab={`DataLabs (${numDataLabs})`} key="datalabs">
+                  {container.has_full_permission &&
+                    ["information_submission"].some(
+                      type => container[type].length > 0
+                    ) && <Menu.Divider />}
+
+                  {container.information_submission.length > 0 && (
+                    <Menu.Item key="information_submission">
+                      Information Submission (
+                      {container.information_submission.length})
+                    </Menu.Item>
+                  )}
+                </Menu>
+
+                <div style={{ flex: 1, margin: "4px 0 0 20px" }}>
+                  {container.has_full_permission &&
+                    tabKey === "datasources" && (
+                      <DatasourceTab
+                        containerId={container.id}
+                        datasources={container.datasources}
+                      />
+                    )}
+
+                  {container.has_full_permission && tabKey === "datalabs" && (
                     <DataLabTab
                       containerId={container.id}
                       datasources={container.datasources}
                       dataLabs={container.datalabs}
                     />
-                  </TabPane>
+                  )}
 
-                  <TabPane tab={`Actions (${numActions})`} key="actions">
+                  {container.has_full_permission && tabKey === "actions" && (
                     <ActionTab
                       containerId={container.id}
                       dataLabs={container.datalabs}
                       actions={container.actions}
                     />
-                  </TabPane>
-                </Tabs>
-              </Panel>
-            );
-          })}
+                  )}
+
+                  {tabKey === "information_submission" && (
+                    <List
+                      grid={{
+                        gutter: 16
+                      }}
+                      dataSource={container.information_submission}
+                      renderItem={form => (
+                        <List.Item>
+                          <Card title={form.name} style={{ maxWidth: 300 }}>
+                            <div style={{ marginBottom: 10 }}>
+                              {form.description}
+                            </div>
+
+                            <Button
+                              icon="arrow-right"
+                              type="primary"
+                              onClick={() => history.push(`/form/${form.id}`)}
+                            >
+                              Open
+                            </Button>
+                          </Card>
+                        </List.Item>
+                      )}
+                    />
+                  )}
+                </div>
+              </div>
+            </Panel>
+          ))}
         </Collapse>
       </div>
     );
@@ -414,7 +473,7 @@ class Dashboard extends React.Component {
           <Content className="wrapper">
             <Layout className="layout">
               <Content className="content">
-                <h1>Containers</h1>
+                <h1>Dashboard</h1>
 
                 {fetching ? (
                   <Spin size="large" />

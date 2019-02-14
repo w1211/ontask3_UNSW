@@ -14,7 +14,8 @@ from form.models import Form
 class ListContainers(APIView):
     def get(self, request):
         accessible_forms = Form.objects.filter(
-            permitted_users__in=request.user.permission_values
+            (Q(ltiAccess=True) | Q(emailAccess=True))
+            & Q(permitted_users__in=request.user.permission_values)
         )
         related_containers = set(form.container.id for form in accessible_forms)
 
@@ -23,9 +24,20 @@ class ListContainers(APIView):
             | Q(sharing__contains=request.user.email)
             | Q(id__in=related_containers)
         )
-        serializer = DashboardSerializer(containers, many=True)
 
-        return Response(serializer.data)
+        response = []
+        for container in containers:
+            serializer = DashboardSerializer(
+                container,
+                context={
+                    "has_full_permission": request.user.email
+                    in [container.owner, *container.sharing],
+                    "accessible_forms": accessible_forms,
+                },
+            )
+            response.append(serializer.data)
+
+        return Response(response)
 
     def post(self, request):
         # Ensure that the container code is not a duplicate for this user
@@ -93,7 +105,7 @@ class DetailContainer(APIView):
 
 
 @api_view(["POST"])
-def surrender_access(request, id):
+def SurrenderAccess(request, id):
     try:
         container = Container.objects.get(id=id)
     except:

@@ -14,6 +14,7 @@ import Dashboard from "./container/Dashboard";
 import Datasource from "./datasource/Datasource";
 import DataLab from "./dataLab/DataLab";
 import Action from "./action/Action";
+import Form from "./form/Form";
 
 import Forbidden from "./error/Forbidden";
 
@@ -172,6 +173,11 @@ class App extends React.Component {
           {this.AuthenticatedRoute({
             path: "/action/:id",
             component: Action
+          })}
+
+          {this.AuthenticatedRoute({
+            path: "/form/:id",
+            component: Form
           })}
 
           <Route exact path="/forbidden" component={Forbidden} />

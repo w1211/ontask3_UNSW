@@ -11,7 +11,7 @@ import json
 from .serializers import DatalabSerializer
 from .permissions import DatalabPermissions
 from .models import Datalab
-from .utils import bind_column_types, update_form_data, retrieve_form_data, set_relations
+from .utils import bind_column_types, set_relations
 
 from datasource.models import Datasource
 from form.models import Form
@@ -166,18 +166,6 @@ class DatalabViewSet(viewsets.ModelViewSet):
             }
         )
 
-    @action(detail=False, methods=["post"])
-    def check_uniqueness(self, request):
-        partial_build = self.request.data["partial"]
-        primary_key = self.request.data["primary"]
-
-        data = [] # combine_data(partial_build)
-
-        all_records = [item[primary_key] for item in data if primary_key in item]
-        unique_records = set(all_records)
-
-        return Response({"isUnique": len(all_records) == len(unique_records)})
-
     @detail_route(methods=["patch"])
     def change_column_order(self, request, id=None):
         datalab = self.get_object()
@@ -310,74 +298,6 @@ class DatalabViewSet(viewsets.ModelViewSet):
         serializer.save()
 
         return JsonResponse(serializer.data)
-
-    @list_route(methods=["post"])
-    def retrieve_form(self, request):
-        request_user = request.user.email
-
-        datalab = Datalab.objects.get(id=request.data["dataLabId"])
-
-        form_data = retrieve_form_data(
-            datalab=datalab,
-            step=int(request.data["moduleIndex"]),
-            request_user=request_user,
-        )
-
-        return JsonResponse(form_data)
-
-    @detail_route(methods=["patch"])
-    def update_datalab_form(self, request, id=None):
-        request_user = request.user.email
-
-        datalab = self.get_object()
-
-        try:
-            updated_datalab = update_form_data(
-                datalab=datalab,
-                step=int(request.data["stepIndex"]),
-                field=request.data["field"],
-                primary=request.data["primary"],
-                value=request.data.get("value", None),
-                request_user=request_user,
-            )
-        except:
-            return Response(
-                {"error": "You are not authorized to modify this record"},
-                status=HTTP_401_UNAUTHORIZED,
-            )
-
-        serializer = DatalabSerializer(instance=updated_datalab)
-
-        return JsonResponse(serializer.data)
-
-    @list_route(methods=["patch"])
-    def update_web_form(self, request, id=None):
-        request_user = request.user.email
-
-        datalab = Datalab.objects.get(id=request.data["dataLabId"])
-
-        try:
-            update_form_data(
-                datalab=datalab,
-                step=int(request.data["stepIndex"]),
-                field=request.data["field"],
-                primary=request.data["primary"],
-                value=request.data["value"],
-                request_user=request_user,
-                is_web_form=True,
-            )
-        except Exception:
-            return JsonResponse(
-                {"error": "You are not authorized to modify this record"}
-            )
-
-        form_data = retrieve_form_data(
-            datalab=datalab,
-            step=int(request.data["stepIndex"]),
-            request_user=request_user,
-        )
-
-        return JsonResponse(form_data)
 
     @detail_route(methods=["post"])
     def clone_datalab(self, request, id=None):

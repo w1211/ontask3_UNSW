@@ -3,6 +3,7 @@ from rest_framework_mongoengine.serializers import (
     DocumentSerializer,
     EmbeddedDocumentSerializer,
 )
+from mongoengine.queryset.visitor import Q
 
 from .models import Container
 from datasource.models import Datasource
@@ -67,10 +68,21 @@ class ActionSerializer(EmbeddedDocumentSerializer):
         fields = ["id", "name", "description", "datalab"]
 
 
+class InformationSubmissionSerializer(DocumentSerializer):
+    class Meta:
+        model = Form
+        fields = ["id", "name", "description"]
+
+
 class DashboardSerializer(DocumentSerializer):
+    has_full_permission = serializers.SerializerMethodField()
     datasources = serializers.SerializerMethodField()
     datalabs = serializers.SerializerMethodField()
     actions = serializers.SerializerMethodField()
+    information_submission = serializers.SerializerMethodField()
+
+    def get_has_full_permission(self, container):
+        return self.context.get("has_full_permission", False)
 
     def get_datasources(self, container):
         datasources = Datasource.objects(container=container.id)
@@ -90,6 +102,29 @@ class DashboardSerializer(DocumentSerializer):
 
         serializer = ActionSerializer(actions, many=True)
         return serializer.data
+
+    def get_information_submission(self, container):
+        if self.context.get("has_full_permission"):
+            forms = Form.objects.filter(
+                Q(container=container) & (Q(ltiAccess=True) | Q(emailAccess=True))
+            )
+        else:
+            forms = [
+                form
+                for form in self.context.get("accessible_forms")
+                if form.container == container
+            ]
+
+        serializer = InformationSubmissionSerializer(forms, many=True)
+        return serializer.data
+
+    def __init__(self, *args, **kwargs):
+        super(DashboardSerializer, self).__init__(*args, **kwargs)
+
+        if not self.context.get("has_full_permission"):
+            allowed_fields = ["id", "code", "has_full_permission",  "information_submission"]
+            for field in set(self.fields) - set(allowed_fields):
+                self.fields.pop(field)
 
     class Meta:
         model = Container

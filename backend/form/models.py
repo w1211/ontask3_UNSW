@@ -62,6 +62,7 @@ class Form(Document):
     # Flat representation of which users should see this form when they load the dashboard
     def refresh_access(self):
         users = set(record.get(self.permission) for record in self.datalab.relations)
+        if None in users:
         users.remove(None)
 
         self.permitted_users = list(users)

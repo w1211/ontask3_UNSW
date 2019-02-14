@@ -24,18 +24,17 @@ from rest_framework import routers
 
 from datasource.views import DatasourceViewSet
 from datalab.views import DatalabViewSet
-from form.views import FormViewSet
 from workflow.views import WorkflowViewSet, FeedbackView
 
 router = routers.DefaultRouter()
 router.register("datasource", DatasourceViewSet, "datasource")
 router.register("datalab", DatalabViewSet, "datalab")
-router.register("form", FormViewSet, "form")
 router.register("workflow", WorkflowViewSet, "workflow")
 
 urlpatterns = [
     path("auth/", include("accounts.urls")),
     path("container/", include("container.urls")),
+    path("form/", include("form.urls")),
     *router.urls,
     url(r"feedback/(?P<datalab_id>[a-z\d]+)/", FeedbackView.as_view())
 ]
