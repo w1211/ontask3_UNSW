@@ -1,52 +1,30 @@
-import requestWrapper from "../shared/requestWrapper";
+import apiRequest from "../shared/apiRequest";
 
 export const register = ({ payload, onError, onFinish }) => {
-  const parameters = {
-    url: `/auth/local/`,
+  apiRequest("/auth/local/", {
     method: "PUT",
-    errorFn: response => {
-      const { error } = response;
-      onError(error);
-    },
-    successFn: () => onFinish(),
     payload,
-    isUnauthenticated: true
-  };
-
-  requestWrapper(parameters);
+    isAuthenticated: false,
+    onSuccess: () => onFinish(),
+    onError: response => onError(response.error)
+  });
 };
 
-export const login = (values, beginLogin, finishLogin, onError) => {
-  const parameters = {
-    url: `/auth/local/`,
+export const login = (payload, finishLogin, onError) => {
+  apiRequest("/auth/local/", {
     method: "POST",
-    initialFn: () => {
-      beginLogin();
-    },
-    errorFn: error => {
-      onError(error);
-    },
-    successFn: response => {
-      finishLogin(response);
-    },
-    payload: values,
-    isUnauthenticated: true
-  };
-
-  requestWrapper(parameters);
+    payload,
+    isAuthenticated: false,
+    onSuccess: response => finishLogin(response),
+    onError: error => onError(error)
+  });
 };
 
 export const requestToken = (token, finishLogin) => {
-  const parameters = {
-    url: `/auth/token/`,
+  apiRequest("/auth/token/", {
     method: "POST",
-    errorFn: () => {},
-    successFn: response => {
-      finishLogin(response);
-    },
     payload: { token },
-    isUnauthenticated: true
-  };
-
-  requestWrapper(parameters);
+    isAuthenticated: false,
+    onSuccess: response => finishLogin(response)
+  });
 };
