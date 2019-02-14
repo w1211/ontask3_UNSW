@@ -27,12 +27,11 @@ class Datasource extends React.Component {
       apiRequest(`/datasource/${datasourceId}/`, {
         method: "GET",
         onSuccess: datasource => this.setState({ fetching: false, datasource }),
-        onError: (error, statusCode) => {
-          if (statusCode === 403) {
-            history.push("/forbidden");
+        onError: (error, status) => {
+          if (status === 403) {
+            history.replace("/forbidden");
           } else {
             this.setState({ fetching: false });
-            console.log(error);
           }
         }
       });
@@ -45,7 +44,6 @@ class Datasource extends React.Component {
 
   updateSchedule = ({ payload, onSuccess, onError }) => {
     const { datasource } = this.state;
-    console.log(datasource);
 
     const isCreate = !datasource.schedule;
 
@@ -168,17 +166,17 @@ class Datasource extends React.Component {
                     <Spin size="large" />
                   ) : (
                     <div>
-                      <h1>{datasource ? datasource.name : "Add Datasource"}</h1>
-
                       {!datasourceId && (
                         <Link
                           to="/dashboard"
                           style={{ display: "inline-block", marginBottom: 20 }}
                         >
-                          <Icon type="arrow-left" />
+                          <Icon type="arrow-left" style={{ marginRight: 5 }}/>
                           <span>Back to dashboard</span>
                         </Link>
                       )}
+                      
+                      <h1>{datasource ? datasource.name : "Add Datasource"}</h1>
 
                       {datasourceId ? (
                         <Switch>

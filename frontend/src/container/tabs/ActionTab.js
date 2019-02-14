@@ -174,7 +174,7 @@ class ActionTab extends React.Component {
             openModal({ type: "action", data: { containerId, dataLabs } });
           }}
         >
-          Create action
+          Create Action
         </Button>
 
         <Table

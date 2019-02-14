@@ -317,7 +317,6 @@ class DatasourceModule extends React.Component {
         this.setState({
           discrepencies: { ...discrepencies, loading: false }
         });
-        console.log(error);
       }
     });
   };

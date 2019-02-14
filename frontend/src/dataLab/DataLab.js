@@ -42,12 +42,18 @@ class DataLab extends React.Component {
             ...datalab
           });
         },
-        onError: () => this.setState({ fetching: false })
+        onError: (error, status) => {
+          if (status === 403) {
+            history.replace("/forbidden");
+          } else {
+            this.setState({ fetching: false });
+          }
+        }
       });
     } else {
       // The user must have cold-loaded the URL, so we have no container to reference
       // Therefore redirect the user back to the container list
-      history.push("/dashboard");
+      history.replace("/dashboard");
     }
   }
 
@@ -168,17 +174,17 @@ class DataLab extends React.Component {
                     <Spin size="large" />
                   ) : (
                     <div>
-                      <h1>{name ? name : "Create DataLab"}</h1>
-
                       {!selectedId && (
                         <Link
                           to="/dashboard"
                           style={{ display: "inline-block", marginBottom: 20 }}
                         >
-                          <Icon type="arrow-left" />
+                          <Icon type="arrow-left" style={{ marginRight: 5 }} />
                           <span>Back to dashboard</span>
                         </Link>
                       )}
+
+                      <h1>{name ? name : "Create DataLab"}</h1>
 
                       {selectedId ? (
                         <Switch>

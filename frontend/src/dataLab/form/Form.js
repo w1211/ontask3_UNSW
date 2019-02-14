@@ -178,7 +178,6 @@ class DataLabForm extends React.Component {
             });
         },
         onError: error => {
-          console.log(error);
           this.setState({ loading: false });
         }
       });
@@ -228,8 +227,6 @@ class DataLabForm extends React.Component {
     const { getFieldsValue } = form;
     const { primary, visibleFields, fields, layout } = getFieldsValue();
 
-    console.log(data);
-    
     const columns = [
       primary,
       ...visibleFields,
@@ -243,8 +240,6 @@ class DataLabForm extends React.Component {
         key: columnIndex,
         render: (text, record) => {
           const field = (fields || []).find(field => field.name === column);
-          console.log(column);
-          console.log(record);
           return (
             <Field
               readOnly={!field}
