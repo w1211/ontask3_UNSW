@@ -373,6 +373,25 @@ class DataLabForm extends React.Component {
           {...formItemLayout}
           label={
             <span>
+              Description
+              <Tooltip title="A description that users will see when accessing the form">
+                <Icon
+                  style={{ marginLeft: 5, cursor: "help" }}
+                  type="question-circle"
+                />
+              </Tooltip>
+            </span>
+          }
+        >
+          {getFieldDecorator("description", {
+            initialValue: _.get(formDetails, "description")
+          })(<Input.TextArea />)}
+        </Form.Item>
+
+        <Form.Item
+          {...formItemLayout}
+          label={
+            <span>
               Primary key
               <Tooltip
                 title="The field from the DataLab that will be used 

@@ -46,6 +46,7 @@ class Form(Document):
         Datalab, required=True, reverse_delete_rule=2
     )  # Cascade delete if view is deleted
     name = StringField(required=True)
+    description = StringField(null=True)
     primary = StringField(required=True)
     visibleFields = ListField(StringField())
     fields = EmbeddedDocumentListField(Field, required=True)
@@ -63,7 +64,7 @@ class Form(Document):
     def refresh_access(self):
         users = set(record.get(self.permission) for record in self.datalab.relations)
         if None in users:
-        users.remove(None)
+            users.remove(None)
 
         self.permitted_users = list(users)
         self.save()
