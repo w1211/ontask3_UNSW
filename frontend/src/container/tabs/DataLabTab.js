@@ -21,7 +21,7 @@ class DataLabTab extends React.Component {
   state = { filter: null, deleting: {}, cloning: {}, drawer: {} };
 
   deleteDataLab = dataLabId => {
-    const { updateContainers } = this.context;
+    const { fetchDashboard } = this.context;
 
     confirm({
       title: "Confirm DataLab deletion",
@@ -39,7 +39,7 @@ class DataLabTab extends React.Component {
           method: "DELETE",
           onSuccess: () => {
             this.setState({ deleting: { [dataLabId]: false } });
-            updateContainers();
+            fetchDashboard();
             notification["success"]({
               message: "DataLab deleted",
               description: "The DataLab was successfully deleted."
@@ -58,7 +58,7 @@ class DataLabTab extends React.Component {
   };
 
   cloneDataLab = datalabId => {
-    const { updateContainers } = this.context;
+    const { fetchDashboard } = this.context;
 
     confirm({
       title: "Confirm DataLab clone",
@@ -72,7 +72,7 @@ class DataLabTab extends React.Component {
           method: "POST",
           onSuccess: () => {
             this.setState({ cloning: { [datalabId]: false } });
-            updateContainers();
+            fetchDashboard();
             notification["success"]({
               message: "DataLab cloned",
               description: "The DataLab was successfully cloned."

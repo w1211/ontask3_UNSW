@@ -465,7 +465,6 @@ class Dashboard extends React.Component {
       <ContainerContext.Provider
         value={{
           fetchDashboard: this.fetchDashboard,
-          updateContainers: this.updateContainers,
           history
         }}
       >

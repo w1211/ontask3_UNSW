@@ -24,7 +24,7 @@ class DatasourceTab extends React.Component {
   state = { deleting: {}, refreshing: {} };
 
   deleteDatasource = datasourceId => {
-    const { updateContainers } = this.context;
+    const { fetchDashboard } = this.context;
 
     confirm({
       title: "Confirm datasource deletion",
@@ -48,7 +48,7 @@ class DatasourceTab extends React.Component {
           },
           onSuccess: () => {
             this.setState({ deleting: { [datasourceId]: false } });
-            updateContainers();
+            fetchDashboard();
             notification["success"]({
               message: "Datasource deleted",
               description: "The datasource was successfully deleted."
@@ -60,7 +60,7 @@ class DatasourceTab extends React.Component {
   };
 
   forceRefresh = datasourceId => {
-    const { updateContainers } = this.context;
+    const { fetchDashboard } = this.context;
 
     this.setState({
       refreshing: { [datasourceId]: true }
@@ -77,7 +77,7 @@ class DatasourceTab extends React.Component {
       },
       onSuccess: () => {
         this.setState({ refreshing: { [datasourceId]: false } });
-        updateContainers();
+        fetchDashboard();
         notification["success"]({
           message: "Datasource data refreshed",
           description: "The datasource data was successfully refreshed."

@@ -12,7 +12,7 @@ class ActionTab extends React.Component {
   state = { filter: null, filterCategory: "name", deleting: {}, cloning: {} };
 
   deleteAction = actionId => {
-    const { updateContainers } = this.context;
+    const { fetchDashboard } = this.context;
 
     confirm({
       title: "Confirm action deletion",
@@ -29,7 +29,7 @@ class ActionTab extends React.Component {
           method: "DELETE",
           onSuccess: () => {
             this.setState({ deleting: { [actionId]: false } });
-            updateContainers();
+            fetchDashboard();
             notification["success"]({
               message: "Action deleted",
               description: "The action was successfully deleted."
@@ -48,7 +48,7 @@ class ActionTab extends React.Component {
   };
 
   cloneAction = actionId => {
-    const { updateContainers } = this.context;
+    const { fetchDashboard } = this.context;
 
     confirm({
       title: "Confirm action clone",
@@ -62,7 +62,7 @@ class ActionTab extends React.Component {
           method: "POST",
           onSuccess: () => {
             this.setState({ cloning: { [actionId]: false } });
-            updateContainers();
+            fetchDashboard();
             notification["success"]({
               message: "Action cloned",
               description: "The action was successfully cloned."
@@ -117,12 +117,12 @@ class ActionTab extends React.Component {
         render: (text, action) => {
           return (
             <div>
-              <Tooltip title="Enter action">
+              <Tooltip title="Edit action settings">
                 <Button
                   style={{ margin: 3 }}
                   icon="setting"
                   onClick={() => {
-                    history.push(`/action/${action.id}`);
+                    history.push(`/action/${action.id}/settings`);
                   }}
                 />
               </Tooltip>
