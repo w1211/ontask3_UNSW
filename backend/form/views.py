@@ -99,8 +99,8 @@ class AccessForm(APIView):
                 user_values.append(self.request.user.email)
             if form.ltiAccess:
                 try:
-                    lti_payload = lti.objects.get(user=self.request.user.id)
-                    user_values.append(lti_payload[form.ltiPermission])
+                    lti_object = lti.objects.get(user=self.request.user.id)
+                    user_values.extend(lti_object.payload.values())
                 except:
                     pass
 

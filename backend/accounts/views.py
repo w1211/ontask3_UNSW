@@ -144,6 +144,9 @@ class LTIAuth(APIView):
         lti_payload = {
             "user_id": payload["user_id"],
             "ext_user_username": payload["ext_user_username"],
+            "lis_person_contact_email_primary": payload[
+                "lis_person_contact_email_primary"
+            ],
         }
         lti.objects(user=user.id).update_one(payload=lti_payload, upsert=True)
 
