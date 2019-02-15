@@ -122,7 +122,12 @@ class DashboardSerializer(DocumentSerializer):
         super(DashboardSerializer, self).__init__(*args, **kwargs)
 
         if not self.context.get("has_full_permission"):
-            allowed_fields = ["id", "code", "has_full_permission",  "information_submission"]
+            allowed_fields = [
+                "id",
+                "code",
+                "has_full_permission",
+                "information_submission",
+            ]
             for field in set(self.fields) - set(allowed_fields):
                 self.fields.pop(field)
 

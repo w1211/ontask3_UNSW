@@ -50,14 +50,7 @@ class Dashboard extends React.Component {
         let accordionKey = localStorage.getItem("accordionKey");
         let tabKey = localStorage.getItem("tabKey");
 
-        if (!accordionKey || !tabKey) {
-          accordionKey = dashboard[0].id;
-          tabKey = dashboard[0].has_full_permission
-            ? "datasources"
-            : ["information_submission"].find(
-                type => dashboard[0][type].length > 0
-              );
-        }
+        if (!accordionKey || !tabKey) this.setDefaultKeys(dashboard[0].id);
 
         this.setState({
           dashboard,
@@ -66,7 +59,7 @@ class Dashboard extends React.Component {
           tabKey
         });
       },
-      onError: error => {
+      onError: () => {
         notification["error"]({
           message: "Failed to fetch dashboard"
         });
@@ -77,11 +70,22 @@ class Dashboard extends React.Component {
 
   componentDidMount() {
     this.fetchDashboard();
+  }
 
-    console.log(this.props);
-    if (this.props.ltiResourceId) {
+  componentDidUpdate(prevProps) {
+    const { ltiContainerId, ltiResourceId } = this.props;
+    const { dashboard, didSetKeys } = this.state;
+
+    if (ltiContainerId && dashboard.length > 0 && !didSetKeys) {
+      const associatedContainer = dashboard.find(
+        container => container.id === ltiContainerId
+      );
+      if (associatedContainer) this.setDefaultKeys(associatedContainer.id);
+      this.setState({ didSetKeys: true });
+    }
+
+    if (ltiResourceId !== prevProps.ltiResourceId) {
       this.setState({ lti: { visible: true } });
-      console.log(this.props.ltiResourceId);
     }
   }
 
@@ -126,7 +130,9 @@ class Dashboard extends React.Component {
           payload: { lti_resource: null },
           onSuccess: () => {
             notification["success"]({
-              message: "Container binding successfully removed"
+              message: "Container binding successfully removed",
+              description:
+                "Users will no longer be directed towards this container when coming from LTI"
             });
             this.fetchDashboard();
           },
@@ -221,8 +227,31 @@ class Dashboard extends React.Component {
     });
   };
 
+  setDefaultKeys = containerId => {
+    const { dashboard } = this.state;
+
+    let tabKey;
+    if (containerId) {
+      const container = dashboard.find(
+        container => container.id === containerId
+      );
+
+      tabKey = container.has_full_permission
+        ? "datasources"
+        : ["information_submission"].find(type => container[type].length > 0);
+
+      this.setState({ accordionKey: containerId, tabKey });
+      localStorage.setItem("accordionKey", containerId);
+      localStorage.setItem("tabKey", tabKey);
+    } else {
+      this.setState({ accordionKey: null, tabKey: null });
+      localStorage.removeItem("accordionKey");
+      localStorage.removeItem("tabKey");
+    }
+  };
+
   bindResource = () => {
-    const { ltiResourceId, history } = this.props;
+    const { ltiResourceId } = this.props;
     const { lti } = this.state;
 
     if (!lti.container) {
@@ -238,13 +267,17 @@ class Dashboard extends React.Component {
     apiRequest(`/container/${lti.container}/`, {
       method: "PATCH",
       payload: { lti_resource: ltiResourceId },
-      onSuccess: container => {
+      onSuccess: () => {
         notification["success"]({
-          message: "Container successfully bound to resource"
+          message: "Container successfully bound to resource",
+          description:
+            "When users come from LTI they will be directed towards the chosen container"
         });
-        history.push(`/container/${container.id}`);
+        this.setState({ lti: { visible: false } });
+        this.setDefaultKeys(lti.container);
+        this.fetchDashboard();
       },
-      onError: error =>
+      onError: () =>
         notification["error"]({
           message: "Failed to bind container to resource"
         })
@@ -333,27 +366,7 @@ class Dashboard extends React.Component {
       <div className="container_list">
         <Collapse
           accordion
-          onChange={accordionKey => {
-            if (accordionKey) {
-              const container = dashboard.find(
-                container => container.id === accordionKey
-              );
-
-              const tabKey = container.has_full_permission
-                ? "datasources"
-                : ["information_submission"].find(
-                    type => container[type].length > 0
-                  );
-
-              this.setState({ accordionKey, tabKey });
-              localStorage.setItem("accordionKey", accordionKey);
-              localStorage.setItem("tabKey", tabKey);
-            } else {
-              this.setState({ accordionKey: null, tabKey: null });
-              localStorage.removeItem("accordionKey");
-              localStorage.removeItem("tabKey");
-            }
-          }}
+          onChange={accordionKey => this.setDefaultKeys(accordionKey)}
           activeKey={accordionKey}
         >
           {dashboard.map((container, i) => (

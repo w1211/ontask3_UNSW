@@ -9,3 +9,4 @@ class Container(Document):
     school = StringField(null=True)
     faculty = StringField(null=True)
     description = StringField(null=True)
+    lti_resource = StringField(null=True)

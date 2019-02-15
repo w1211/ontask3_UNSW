@@ -1,7 +1,7 @@
 import React from "react";
 import { Switch, Route, Redirect } from "react-router-dom";
 import { withRouter } from "react-router";
-import { Layout, Menu, Button } from "antd";
+import { Layout, Tooltip, Button } from "antd";
 import queryString from "query-string";
 import _ from "lodash";
 
@@ -36,23 +36,34 @@ class App extends React.Component {
     this.setState({ hasToken: false });
   };
 
-  finishRequestToken = response => {
-    localStorage.setItem("token", response.token);
-    localStorage.setItem("email", response.email);
-    localStorage.setItem("name", response.name);
-  };
-
   componentWillMount() {
     this.setState({
       hasToken: localStorage.getItem("token") ? true : false
     });
 
-    const oneTimeToken = queryString.parse(window.location.search).tkn;
-    if (oneTimeToken) requestToken(oneTimeToken, this.finishRequestToken);
+    const queryStrings = queryString.parse(window.location.search);
+    const { tkn, lti, container } = queryStrings;
+
+    if (tkn)
+      requestToken(tkn, response => {
+        localStorage.setItem("token", response.token);
+        localStorage.setItem("email", response.email);
+        localStorage.setItem("name", response.name);
+
+        this.setState({
+          hasToken: true,
+          ltiResourceId: lti,
+          ltiContainerId: container
+        });
+      });
+    else {
+      this.setState({ ltiResourceId: lti, ltiContainerId: container });
+    }
   }
 
   AuthenticatedRoute = ({
     component: Component,
+    componentProps,
     feedbackForm,
     ...routeProps
   }) => {
@@ -67,7 +78,7 @@ class App extends React.Component {
         {...routeProps}
         render={props =>
           hasToken ? (
-            <Component {...props} />
+            <Component {...props} {...componentProps} />
           ) : (
             <Redirect
               to={{
@@ -85,19 +96,16 @@ class App extends React.Component {
   };
 
   render() {
-    const { location, history } = this.props;
-    const { hasToken } = this.state;
+    const { location } = this.props;
+    const { hasToken, ltiResourceId, ltiContainerId } = this.state;
 
-    const pathName = location.pathname.slice(1).split("/");
-    let menuKey;
-    if (["about", "help", "contact"].includes(pathName[0])) {
-      menuKey = pathName;
-    } else {
-      menuKey = "dashboard";
-    }
-
-    const webForm = pathName[2] === "form";
-    const feedbackForm = pathName[0] === "feedback";
+    // const pathName = location.pathname.slice(1).split("/");
+    // let menuKey;
+    // if (["about", "help", "contact"].includes(pathName[0])) {
+    //   menuKey = pathName;
+    // } else {
+    //   menuKey = "dashboard";
+    // }
 
     const redirectTo = _.get(location, "state.redirectTo");
     const shouldRedirectToAAF = _.get(location, "state.shouldRedirectToAAF");
@@ -116,7 +124,7 @@ class App extends React.Component {
                 Logged in as: <strong>{localStorage.getItem("name")}</strong>
               </span>
               <Tooltip title="Logout">
-              <Button icon="logout" onClick={this.logout} />
+                <Button icon="logout" onClick={this.logout} />
               </Tooltip>
             </div>
           )}
@@ -158,6 +166,7 @@ class App extends React.Component {
           {this.AuthenticatedRoute({
             path: "/dashboard",
             component: Dashboard,
+            componentProps: { ltiResourceId, ltiContainerId }
           })}
 
           {this.AuthenticatedRoute({
@@ -181,7 +190,7 @@ class App extends React.Component {
           })}
 
           <Route exact path="/forbidden" component={Forbidden} />
-          
+
           <Route
             path="/feedback/:id"
             render={props => <Action {...props} isFeedbackForm />}
