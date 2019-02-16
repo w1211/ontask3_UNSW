@@ -228,12 +228,10 @@ class Dashboard extends React.Component {
   setDefaultKeys = containerId => {
     const { dashboard } = this.state;
 
-    let tabKey;
-    if (containerId) {
-      const container = dashboard.find(
-        container => container.id === containerId
-      );
+    const container = dashboard.find(container => container.id === containerId);
 
+    let tabKey;
+    if (container) {
       tabKey = container.has_full_permission
         ? "datasources"
         : ["information_submission"].find(type => container[type].length > 0);
@@ -483,8 +481,6 @@ class Dashboard extends React.Component {
           <Content className="wrapper">
             <Layout className="layout">
               <Content className="content">
-                <h1>Dashboard</h1>
-
                 {fetching ? (
                   <Spin size="large" />
                 ) : (
