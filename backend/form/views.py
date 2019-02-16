@@ -107,7 +107,10 @@ class DetailForm(APIView):
     def delete(self, request, id):
         form = self.get_object(id)
 
-        # TODO: Check that no data labs are using this form
+        for step in form.datalab.steps:
+            if step.type == "form" and step.form == id:
+                raise ValidationError("Form is being used by a DataLab")
+
         form.delete()
 
         return Response(status=HTTP_200_OK)
