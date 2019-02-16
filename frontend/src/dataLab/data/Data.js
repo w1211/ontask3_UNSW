@@ -199,8 +199,8 @@ class Data extends React.Component {
         // return a.toString().localeCompare(b.toString());
         // },
         // sortOrder: sort && sort.field === label && sort.order,
-        render: (text, record) =>
-          this.renderFormField(stepIndex, field, text, record[form.primary])
+        render: (text, record, index) =>
+          this.renderFormField(field, text, record[form.primary], formId, index)
       });
     });
 
@@ -240,7 +240,7 @@ class Data extends React.Component {
     return columns;
   };
 
-  renderFormField = (stepIndex, field, text, primary) => {
+  renderFormField = (field, text, primary, formId, index) => {
     const { edit } = this.state;
 
     return (
@@ -251,25 +251,25 @@ class Data extends React.Component {
           readOnly={edit.field !== field.name}
           onSave={value => {
             const payload = {
-              stepIndex,
               field: field.name,
               primary,
               value
             };
-            this.handleFormUpdate(payload);
+            this.handleFormUpdate(formId, payload, index);
           }}
         />
       </div>
     );
   };
 
-  handleFormUpdate = payload => {
-    const { selectedId, updateDatalab } = this.props;
+  handleFormUpdate = (formId, payload, index) => {
+    const { updateData } = this.props;
     const { saved } = this.state;
 
-    apiRequest(`/datalab/${selectedId}/update_datalab_form/`, {
+    apiRequest(`/form/${formId}/access/`, {
       method: "PATCH",
-      onSuccess: dataLab => {
+      payload,
+      onSuccess: () => {
         this.setState({ saved: { ...saved, [payload.primary]: true } }, () => {
           this.updateSuccess = setTimeout(
             () =>
@@ -277,14 +277,12 @@ class Data extends React.Component {
             1500
           );
         });
-        message.success("Form updated.");
-        updateDatalab(dataLab);
+        updateData(index, payload.field, payload.value);
       },
-      onError: error =>
+      onError: () =>
         notification["error"]({
           message: "Failed to update form"
-        }),
-      payload
+        })
     });
   };
 

@@ -61,6 +61,12 @@ class DataLab extends React.Component {
     this.setState({ ...datalab });
   };
 
+  updateData = (index, field, value) => {
+    const { data } = this.state;
+    data[index][field] = value;
+    this.setState({ data });
+  };
+
   updateForms = ({ formIndex, updatedForm, isDelete }) => {
     const { forms } = this.state;
 
@@ -219,6 +225,7 @@ class DataLab extends React.Component {
                                 order={order}
                                 selectedId={selectedId}
                                 updateDatalab={this.updateDatalab}
+                                updateData={this.updateData}
                                 forms={forms}
                               />
                             )}
@@ -263,6 +270,7 @@ class DataLab extends React.Component {
                                       isDelete
                                     })
                                   }
+                                  updateDatalab={this.updateDatalab}
                                   data={data}
                                 />
                               );
