@@ -137,11 +137,16 @@ class DatasourceTab extends React.Component {
           return canScheduleUpdates(datasource.connection.dbType) ? (
             <div>
               {schedule ? (
-                <Tag color="green">On</Tag>
+                <Tag color="green" style={{ margin: 3 }}>
+                  On
+                </Tag>
               ) : (
-                <Tag color="red">Off</Tag>
+                <Tag color="red" style={{ margin: 3 }}>
+                  Off
+                </Tag>
               )}
               <Button
+                style={{ margin: 3 }}
                 size="small"
                 icon="thunderbolt"
                 loading={refreshing[datasource.id] || false}
