@@ -63,7 +63,7 @@ def refresh_datasource_data(datasource_id):
 def workflow_send_email(action_id, job_type="Scheduled"):
     """ Send email based on the schedule in workflow model """
     print("Email job initiated")
-    
+
     from workflow.models import Workflow, EmailJob, Email
 
     action = Workflow.objects.get(id=ObjectId(action_id))
@@ -116,7 +116,11 @@ def workflow_send_email(action_id, job_type="Scheduled"):
         print(f"Sending email to {recipient}")
 
         email_sent = send_email(
-            recipient, email_settings.subject, email_content, email_settings.replyTo
+            recipient,
+            email_settings.subject,
+            email_content,
+            from_name=email_settings.fromName,
+            reply_to=email_settings.replyTo,
         )
 
         if email_sent:

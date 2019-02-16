@@ -81,6 +81,7 @@ class Option(EmbeddedDocument):
 class EmailSettings(EmbeddedDocument):
     subject = StringField(required=True)
     field = StringField(required=True)
+    fromName = StringField()
     replyTo = StringField(required=True)
     include_feedback = BooleanField()
     feedback_list = BooleanField()

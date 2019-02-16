@@ -50,7 +50,7 @@ def create_crontab(schedule):
     return periodic_schedule
 
 
-def send_email(recipient, subject, content, reply_to=None, force_send=False):
+def send_email(recipient, subject, content, from_name=None, reply_to=None, force_send=False):
     '''Generic service to send email from the application'''
 
     if not force_send and os.environ.get('ONTASK_DEMO') is not None:
@@ -59,7 +59,9 @@ def send_email(recipient, subject, content, reply_to=None, force_send=False):
     try:
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
-        if 'NAME' in SMTP:
+        if from_name:
+            msg['From'] = formataddr((str(Header(from_name, 'utf-8')), SMTP['USER']))
+        elif 'NAME' in SMTP:
             msg['From'] = formataddr((str(Header(SMTP['NAME'], 'utf-8')), SMTP['USER']))
         else:
             msg['From'] = SMTP['USER']
