@@ -30,8 +30,7 @@ class ListContainers(APIView):
             serializer = DashboardSerializer(
                 container,
                 context={
-                    "has_full_permission": request.user.email
-                    in [container.owner, *container.sharing],
+                    "has_full_permission": container.has_full_permission(request.user),
                     "accessible_forms": accessible_forms,
                 },
             )
@@ -62,10 +61,7 @@ class DetailContainer(APIView):
             raise NotFound()
 
         # Only owner or users with shared access can edit a container
-        if (
-            container.owner != request.user.email
-            and request.user.email not in container.sharing
-        ):
+        if not container.has_full_permission(request.user):
             raise PermissionDenied()
 
         # Ensure that the owner cannot be changed by a malicious payload
@@ -96,7 +92,7 @@ class DetailContainer(APIView):
             raise NotFound()
 
         # Only owner can delete a container
-        if request.user.email != container.owner:
+        if not container.is_owner(request.user):
             raise PermissionDenied()
 
         container.delete()
