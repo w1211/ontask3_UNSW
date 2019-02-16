@@ -64,7 +64,7 @@ class Form extends React.Component {
               field={field}
               value={column in record ? text : null}
               onSave={value =>
-                this.handleSubmit(form.primary, field.name, value)
+                this.handleSubmit(record[form.primary], field.name, value)
               }
             />
           );
