@@ -48,7 +48,8 @@ class Dashboard extends React.Component {
         let accordionKey = localStorage.getItem("accordionKey");
         let tabKey = localStorage.getItem("tabKey");
 
-        if (!accordionKey || !tabKey) this.setDefaultKeys(dashboard[0].id);
+        if ((!accordionKey || !tabKey) && dashboard.length > 0)
+          this.setDefaultKeys(dashboard[0].id);
 
         this.setState({
           dashboard,
