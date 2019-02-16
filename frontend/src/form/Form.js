@@ -11,7 +11,7 @@ import "./Form.css";
 const { Content } = Layout;
 
 class Form extends React.Component {
-  state = { fetching: true, singleRecordIndex: 0 };
+  state = { fetching: true, singleRecordIndex: 0, saved: {} };
 
   componentDidMount() {
     const { match, history } = this.props;
