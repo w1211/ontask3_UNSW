@@ -130,6 +130,10 @@ class Workflow(Document):
     emailJobs = EmbeddedDocumentListField(EmailJob)
 
     @property
+    def datalab_name(self):
+        return self.datalab.name
+
+    @property
     def options(self):
         modules = []
         types = {}

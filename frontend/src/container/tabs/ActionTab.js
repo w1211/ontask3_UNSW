@@ -81,7 +81,7 @@ class ActionTab extends React.Component {
   };
 
   render() {
-    const { containerId, actions, dataLabs, openModal } = this.props;
+    const { containerId, actions, dataLabs } = this.props;
     const { deleting, cloning } = this.state;
     const { history } = this.context;
 
@@ -127,19 +127,6 @@ class ActionTab extends React.Component {
                 />
               </Tooltip>
 
-              <Tooltip title="Edit action">
-                <Button
-                  style={{ margin: 3 }}
-                  icon="edit"
-                  onClick={() => {
-                    openModal({
-                      type: "action",
-                      selected: action
-                    });
-                  }}
-                />
-              </Tooltip>
-
               <Tooltip title="Clone action">
                 <Button
                   style={{ margin: 3 }}
@@ -170,9 +157,12 @@ class ActionTab extends React.Component {
           style={{ marginBottom: 15 }}
           type="primary"
           icon="plus"
-          onClick={() => {
-            openModal({ type: "action", data: { containerId, dataLabs } });
-          }}
+          onClick={() =>
+            history.push({
+              pathname: "/action",
+              state: { containerId, dataLabs }
+            })
+          }
         >
           Create Action
         </Button>

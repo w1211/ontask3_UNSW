@@ -27,18 +27,12 @@ class DatalabViewSet(viewsets.ModelViewSet):
         # containers = ContainerViewSet.get_queryset(self)
 
         # Retrieve only the DataLabs that belong to these containers
-        datalabs = Datalab.objects.all()#(container__in=containers)
+        datalabs = Datalab.objects.all()  # (container__in=containers)
 
         return datalabs
 
     def perform_create(self, serializer):
         self.check_object_permissions(self.request, None)
-
-        queryset = Datalab.objects.filter(
-            name=self.request.data["name"], container=self.request.data["container"]
-        )
-        if queryset.count():
-            raise ValidationError("A DataLab with this name already exists")
 
         steps = self.request.data["steps"]
         steps = bind_column_types(steps)
@@ -127,20 +121,19 @@ class DatalabViewSet(viewsets.ModelViewSet):
                     order.append({"stepIndex": step_index, "field": field})
 
         relations = set_relations(datalab)
-        
+
         serializer.save(steps=steps, order=order, relations=relations)
 
     def perform_destroy(self, datalab):
         self.check_object_permissions(self.request, datalab)
         datalab.delete()
 
-
     @action(detail=False, methods=["post"])
     def check_discrepencies(self, request):
         check_module = request.data["partial"][-1]["datasource"]
         partial_build = request.data["partial"][:-1]
 
-        data = [] # combine_data(partial_build)
+        data = []  # combine_data(partial_build)
         datasource = Datasource.objects.get(id=check_module["id"])
 
         primary_records = {item[check_module["primary"]] for item in datasource.data}

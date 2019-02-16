@@ -16,7 +16,6 @@ import {
 
 import ContainerModal from "./ContainerModal";
 import ContainerShare from "./ContainerShare";
-import ActionModal from "../action/ActionModal";
 
 import DatasourceTab from "./tabs/DatasourceTab";
 import DataLabTab from "./tabs/DataLabTab";
@@ -35,7 +34,6 @@ class Dashboard extends React.Component {
   state = {
     dashboard: [],
     container: { visible: false, selected: null },
-    action: { visible: false, selected: null, data: {} },
     sharing: { visible: false, selected: null },
     lti: { visible: false },
     deleting: {}
@@ -472,7 +470,7 @@ class Dashboard extends React.Component {
 
   render() {
     const { history } = this.props;
-    const { fetching, dashboard, container, action, sharing, lti } = this.state;
+    const { fetching, dashboard, container, sharing, lti } = this.state;
 
     return (
       <ContainerContext.Provider
@@ -510,11 +508,6 @@ class Dashboard extends React.Component {
                         localStorage.setItem("tabKey", "datasources");
                       }}
                       closeModal={() => this.closeModal("container")}
-                    />
-
-                    <ActionModal
-                      {...action}
-                      closeModal={() => this.closeModal("action")}
                     />
 
                     <ContainerShare

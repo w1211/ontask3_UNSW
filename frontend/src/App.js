@@ -180,7 +180,7 @@ class App extends React.Component {
           })}
 
           {this.AuthenticatedRoute({
-            path: "/action/:id",
+            path: "/action/:id?",
             component: Action
           })}
 
