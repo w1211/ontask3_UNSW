@@ -64,15 +64,6 @@ class DatalabViewSet(viewsets.ModelViewSet):
         datalab = self.get_object()
         self.check_object_permissions(self.request, datalab)
 
-        queryset = Datalab.objects.filter(
-            name=self.request.data["name"],
-            container=datalab["container"],
-            # Check against DataLabs other than the one being updated
-            id__ne=datalab["id"],
-        )
-        if queryset.count():
-            raise ValidationError("A DataLab with this name already exists")
-
         steps = self.request.data["steps"]
         steps = bind_column_types(steps)
 
@@ -86,35 +77,36 @@ class DatalabViewSet(viewsets.ModelViewSet):
             for item in datalab.order
         ]
 
+        fields = {}
+        for step_index, step in enumerate(steps):
+            if step["type"] == "datasource":
+                fields[step_index] = step["datasource"]["fields"]
+
+            elif step["type"] == "form":
+                form_fields = Form.objects.get(id=step["form"]).fields
+                fields[step_index] = [field["name"] for field in form_fields]
+
+            elif step["type"] == "computed":
+                fields[step_index] = [
+                    field["name"] for field in step["computed"]["fields"]
+                ]
+
         # Check for any removed fields and remove from order list
         for item in order:
-            step = steps[item["stepIndex"]] if item["stepIndex"] < len(steps) else None
-            if step and step["type"] == "form":
-                fields = Form.objects.get(id=step["form"]).fields
-            else:
-                fields = step[step["type"]]["fields"] if step else []
-
-            if step and step["type"] == "computed":
-                fields = [field["name"] for field in fields]
-
-            if item["field"] not in fields:
+            step_fields = fields.get(item["stepIndex"], [])
+            if item["field"] not in step_fields:
                 order = [
                     x
                     for x in order
-                    if (x["field"] != item["field"] and x["stepIndex"] != item["field"])
+                    if not (
+                        x["field"] == item["field"]
+                        and x["stepIndex"] == item["stepIndex"]
+                    )
                 ]
 
-        # Check for any added fields and append to end of order list
-        for (step_index, step) in enumerate(steps):
-            if step["type"] == "form":
-                fields = Form.objects.get(id=step["form"]).fields
-            else:
-                fields = step[step["type"]]["fields"]
-
-            for field in fields:
-                if step["type"] in ["form", "computed"]:
-                    field = field["name"]
-                already_exists = next(
+        for step_index, step_fields in fields.items():
+            for field in step_fields:
+                order_item = next(
                     (
                         item
                         for item in order
@@ -122,7 +114,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
                     ),
                     None,
                 )
-                if not already_exists:
+                if not order_item:
                     order.append({"stepIndex": step_index, "field": field})
 
         relations = set_relations(datalab)

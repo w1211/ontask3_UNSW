@@ -2,7 +2,7 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_200_OK
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 
 import pandas as pd
 from datetime import datetime as dt
@@ -66,16 +66,23 @@ class DetailForm(APIView):
         datalab = form.datalab
         form_fields = [field.get("name") for field in request.data.get("fields", [])]
         order_items = [item.field for item in datalab.order]
-        for step_index, step in enumerate(datalab.steps):
-            if step.type == "form" and step.form == id:
-                should_update = False
 
-                for item_index, item in enumerate(datalab.order):
+        for step_index, step in enumerate(datalab.steps):
+            # The form is being used by the DataLab
+            if step.type == "form" and step.form == id:
+                for item in datalab.order:
+                    # If a form field was removed, then remove it from the DataLab order items
                     if item.stepIndex == step_index and item.field not in form_fields:
-                        del datalab.order[item_index]
-                        should_update = True
+                        datalab.order = [
+                            x
+                            for x in datalab.order
+                            if not (
+                                x.field == item.field and x.stepIndex == item.stepIndex
+                            )
+                        ]
 
                 for field in form_fields:
+                    # If a form field was added, then add it to the DataLab order items
                     if field not in order_items:
                         datalab.order.append(
                             Column(
@@ -85,7 +92,6 @@ class DetailForm(APIView):
                                 pinned=False,
                             )
                         )
-                        should_update = True
 
                 break
 
