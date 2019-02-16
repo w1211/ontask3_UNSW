@@ -147,9 +147,9 @@ class DataLabForm extends React.Component {
       form,
       selectedId,
       dataLabId,
-      containerId,
       updateForms,
-      history
+      history,
+      updateDatalab
     } = this.props;
 
     form.validateFields((err, payload) => {
@@ -162,7 +162,7 @@ class DataLabForm extends React.Component {
 
       apiRequest(selectedId ? `/form/${selectedId}/` : "/form/", {
         method: selectedId ? "PATCH" : "POST",
-        payload: { ...payload, datalab: dataLabId, container: containerId },
+        payload: { ...payload, datalab: dataLabId },
         onSuccess: updatedForm => {
           notification["success"]({
             message: `Form ${selectedId ? "updated" : "created"}`,
@@ -171,11 +171,15 @@ class DataLabForm extends React.Component {
             }.`
           });
           this.setState({ loading: false });
-          updateForms({ updatedForm });
-          if (!selectedId)
+
+          if (selectedId) {
+            updateDatalab(updatedForm.updated_datalab);
+          } else {
             history.push({
               pathname: `/datalab/${dataLabId}/form/${updatedForm.id}`
             });
+            updateForms({ updatedForm });
+          }
         },
         onError: error => {
           this.setState({ loading: false });

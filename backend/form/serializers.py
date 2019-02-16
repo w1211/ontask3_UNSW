@@ -6,6 +6,10 @@ from .models import Form
 
 class FormSerializer(DocumentSerializer):
     permitted_users = serializers.ReadOnlyField()
+    updated_datalab = serializers.SerializerMethodField()
+
+    def get_updated_datalab(self, form):
+        return self.context.get("updated_datalab")
 
     class Meta:
         model = Form
@@ -34,5 +38,5 @@ class RestrictedFormSerializer(DocumentSerializer):
             "activeFrom",
             "activeTo",
             "data",
-            "editable_records"
+            "editable_records",
         ]

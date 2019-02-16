@@ -14,6 +14,8 @@ import os
 
 import mongoengine
 
+DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
+
 if os.environ.get('ONTASK_DEVELOPMENT') is not None:
     from config.dev import *
     DEBUG = True
@@ -32,8 +34,6 @@ elif os.environ.get('ONTASK_DEMO') is not None:
 
 else:
     from config.prod import *
-
-DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
 
 AWS_PROFILE = None
 

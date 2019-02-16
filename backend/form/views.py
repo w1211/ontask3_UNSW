@@ -12,10 +12,18 @@ from .models import Form
 
 from accounts.models import lti
 from datalab.utils import set_relations
+from datalab.models import Datalab, Column
+from datalab.serializers import DatalabSerializer
 
 
 class ListForms(APIView):
     def post(self, request):
+        datalab = Datalab.objects.get(id=request.data.get("datalab"))
+        if not datalab.container.has_full_permission(request.user):
+            raise PermissionDenied()
+
+        request.data["container"] = str(datalab.container.id)
+
         serializer = FormSerializer(data=request.data)
         serializer.is_valid()
         form = serializer.save()
@@ -37,10 +45,7 @@ class DetailForm(APIView):
             raise NotFound()
 
         request_user = self.request.user.email
-        if (
-            form.container.owner != request_user
-            and request_user not in form.container.sharing
-        ):
+        if not form.container.has_full_permission(self.request.user):
             raise PermissionDenied()
 
         return form
@@ -48,19 +53,54 @@ class DetailForm(APIView):
     def patch(self, request, id):
         form = self.get_object(id)
 
+        if "container" in request.data:
+            del request.data["container"]
+        if "datalab" in request.data:
+            del request.data["datalab"]
+
         # If the primary key has changed, then reset the form data
-        if form.primary != self.request.data["primary"]:
+        if form.primary != request.data["primary"]:
             form.data = []
 
-        serializer = FormSerializer(form, data=request.data)
-        serializer.is_valid()
-        form = serializer.save()
-
+        # Check if the form is being used in the DataLab
         datalab = form.datalab
+        form_fields = [field.get("name") for field in request.data.get("fields", [])]
+        order_items = [item.field for item in datalab.order]
+        for step_index, step in enumerate(datalab.steps):
+            if step.type == "form" and step.form == id:
+                should_update = False
+
+                for item_index, item in enumerate(datalab.order):
+                    if item.stepIndex == step_index and item.field not in form_fields:
+                        del datalab.order[item_index]
+                        should_update = True
+
+                for field in form_fields:
+                    if field not in order_items:
+                        datalab.order.append(
+                            Column(
+                                stepIndex=step_index,
+                                field=field,
+                                visible=True,
+                                pinned=False,
+                            )
+                        )
+                        should_update = True
+
+                break
+
+        serializer = FormSerializer(form, data=request.data, partial=True)
+        serializer.is_valid()
+        serializer.save()
+
         datalab.relations = set_relations(datalab)
         datalab.save()
 
         form.refresh_access()
+
+        serializer = FormSerializer(
+            form, context={"updated_datalab": DatalabSerializer(datalab).data}
+        )
 
         return Response(serializer.data, status=HTTP_200_OK)
 
@@ -80,18 +120,13 @@ class AccessForm(APIView):
         except:
             raise NotFound()
 
-        has_full_permission = (
-            self.request.user.email == form.container.owner
-            or self.request.user.email in form.container.sharing
-        )
-
         accessible_records = (
             pd.DataFrame(data=form.datalab.relations)
             .set_index(form.primary)
             .filter(items=[form.primary, form.permission])
         )
 
-        if has_full_permission:
+        if form.container.has_full_permission(self.request.user):
             editable_records = accessible_records.index.values
         else:
             user_values = []
