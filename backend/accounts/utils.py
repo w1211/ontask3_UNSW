@@ -77,8 +77,8 @@ def user_signup_notification(user):
             "OnTask - new user signup",
             (
                 "<p>A new user has signed up with the following details:</p>"
-                "<p>Name: " + user.name + "</p>"
-                "<p>Email: " + user.email + "</p>"
+                f"<p>Name: {user.first_name} {user.last_name}</p>"
+                f"<p>Email: {user.email}</p>"
             ),
             force_send=True,
         )
