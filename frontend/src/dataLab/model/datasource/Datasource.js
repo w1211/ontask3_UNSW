@@ -398,7 +398,7 @@ class DatasourceModule extends React.Component {
         <Tooltip title="Check discrepencies">
           <Icon
             type={discrepencies.loading ? "loading" : "disconnect"}
-            onClick={() => this.checkForDiscrepencies()}
+            // onClick={() => this.checkForDiscrepencies()}
           />
         </Tooltip>
       );
@@ -487,7 +487,7 @@ class DatasourceModule extends React.Component {
               })(
                 <Select
                   placeholder="Matching field"
-                  onChange={this.checkForDiscrepencies}
+                  // onChange={this.checkForDiscrepencies}
                   disabled={
                     !datasource ||
                     !getFieldValue(`steps[${stepIndex}].datasource.primary`)
