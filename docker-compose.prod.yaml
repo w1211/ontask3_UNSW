@@ -9,7 +9,7 @@ services:
     volumes: 
       - ./data/rabbitmq:/var/lib/rabbitmq/mnesia
 
-  nosql:
+  db:
     restart: always
     image: mongo:4
     volumes:
