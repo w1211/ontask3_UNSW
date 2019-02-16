@@ -21,6 +21,7 @@ import jwt
 from container.models import Container
 from datalab.models import Datalab
 from datasource.models import Datasource
+from form.models import Form
 
 from .utils import did_pass_test, parse_content_line
 from scheduler.tasks import workflow_send_email
@@ -159,8 +160,9 @@ class Workflow(Document):
                 labels.append(module_labels)
 
             if step.type == "form":
-                module["name"] = step.form.name
-                for field in step.form.fields:
+                form = Form.objects.get(id=step.form)
+                module["name"] = form.name
+                for field in form.fields:
                     module["fields"].append(field.name)
                     types[field.name] = field.type
                     module_labels[field.name] = field.name

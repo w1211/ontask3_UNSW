@@ -192,6 +192,7 @@ class Action extends React.Component {
                           <h1>Create Action</h1>
 
                           <Settings
+                            match={match}
                             history={history}
                             location={location}
                             updateAction={this.updateAction}

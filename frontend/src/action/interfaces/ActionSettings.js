@@ -21,7 +21,7 @@ class ActionSettings extends React.Component {
   state = {};
 
   handleSave = () => {
-    const { form, action, history, location, updateAction } = this.props;
+    const { form, action, history, location, updateAction, match } = this.props;
 
     form.validateFields((err, payload) => {
       if (err) return;
@@ -43,8 +43,8 @@ class ActionSettings extends React.Component {
           });
           this.setState({ loading: false });
           updateAction(action);
-          if (!action)
-            history.push({ pathname: `/action/${action.id}/settings` });
+          if (!match.params.id)
+            history.push({ pathname: `/action/${action.id}` });
         },
         onError: () => {
           this.setState({ loading: false });
