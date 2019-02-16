@@ -196,7 +196,25 @@ class Model extends React.Component {
         }}
       >
         <div className="model" style={{ maxWidth: 1300 }}>
-          <Affix style={{ float: "right" }} offsetTop={25}>
+          <h2>Details</h2>
+
+          <div className="name">
+            <FormItem label="Name">
+              {getFieldDecorator("name", {
+                rules: [
+                  {
+                    required: true,
+                    message: "DataLab name is required"
+                  }
+                ],
+                initialValue: name
+              })(<Input />)}
+            </FormItem>
+          </div>
+
+          <h2>Data Model</h2>
+
+          <Affix offsetTop={25}>
             <div className="components">
               <div>Components</div>
               <div>
@@ -227,24 +245,6 @@ class Model extends React.Component {
               </div>
             </div>
           </Affix>
-
-          <h2>Details</h2>
-
-          <div className="name">
-            <FormItem label="Name">
-              {getFieldDecorator("name", {
-                rules: [
-                  {
-                    required: true,
-                    message: "DataLab name is required"
-                  }
-                ],
-                initialValue: name
-              })(<Input />)}
-            </FormItem>
-          </div>
-
-          <h2>Data Model</h2>
 
           <div className="build">
             {stepKeys.length > 0 ? (
@@ -292,7 +292,7 @@ class Model extends React.Component {
                   style={{ marginRight: 5 }}
                 />
                 Add your first component by clicking the Datasource module in
-                the Components toolbox at the top-right.
+                the Components toolbox above.
               </div>
             )}
           </div>
