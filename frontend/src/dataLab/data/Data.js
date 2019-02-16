@@ -8,11 +8,13 @@ import {
   Tooltip,
   Button,
   Input,
-  notification
+  notification,
+  Radio
 } from "antd";
 import memoize from "memoize-one";
 
 import Visualisation from "./Visualisation";
+import Details from "../details/Details";
 
 import apiRequest from "../../shared/apiRequest";
 import Field from "../../shared/Field";
@@ -26,7 +28,8 @@ class Data extends React.Component {
     edit: { field: null, primary: null },
     saved: {},
     searchTerm: "",
-    visualisation: false
+    visualisation: false,
+    view: "data"
   };
 
   initialiseData = memoize((data, searchTerm) => {
@@ -294,8 +297,16 @@ class Data extends React.Component {
   }
 
   render() {
-    const { data, order, steps, forms } = this.props;
-    const { visualisation, edit, saved, searchTerm } = this.state;
+    const {
+      data,
+      order,
+      steps,
+      forms,
+      datasources,
+      updateDatalab,
+      selectedId
+    } = this.props;
+    const { visualisation, edit, saved, searchTerm, view } = this.state;
 
     const totalDataAmount = data ? data.length : 0;
 
@@ -317,10 +328,21 @@ class Data extends React.Component {
           <Button
             size="large"
             onClick={() => this.setState({ visualisation: true })}
+            type="primary"
           >
             <Icon type="area-chart" size="large" />
             Visualise
           </Button>
+
+          <Radio.Group
+            size="large"
+            style={{ marginLeft: 10 }}
+            value={view}
+            onChange={e => this.setState({ view: e.target.value })}
+          >
+            <Radio.Button value="data">Data</Radio.Button>
+            <Radio.Button value="details">Details</Radio.Button>
+          </Radio.Group>
 
           <Search
             className="searchbar"
@@ -351,22 +373,35 @@ class Data extends React.Component {
             forms={forms}
           />
 
-          <Table
-            rowKey={(record, index) => index}
-            columns={orderedColumns}
-            dataSource={orderedColumns.length > 0 ? tableData : []}
-            scroll={{ x: (orderedColumns.length - 1) * 175 }}
-            onChange={this.handleChange}
-            pagination={{
-              showSizeChanger: true,
-              pageSizeOptions: ["10", "25", "50", "100"]
-            }}
-            rowClassName={record =>
-              edit.primary in record && saved[record[edit.primary]]
-                ? "saved"
-                : ""
-            }
-          />
+          {view === "data" && (
+            <Table
+              rowKey={(record, index) => index}
+              columns={orderedColumns}
+              dataSource={orderedColumns.length > 0 ? tableData : []}
+              scroll={{ x: (orderedColumns.length - 1) * 175 }}
+              onChange={this.handleChange}
+              pagination={{
+                showSizeChanger: true,
+                pageSizeOptions: ["10", "25", "50", "100"]
+              }}
+              rowClassName={record =>
+                edit.primary in record && saved[record[edit.primary]]
+                  ? "saved"
+                  : ""
+              }
+            />
+          )}
+
+          {view === "details" && (
+            <Details
+              datasources={datasources}
+              selectedId={selectedId}
+              steps={steps}
+              order={order}
+              updateDatalab={updateDatalab}
+              forms={forms}
+            />
+          )}
         </div>
       </div>
     );

@@ -139,38 +139,33 @@ class DataLab extends React.Component {
                         </Link>
                       </Menu.Item>
 
-                      <Menu.Item key="details">
-                        <Link to={`${match.url}/details`}>
-                          <Icon type="profile" />
-                          <span>Details</span>
-                        </Link>
-                      </Menu.Item>
-
-                      <SubMenu
-                        key="form"
-                        title={
-                          <span>
-                            <Icon type="form" />
-                            <span>Forms ({forms.length})</span>
-                          </span>
-                        }
-                      >
-                        <Menu.Item key="create">
-                          <Link to={`${match.url}/form/create`}>
-                            <span>Create new form</span>
-                          </Link>
-                        </Menu.Item>
-
-                        {forms.length > 0 && <Menu.Divider />}
-
-                        {forms.map(form => (
-                          <Menu.Item key={form.id}>
-                            <Link to={`${match.url}/form/${form.id}`}>
-                              <span>{form.name}</span>
+                      <Menu.ItemGroup title="Extensions">
+                        <SubMenu
+                          key="form"
+                          title={
+                            <span>
+                              <Icon type="form" />
+                              <span>Forms ({forms.length})</span>
+                            </span>
+                          }
+                        >
+                          <Menu.Item key="create">
+                            <Link to={`${match.url}/form/create`}>
+                              <span>Create new form</span>
                             </Link>
                           </Menu.Item>
-                        ))}
-                      </SubMenu>
+
+                          {forms.length > 0 && <Menu.Divider />}
+
+                          {forms.map(form => (
+                            <Menu.Item key={form.id}>
+                              <Link to={`${match.url}/form/${form.id}`}>
+                                <span>{form.name}</span>
+                              </Link>
+                            </Menu.Item>
+                          ))}
+                        </SubMenu>
+                      </Menu.ItemGroup>
                     </Menu>
                   </Sider>
                 )}
@@ -223,6 +218,7 @@ class DataLab extends React.Component {
                                 steps={steps}
                                 data={data}
                                 order={order}
+                                datasources={datasources}
                                 selectedId={selectedId}
                                 updateDatalab={this.updateDatalab}
                                 updateData={this.updateData}
