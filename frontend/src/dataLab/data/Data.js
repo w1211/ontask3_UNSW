@@ -8,7 +8,6 @@ import {
   Tooltip,
   Button,
   Input,
-  message,
   notification
 } from "antd";
 import memoize from "memoize-one";
