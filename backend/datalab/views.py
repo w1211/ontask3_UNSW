@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action, list_route, detail_route
 from rest_framework.response import Response
 from rest_framework.status import HTTP_401_UNAUTHORIZED
+from mongoengine.queryset.visitor import Q
 
 import json
 
@@ -13,6 +14,7 @@ from .permissions import DatalabPermissions
 from .models import Datalab
 from .utils import bind_column_types, set_relations
 
+from container.models import Container
 from datasource.models import Datasource
 from form.models import Form
 
@@ -24,10 +26,13 @@ class DatalabViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # Get the containers this user owns or has access to
-        # containers = ContainerViewSet.get_queryset(self)
+        containers = Container.objects.filter(
+            Q(owner=self.request.user.email)
+            | Q(sharing__contains=self.request.user.email)
+        )
 
         # Retrieve only the DataLabs that belong to these containers
-        datalabs = Datalab.objects.all()  # (container__in=containers)
+        datalabs = Datalab.objects(container__in=containers)
 
         return datalabs
 

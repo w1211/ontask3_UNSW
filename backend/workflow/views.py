@@ -5,6 +5,8 @@ from rest_framework.decorators import detail_route, list_route
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.http import HttpResponse, JsonResponse
+from rest_framework.status import HTTP_200_OK
+from mongoengine.queryset.visitor import Q
 
 import os
 from json import dumps
@@ -26,8 +28,7 @@ from .models import (
 )
 from .permissions import WorkflowPermissions
 
-# from container.views import ContainerViewSet
-from container.serializers import ContainerSerializer
+from container.models import Container
 
 from scheduler.methods import (
     create_scheduled_task,
@@ -49,10 +50,13 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # Get the containers this user owns or has access to
-        # containers = ContainerViewSet.get_queryset(self)
+        containers = Container.objects.filter(
+            Q(owner=self.request.user.email)
+            | Q(sharing__contains=self.request.user.email)
+        )
 
         # Retrieve only the DataLabs that belong to these containers
-        actions = Workflow.objects.all()#(container__in=containers)
+        actions = Workflow.objects(container__in=containers)
 
         return actions
 
@@ -253,10 +257,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         serializer.is_valid()
         serializer.save()
 
-        containers = ContainerViewSet.get_queryset(self)
-        serializer = ContainerSerializer(containers, many=True)
-
-        return Response(serializer.data)
+        return Response(status=HTTP_200_OK)
 
 
 

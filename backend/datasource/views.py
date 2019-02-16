@@ -4,6 +4,7 @@ from rest_framework_mongoengine.validators import ValidationError
 from rest_framework.decorators import list_route, detail_route
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from mongoengine.queryset.visitor import Q
 
 import json
 import boto3
@@ -34,8 +35,7 @@ from scheduler.methods import (
     remove_async_task,
 )
 
-# from container.views import ContainerViewSet
-from container.serializers import ContainerSerializer
+from container.models import Container
 from datalab.models import Datalab
 
 
@@ -46,10 +46,13 @@ class DatasourceViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # Get the containers this user owns or has access to
-        # containers = ContainerViewSet.get_queryset(self)
+        containers = Container.objects.filter(
+            Q(owner=self.request.user.email)
+            | Q(sharing__contains=self.request.user.email)
+        )
 
         # Retrieve only the datasources that belong to these containers
-        datasources = Datasource.objects.all()#(container__in=containers)
+        datasources = Datasource.objects(container__in=containers)
 
         return datasources
 
