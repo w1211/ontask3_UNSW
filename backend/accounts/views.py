@@ -47,7 +47,7 @@ class LocalAuth(APIView):
         user = User.objects.create_user(request.data["email"], **request.data)
 
         # Give the user a container with example datasources, datalabs, actions, etc
-        seed_data(user)
+        # seed_data(user)
 
         # Send a notification to admins on user signup, if OnTask is in demo mode
         user_signup_notification(user)
