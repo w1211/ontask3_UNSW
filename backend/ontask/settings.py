@@ -33,6 +33,8 @@ elif os.environ.get('ONTASK_DEMO') is not None:
 else:
     from config.prod import *
 
+DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
+
 AWS_PROFILE = None
 
 LTI_URL = LTI_CONFIG.get('url')
