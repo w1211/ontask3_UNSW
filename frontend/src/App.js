@@ -13,6 +13,7 @@ import Login from "./auth/Login";
 import Container from "./container/Container";
 import DataLab from "./dataLab/DataLab";
 import Action from "./action/Action";
+import Administration from "./administration/Administration"
 
 import "./App.css";
 
@@ -159,6 +160,11 @@ class App extends React.Component {
             path: "/action/:id",
             component: Action,
             feedbackForm
+          })}
+
+          {this.AuthenticatedRoute({
+            path: "/administration",
+            component: Administration,
           })}
         </Switch>
 

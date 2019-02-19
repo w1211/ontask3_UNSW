@@ -3,5 +3,7 @@ from .views import *
 
 
 urlpatterns = [
-     path("user/<int:pk>/new-group/", create_admin),
+     path("users/<int:pk>/new-group/", change_group),
+     path("users/", UsersList.as_view()),
+     path("user-search/", search_users)
 ]

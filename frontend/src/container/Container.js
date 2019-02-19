@@ -109,6 +109,16 @@ class Container extends React.Component {
                     >
                       New container
                     </Button>
+                    <Button
+                      onClick={()=>this.props.history.push("/administration")}
+                      type="primary"
+                      icon="setting"
+                      size="large"
+                      className="create_container"
+                      style={{marginLeft:"10px"}}
+                    >
+                      Administration
+                    </Button>
 
                     <ContainerModal
                       {...container}

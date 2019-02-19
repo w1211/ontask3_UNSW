@@ -2,7 +2,7 @@
   {
     "model": "auth.group",
     "pk": 1,
-    "fields": { "name": "users" }
+    "fields": { "name": "user" }
   },
   {
     "model": "auth.group",
