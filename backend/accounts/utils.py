@@ -4,6 +4,7 @@ from jwt import encode
 from random import randint
 from bson import ObjectId
 import os
+import uuid
 
 from ontask.settings import SECRET_KEY, DEMO_BUCKET, ADMINS
 
@@ -39,7 +40,8 @@ def get_or_create_user(data):
         user = User.objects.get(email=email)
     # If the user doesn't exist, then create them
     except User.DoesNotExist:
-        data["password"] = email
+        # Randomly generate a password for users coming from AAF or LTI
+        data["password"] = uuid.uuid4().hex
         user = User.objects.create_user(email, **data)
 
         # Send a notification to admins on user signup, if OnTask is in demo mode
