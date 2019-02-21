@@ -22,6 +22,7 @@ services:
       - ~/.aws:/root/.aws
     environment:
       - ONTASK_DEVELOPMENT=true
+      - DJANGO_DEBUG=true
     depends_on:
       - db
     command: uwsgi --ini uwsgi.ini --lazy-apps
@@ -33,6 +34,7 @@ services:
       - ~/.aws:/root/.aws
     environment:
       - ONTASK_DEVELOPMENT=true
+      - DJANGO_DEBUG=true
     depends_on:
       - rabbitmq
       - backend
@@ -42,6 +44,7 @@ services:
     build: ./backend
     environment:
       - ONTASK_DEVELOPMENT=true
+      - DJANGO_DEBUG=true
     depends_on:
       - celery
     command: celery -A ontask beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
