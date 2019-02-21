@@ -207,6 +207,6 @@ class ValidateOneTimeToken(APIView):
                 "token": str(long_term_token),
                 "email": user.email,
                 "name": f"{user.first_name} {user.last_namFe}",
-                "group": ",".join([group.name for group in user.groups.all()],
+                "group": ",".join([group.name for group in user.groups.all()]),
             }
         )
