@@ -13,7 +13,6 @@ from dateutil import parser
 from ontask.settings import (
     SECRET_KEY,
     DB_DRIVER_MAPPING,
-    SMTP,
     AWS_PROFILE
 )
 
