@@ -18,6 +18,7 @@ import mongoengine
 # Default settings
 EMAIL_NAME = None
 EMAIL_ALIAS = None
+AWS_PROFILE = None
 
 from .env import *
 
