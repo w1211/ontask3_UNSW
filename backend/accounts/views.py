@@ -6,6 +6,7 @@ from rest_framework.status import HTTP_401_UNAUTHORIZED, HTTP_400_BAD_REQUEST
 
 from django.shortcuts import redirect
 from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth.models import Group
 from django.db.utils import IntegrityError
 
 from pylti.common import LTIException, verify_request_common
@@ -45,6 +46,7 @@ class LocalAuth(APIView):
             )
 
         user = User.objects.create_user(request.data["email"], **request.data)
+        user.groups.add(Group.objects.get(name="user"))
 
         # Give the user a container with example datasources, datalabs, actions, etc
         # seed_data(user)
@@ -68,6 +70,7 @@ class LocalAuth(APIView):
                 "token": str(long_term_token),
                 "email": user.email,
                 "name": f"{user.first_name} {user.last_name}",
+                "group": ",".join([group.name for group in user.groups.all()])
             }
         )
 
@@ -96,6 +99,7 @@ class AAFAuth(APIView):
             "last_name": user_attributes["surname"],
         }
         user = get_or_create_user(data)
+        user.groups.add(Group.objects.get(name="user"))
 
         # Update the user's role to staff if necessary
         roles = user_attributes["edupersonscopedaffiliation"][0].split(";")
@@ -138,6 +142,7 @@ class LTIAuth(APIView):
         user = get_or_create_user(data)
 
         token = generate_one_time_token(user)
+        user.groups.add(Group.objects.get(name="user"))
 
         # Store the important LTI fields for this user
         # These fields be used to grant permissions in containers
@@ -201,6 +206,7 @@ class ValidateOneTimeToken(APIView):
             {
                 "token": str(long_term_token),
                 "email": user.email,
-                "name": f"{user.first_name} {user.last_name}",
+                "name": f"{user.first_name} {user.last_namFe}",
+                "group": ",".join([group.name for group in user.groups.all()]),
             }
         )

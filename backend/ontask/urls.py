@@ -22,6 +22,7 @@ import os
 
 from rest_framework import routers
 
+from container.views import Dashboard
 from datasource.views import DatasourceViewSet
 from datalab.views import DatalabViewSet
 from workflow.views import WorkflowViewSet, FeedbackView
@@ -33,8 +34,10 @@ router.register("workflow", WorkflowViewSet, "workflow")
 
 urlpatterns = [
     path("auth/", include("accounts.urls")),
+    path("dashboard/", Dashboard),
     path("container/", include("container.urls")),
     path("form/", include("form.urls")),
+    path("administration/", include("administration.urls")),
     *router.urls,
     url(r"feedback/(?P<datalab_id>[a-z\d]+)/", FeedbackView.as_view())
 ]

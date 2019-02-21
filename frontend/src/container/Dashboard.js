@@ -42,11 +42,11 @@ class Dashboard extends React.Component {
   fetchDashboard = () => {
     this.setState({ fetching: true });
 
-    apiRequest(`/container/`, {
+    apiRequest(`/dashboard/`, {
       method: "GET",
       onSuccess: dashboard => {
-        let accordionKey = localStorage.getItem("accordionKey");
-        let tabKey = localStorage.getItem("tabKey");
+        let accordionKey = sessionStorage.getItem("accordionKey");
+        let tabKey = sessionStorage.getItem("tabKey");
 
         if ((!accordionKey || !tabKey) && dashboard.length > 0)
           this.setDefaultKeys(dashboard[0].id);
@@ -238,12 +238,12 @@ class Dashboard extends React.Component {
         : ["information_submission"].find(type => container[type].length > 0);
 
       this.setState({ accordionKey: containerId, tabKey });
-      localStorage.setItem("accordionKey", containerId);
-      localStorage.setItem("tabKey", tabKey);
+      sessionStorage.setItem("accordionKey", containerId);
+      sessionStorage.setItem("tabKey", tabKey);
     } else {
       this.setState({ accordionKey: null, tabKey: null });
-      localStorage.removeItem("accordionKey");
-      localStorage.removeItem("tabKey");
+      sessionStorage.removeItem("accordionKey");
+      sessionStorage.removeItem("tabKey");
     }
   };
 
@@ -284,7 +284,7 @@ class Dashboard extends React.Component {
   Header = container => {
     const { deleting } = this.state;
 
-    const currentUser = localStorage.getItem("email");
+    const currentUser = sessionStorage.getItem("email");
     const isOwner = currentUser === container.owner;
 
     return (
@@ -379,7 +379,7 @@ class Dashboard extends React.Component {
                   onSelect={e => {
                     const tabKey = e.key;
                     this.setState({ tabKey });
-                    localStorage.setItem("tabKey", tabKey);
+                    sessionStorage.setItem("tabKey", tabKey);
                   }}
                   style={{ maxWidth: 250 }}
                 >
@@ -486,23 +486,40 @@ class Dashboard extends React.Component {
                   <Spin size="large" />
                 ) : (
                   <div>
-                    <Button
-                      onClick={() => this.openModal({ type: "container" })}
-                      type="primary"
-                      icon="plus"
-                      size="large"
-                      className="create_container"
-                    >
-                      New Container
-                    </Button>
+                    <div style={{ marginBottom: 20 }}>
+                      {["admin", "instructor"].includes(
+                        sessionStorage.getItem("group")
+                      ) && (
+                        <Button
+                          onClick={() => this.openModal({ type: "container" })}
+                          type="primary"
+                          icon="plus"
+                          size="large"
+                        >
+                          New Container
+                        </Button>
+                      )}
+
+                      {sessionStorage.getItem("group") === "admin" && (
+                        <Button
+                          onClick={() => history.push("/administration")}
+                          type="primary"
+                          icon="setting"
+                          size="large"
+                          style={{ marginLeft: "10px" }}
+                        >
+                          Administration
+                        </Button>
+                      )}
+                    </div>
 
                     <ContainerModal
                       {...container}
                       fetchDashboard={this.fetchDashboard}
                       updateAccordionKey={accordionKey => {
                         this.setState({ accordionKey, tabKey: "datasources" });
-                        localStorage.setItem("accordionKey", accordionKey);
-                        localStorage.setItem("tabKey", "datasources");
+                        sessionStorage.setItem("accordionKey", accordionKey);
+                        sessionStorage.setItem("tabKey", "datasources");
                       }}
                       closeModal={() => this.closeModal("container")}
                     />

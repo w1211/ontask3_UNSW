@@ -15,7 +15,7 @@ const apiRequest = async (
   };
 
   if (isAuthenticated)
-    options.headers.Authorization = `Token ${localStorage.getItem("token")}`;
+    options.headers.Authorization = `Token ${sessionStorage.getItem("token")}`;
 
   if (payload) {
     if (isJSON) {

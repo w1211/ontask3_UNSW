@@ -90,7 +90,7 @@ class EmailSettings extends React.Component {
         <FormItem {...narrowFormItemLayout} label="From (name)">
           {getFieldDecorator("emailSettings.fromName", {
             initialValue:
-              _.get(emailSettings, "fromName") || localStorage.getItem("name")
+              _.get(emailSettings, "fromName") || sessionStorage.getItem("name")
           })(<Input />)}
         </FormItem>
 
@@ -98,7 +98,7 @@ class EmailSettings extends React.Component {
           {getFieldDecorator("emailSettings.replyTo", {
             rules: [{ required: true, message: "Reply-to is required" }],
             initialValue:
-              _.get(emailSettings, "replyTo") || localStorage.getItem("email")
+              _.get(emailSettings, "replyTo") || sessionStorage.getItem("email")
           })(<Input />)}
         </FormItem>
 

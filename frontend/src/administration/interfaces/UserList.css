@@ -1,0 +1,12 @@
+.ant-table-column-has-actions:hover .editable.is-not-editing {
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.ant-table-column-has-actions .editable.is-not-editing {
+    line-height: 32px;
+    padding: 0 11px;
+}
+.ant-table-column-has-actions:hover .editable.is-editing {
+    padding: 0;
+}

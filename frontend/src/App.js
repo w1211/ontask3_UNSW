@@ -14,8 +14,8 @@ import Dashboard from "./container/Dashboard";
 import Datasource from "./datasource/Datasource";
 import DataLab from "./dataLab/DataLab";
 import Action from "./action/Action";
+import Administration from "./administration/Administration"
 import Form from "./form/Form";
-
 import Forbidden from "./error/Forbidden";
 
 import "./App.css";
@@ -30,15 +30,16 @@ class App extends React.Component {
   }
 
   logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("email");
-    localStorage.removeItem("name");
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("email");
+    sessionStorage.removeItem("name");
+    sessionStorage.removeItem("group");
     this.setState({ hasToken: false });
   };
 
   componentWillMount() {
     this.setState({
-      hasToken: localStorage.getItem("token") ? true : false
+      hasToken: sessionStorage.getItem("token") ? true : false
     });
 
     const queryStrings = queryString.parse(window.location.search);
@@ -46,10 +47,10 @@ class App extends React.Component {
 
     if (tkn)
       requestToken(tkn, response => {
-        localStorage.setItem("token", response.token);
-        localStorage.setItem("email", response.email);
-        localStorage.setItem("name", response.name);
-
+        sessionStorage.setItem("token", response.token);
+        sessionStorage.setItem("email", response.email);
+        sessionStorage.setItem("name", response.name);
+        sessionStorage.setItem("group", response.group);
         this.setState({
           hasToken: true,
           ltiResourceId: lti,
@@ -121,7 +122,7 @@ class App extends React.Component {
           {hasToken && (
             <div className="logout">
               <span style={{ marginRight: 10 }}>
-                Logged in as: <strong>{localStorage.getItem("name")}</strong>
+                Logged in as: <strong>{sessionStorage.getItem("name")}</strong>
               </span>
               <Tooltip title="Logout">
                 <Button icon="logout" onClick={this.logout} />
@@ -189,6 +190,11 @@ class App extends React.Component {
             component: Form
           })}
 
+          {sessionStorage.getItem("group") === "admin" && this.AuthenticatedRoute({
+            path: "/administration",
+            component: Administration,
+          })}
+          
           <Route exact path="/forbidden" component={Forbidden} />
 
           <Route

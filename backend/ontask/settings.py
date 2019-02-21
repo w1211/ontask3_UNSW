@@ -51,19 +51,20 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Application definition
 
 INSTALLED_APPS = [
-    "accounts",
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
-    "django_celery_beat",
-    "rest_framework",
-    "rest_framework.authtoken",
-    "rest_framework_mongoengine",
-    "scheduler",
-    "corsheaders",
+    'accounts',
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'django_celery_beat',
+    'rest_framework',
+    'rest_framework.authtoken',
+    'rest_framework_mongoengine',
+    'scheduler',
+    'corsheaders',
+    'administration'
 ]
 
 MIDDLEWARE = [
