@@ -148,9 +148,14 @@ class AccessForm(APIView):
                 except:
                     pass
 
-            editable_records = accessible_records[
-                accessible_records[form.permission].isin(user_values)
-            ]
+            if form.primary == form.permission:
+                editable_records = accessible_records[
+                    accessible_records.index.isin(user_values)
+                ]
+            else:
+                editable_records = accessible_records[
+                    accessible_records[form.permission].isin(user_values)
+                ]   
 
             if not len(editable_records):
                 # User does not have access to any records, so return a 403
