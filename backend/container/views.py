@@ -14,55 +14,60 @@ from accounts.permissions import CanCreateObjects
 
 @api_view(["GET"])
 def Dashboard(request):
-        accessible_forms = Form.objects.filter(
-            (Q(ltiAccess=True) | Q(emailAccess=True))
-            & Q(permitted_users__in=request.user.permission_values)
+    accessible_forms = Form.objects.filter(
+        (Q(ltiAccess=True) | Q(emailAccess=True))
+        & Q(permitted_users__in=request.user.permission_values)
+    )
+    related_containers = set(form.container.id for form in accessible_forms)
+
+    containers = Container.objects.filter(
+        Q(owner=request.user.email)
+        | Q(sharing__contains=request.user.email)
+        | Q(id__in=related_containers)
+    )
+
+    response = []
+    for container in containers:
+        serializer = DashboardSerializer(
+            container,
+            context={
+                "has_full_permission": container.has_full_permission(request.user),
+                "accessible_forms": accessible_forms,
+            },
         )
-        related_containers = set(form.container.id for form in accessible_forms)
+        response.append(serializer.data)
 
-        containers = Container.objects.filter(
-            Q(owner=request.user.email)
-            | Q(sharing__contains=request.user.email)
-            | Q(id__in=related_containers)
-        )
-
-        response = []
-        for container in containers:
-            serializer = DashboardSerializer(
-                container,
-                context={
-                    "has_full_permission": container.has_full_permission(request.user),
-                    "accessible_forms": accessible_forms,
-                },
-            )
-            response.append(serializer.data)
-
-        return Response(response)
+    return Response(response)
 
 
 @api_view(["POST"])
 @permission_classes([CanCreateObjects])
 def CreateContainer(request):
-        # Ensure that the container code is not a duplicate for this user
-        if Container.objects.filter(
-            owner=request.user.email, code=request.data["code"]
-        ).first():
-            raise ValidationError("A container with this code already exists")
+    # Ensure that the container code is not a duplicate for this user
+    if Container.objects.filter(
+        owner=request.user.email, code=request.data["code"]
+    ).first():
+        raise ValidationError("A container with this code already exists")
 
-        container = Container(owner=request.user.email)
-        serializer = ContainerSerializer(container, data=request.data)
-        serializer.is_valid()
-        serializer.save()
+    container = Container(owner=request.user.email)
+    serializer = ContainerSerializer(container, data=request.data)
+    serializer.is_valid()
+    serializer.save()
 
-        return Response(serializer.data, status=HTTP_201_CREATED)
+    return Response(serializer.data, status=HTTP_201_CREATED)
 
 
 class DetailContainer(APIView):
-    def patch(self, request, id):
+    def get_object(self, id):
         try:
-            container = Container.objects.get(id=id)
+            form = Container.objects.get(id=id)
         except:
             raise NotFound()
+
+        return form
+
+    def patch(self, request, id):
+        container = self.get_object(id)
 
         # Only owner or users with shared access can edit a container
         if not container.has_full_permission(request.user):
@@ -90,10 +95,7 @@ class DetailContainer(APIView):
         return Response(status=HTTP_200_OK)
 
     def delete(self, request, id):
-        try:
-            container = Container.objects.get(id=id)
-        except:
-            raise NotFound()
+        container = self.get_object(id)
 
         # Only owner can delete a container
         if not container.is_owner(request.user):
