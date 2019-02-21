@@ -1,6 +1,6 @@
 from mongoengine.queryset.visitor import Q
 from rest_framework.views import APIView
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError, NotFound, PermissionDenied
 from rest_framework.status import HTTP_201_CREATED, HTTP_200_OK
@@ -9,10 +9,11 @@ from .serializers import ContainerSerializer, DashboardSerializer
 from .models import Container
 
 from form.models import Form
+from accounts.permissions import CanCreateObjects
 
 
-class ListContainers(APIView):
-    def get(self, request):
+@api_view(["GET"])
+def Dashboard(request):
         accessible_forms = Form.objects.filter(
             (Q(ltiAccess=True) | Q(emailAccess=True))
             & Q(permitted_users__in=request.user.permission_values)
@@ -38,7 +39,10 @@ class ListContainers(APIView):
 
         return Response(response)
 
-    def post(self, request):
+
+@api_view(["POST"])
+@permission_classes([CanCreateObjects])
+def CreateContainer(request):
         # Ensure that the container code is not a duplicate for this user
         if Container.objects.filter(
             owner=request.user.email, code=request.data["code"]
