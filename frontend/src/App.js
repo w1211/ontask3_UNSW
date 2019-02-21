@@ -30,13 +30,16 @@ class App extends React.Component {
   }
 
   logout = () => {
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("email");
+    sessionStorage.removeItem("name");
     sessionStorage.removeItem("group");
     this.setState({ hasToken: false });
   };
 
   componentWillMount() {
     this.setState({
-      hasToken: localStorage.getItem("token") ? true : false
+      hasToken: sessionStorage.getItem("token") ? true : false
     });
 
     const queryStrings = queryString.parse(window.location.search);
@@ -44,6 +47,9 @@ class App extends React.Component {
 
     if (tkn)
       requestToken(tkn, response => {
+        sessionStorage.setItem("token", response.token);
+        sessionStorage.setItem("email", response.email);
+        sessionStorage.setItem("name", response.name);
         sessionStorage.setItem("group", response.group);
         this.setState({
           hasToken: true,
@@ -116,7 +122,7 @@ class App extends React.Component {
           {hasToken && (
             <div className="logout">
               <span style={{ marginRight: 10 }}>
-                Logged in as: <strong>{localStorage.getItem("name")}</strong>
+                Logged in as: <strong>{sessionStorage.getItem("name")}</strong>
               </span>
               <Tooltip title="Logout">
                 <Button icon="logout" onClick={this.logout} />

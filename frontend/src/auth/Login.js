@@ -22,6 +22,9 @@ class Login extends React.Component {
     const { onLogin } = this.props;
 
     this.setState({ loading: false });
+    sessionStorage.setItem("token", response.token);
+    sessionStorage.setItem("email", response.email);
+    sessionStorage.setItem("name", response.name);
     sessionStorage.setItem("group", response.group);
 
     onLogin();
