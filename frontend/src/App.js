@@ -190,10 +190,9 @@ class App extends React.Component {
             component: Form
           })}
 
-          {sessionStorage.getItem("group") === "admin" &&
-            this.AuthenticatedRoute({
+          {sessionStorage.getItem("group") === "admin" && this.AuthenticatedRoute({
             path: "/administration",
-              component: Administration
+            component: Administration,
           })}
           
           <Route exact path="/forbidden" component={Forbidden} />

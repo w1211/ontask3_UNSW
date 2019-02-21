@@ -490,15 +490,28 @@ class Dashboard extends React.Component {
                       {["admin", "instructor"].includes(
                         sessionStorage.getItem("group")
                       ) && (
-                    <Button
-                      onClick={() => this.openModal({ type: "container" })}
-                      type="primary"
-                      icon="plus"
-                      size="large"
-                      className="create_container"
-                    >
-                      New Container
-                    </Button>
+                        <Button
+                          onClick={() => this.openModal({ type: "container" })}
+                          type="primary"
+                          icon="plus"
+                          size="large"
+                        >
+                          New Container
+                        </Button>
+                      )}
+
+                      {sessionStorage.getItem("group") === "admin" && (
+                        <Button
+                          onClick={() => history.push("/administration")}
+                          type="primary"
+                          icon="setting"
+                          size="large"
+                          style={{ marginLeft: "10px" }}
+                        >
+                          Administration
+                        </Button>
+                      )}
+                    </div>
 
                     <ContainerModal
                       {...container}

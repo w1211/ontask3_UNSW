@@ -1,13 +1,18 @@
 import React, { Component } from "react";
-import { Table, Input, Button, Icon, Select, Form, notification } from "antd";
+import { Table, Input, Button, Icon, Select, Spin, notification } from "antd";
 import apiRequest from "../../shared/apiRequest";
 import "./UserList.css";
-// import { NavLink, Link } from "react-router-dom";
 
 const groupsHierarchy = {
   admin: 3,
   instructor: 2,
   user: 1
+};
+
+const groupLabelMap = {
+  admin: "Admin",
+  instructor: "Instructor",
+  user: "User"
 };
 
 class GroupSelect extends Component {
@@ -21,31 +26,29 @@ class GroupSelect extends Component {
     };
   }
 
-  handleSubmit = (value) => {
-    const {record, updateRecord} = this.props
+  handleSubmit = value => {
+    const { record, updateRecord } = this.props;
 
     this.setState({ value });
     this.select.blur();
     updateRecord(value);
 
-    const url = `/administration/users/${record.id}/new-group/`;
-    const payload = {group_name: value}
-    apiRequest(url, {
-      method: "POST",
+    const payload = { group: value };
+    apiRequest(`/administration/user/${record.id}/change-group/`, {
+      method: "PUT",
       payload,
-      onSuccess: res => {
-        notification['success']({
-          message: res.message,
-          description: 'The User data is updated.',
+      onSuccess: () => {
+        notification["success"]({
+          message: "Group successfully updated"
         });
       },
-      onError: res => {
-        notification['error']({
-          message: res.message,
-          description: 'The User data is not updated.',
+      onError: error => {
+        notification["error"]({
+          message: "Group update failed",
+          description: error.message
         });
-        this.setState({value: record.group})
-        updateRecord(record.group)
+        this.setState({ value: record.group });
+        updateRecord(record.group);
       }
     });
   };
@@ -65,19 +68,21 @@ class GroupSelect extends Component {
             style={{ width: "100%" }}
             autoFocus
             onChange={value => {
-              this.handleSubmit(value)
+              this.handleSubmit(value);
             }}
             value={value}
             defaultOpen={true}
             ref={ref => (this.select = ref)}
             onBlur={() => this.setState({ editing: false })}
           >
-            <Select.Option value="admin">Admin</Select.Option>
-            <Select.Option value="instructor">Instructor</Select.Option>
-            <Select.Option value="user">User</Select.Option>
+            {["admin", "instructor", "user"].map(group => (
+              <Select.Option value={group}>
+                {groupLabelMap[group]}
+              </Select.Option>
+            ))}
           </Select>
         ) : (
-          value
+          groupLabelMap[value]
         )}
       </div>
     );
@@ -89,6 +94,7 @@ class UsersList extends Component {
     usersList: [],
     pagination: {},
     searchTerm: "",
+    fetching: true,
     loading: false
   };
 
@@ -112,7 +118,6 @@ class UsersList extends Component {
     );
   };
 
-  ///////////////////// Search ///////////////////////
   getColumnSearchProps = dataIndex => ({
     filterDropdown: ({
       setSelectedKeys,
@@ -176,7 +181,6 @@ class UsersList extends Component {
     }
   });
 
-  ///////////////////// Pagination ///////////////////////
   handleTableChange = (pagination, filters, sorter) => {
     const pager = { ...this.state.pagination };
     pager.current = pagination.current;
@@ -192,57 +196,56 @@ class UsersList extends Component {
     });
   };
 
-  ///////////////////// GET USERS ///////////////////////
-  getUsers = (params = {}) => {
-    this.setState({ loading: true });
-    if (!params.page) {
-      params.page = 1;
-    }
-    const url = `/administration/users/?page=${params.page}`;
-    apiRequest(url, {
+  getUsers = (params = { page: 1 }) => {
+    const { history, showNavigation } = this.props;
+
+    apiRequest(`/administration/user/?page=${params.page}`, {
       method: "GET",
       onSuccess: res => {
-        const pagination = { ...this.state.pagination };
-        pagination.total = res.count;
         this.setState({
-          loading: false,
           usersList: res.results,
-          pagination
+          pagination: { ...this.state.pagination, total: res.count }
         });
+        this.setState({ fetching: false, loading: false });
+        showNavigation();
       },
-      onError: () => this.setState({ loading: false })
+      onError: (error, status) => {
+        if (status === 403) {
+          history.replace("/forbidden");
+        } else {
+          this.setState({ fetching: false });
+        }
+      }
     });
   };
 
-  ///////////////////// User Impersonation ///////////////////////
   handleImpersonation = username => {};
 
-  ///////////////////// Global search ///////////////////////
   handleGlobalSearch = e => {
-      const query = e.target.value
-      this.setState({ loading: true });
-      if (!query){
-        this.getUsers()
-        this.setState({ searchTerm: '' })
-        
-        return;
-      }
-      const url = `/administration/user-search/?q=${query}`
-      apiRequest(url, {
-        method: "GET",
-        onSuccess: res => {
-          this.setState({
-            loading: false,
-            usersList: res
-          })
-        },
-        onError: res => {
-          this.setState({ loading: false })
-        }
-      })
-  }
+    const query = e.target.value;
+    this.setState({ loading: true });
 
-  ///////////////////// Render ///////////////////////
+    if (!query) {
+      this.getUsers();
+      this.setState({ searchTerm: "" });
+
+      return;
+    }
+
+    apiRequest(`/administration/user/search/?q=${query}`, {
+      method: "GET",
+      onSuccess: res => {
+        this.setState({
+          loading: false,
+          usersList: res
+        });
+      },
+      onError: res => {
+        this.setState({ loading: false });
+      }
+    });
+  };
+
   render() {
     const { searchTerm } = this.state;
     const columns = [
@@ -277,10 +280,10 @@ class UsersList extends Component {
           {
             text: "User",
             value: "user"
-          },
+          }
         ],
         onFilter: (value, record) => {
-          return record.group === value
+          return record.group === value;
         },
         sorter: (a, b) => a.group.localeCompare(b.group),
         render: (text, record, index) => {
@@ -308,7 +311,7 @@ class UsersList extends Component {
         key: user.id,
         id: user.id,
         email: user.email,
-        name: user.name,
+        name: `${user.first_name} ${user.last_name}`,
         group
       };
 
@@ -326,7 +329,9 @@ class UsersList extends Component {
               .includes(term)
           );
 
-    return (
+    return this.state.fetching ? (
+      <Spin size="large" />
+    ) : (
       <div>
         <div
           style={{
@@ -337,10 +342,11 @@ class UsersList extends Component {
           <h2>All Users</h2>
           <Input.Search
             placeholder="Quick Search"
-            onChange={e => this.handleGlobalSearch(e)}//this.setState({ searchTerm: e.target.value })}
+            onChange={e => this.handleGlobalSearch(e)} //this.setState({ searchTerm: e.target.value })}
             style={{ width: 200, height: 30 }}
           />
         </div>
+
         <Table
           bordered
           dataSource={tableData}
