@@ -30,9 +30,7 @@ class App extends React.Component {
   }
 
   logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("email");
-    localStorage.removeItem("name");
+    sessionStorage.removeItem("group");
     this.setState({ hasToken: false });
   };
 
@@ -46,10 +44,7 @@ class App extends React.Component {
 
     if (tkn)
       requestToken(tkn, response => {
-        localStorage.setItem("token", response.token);
-        localStorage.setItem("email", response.email);
-        localStorage.setItem("name", response.name);
-
+        sessionStorage.setItem("group", response.group);
         this.setState({
           hasToken: true,
           ltiResourceId: lti,
@@ -189,9 +184,10 @@ class App extends React.Component {
             component: Form
           })}
 
-          {this.AuthenticatedRoute({
+          {sessionStorage.getItem("group") === "admin" &&
+            this.AuthenticatedRoute({
             path: "/administration",
-            component: Administration,
+              component: Administration
           })}
           
           <Route exact path="/forbidden" component={Forbidden} />
