@@ -4,16 +4,15 @@ from django_celery_beat.models import PeriodicTask
 
 from bson.objectid import ObjectId
 import json
-from datetime import datetime
 import jwt
 import uuid
+from time import sleep
 
 from datasource.models import Datasource
 
-# from datasource.utils import retrieve_sql_data, retrieve_file_from_s3
 from .utils import create_crontab, send_email
 
-from ontask.settings import NOSQL_DATABASE, SECRET_KEY, BACKEND_DOMAIN, FRONTEND_DOMAIN
+from ontask.settings import SECRET_KEY, BACKEND_DOMAIN, FRONTEND_DOMAIN, SMTP
 
 
 @shared_task
@@ -62,7 +61,7 @@ def refresh_datasource_data(datasource_id):
 @shared_task
 def workflow_send_email(action_id, job_type="Scheduled"):
     """ Send email based on the schedule in workflow model """
-    print("Email job initiated")
+    print("Email job initiated.")
 
     from workflow.models import Workflow, EmailJob, Email
 
@@ -83,58 +82,78 @@ def workflow_send_email(action_id, job_type="Scheduled"):
     successes = []
     failures = []
 
-    for index, item in enumerate(action.data["records"]):
-        recipient = item.get(email_settings.field)
-        email_content = populated_content[index]
+    messages = action.data["records"]
+    batch_size = SMTP.get("BATCH_SIZE", len(messages))
+    batch_pause = SMTP.get("BATCH_PAUSE", 0)
 
-        email_id = uuid.uuid4().hex
-        tracking_token = jwt.encode(
-            {
-                "action_id": str(action.id),
-                "job_id": str(job_id),
-                "email_id": str(email_id),
-            },
-            SECRET_KEY,
-            algorithm="HS256",
-        ).decode("utf-8")
+    email_batches = [
+        messages[i : i + batch_size] for i in range(0, len(messages), batch_size)
+    ]
 
-        tracking_link = (
-            f"{BACKEND_DOMAIN}/workflow/read_receipt/?email={tracking_token}"
-        )
-        tracking_pixel = f"<img src='{tracking_link}'/>"
-        email_content += tracking_pixel
+    recipient_count = 1
+    for batch_index, batch in enumerate(email_batches):
+        print(f"Starting batch {batch_index + 1} of {len(email_batches)}.")
 
-        if email_settings.include_feedback:
-            feedback_link = (
-                f"{FRONTEND_DOMAIN}/feedback/{action.id}/?job={job_id}&email={email_id}"
+        for index, item in enumerate(batch):
+            recipient = item.get(email_settings.field)
+            email_content = populated_content[index]
+
+            email_id = uuid.uuid4().hex
+            tracking_token = jwt.encode(
+                {
+                    "action_id": str(action.id),
+                    "job_id": str(job_id),
+                    "email_id": str(email_id),
+                },
+                SECRET_KEY,
+                algorithm="HS256",
+            ).decode("utf-8")
+
+            tracking_link = (
+                f"{BACKEND_DOMAIN}/workflow/read_receipt/?email={tracking_token}"
             )
-            email_content += (
-                "<p>Did you find this correspondence useful? Please provide your "
-                f"feedback by <a href='{feedback_link}'>clicking here</a>.</p>"
-            )
+            tracking_pixel = f"<img src='{tracking_link}'/>"
+            email_content += tracking_pixel
 
-        print(f"Sending email to {recipient}")
-
-        email_sent = send_email(
-            recipient,
-            email_settings.subject,
-            email_content,
-            from_name=email_settings.fromName,
-            reply_to=email_settings.replyTo,
-        )
-
-        if email_sent:
-            job.emails.append(
-                Email(
-                    email_id=email_id,
-                    recipient=recipient,
-                    # Content without the tracking pixel
-                    content=populated_content[index],
+            if email_settings.include_feedback:
+                feedback_link = f"{FRONTEND_DOMAIN}/feedback/{action.id}/?job={job_id}&email={email_id}"
+                email_content += (
+                    "<p>Did you find this correspondence useful? Please provide your "
+                    f"feedback by <a href='{feedback_link}'>clicking here</a>.</p>"
                 )
+
+            email_sent = send_email(
+                recipient,
+                email_settings.subject,
+                email_content,
+                from_name=email_settings.fromName,
+                reply_to=email_settings.replyTo,
             )
-            successes.append(recipient)
-        else:
-            failures.append(recipient)
+
+            if email_sent:
+                job.emails.append(
+                    Email(
+                        email_id=email_id,
+                        recipient=recipient,
+                        # Content without the tracking pixel
+                        content=populated_content[index],
+                    )
+                )
+                successes.append(recipient)
+                print(
+                    f"Successfully sent email to {recipient} ({recipient_count} of {len(messages)})."
+                )
+            else:
+                failures.append(recipient)
+                print(
+                    f"Failed to send email to {recipient} ({recipient_count} of {len(messages)})."
+                )
+
+            recipient_count += 1
+
+        if batch_index + 1 != len(email_batches) and batch_pause > 0:
+            print(f"End of batch reached. Waiting for {batch_pause} seconds.")
+            sleep(batch_pause)
 
     action.emailJobs.append(job)
 
@@ -157,4 +176,4 @@ def workflow_send_email(action_id, job_type="Scheduled"):
             """,
         )
 
-    return "Email job completed"
+    return "Email job completed."
