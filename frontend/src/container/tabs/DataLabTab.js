@@ -1,20 +1,27 @@
 import React from "react";
-import { Input, Icon, Tooltip, Button, Card, Modal, notification } from "antd";
-import { Link } from "react-router-dom";
+import {
+  Icon,
+  Tooltip,
+  Button,
+  Modal,
+  notification,
+  Table,
+  Tag,
+  Drawer
+} from "antd";
 
 import apiRequest from "../../shared/apiRequest";
 import ContainerContext from "../ContainerContext";
 
-const { Meta } = Card;
 const confirm = Modal.confirm;
 
 class DataLabTab extends React.Component {
   static contextType = ContainerContext;
 
-  state = { filter: null, deleting: {}, cloning: {} };
+  state = { filter: null, deleting: {}, cloning: {}, drawer: {} };
 
   deleteDataLab = dataLabId => {
-    const { updateContainers } = this.context;
+    const { fetchDashboard } = this.context;
 
     confirm({
       title: "Confirm DataLab deletion",
@@ -32,7 +39,7 @@ class DataLabTab extends React.Component {
           method: "DELETE",
           onSuccess: () => {
             this.setState({ deleting: { [dataLabId]: false } });
-            updateContainers();
+            fetchDashboard();
             notification["success"]({
               message: "DataLab deleted",
               description: "The DataLab was successfully deleted."
@@ -51,7 +58,7 @@ class DataLabTab extends React.Component {
   };
 
   cloneDataLab = datalabId => {
-    const { updateContainers } = this.context;
+    const { fetchDashboard } = this.context;
 
     confirm({
       title: "Confirm DataLab clone",
@@ -65,7 +72,7 @@ class DataLabTab extends React.Component {
           method: "POST",
           onSuccess: () => {
             this.setState({ cloning: { [datalabId]: false } });
-            updateContainers();
+            fetchDashboard();
             notification["success"]({
               message: "DataLab cloned",
               description: "The DataLab was successfully cloned."
@@ -83,87 +90,194 @@ class DataLabTab extends React.Component {
     });
   };
 
+  previewDatasource = datasourceId => {
+    apiRequest(`/datasource/${datasourceId}/`, {
+      method: "GET",
+      onSuccess: datasource =>
+        this.setState({
+          drawer: {
+            title: datasource.name,
+            visible: true,
+            content: (
+              <Table
+                rowKey={(record, index) => index}
+                columns={Object.keys(datasource.data[0]).map(k => {
+                  return { title: k, dataIndex: k };
+                })}
+                dataSource={datasource.data}
+              />
+            )
+          }
+        })
+    });
+  };
+
+  previewForm = form => {
+    this.setState({
+      drawer: {
+        title: form.name,
+        visible: true,
+        content: (
+          <Table
+            rowKey={(record, index) => index}
+            columns={
+              form.data.length > 0
+                ? Object.keys(form.data[0]).map(k => {
+                    return { title: k, dataIndex: k };
+                  })
+                : []
+            }
+            dataSource={form.data}
+          />
+        )
+      }
+    });
+  };
+
   render() {
-    const { containerId, dataLabs } = this.props;
-    const { filter, deleting, cloning } = this.state;
+    const { containerId, dataLabs, datasources } = this.props;
+    const { deleting, cloning, drawer } = this.state;
+    const { history } = this.context;
+
+    const columns = [
+      {
+        title: "Name",
+        dataIndex: "name",
+        key: "name",
+        sorter: (a, b) => a.name.localeCompare(b.name)
+      },
+      {
+        title: "Modules",
+        dataIndex: "steps",
+        key: "modules",
+        render: steps => {
+          let didIncludeComputed = false;
+
+          return steps.map((step, stepIndex) => {
+            if (step.type === "datasource")
+              return (
+                <Tag
+                  color="blue"
+                  key={stepIndex}
+                  style={{ margin: 3 }}
+                  onClick={() => this.previewDatasource(step.datasource.id)}
+                >
+                  <Icon type="database" style={{ marginRight: 5 }} />
+                  {
+                    datasources.find(
+                      datasource => datasource.id === step.datasource.id
+                    ).name
+                  }
+                </Tag>
+              );
+            else if (step.type === "form") {
+              return (
+                <Tag
+                  color="purple"
+                  key={stepIndex}
+                  style={{ margin: 3 }}
+                  onClick={() => this.previewForm(step.form)}
+                >
+                  <Icon type="edit" style={{ marginRight: 5 }} />
+                  {step.form.name}
+                </Tag>
+              );
+            } else if (step.type === "computed" && !didIncludeComputed) {
+              didIncludeComputed = true;
+              return (
+                <Tag color="green" key={stepIndex} style={{ margin: 3 }}>
+                  <Icon type="calculator" style={{ marginRight: 5 }} />
+                  Computed
+                </Tag>
+              );
+            }
+            return null;
+          });
+        }
+      },
+      {
+        title: "Actions",
+        key: "actions",
+        render: (text, dataLab) => (
+          <div>
+            <Tooltip title="Edit DataLab settings">
+              <Button
+                style={{ margin: 3 }}
+                icon="setting"
+                onClick={() => {
+                  history.push(`/datalab/${dataLab.id}/settings`);
+                }}
+              />
+            </Tooltip>
+
+            <Tooltip title="View DataLab data">
+              <Button
+                style={{ margin: 3 }}
+                icon="table"
+                onClick={() => {
+                  history.push(`/datalab/${dataLab.id}/data`);
+                }}
+              />
+            </Tooltip>
+
+            <Tooltip title="Clone DataLab">
+              <Button
+                style={{ margin: 3 }}
+                icon="copy"
+                loading={dataLab.id in cloning && cloning[dataLab.id]}
+                onClick={() => this.cloneDataLab(dataLab.id)}
+              />
+            </Tooltip>
+
+            <Tooltip title="Delete DataLab">
+              <Button
+                style={{ margin: 3 }}
+                type="danger"
+                icon="delete"
+                loading={dataLab.id in deleting && deleting[dataLab.id]}
+                onClick={() => this.deleteDataLab(dataLab.id)}
+              />
+            </Tooltip>
+          </div>
+        )
+      }
+    ];
 
     return (
-      <div className="tab">
-        {dataLabs &&
-          dataLabs.length > 0 && (
-            <div className="filter_wrapper">
-              <div className="filter">
-                <Input
-                  placeholder="Filter DataLabs by name"
-                  value={filter}
-                  addonAfter={
-                    <Tooltip title="Clear filter">
-                      <Icon
-                        type="close"
-                        onClick={() => this.setState({ filter: null })}
-                      />
-                    </Tooltip>
-                  }
-                  onChange={e => this.setState({ filter: e.target.value })}
-                />
-              </div>
-            </div>
-          )}
-
-        {dataLabs &&
-          dataLabs.map((dataLab, i) => {
-            if (filter && !dataLab.name.includes(filter)) return null;
-
-            return (
-              <Card
-                className="item"
-                bodyStyle={{ flex: 1 }}
-                title={dataLab.name}
-                actions={[
-                  <Link to={{ pathname: `/datalab/${dataLab.id}/data` }}>
-                    <Tooltip title="Enter DataLab">
-                      <Button icon="arrow-right" />
-                    </Tooltip>
-                  </Link>,
-                  <Tooltip title="Clone DataLab">
-                    <Button
-                      icon="copy"
-                      loading={dataLab.id in cloning && cloning[dataLab.id]}
-                      onClick={() => this.cloneDataLab(dataLab.id)}
-                    />
-                  </Tooltip>,
-                  <Tooltip title="Delete DataLab">
-                    <Button
-                      type="danger"
-                      icon="delete"
-                      loading={dataLab.id in deleting && deleting[dataLab.id]}
-                      onClick={() => this.deleteDataLab(dataLab.id)}
-                    />
-                  </Tooltip>
-                ]}
-                key={i}
-              >
-                <Meta
-                  description={
-                    <div>
-                      {`${dataLab.modules} module${dataLab.modules > 1 ? "s" : ""}`}
-                    </div>
-                  }
-                />
-              </Card>
-            );
-          })}
-        <Link
-          to={{
-            pathname: `/datalab`,
-            state: { containerId }
-          }}
+      <div>
+        <Button
+          style={{ marginBottom: 15 }}
+          type="primary"
+          icon="plus"
+          onClick={() =>
+            history.push({
+              pathname: "/datalab",
+              state: { containerId, datasources }
+            })
+          }
         >
-          <div className="add item">
-            <Icon type="plus" />
-            <span>Create DataLab</span>
-          </div>
-        </Link>
+          Create DataLab
+        </Button>
+
+        <Drawer
+          className="datalab-drawer"
+          title={drawer.title}
+          placement="right"
+          onClose={() => this.setState({ drawer: { visible: false } })}
+          visible={drawer.visible}
+        >
+          {drawer.content}
+        </Drawer>
+
+        <Table
+          bordered
+          dataSource={dataLabs}
+          columns={columns}
+          rowKey="id"
+          locale={{
+            emptyText: "No DataLabs have been created yet"
+          }}
+        />
       </div>
     );
   }

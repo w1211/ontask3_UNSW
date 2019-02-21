@@ -22,26 +22,23 @@ import os
 
 from rest_framework import routers
 
-from container.views import ContainerViewSet
 from datasource.views import DatasourceViewSet
 from datalab.views import DatalabViewSet
 from workflow.views import WorkflowViewSet, FeedbackView
-from audit.views import AuditViewSet
 
 router = routers.DefaultRouter()
-router.register("container", ContainerViewSet, "container")
 router.register("datasource", DatasourceViewSet, "datasource")
 router.register("datalab", DatalabViewSet, "datalab")
 router.register("workflow", WorkflowViewSet, "workflow")
-router.register("audit", AuditViewSet, "audit")
 
 urlpatterns = [
     path("auth/", include("accounts.urls")),
-    path("administration/", include("administration.urls"))
-    ]
-
-urlpatterns += router.urls
-urlpatterns += [url(r"feedback/(?P<datalab_id>[a-z\d]+)/", FeedbackView.as_view())]
+    path("container/", include("container.urls")),
+    path("form/", include("form.urls")),
+    path("administration/", include("administration.urls")),
+    *router.urls,
+    url(r"feedback/(?P<datalab_id>[a-z\d]+)/", FeedbackView.as_view())
+]
 
 if os.environ.get("ONTASK_DEVELOPMENT"):
     urlpatterns += [path("admin/", admin.site.urls)]

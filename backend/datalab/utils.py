@@ -4,8 +4,10 @@ import numexpr as ne
 
 from .models import Datalab
 from datasource.models import Datasource
-from audit.serializers import AuditSerializer
 from workflow.models import Workflow
+from form.models import Form
+
+import pandas as pd
 
 
 def bind_column_types(steps):
@@ -179,319 +181,69 @@ def calculate_computed_field(formula, record, build_fields, tracking_feedback_da
         return None
 
 
-def combine_data(steps, datalab_id=None):
-    # Identify the fields used in the build
-    # Consumed by the computed column calculation
-    build_fields = [[] for x in range(len(steps))]
-    for i, step in enumerate(steps):
-        if step["type"] == "datasource":
-            for field in step["datasource"]["fields"]:
-                build_fields[i].append(step["datasource"]["labels"][field])
-        if step["type"] in ["form", "computed"]:
-            step = step[step["type"]]
-            if "fields" in step:
-                for field in step["fields"]:
-                    build_fields[i].append(field["name"])
+def set_relations(datalab):
+    required_fields = set()
 
-    # Gather all tracking and feedback data for associated actions
-    # Consumed by the computed column
-    tracking_feedback_data = {}
-    if datalab_id:
-        actions = Workflow.objects(datalab=datalab_id)
-        for action in actions:
-            action_id = str(action.id)
-            if not "emailSettings" in action or not len(action["emailJobs"]):
-                continue
+    # Identify the fields used in any associated forms or actions
+    forms = Form.objects(datalab=datalab)
+    for form in forms:
+        required_fields.add(form.primary)
+        required_fields.add(form.permission)
 
-            tracking_feedback_data[action_id] = {
-                "email_field": action["emailSettings"]["field"],
-                "jobs": {},
-            }
-            for email_job in action["emailJobs"]:
-                job_id = str(email_job.job_id)
+    # Identify the fields used as matching keys for datasource modules
+    datasource_steps = [
+        step.datasource for step in datalab.steps if step.type == "datasource"
+    ]
 
-                tracking_feedback_data[action_id]["jobs"][job_id] = {
-                    "tracking": {
-                        email["recipient"]: email["track_count"]
-                        for email in email_job["emails"]
-                    }
-                }
+    for step_index, step in enumerate(datasource_steps):
+        # Always add the primary key of the first module
+        # Use its label if provided, otherwise just use the field name
+        if step_index == 0:
+            required_fields.add(step.labels.get(step.primary, step.primary))
+        else:
+            required_fields.add(step.matching)
 
-    # Initialize the dataset using the first module, which is always a datasource
-    first_module = steps[0]["datasource"]
-    datasource = Datasource.objects.get(id=first_module["id"])
-    fields = first_module["fields"]
-    label_map = first_module["labels"]
+    relations = pd.DataFrame()
+    for step_index, step in enumerate(datasource_steps):
+        datasource = Datasource.objects.get(id=step.id)
 
-    data = []
-    for item in datasource.data:
-        record = {}
-        for field, value in item.items():
-            if field in fields:
-                # Add the field to the record object using the field's label
-                record[label_map[field]] = value
-        data.append(record)
+        # If this datasource has fields that are used by forms, actions, or datasources,
+        # then ensure that these fields are included in the relation table
+        used_fields = []
+        for field, label in step.labels.items():
+            if label in required_fields:
+                used_fields.append(field)
 
-    # For each of the remaining modules, incrementally add to the dataset
-    for step in steps[1:]:
-        # Instantiate an object that will be a map of the data generated thus far,
-        # with the key being the matching field specified for this step. This allows
-        #  us to efficiently lookup based on the primary key and find which record
-        # should be extended, instead of having to iterate over the list to find the
-        # matching record for every record in this datasource
-        data_map = defaultdict(list)
-
-        if step["type"] == "datasource":
-            module = step["datasource"]
-            datasource = Datasource.objects.get(id=module["id"])
-            fields = module["fields"]
-            label_map = module["labels"]
-
-            # Populate the data map before merging in this datasource module's data
-            for item in data:
-                # If the item has a value for this module's specified matching field
-                # Note that the matching field uses labels and not the original field names
-                if module["matching"] in item:
-                    match_value = item[module["matching"]]
-                    data_map[match_value].append(item)
-
-            # For each record in this datasource's data, extend the matching record in the data map
-            for item in datasource.data:
-                match_value = item[module["primary"]]
-                # If the match value for this record is in the data map, then extend
-                # each of the matched records with the chosen fields from this datasource module
-                if match_value in data_map:
-                    for matched_record in data_map[match_value]:
-                        for field, value in item.items():
-                            if field in fields:
-                                matched_record[label_map[field]] = value
-
-                # If the match value is not in the data map, then there is a discrepency.
-                # The user would have been prompted on how to deal with discrepencies after they
-                # chose the matching field for this module in the model interface of the DataLab
-                else:
-                    # If the primary discrepency setting is set to True, then the user wants to keep
-                    # the record even with values missing for the previous modules
-                    if (
-                        "discrepencies" in module
-                        and module["discrepencies"] is not None
-                        and "primary" in module["discrepencies"]
-                        and module["discrepencies"]["primary"]
-                    ):
-                        new_record = {
-                            module["matching"]: match_value
-                        }
-                        for field, value in item.items():
-                            if field in fields:
-                                new_record[label_map[field]] = value
-                        data_map[match_value].append(new_record)
-
-            # If the matching discrepency setting is set to True, then the user wants to keep
-            # any records whose matching keys do not exist in this datasource module.
-            if not (
-                "discrepencies" in module
-                and module["discrepencies"] is not None
-                and "matching" in module["discrepencies"]
-                and module["discrepencies"]["matching"]
-            ):
-                primary_records = {
-                    item.get(module["primary"]) for item in datasource.data
-                }
-                matching_records = {item.get(module["matching"]) for item in data}
-                for record in matching_records - primary_records:
-                    data_map.pop(record, None)
-
-        if step["type"] == "form" and "data" in step["form"]:
-            module = step["form"]
-
-            # Populate the data map before merging in this form module's data
-            for item in data:
-                if module["primary"] in item:
-                    match_value = item[module["primary"]]
-                    data_map[match_value].append(item)
-                    
-            # Update keys in the data map with this form's data
-            for item in module["data"]:
-                match_value = item.get(module["primary"])
-                if match_value in data_map:
-                    for matched_record in data_map[match_value]:
-                        matched_record.update(item)
-
-        if step["type"] == "computed":
-            module = step["computed"]
-
-            for item in data:
-                for field in module["fields"]:
-                    item[field["name"]] = calculate_computed_field(
-                        field["formula"], item, build_fields, tracking_feedback_data
-                    )
-
-        # Create the data (list of dicts, with each dict representing a record) based on the updated data map
-        if len(data_map):
-            data = []
-            for match in data_map.values():
-                for item in match:
-                    data.append(item)
-    return data
-
-
-def update_form_data(
-    datalab, step, field, primary, value, request_user, is_web_form=False
-):
-    form = datalab.steps[step].form
-    web_form = form["webForm"]
-
-    datalab_data_map = {
-        item[form.primary]: item for item in datalab.data if form.primary in item
-    }
-
-    not_accessible = (
-        (is_web_form and (not web_form or (web_form and not web_form["active"])))
-        or (
-            "activeFrom" in form
-            and form["activeFrom"] is not None
-            and form["activeFrom"] > datetime.utcnow()
+        data = (
+            pd.DataFrame(data=datasource.data)
+            .set_index(step.primary)
+            .filter(items=used_fields)  # Only include required fields
+            .rename(columns={field: step.labels[field] for field in used_fields})
         )
-        or (
-            "activeTo" in form
-            and form["activeTo"] is not None
-            and form["activeTo"] < datetime.utcnow()
-        )
-    )
-    if not_accessible:
-        raise Exception("Unauthorized")
 
-    # Perform permission validation manually, as opposed to using the generic
-    # data lab permissions schema. This is so that we can provide access to users
-    # that are not necessarily owner or have share access, but are one of the
-    # permissable users on the data lab level
-    is_owner = request_user == datalab.container.owner
-    is_shared = request_user in datalab.container.sharing
-    has_access = is_owner or is_shared
-
-    if not has_access:
-        if is_web_form and web_form and web_form["active"]:
-            permission_field = web_form["permission"]
-            if web_form["showAll"]:
-                permissable_users = {
-                    item.get(permission_field).strip() for item in datalab.data
-                }
-                has_access = request_user in permissable_users
+        if step_index == 0:
+            relations = data.reset_index().rename(
+                columns={
+                    step.primary: step.labels.get(step.primary, step.primary)
+                }  # Rename the primary key if it has a label
+            )
+        else:
+            if step.discrepencies.primary and step.discrepencies.matching:
+                # Full outer join
+                how = "outer"
+            elif step.discrepencies.primary:
+                how = "right"
+            elif step.discrepencies.matching:
+                how = "left"
             else:
-                has_access = (
-                    request_user == datalab_data_map[primary][permission_field].strip()
-                )
+                how = "inner"
 
-    # Confirm whether the user has access after the above checks have been performed
-    if not has_access:
-        raise Exception("Unauthorized")
+            relations = relations.merge(
+                data, how=how, left_on=step.matching, right_index=True
+            ).reset_index(drop=True)
 
-    form_data_map = {
-        item[form.primary]: item for item in form.data if form.primary in item
-    }
-
-    previous_value = None
-    if primary in form_data_map:
-        previous_value = (
-            form_data_map[primary][field] if field in form_data_map[primary] else None
-        )
-        form_data_map[primary].update({field: value})
-    else:
-        form_data_map[primary] = {form.primary: primary, field: value}
-
-    form_data = [value for value in form_data_map.values()]
-
-    kw = {f"set__steps__{step}__form__data": form_data}
-    Datalab.objects(id=datalab.id).update(**kw)
-    datalab.reload()
-
-    data = combine_data(datalab.steps, datalab.id)
-    Datalab.objects(id=datalab.id).update(set__data=data)
-    datalab.reload()
-
-    audit = AuditSerializer(
-        data={
-            "model": "datalab",
-            "document": str(datalab.id),
-            "action": "update_form_value",
-            "user": request_user,
-            "diff": {
-                "form": form.name,
-                "module_index": step,
-                "record": primary,
-                "field": field,
-                "from": previous_value,
-                "to": value,
-            },
-        }
-    )
-    audit.is_valid()
-    audit.save()
-
-    return datalab
+    # Replace NaN values with None to make it storable in MongoDB
+    relations.replace({pd.np.nan: None}, inplace=True)
 
 
-def retrieve_form_data(datalab, step, request_user):
-    is_owner = request_user == datalab.container.owner
-    is_shared = request_user in datalab.container.sharing
-    has_access = is_owner or is_shared
-
-    if (
-        step < 0
-        or step >= len(datalab["steps"])
-        or "form" not in datalab["steps"][step]
-    ):
-        return {"error": "This form does not exist"}
-
-    # Convert the document to a format that is JSON serializable
-    datalab = datalab.to_mongo()
-
-    form = datalab["steps"][step]["form"]
-    web_form = form["webForm"] if "webForm" in form else None
-
-    not_accessible = (
-        (not web_form or not web_form["active"])
-        or (
-            "activeFrom" in form
-            and form["activeFrom"] is not None
-            and form["activeFrom"] > datetime.utcnow()
-        )
-        or (
-            "activeTo" in form
-            and form["activeTo"] is not None
-            and form["activeTo"] < datetime.utcnow()
-        )
-    )
-    if not_accessible:
-        return {"error": "This form is currently not accessible"}
-
-    columns = [form["primary"]] + web_form["visibleFields"]
-    for field in form["fields"]:
-        columns.append(field["name"])
-
-    data = []
-    permission_field = web_form["permission"]
-    permissable_users = {item.get(permission_field) for item in datalab["data"]}
-
-    for (index, item) in enumerate(datalab["data"]):
-        if (
-            has_access
-            or web_form["showAll"]
-            and request_user in permissable_users
-            or item.get(permission_field, "").strip() == request_user
-        ):
-            record = {field: item.get(field) for field in columns}
-            data.append(record)
-
-    if len(data) == 0:
-        return {"error": "You are not authorized to access this form"}
-
-    return {
-        "name": form["name"],
-        "primary_key": form["primary"],
-        "columns": columns,
-        "data": data,
-        "editable_fields": form["fields"],
-        "layout": web_form["layout"],
-        "is_owner_or_shared": has_access,
-    }
+    return relations.to_dict("records")

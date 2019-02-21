@@ -14,6 +14,8 @@ import os
 
 import mongoengine
 
+DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
+
 if os.environ.get('ONTASK_DEVELOPMENT') is not None:
     from config.dev import *
     DEBUG = True
@@ -21,17 +23,10 @@ if os.environ.get('ONTASK_DEVELOPMENT') is not None:
     FRONTEND_DOMAIN = 'https://localhost:3000' # For whitelisting CORS and authentication
     BACKEND_DOMAIN = 'https://localhost:8000'
     ALLOWED_HOSTS = ['localhost']
-    SQL_DATABASE = {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'ontask',
-        'USER': 'ontask',
-        'PASSWORD': 'ontask',
-        'HOST': 'sql',
-        'PORT': '5432'
-    }
     NOSQL_DATABASE = {
-        'HOST': 'nosql',
-        'DB': 'ontask'
+        'ENGINE': 'djongo',
+        'HOST': 'db',
+        'NAME': 'ontask'
     }
 
 elif os.environ.get('ONTASK_DEMO') is not None:
@@ -52,6 +47,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Application definition
 
 INSTALLED_APPS = [
+    'accounts',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -62,11 +58,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_mongoengine',
-    'authtools',
-    'accounts',
-    'administration',
     'scheduler',
-    'corsheaders'
+    'corsheaders',
+    'administration'
 ]
 
 MIDDLEWARE = [
@@ -109,10 +103,10 @@ WSGI_APPLICATION = 'ontask.wsgi.application'
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
 DATABASES = {
-    'default': SQL_DATABASE
+    'default': NOSQL_DATABASE
 }
 
-mongoengine.connect(NOSQL_DATABASE['DB'], host=NOSQL_DATABASE['HOST'])
+mongoengine.connect(NOSQL_DATABASE['NAME'], host=NOSQL_DATABASE['HOST'])
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
@@ -159,7 +153,7 @@ REST_FRAMEWORK = {
     )
 }
 
-AUTH_USER_MODEL = 'authtools.User'
+AUTH_USER_MODEL = 'accounts.User'
 
 # Default celery broker 
 # http://docs.celeryproject.org/en/latest/getting-started/brokers/rabbitmq.html

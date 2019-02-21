@@ -1,7 +1,7 @@
 import React from "react";
 import { Switch, Route, Redirect } from "react-router-dom";
 import { withRouter } from "react-router";
-import { Layout, Menu, Button } from "antd";
+import { Layout, Tooltip, Button } from "antd";
 import queryString from "query-string";
 import _ from "lodash";
 
@@ -10,10 +10,13 @@ import logo from "./img/logo.png";
 import { requestToken } from "./auth/AuthActions";
 
 import Login from "./auth/Login";
-import Container from "./container/Container";
+import Dashboard from "./container/Dashboard";
+import Datasource from "./datasource/Datasource";
 import DataLab from "./dataLab/DataLab";
 import Action from "./action/Action";
 import Administration from "./administration/Administration"
+import Form from "./form/Form";
+import Forbidden from "./error/Forbidden";
 
 import "./App.css";
 
@@ -29,13 +32,8 @@ class App extends React.Component {
   logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("email");
+    localStorage.removeItem("name");
     this.setState({ hasToken: false });
-  };
-
-  finishRequestToken = response => {
-    localStorage.setItem("token", response.token);
-    localStorage.setItem("email", response.email);
-    this.setState({ hasToken: true });
   };
 
   componentWillMount() {
@@ -43,12 +41,29 @@ class App extends React.Component {
       hasToken: localStorage.getItem("token") ? true : false
     });
 
-    const oneTimeToken = queryString.parse(window.location.search).tkn;
-    if (oneTimeToken) requestToken(oneTimeToken, this.finishRequestToken);
+    const queryStrings = queryString.parse(window.location.search);
+    const { tkn, lti, container } = queryStrings;
+
+    if (tkn)
+      requestToken(tkn, response => {
+        localStorage.setItem("token", response.token);
+        localStorage.setItem("email", response.email);
+        localStorage.setItem("name", response.name);
+
+        this.setState({
+          hasToken: true,
+          ltiResourceId: lti,
+          ltiContainerId: container
+        });
+      });
+    else {
+      this.setState({ ltiResourceId: lti, ltiContainerId: container });
+    }
   }
 
   AuthenticatedRoute = ({
     component: Component,
+    componentProps,
     feedbackForm,
     ...routeProps
   }) => {
@@ -63,7 +78,7 @@ class App extends React.Component {
         {...routeProps}
         render={props =>
           hasToken ? (
-            <Component {...props} />
+            <Component {...props} {...componentProps} />
           ) : (
             <Redirect
               to={{
@@ -81,19 +96,16 @@ class App extends React.Component {
   };
 
   render() {
-    const { location, history } = this.props;
-    const { hasToken } = this.state;
+    const { location } = this.props;
+    const { hasToken, ltiResourceId, ltiContainerId } = this.state;
 
-    const pathName = location.pathname.slice(1).split("/");
-    let menuKey;
-    if (["about", "help", "contact"].includes(pathName[0])) {
-      menuKey = pathName;
-    } else {
-      menuKey = "dashboard";
-    }
-
-    const webForm = pathName[2] === "form";
-    const feedbackForm = pathName[2] === "feedback";
+    // const pathName = location.pathname.slice(1).split("/");
+    // let menuKey;
+    // if (["about", "help", "contact"].includes(pathName[0])) {
+    //   menuKey = pathName;
+    // } else {
+    //   menuKey = "dashboard";
+    // }
 
     const redirectTo = _.get(location, "state.redirectTo");
     const shouldRedirectToAAF = _.get(location, "state.shouldRedirectToAAF");
@@ -108,11 +120,16 @@ class App extends React.Component {
 
           {hasToken && (
             <div className="logout">
-              <Button icon="logout" onClick={this.logout} />
+              <span style={{ marginRight: 10 }}>
+                Logged in as: <strong>{localStorage.getItem("name")}</strong>
+              </span>
+              <Tooltip title="Logout">
+                <Button icon="logout" onClick={this.logout} />
+              </Tooltip>
             </div>
           )}
 
-          {!feedbackForm && (
+          {/* {!feedbackForm && (
             <Menu
               mode="horizontal"
               defaultSelectedKeys={[menuKey]}
@@ -130,7 +147,7 @@ class App extends React.Component {
               <Menu.Item key="help">Help</Menu.Item>
               <Menu.Item key="contact">Contact</Menu.Item>
             </Menu>
-          )}
+          )} */}
         </Header>
 
         <Switch>
@@ -141,14 +158,20 @@ class App extends React.Component {
               !hasToken ? (
                 <Login onLogin={() => this.setState({ hasToken: true })} />
               ) : (
-                <Redirect to={redirectTo ? redirectTo : "/containers"} />
+                <Redirect to={redirectTo ? redirectTo : "/dashboard"} />
               )
             }
           />
 
           {this.AuthenticatedRoute({
-            path: "/containers",
-            component: Container
+            path: "/dashboard",
+            component: Dashboard,
+            componentProps: { ltiResourceId, ltiContainerId }
+          })}
+
+          {this.AuthenticatedRoute({
+            path: "/datasource/:id?",
+            component: Datasource
           })}
 
           {this.AuthenticatedRoute({
@@ -157,15 +180,26 @@ class App extends React.Component {
           })}
 
           {this.AuthenticatedRoute({
-            path: "/action/:id",
-            component: Action,
-            feedbackForm
+            path: "/action/:id?",
+            component: Action
+          })}
+
+          {this.AuthenticatedRoute({
+            path: "/form/:id",
+            component: Form
           })}
 
           {this.AuthenticatedRoute({
             path: "/administration",
             component: Administration,
           })}
+          
+          <Route exact path="/forbidden" component={Forbidden} />
+
+          <Route
+            path="/feedback/:id"
+            render={props => <Action {...props} isFeedbackForm />}
+          />
         </Switch>
 
         <Footer className="footer">© OnTask Project 2018</Footer>

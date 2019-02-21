@@ -5,6 +5,7 @@ from .models import Workflow
 
 
 class ActionSerializer(DocumentSerializer):
+    datalab_name = serializers.ReadOnlyField()
     data = serializers.ReadOnlyField()
     options = serializers.ReadOnlyField()
 

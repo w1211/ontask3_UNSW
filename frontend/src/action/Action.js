@@ -1,12 +1,14 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Switch, Route, Redirect } from "react-router-dom";
-import { Layout, Breadcrumb, Icon, Spin, Menu } from "antd";
+import { Layout, Icon, Spin, Menu } from "antd";
 import queryString from "query-string";
+import _ from "lodash";
 
 import Compose from "./interfaces/Compose";
 import Email from "./interfaces/Email";
 import Feedback from "./interfaces/Feedback";
+import Settings from "./interfaces/ActionSettings";
 // import StaticPage from "./interfaces/StaticPage";
 
 import apiRequest from "../shared/apiRequest";
@@ -19,30 +21,39 @@ class Action extends React.Component {
   state = { fetching: true };
 
   componentWillMount() {
-    const { location, match } = this.props;
+    const { match, isFeedbackForm, location, history } = this.props;
 
-    const isFeedbackForm = location.pathname.split("/")[3] === "feedback";
     const actionId = match.params.id;
     const jobId = queryString.parse(window.location.search).job;
+    const emailId = queryString.parse(window.location.search).email;
+
+    const containerId = _.get(location, "state.containerId");
 
     if (isFeedbackForm) {
-      this.setState({ isFeedbackForm });
-
-      apiRequest(`/feedback/${actionId}/?job=${jobId}`, {
+      apiRequest(`/feedback/${actionId}/?job=${jobId}&email=${emailId}`, {
         method: "GET",
+        isAuthenticated: false,
         onSuccess: feedback =>
           this.setState({
             fetching: false,
-            feedback: { ...feedback, actionId, jobId }
+            feedback: { ...feedback, actionId, jobId, emailId }
           }),
         onError: () => this.setState({ fetching: false })
       });
-    } else {
+    } else if (containerId) {
+      // User pressed "Create Action", as the containerId is only set in the
+      // location state when the navigation occurs
+      this.setState({ fetching: false });
+    } else if (match.params.id) {
       apiRequest(`/workflow/${actionId}/`, {
         method: "GET",
         onSuccess: action => this.setState({ fetching: false, action }),
         onError: () => this.setState({ fetching: false })
       });
+    } else {
+      // The user must have cold-loaded the URL, so we have no container to reference
+      // Therefore redirect the user back to the container list
+      history.replace("/dashboard");
     }
   }
 
@@ -51,28 +62,18 @@ class Action extends React.Component {
   };
 
   render() {
-    const { match, location } = this.props;
-    const { fetching, action, isFeedbackForm, feedback } = this.state;
+    const { history, match, location, isFeedbackForm } = this.props;
+    const { fetching, action, feedback } = this.state;
+
+    const selectedId = match.params.id;
 
     return (
       <div className={`action ${isFeedbackForm && "is_feedback_form"}`}>
         <Content className="wrapper">
-          {!isFeedbackForm && (
-            <Breadcrumb className="breadcrumbs">
-              <Breadcrumb.Item>
-                <Link to="/">Dashboard</Link>
-              </Breadcrumb.Item>
-              <Breadcrumb.Item>
-                <Link to="/containers">Containers</Link>
-              </Breadcrumb.Item>
-              <Breadcrumb.Item>Action</Breadcrumb.Item>
-            </Breadcrumb>
-          )}
-
           <Layout className="layout">
             <Content className="content">
               <Layout className="content_body">
-                {!isFeedbackForm && (
+                {!isFeedbackForm && selectedId && (
                   <Sider width={200}>
                     <Menu
                       mode="inline"
@@ -80,13 +81,20 @@ class Action extends React.Component {
                       style={{ height: "100%" }}
                     >
                       <Menu.Item key="back">
-                        <Link to="/containers">
+                        <Link to="/dashboard">
                           <Icon type="arrow-left" />
-                          <span>Back to containers</span>
+                          <span>Back to dashboard</span>
                         </Link>
                       </Menu.Item>
 
                       <Menu.Divider />
+
+                      <Menu.Item key="settings">
+                        <Link to={`${match.url}/settings`}>
+                          <Icon type="setting" />
+                          <span>Settings</span>
+                        </Link>
+                      </Menu.Item>
 
                       <Menu.Item key="compose">
                         <Link to={`${match.url}/compose`}>
@@ -114,52 +122,84 @@ class Action extends React.Component {
                 )}
 
                 <Content className="content">
-                  <h1>{action && action.name}</h1>
-
                   {fetching ? (
                     <Spin size="large" />
                   ) : (
-                    <Switch>
-                      <Redirect
-                        exact
-                        from={match.url}
-                        to={`${match.url}/compose`}
-                      />
+                    <div>
+                      {isFeedbackForm ? (
+                        <Feedback feedback={feedback} />
+                      ) : action ? (
+                        <div>
+                          <h1>{action.name}</h1>
 
-                      <Route
-                        path={`${match.url}/compose`}
-                        render={props => (
-                          <Compose
-                            {...props}
-                            action={action}
+                          <Switch>
+                            <Redirect
+                              exact
+                              from={match.url}
+                              to={`${match.url}/settings`}
+                            />
+
+                            <Route
+                              path={`${match.url}/settings`}
+                              render={props => (
+                                <Settings
+                                  {...props}
+                                  action={action}
+                                  updateAction={this.updateAction}
+                                />
+                              )}
+                            />
+
+                            <Route
+                              path={`${match.url}/compose`}
+                              render={props => (
+                                <Compose
+                                  {...props}
+                                  action={action}
+                                  updateAction={this.updateAction}
+                                />
+                              )}
+                            />
+
+                            <Route
+                              path={`${match.url}/email`}
+                              render={props => (
+                                <Email
+                                  {...props}
+                                  action={action}
+                                  updateAction={this.updateAction}
+                                />
+                              )}
+                            />
+                          </Switch>
+                        </div>
+                      ) : (
+                        <div>
+                          <Link
+                            to="/dashboard"
+                            style={{
+                              display: "inline-block",
+                              marginBottom: 20
+                            }}
+                          >
+                            <Icon
+                              type="arrow-left"
+                              style={{ marginRight: 5 }}
+                            />
+                            <span>Back to dashboard</span>
+                          </Link>
+
+                          <h1>Create Action</h1>
+
+                          <Settings
+                            match={match}
+                            history={history}
+                            location={location}
                             updateAction={this.updateAction}
                           />
-                        )}
-                      />
-
-                      <Route
-                        path={`${match.url}/email`}
-                        render={props => (
-                          <Email
-                            {...props}
-                            action={action}
-                            updateAction={this.updateAction}
-                          />
-                        )}
-                      />
-
-                      <Route
-                        path={`${match.url}/feedback`}
-                        render={props => (
-                          <Feedback {...props} feedback={feedback} />
-                        )}
-                      />
-
-                      {/* <Route
-                        path={`${match.url}/static`}
-                        component={StaticPage}
-                      /> */}
-                    </Switch>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </Content>
               </Layout>

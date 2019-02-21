@@ -1,6 +1,5 @@
 from django.contrib.auth import get_user_model
 from datetime import datetime, timedelta
-from passlib.hash import pbkdf2_sha256
 from jwt import encode
 from random import randint
 from bson import ObjectId
@@ -16,13 +15,13 @@ from datalab.models import (
     Datalab,
     Module,
     DatasourceModule,
-    FormModule,
+    #FormModule,
     ComputedModule,
     ComputedField,
-    FormField,
+    #FormField,
     Column,
 )
-from datalab.utils import bind_column_types, combine_data
+from datalab.utils import bind_column_types
 from workflow.models import Workflow, Filter, Rule, Condition, Formula
 
 from scheduler.utils import send_email
@@ -30,7 +29,9 @@ from scheduler.utils import send_email
 User = get_user_model()
 
 
-def get_or_create_user(email, fullname):
+def get_or_create_user(data):
+    email = data["email"]
+
     # Find the user based on the email provided in the payload
     # The user is implicitly being authenticated simply because we trust
     # the assertions received from AAF/LTI
@@ -38,14 +39,14 @@ def get_or_create_user(email, fullname):
         user = User.objects.get(email=email)
     # If the user doesn't exist, then create them
     except User.DoesNotExist:
-        password = pbkdf2_sha256.hash(email)
-        user = User.objects.create_user(email=email, password=password, name=fullname)
+        data["password"] = email
+        user = User.objects.create_user(email, **data)
 
         # Send a notification to admins on user signup, if OnTask is in demo mode
         user_signup_notification(user)
 
         # Give the user a container with example datasources, datalabs, actions, etc
-        seed_data(user)
+        # seed_data(user)
 
     return user
 
@@ -76,8 +77,8 @@ def user_signup_notification(user):
             "OnTask - new user signup",
             (
                 "<p>A new user has signed up with the following details:</p>"
-                "<p>Name: " + user.name + "</p>"
-                "<p>Email: " + user.email + "</p>"
+                f"<p>Name: {user.first_name} {user.last_name}</p>"
+                f"<p>Email: {user.email}</p>"
             ),
             force_send=True,
         )
@@ -184,9 +185,11 @@ def seed_data(user):
         )
     )
 
-    attendance_form_fields = [
-        FormField(name=f"attendance_w{i+1}", type="checkbox") for i in range(4)
-    ]
+    #attendance_form_fields = [
+    #    FormField(name=f"attendance_w{i+1}", type="checkbox") for i in range(4)
+    #]
+
+    
     # grade_form_fields = [
     #     FormField(
     #         name=field,
@@ -200,27 +203,27 @@ def seed_data(user):
     #     for field in ["grade_midterm", "grade_final"]
     # ]
 
-    demo_form_data = [
-        {
-            "zId": student["zid"],
-            **{field.name: randint(1, 100) < 90 for field in attendance_form_fields},
-            # **{field.name: randint(1, 40) * 0.25 for field in grade_form_fields},
-        }
-        for student in students_datasource.data
-    ]
+    # demo_form_data = [
+    #     {
+    #         "zId": student["zid"],
+    #         **{field.name: randint(1, 100) < 90 for field in attendance_form_fields},
+    #         # **{field.name: randint(1, 40) * 0.25 for field in grade_form_fields},
+    #     }
+    #     for student in students_datasource.data
+    # ]
 
-    demo_modules.append(
-        Module(
-            type="form",
-            form=FormModule(
-                primary="zId",
-                name="Grades",
-                # fields=attendance_form_fields + grade_form_fields,
-                fields=attendance_form_fields,
-                data=demo_form_data,
-            ),
-        )
-    )
+    # demo_modules.append(
+    #     Module(
+    #         type="form",
+    #         form=FormModule(
+    #             primary="zId",
+    #             name="Grades",
+    #             # fields=attendance_form_fields + grade_form_fields,
+    #             fields=attendance_form_fields,
+    #             data=demo_form_data,
+    #         ),
+    #     )
+    # )
 
     demo_average = ComputedField(
         name="average_attendance",
@@ -259,169 +262,169 @@ def seed_data(user):
         Column(stepIndex=2, field="last_name"),
         Column(stepIndex=2, field="email"),
     ]
-    demo_order += [
-        Column(stepIndex=3, field=field.name) for field in attendance_form_fields
-    ]
+    # demo_order += [
+    #     Column(stepIndex=3, field=field.name) for field in attendance_form_fields
+    # ]
     demo_order.append(Column(stepIndex=4, field=demo_average.name))
     # demo_order += [Column(stepIndex=3, field=field.name) for field in grade_form_fields]
     # demo_order.append()
 
     # Create demo datalab
-    demo_datalab = Datalab(
-        container=demo_container.id,
-        name="Demo DataLab",
-        steps=demo_modules,
-        order=demo_order,
-    )
-    demo_datalab.data = combine_data(demo_datalab.steps)
-    demo_datalab.save()
+    # demo_datalab = Datalab(
+    #     container=demo_container.id,
+    #     name="Demo DataLab",
+    #     steps=demo_modules,
+    #     order=demo_order,
+    # )
+    # demo_datalab.data = combine_data(demo_datalab.steps)
+    # demo_datalab.save()
 
-    demo_filter = Filter(
-        parameters=["class"],
-        conditions=[
-            Condition(formulas=[Formula(operator="between", rangeFrom=1, rangeTo=2)])
-        ],
-    )
+    # demo_filter = Filter(
+    #     parameters=["class"],
+    #     conditions=[
+    #         Condition(formulas=[Formula(operator="between", rangeFrom=1, rangeTo=2)])
+    #     ],
+    # )
 
-    demo_rules = [
-        Rule(
-            name="perfect_attendance",
-            parameters=["average_attendance"],
-            conditions=[
-                Condition(
-                    conditionId=ObjectId(),
-                    formulas=[Formula(operator="==", comparator=1)],
-                )
-            ],
-            catchAll=ObjectId(),
-        )
-    ]
+    # demo_rules = [
+    #     Rule(
+    #         name="perfect_attendance",
+    #         parameters=["average_attendance"],
+    #         conditions=[
+    #             Condition(
+    #                 conditionId=ObjectId(),
+    #                 formulas=[Formula(operator="==", comparator=1)],
+    #             )
+    #         ],
+    #         catchAll=ObjectId(),
+    #     )
+    # ]
 
-    demo_content = {
-        "blockMap": {
-            "object": "value",
-            "document": {
-                "object": "document",
-                "nodes": [
-                    {
-                        "object": "block",
-                        "type": "paragraph",
-                        "isVoid": False,
-                        "nodes": [
-                            {
-                                "object": "text",
-                                "leaves": [{"object": "leaf", "text": "Hello "}],
-                            },
-                            {
-                                "object": "inline",
-                                "type": "attribute",
-                                "isVoid": True,
-                                "data": {"field": "first_name"},
-                            },
-                            {
-                                "object": "text",
-                                "leaves": [{"object": "leaf", "text": " "}],
-                            },
-                            {
-                                "object": "inline",
-                                "type": "attribute",
-                                "isVoid": True,
-                                "data": {"field": "last_name"},
-                            },
-                            {
-                                "object": "text",
-                                "leaves": [{"object": "leaf", "text": ","}],
-                            },
-                        ],
-                    },
-                    {
-                        "object": "block",
-                        "type": "condition",
-                        "isVoid": False,
-                        "data": {
-                            "conditionId": str(demo_rules[0].conditions[0].conditionId),
-                            "ruleIndex": 0,
-                        },
-                        "nodes": [
-                            {
-                                "object": "text",
-                                "leaves": [
-                                    {
-                                        "object": "leaf",
-                                        "text": "You have perfect attendance!",
-                                    }
-                                ],
-                            }
-                        ],
-                    },
-                    {
-                        "object": "block",
-                        "type": "condition",
-                        "isVoid": False,
-                        "data": {
-                            "label": "else",
-                            "conditionId": str(demo_rules[0].catchAll),
-                            "ruleIndex": 0,
-                        },
-                        "nodes": [
-                            {
-                                "object": "text",
-                                "leaves": [
-                                    {
-                                        "object": "leaf",
-                                        "text": "Your attendance is not perfect.",
-                                    }
-                                ],
-                            }
-                        ],
-                    },
-                    {
-                        "object": "block",
-                        "type": "paragraph",
-                        "isVoid": False,
-                        "nodes": [
-                            {
-                                "object": "text",
-                                "leaves": [{"object": "leaf", "text": ""}],
-                            }
-                        ],
-                    },
-                    {
-                        "object": "block",
-                        "type": "paragraph",
-                        "isVoid": False,
-                        "nodes": [
-                            {
-                                "object": "text",
-                                "leaves": [
-                                    {
-                                        "object": "leaf",
-                                        "text": "Kind regards,\nOnTask demo",
-                                    }
-                                ],
-                            }
-                        ],
-                    },
-                ],
-            },
-        },
-        "html": [
-            "<p>Hello <attribute>first_name</attribute> <attribute>last_name</attribute>,</p>",
-            "<div>You have perfect attendance!</div>",
-            "<div>Your attendance is not perfect.</div>",
-            "<p></p>",
-            "<p>Kind regards,<br/>OnTask Demo</p>",
-        ],
-    }
+    # demo_content = {
+    #     "blockMap": {
+    #         "object": "value",
+    #         "document": {
+    #             "object": "document",
+    #             "nodes": [
+    #                 {
+    #                     "object": "block",
+    #                     "type": "paragraph",
+    #                     "isVoid": False,
+    #                     "nodes": [
+    #                         {
+    #                             "object": "text",
+    #                             "leaves": [{"object": "leaf", "text": "Hello "}],
+    #                         },
+    #                         {
+    #                             "object": "inline",
+    #                             "type": "attribute",
+    #                             "isVoid": True,
+    #                             "data": {"field": "first_name"},
+    #                         },
+    #                         {
+    #                             "object": "text",
+    #                             "leaves": [{"object": "leaf", "text": " "}],
+    #                         },
+    #                         {
+    #                             "object": "inline",
+    #                             "type": "attribute",
+    #                             "isVoid": True,
+    #                             "data": {"field": "last_name"},
+    #                         },
+    #                         {
+    #                             "object": "text",
+    #                             "leaves": [{"object": "leaf", "text": ","}],
+    #                         },
+    #                     ],
+    #                 },
+    #                 {
+    #                     "object": "block",
+    #                     "type": "condition",
+    #                     "isVoid": False,
+    #                     "data": {
+    #                         "conditionId": str(demo_rules[0].conditions[0].conditionId),
+    #                         "ruleIndex": 0,
+    #                     },
+    #                     "nodes": [
+    #                         {
+    #                             "object": "text",
+    #                             "leaves": [
+    #                                 {
+    #                                     "object": "leaf",
+    #                                     "text": "You have perfect attendance!",
+    #                                 }
+    #                             ],
+    #                         }
+    #                     ],
+    #                 },
+    #                 {
+    #                     "object": "block",
+    #                     "type": "condition",
+    #                     "isVoid": False,
+    #                     "data": {
+    #                         "label": "else",
+    #                         "conditionId": str(demo_rules[0].catchAll),
+    #                         "ruleIndex": 0,
+    #                     },
+    #                     "nodes": [
+    #                         {
+    #                             "object": "text",
+    #                             "leaves": [
+    #                                 {
+    #                                     "object": "leaf",
+    #                                     "text": "Your attendance is not perfect.",
+    #                                 }
+    #                             ],
+    #                         }
+    #                     ],
+    #                 },
+    #                 {
+    #                     "object": "block",
+    #                     "type": "paragraph",
+    #                     "isVoid": False,
+    #                     "nodes": [
+    #                         {
+    #                             "object": "text",
+    #                             "leaves": [{"object": "leaf", "text": ""}],
+    #                         }
+    #                     ],
+    #                 },
+    #                 {
+    #                     "object": "block",
+    #                     "type": "paragraph",
+    #                     "isVoid": False,
+    #                     "nodes": [
+    #                         {
+    #                             "object": "text",
+    #                             "leaves": [
+    #                                 {
+    #                                     "object": "leaf",
+    #                                     "text": "Kind regards,\nOnTask demo",
+    #                                 }
+    #                             ],
+    #                         }
+    #                     ],
+    #                 },
+    #             ],
+    #         },
+    #     },
+    #     "html": [
+    #         "<p>Hello <attribute>first_name</attribute> <attribute>last_name</attribute>,</p>",
+    #         "<div>You have perfect attendance!</div>",
+    #         "<div>Your attendance is not perfect.</div>",
+    #         "<p></p>",
+    #         "<p>Kind regards,<br/>OnTask Demo</p>",
+    #     ],
+    # }
 
-    # Create a demo action
-    demo_action = Workflow(
-        container=demo_container.id,
-        datalab=demo_datalab.id,
-        name="Demo Action",
-        description="A demo action to illustrate OnTask's features.",
-        filter=demo_filter,
-        rules=demo_rules,
-        content=demo_content,
-    )
-    demo_action.save()
+    # # Create a demo action
+    # demo_action = Workflow(
+    #     container=demo_container.id,
+    #     datalab=demo_datalab.id,
+    #     name="Demo Action",
+    #     description="A demo action to illustrate OnTask's features.",
+    #     filter=demo_filter,
+    #     rules=demo_rules,
+    #     content=demo_content,
+    # )
+    # demo_action.save()

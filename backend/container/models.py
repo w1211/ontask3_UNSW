@@ -9,3 +9,10 @@ class Container(Document):
     school = StringField(null=True)
     faculty = StringField(null=True)
     description = StringField(null=True)
+    lti_resource = StringField(null=True)
+
+    def has_full_permission(self, user):
+        return user.email == self.owner or user.email in self.sharing
+
+    def is_owner(self, user):
+        return user.email == self.owner

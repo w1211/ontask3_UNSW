@@ -1,9 +1,17 @@
 import React from "react";
-import { Button, Form, Input, message, Alert, notification } from "antd";
+import {
+  Button,
+  Form,
+  Input,
+  message,
+  Alert,
+  Tooltip,
+  notification,
+  Affix,
+  Icon
+} from "antd";
 import _ from "lodash";
-
-import Module from "./Module";
-import Add from "./Add";
+import memoize from "memoize-one";
 
 import DatasourceModule from "./datasource/Datasource";
 import FormModule from "./form/Form";
@@ -11,17 +19,9 @@ import ComputedModule from "./computed/Computed";
 
 import ModelContext from "./ModelContext";
 
-import memoize from "memoize-one";
-
 import apiRequest from "../../shared/apiRequest";
 
 const FormItem = Form.Item;
-
-const MODULES = [
-  { label: "Datasource", type: "datasource", icon: "database" },
-  { label: "Form", type: "form", icon: "form" },
-  { label: "Computed Fields", type: "computed", icon: "calculator" }
-];
 
 class Model extends React.Component {
   constructor(props) {
@@ -118,10 +118,10 @@ class Model extends React.Component {
           });
           this.setState({ loading: false });
           updateDatalab(dataLab);
-          history.push({ pathname: `/datalab/${dataLab.id}/data` });
+          if (!selectedId)
+            history.push({ pathname: `/datalab/${dataLab.id}/settings` });
         },
         onError: error => {
-          console.log(error);
           this.setState({ loading: false });
         }
       });
@@ -132,7 +132,7 @@ class Model extends React.Component {
     const { form } = this.props;
     const { stepKeys } = this.state;
     const { getFieldDecorator } = form;
-    
+
     // Force the first module to be a datasource
     if (stepKeys.length === 0 && type !== "datasource") {
       message.error("The first module of a DataLab must be a datasource.");
@@ -141,9 +141,8 @@ class Model extends React.Component {
 
     getFieldDecorator(`steps[${stepKeys.length}].type`, {
       initialValue: type
-    });    
+    });
     this.setState({ stepKeys: [...stepKeys, _.uniqueId()], error: null });
-
   };
 
   deleteModule = () => {
@@ -177,7 +176,7 @@ class Model extends React.Component {
   };
 
   render() {
-    const { form, datasources, actions, name, selectedId } = this.props;
+    const { form, datasources, forms, actions, name, selectedId } = this.props;
     const { loading, error, stepKeys, steps } = this.state;
     const { getFieldDecorator, getFieldValue } = form;
 
@@ -189,13 +188,14 @@ class Model extends React.Component {
           stepKeys,
           labelsUsed: this.labelsUsed,
           datasources,
+          forms,
           actions,
           deleteModule: this.deleteModule,
           hasDependency: this.hasDependency,
           updateStep: this.updateStep
         }}
       >
-        <div className="model">
+        <div className="model" style={{ maxWidth: 1300 }}>
           <h2>Details</h2>
 
           <div className="name">
@@ -214,72 +214,96 @@ class Model extends React.Component {
 
           <h2>Data Model</h2>
 
+          <Affix offsetTop={25}>
+            <div className="components">
+              <div>Components</div>
+              <div>
+                <Tooltip title="Add a datasource module">
+                  <Button
+                    icon="database"
+                    size="large"
+                    className="datasource"
+                    onClick={() => this.addModule("datasource")}
+                  />
+                </Tooltip>
+                <Tooltip title="Add a form module">
+                  <Button
+                    icon="form"
+                    size="large"
+                    className="form"
+                    onClick={() => this.addModule("form")}
+                  />
+                </Tooltip>
+                <Tooltip title="Add a computed fields module">
+                  <Button
+                    icon="calculator"
+                    size="large"
+                    className="computed"
+                    onClick={() => this.addModule("computed")}
+                  />
+                </Tooltip>
+              </div>
+            </div>
+          </Affix>
+
           <div className="build">
-            {stepKeys.map((key, index) => {
-              // If the module was added during this session,
-              // then a type would have been bound via the addModule
-              // function's getFieldDecorator
-              let type = getFieldValue(`steps[${index}].type`);
-              // Otherwise, we must be editing an existing DataLab
-              // so use the API call data to infer the module type
-              if (!type) {
-                type = steps[index].type;
-              }
+            {stepKeys.length > 0 ? (
+              stepKeys.map((key, index) => {
+                // If the module was added during this session,
+                // then a type would have been bound via the addModule
+                // function's getFieldDecorator
+                let type = getFieldValue(`steps[${index}].type`);
+                // Otherwise, we must be editing an existing DataLab
+                // so use the API call data to infer the module type
+                if (!type) {
+                  type = steps[index].type;
+                }
 
-              return (
-                <div className="module" key={key}>
-                  {type === "datasource" && (
-                    <DatasourceModule
-                      stepIndex={index}
-                      step={steps && steps[index]}
-                    />
-                  )}
+                return (
+                  <div className="module" key={key}>
+                    {type === "datasource" && (
+                      <DatasourceModule
+                        stepIndex={index}
+                        step={steps && steps[index]}
+                      />
+                    )}
 
-                  {type === "form" && (
-                    <FormModule
-                      stepIndex={index}
-                      step={steps && steps[index]}
-                    />
-                  )}
+                    {type === "form" && (
+                      <FormModule
+                        stepIndex={index}
+                        step={steps && steps[index]}
+                      />
+                    )}
 
-                  {type === "computed" && (
-                    <ComputedModule
-                      stepIndex={index}
-                      step={steps && steps[index]}
-                    />
-                  )}
-                </div>
-              );
-            })}
-
-            <Add addModule={this.addModule}/>
+                    {type === "computed" && (
+                      <ComputedModule
+                        stepIndex={index}
+                        step={steps && steps[index]}
+                      />
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              <div>
+                <Icon
+                  type="info-circle"
+                  theme="twoTone"
+                  style={{ marginRight: 5 }}
+                />
+                Add your first component by clicking the Datasource module in
+                the Components toolbox above.
+              </div>
+            )}
           </div>
 
           {error && (
             <Alert message={error} type="error" style={{ marginBottom: 10 }} />
           )}
 
-          <Button
-            size="large"
-            type="primary"
-            onClick={this.handleSave}
-            loading={loading}
-          >
-            Save
+          <Button type="primary" onClick={this.handleSave} loading={loading}>
+            {selectedId ? "Save" : "Submit"}
           </Button>
-
-          <div className="module_toolbox">
-            <div className="wrapper">
-              <h2>Components</h2>
-              {MODULES.map(modProps => (
-                <Module
-                  {...modProps}
-                  key={modProps.label}
-                  addModule={this.addModule}
-                />
-              ))}
-            </div>
-          </div>
         </div>
       </ModelContext.Provider>
     );

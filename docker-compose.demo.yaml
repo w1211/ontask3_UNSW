@@ -1,7 +1,50 @@
 version: '3'
 
 services:
+  rabbitmq:
+    restart: always
+    image: rabbitmq:3.7
+    environment:
+      - RABBITMQ_MNESIA_BASE=/var/lib/rabbitmq/mnesia
+    volumes: 
+      - ./data/rabbitmq:/var/lib/rabbitmq/mnesia
+
+  db:
+    restart: always
+    image: mongo:4
+    volumes:
+      - ./data/nosql:/data/db
+
   backend:
+    environment:
+      - ONTASK_DEMO=true
+    restart: always 
+    build: ./backend
     ports:
       - "8001:8000"
-  
+    volumes:
+      - ./backend:/backend
+    depends_on:
+      - db
+    command: uwsgi --ini uwsgi.ini --lazy-apps
+
+  celery:
+    environment:
+      - ONTASK_DEMO=true
+    restart: always
+    build: ./backend
+    volumes:
+      - ./backend:/backend
+    depends_on:
+      - rabbitmq
+      - backend
+    command: celery worker -A ontask --loglevel=INFO
+
+  celery_beat:
+    environment:
+      - ONTASK_DEMO=true
+    restart: always
+    build: ./backend
+    depends_on:
+      - celery
+    command: celery -A ontask beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler

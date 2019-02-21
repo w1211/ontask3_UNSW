@@ -317,7 +317,6 @@ class DatasourceModule extends React.Component {
         this.setState({
           discrepencies: { ...discrepencies, loading: false }
         });
-        console.log(error);
       }
     });
   };
@@ -399,7 +398,7 @@ class DatasourceModule extends React.Component {
         <Tooltip title="Check discrepencies">
           <Icon
             type={discrepencies.loading ? "loading" : "disconnect"}
-            onClick={() => this.checkForDiscrepencies()}
+            // onClick={() => this.checkForDiscrepencies()}
           />
         </Tooltip>
       );
@@ -488,7 +487,7 @@ class DatasourceModule extends React.Component {
               })(
                 <Select
                   placeholder="Matching field"
-                  onChange={this.checkForDiscrepencies}
+                  // onChange={this.checkForDiscrepencies}
                   disabled={
                     !datasource ||
                     !getFieldValue(`steps[${stepIndex}].datasource.primary`)
@@ -561,7 +560,14 @@ class DatasourceModule extends React.Component {
 
                       return (
                         <Option
-                          disabled={editing.isEditing}
+                          disabled={
+                            editing.isEditing ||
+                            (stepIndex > 0 &&
+                              field ===
+                                getFieldValue(
+                                  `steps[${stepIndex}].datasource.primary`
+                                ))
+                          }
                           value={field}
                           key={`${datasource.id}_${field}_field`}
                           className={isEditing ? "editing_field" : ""}

@@ -1,23 +1,10 @@
 import React from "react";
-import {
-  Input,
-  Icon,
-  Tooltip,
-  Button,
-  Card,
-  Modal,
-  Select,
-  notification
-} from "antd";
-import { Link } from "react-router-dom";
+import { Tooltip, Button, Modal, notification, Table } from "antd";
 
 import apiRequest from "../../shared/apiRequest";
 import ContainerContext from "../ContainerContext";
 
-const { Meta } = Card;
 const confirm = Modal.confirm;
-const InputGroup = Input.Group;
-const Option = Select.Option;
 
 class ActionTab extends React.Component {
   static contextType = ContainerContext;
@@ -25,7 +12,7 @@ class ActionTab extends React.Component {
   state = { filter: null, filterCategory: "name", deleting: {}, cloning: {} };
 
   deleteAction = actionId => {
-    const { updateContainers } = this.context;
+    const { fetchDashboard } = this.context;
 
     confirm({
       title: "Confirm action deletion",
@@ -42,7 +29,7 @@ class ActionTab extends React.Component {
           method: "DELETE",
           onSuccess: () => {
             this.setState({ deleting: { [actionId]: false } });
-            updateContainers();
+            fetchDashboard();
             notification["success"]({
               message: "Action deleted",
               description: "The action was successfully deleted."
@@ -61,7 +48,7 @@ class ActionTab extends React.Component {
   };
 
   cloneAction = actionId => {
-    const { updateContainers } = this.context;
+    const { fetchDashboard } = this.context;
 
     confirm({
       title: "Confirm action clone",
@@ -75,7 +62,7 @@ class ActionTab extends React.Component {
           method: "POST",
           onSuccess: () => {
             this.setState({ cloning: { [actionId]: false } });
-            updateContainers();
+            fetchDashboard();
             notification["success"]({
               message: "Action cloned",
               description: "The action was successfully cloned."
@@ -94,115 +81,101 @@ class ActionTab extends React.Component {
   };
 
   render() {
-    const { containerId, actions, dataLabs, openModal } = this.props;
-    const { filter, deleting, cloning, filterCategory } = this.state;
+    const { containerId, actions, dataLabs } = this.props;
+    const { deleting, cloning } = this.state;
+    const { history } = this.context;
+
+    const columns = [
+      {
+        title: "Name",
+        dataIndex: "name",
+        key: "name",
+        sorter: (a, b) => a.name.localeCompare(b.name)
+      },
+      {
+        title: "Description",
+        dataIndex: "description",
+        key: "description",
+        sorter: (a, b) => a.description.localeCompare(b.description)
+      },
+      {
+        title: "Associated DataLab",
+        dataIndex: "datalab",
+        key: "datalab",
+        sorter: (a, b) => a.datalab.localeCompare(b.datalab),
+        filters: [...new Set(actions.map(action => action.datalab))].map(
+          datalab => ({
+            text: datalab,
+            value: datalab
+          })
+        ),
+        onFilter: (value, record) => record.datalab === value
+      },
+      {
+        title: "Actions",
+        key: "actions",
+        render: (text, action) => {
+          return (
+            <div>
+              <Tooltip title="Edit action settings">
+                <Button
+                  style={{ margin: 3 }}
+                  icon="setting"
+                  onClick={() => {
+                    history.push(`/action/${action.id}/settings`);
+                  }}
+                />
+              </Tooltip>
+
+              <Tooltip title="Clone action">
+                <Button
+                  style={{ margin: 3 }}
+                  icon="copy"
+                  loading={action.id in cloning && cloning[action.id]}
+                  onClick={() => this.cloneAction(action.id)}
+                />
+              </Tooltip>
+
+              <Tooltip title="Delete action">
+                <Button
+                  style={{ margin: 3 }}
+                  type="danger"
+                  icon="delete"
+                  loading={action.id in deleting && deleting[action.id]}
+                  onClick={() => this.deleteAction(action.id)}
+                />
+              </Tooltip>
+            </div>
+          );
+        }
+      }
+    ];
 
     return (
-      <div className="tab">
-        {actions && actions.length > 0 && (
-          <div className="filter_wrapper">
-            <div className="filter">
-              <InputGroup compact>
-                <Select
-                  defaultValue="Name"
-                  onChange={filterCategory => this.setState({ filterCategory })}
-                >
-                  <Option value="name">Name</Option>
-                  <Option value="datalab">DataLab</Option>
-                </Select>
-                <Input
-                  style={{ width: "80%" }}
-                  placeholder="Enter a value to filter by"
-                  value={filter}
-                  addonAfter={
-                    <Tooltip title="Clear filter">
-                      <Icon
-                        type="close"
-                        onClick={() => this.setState({ filter: null })}
-                      />
-                    </Tooltip>
-                  }
-                  onChange={e => this.setState({ filter: e.target.value })}
-                />
-              </InputGroup>
-            </div>
-          </div>
-        )}
-        {actions &&
-          actions.map((action, i) => {
-            const name = action.name.toLowerCase();
-            const datalab = action.datalab.toLowerCase();
-            if (
-              (filter &&
-                !name.includes(filter.toLowerCase()) &&
-                filterCategory === "name") ||
-              (filter &&
-                !datalab.includes(filter.toLowerCase()) &&
-                filterCategory === "datalab")
-            )
-              return null;
-
-            return (
-              <Card
-                className="item"
-                bodyStyle={{ flex: 1 }}
-                title={action.name}
-                actions={[
-                  <Tooltip title="Enter action">
-                    <Link to={`/action/${action.id}`}>
-                      <Button icon="arrow-right" />
-                    </Link>
-                  </Tooltip>,
-                  <Tooltip title="Edit action">
-                    <Button
-                      icon="edit"
-                      onClick={() => {
-                        openModal({
-                          type: "action",
-                          selected: action
-                        });
-                      }}
-                    />
-                  </Tooltip>,
-                  <Tooltip title="Clone action">
-                    <Button
-                      icon="copy"
-                      loading={action.id in cloning && cloning[action.id]}
-                      onClick={() => this.cloneAction(action.id)}
-                    />
-                  </Tooltip>,
-                  <Tooltip title="Delete action">
-                    <Button
-                      type="danger"
-                      icon="delete"
-                      loading={action.id in deleting && deleting[action.id]}
-                      onClick={() => this.deleteAction(action.id)}
-                    />
-                  </Tooltip>
-                ]}
-                key={i}
-              >
-                <Meta
-                  description={
-                    <div>
-                      {action.description
-                        ? action.description
-                        : "No description provided"}
-                    </div>
-                  }
-                />
-              </Card>
-            );
-          })}
-        <div
-          className="add item"
-          onClick={() => {
-            openModal({ type: "action", data: { containerId, dataLabs } });
-          }}
+      <div>
+        <Button
+          style={{ marginBottom: 15 }}
+          type="primary"
+          icon="plus"
+          onClick={() =>
+            history.push({
+              pathname: "/action",
+              state: { containerId, dataLabs }
+            })
+          }
         >
-          <Icon type="plus" />
-          <span>Create action</span>
-        </div>
+          Create Action
+        </Button>
+
+        <Table
+          bordered
+          dataSource={actions}
+          columns={columns}
+          rowKey="id"
+          locale={{
+            emptyText: "No actions have been created yet"
+          }}
+        />
       </div>
     );
   }

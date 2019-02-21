@@ -29,7 +29,7 @@ class Details extends React.Component {
   };
 
   render() {
-    const { datasources, selectedId, order, steps, updateDatalab } = this.props;
+    const { datasources, selectedId, order, steps, updateDatalab, forms } = this.props;
 
     let columns = [];
     let tableData = [];
@@ -194,7 +194,24 @@ class Details extends React.Component {
               pin: orderItem.pinned
             });
           });
-        } else if (["form", "computed"].includes(step.type)) {
+        } else if (step.type === "form") {
+          step = forms.find(form => form.id === step.form);
+
+          step.fields.forEach((field, fieldIndex) => {
+            const orderItem = getOrder(stepIndex, field.name);
+            tableData.push({
+              stepIndex,
+              field: field.name,
+              key: field.name,
+              label: field.name,
+              module: "form",
+              from: step.name,
+              type: field.type,
+              visible: orderItem.visible,
+              pin: orderItem.pinned
+            });
+          });
+        } else if (step.type === "computed") {
           const module = step.type;
           step = step[module];
 

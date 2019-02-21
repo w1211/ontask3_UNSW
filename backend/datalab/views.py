@@ -5,17 +5,18 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action, list_route, detail_route
 from rest_framework.response import Response
 from rest_framework.status import HTTP_401_UNAUTHORIZED
+from mongoengine.queryset.visitor import Q
 
 import json
 
 from .serializers import DatalabSerializer
 from .permissions import DatalabPermissions
 from .models import Datalab
-from .utils import bind_column_types, combine_data, update_form_data, retrieve_form_data
+from .utils import bind_column_types, set_relations
 
-from container.views import ContainerViewSet
+from container.models import Container
 from datasource.models import Datasource
-from audit.serializers import AuditSerializer
+from form.models import Form
 
 
 class DatalabViewSet(viewsets.ModelViewSet):
@@ -25,7 +26,10 @@ class DatalabViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # Get the containers this user owns or has access to
-        containers = ContainerViewSet.get_queryset(self)
+        containers = Container.objects.filter(
+            Q(owner=self.request.user.email)
+            | Q(sharing__contains=self.request.user.email)
+        )
 
         # Retrieve only the DataLabs that belong to these containers
         datalabs = Datalab.objects(container__in=containers)
@@ -35,15 +39,8 @@ class DatalabViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         self.check_object_permissions(self.request, None)
 
-        queryset = Datalab.objects.filter(
-            name=self.request.data["name"], container=self.request.data["container"]
-        )
-        if queryset.count():
-            raise ValidationError("A DataLab with this name already exists")
-
         steps = self.request.data["steps"]
         steps = bind_column_types(steps)
-        data = combine_data(steps)
 
         order = []
         for (step_index, step) in enumerate(steps):
@@ -58,36 +55,17 @@ class DatalabViewSet(viewsets.ModelViewSet):
                     }
                 )
 
-        datalab = serializer.save(steps=steps, data=data, order=order)
-
-        audit = AuditSerializer(
-            data={
-                "model": "datalab",
-                "document": str(datalab.id),
-                "action": "create",
-                "user": self.request.user.email,
-            }
-        )
-        audit.is_valid()
-        audit.save()
+        datalab = serializer.save(steps=steps, order=order)
+        relations = set_relations(datalab)
+        datalab.relations = relations
+        datalab.save()
 
     def perform_update(self, serializer):
         datalab = self.get_object()
         self.check_object_permissions(self.request, datalab)
 
-        queryset = Datalab.objects.filter(
-            name=self.request.data["name"],
-            container=datalab["container"],
-            # Check against DataLabs other than the one being updated
-            id__ne=datalab["id"],
-        )
-        if queryset.count():
-            raise ValidationError("A DataLab with this name already exists")
-
         steps = self.request.data["steps"]
         steps = bind_column_types(steps)
-
-        data = combine_data(steps, datalab.id)
 
         order = [
             {
@@ -99,25 +77,36 @@ class DatalabViewSet(viewsets.ModelViewSet):
             for item in datalab.order
         ]
 
+        fields = {}
+        for step_index, step in enumerate(steps):
+            if step["type"] == "datasource":
+                fields[step_index] = step["datasource"]["fields"]
+
+            elif step["type"] == "form":
+                form_fields = Form.objects.get(id=step["form"]).fields
+                fields[step_index] = [field["name"] for field in form_fields]
+
+            elif step["type"] == "computed":
+                fields[step_index] = [
+                    field["name"] for field in step["computed"]["fields"]
+                ]
+
         # Check for any removed fields and remove from order list
         for item in order:
-            step = steps[item["stepIndex"]] if item["stepIndex"] < len(steps) else None
-            fields = step[step["type"]]["fields"] if step else []
-            if step and step["type"] in ["form", "computed"]:
-                fields = [field["name"] for field in fields]
-            if item["field"] not in fields:
+            step_fields = fields.get(item["stepIndex"], [])
+            if item["field"] not in step_fields:
                 order = [
                     x
                     for x in order
-                    if (x["field"] != item["field"] and x["stepIndex"] != item["field"])
+                    if not (
+                        x["field"] == item["field"]
+                        and x["stepIndex"] == item["stepIndex"]
+                    )
                 ]
 
-        # Check for any added fields and append to end of order list
-        for (step_index, step) in enumerate(steps):
-            for field in step[step["type"]]["fields"]:
-                if step["type"] in ["form", "computed"]:
-                    field = field["name"]
-                already_exists = next(
+        for step_index, step_fields in fields.items():
+            for field in step_fields:
+                order_item = next(
                     (
                         item
                         for item in order
@@ -125,32 +114,23 @@ class DatalabViewSet(viewsets.ModelViewSet):
                     ),
                     None,
                 )
-                if not already_exists:
+                if not order_item:
                     order.append({"stepIndex": step_index, "field": field})
 
-        serializer.save(steps=steps, data=data, order=order)
+        relations = set_relations(datalab)
+
+        serializer.save(steps=steps, order=order, relations=relations)
 
     def perform_destroy(self, datalab):
         self.check_object_permissions(self.request, datalab)
         datalab.delete()
-
-        audit = AuditSerializer(
-            data={
-                "model": "datalab",
-                "document": str(datalab.id),
-                "action": "delete",
-                "user": self.request.user.email,
-            }
-        )
-        audit.is_valid()
-        audit.save()
 
     @action(detail=False, methods=["post"])
     def check_discrepencies(self, request):
         check_module = request.data["partial"][-1]["datasource"]
         partial_build = request.data["partial"][:-1]
 
-        data = combine_data(partial_build)
+        data = []  # combine_data(partial_build)
         datasource = Datasource.objects.get(id=check_module["id"])
 
         primary_records = {item[check_module["primary"]] for item in datasource.data}
@@ -175,18 +155,6 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 else [],
             }
         )
-
-    @action(detail=False, methods=["post"])
-    def check_uniqueness(self, request):
-        partial_build = self.request.data["partial"]
-        primary_key = self.request.data["primary"]
-
-        data = combine_data(partial_build)
-
-        all_records = [item[primary_key] for item in data if primary_key in item]
-        unique_records = set(all_records)
-
-        return Response({"isUnique": len(all_records) == len(unique_records)})
 
     @detail_route(methods=["patch"])
     def change_column_order(self, request, id=None):
@@ -213,22 +181,6 @@ class DatalabViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid()
         serializer.save()
-
-        audit = AuditSerializer(
-            data={
-                "model": "datalab",
-                "document": str(datalab.id),
-                "action": "change_column_order",
-                "user": self.request.user.email,
-                "diff": {
-                    "field": field["field"],
-                    "from": drag_index,
-                    "to": hover_index,
-                },
-            }
-        )
-        audit.is_valid()
-        audit.save()
 
         return JsonResponse(serializer.data)
 
@@ -257,22 +209,6 @@ class DatalabViewSet(viewsets.ModelViewSet):
         serializer.is_valid()
         serializer.save()
 
-        audit = AuditSerializer(
-            data={
-                "model": "datalab",
-                "document": str(datalab.id),
-                "action": "change_column_visibility",
-                "user": self.request.user.email,
-                "diff": {
-                    "field": order[column_index]["field"],
-                    "from": not visible,
-                    "to": visible,
-                },
-            }
-        )
-        audit.is_valid()
-        audit.save()
-
         return JsonResponse(serializer.data)
 
     @detail_route(methods=["patch"])
@@ -299,22 +235,6 @@ class DatalabViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid()
         serializer.save()
-
-        audit = AuditSerializer(
-            data={
-                "model": "datalab",
-                "document": str(datalab.id),
-                "action": "change_pinned_status",
-                "user": self.request.user.email,
-                "diff": {
-                    "field": order[column_index]["field"],
-                    "from": not pinned,
-                    "to": pinned,
-                },
-            }
-        )
-        audit.is_valid()
-        audit.save()
 
         return JsonResponse(serializer.data)
 
@@ -369,74 +289,6 @@ class DatalabViewSet(viewsets.ModelViewSet):
 
         return JsonResponse(serializer.data)
 
-    @list_route(methods=["post"])
-    def retrieve_form(self, request):
-        request_user = request.user.email
-
-        datalab = Datalab.objects.get(id=request.data["dataLabId"])
-
-        form_data = retrieve_form_data(
-            datalab=datalab,
-            step=int(request.data["moduleIndex"]),
-            request_user=request_user,
-        )
-
-        return JsonResponse(form_data)
-
-    @detail_route(methods=["patch"])
-    def update_datalab_form(self, request, id=None):
-        request_user = request.user.email
-
-        datalab = self.get_object()
-
-        try:
-            updated_datalab = update_form_data(
-                datalab=datalab,
-                step=int(request.data["stepIndex"]),
-                field=request.data["field"],
-                primary=request.data["primary"],
-                value=request.data.get("value", None),
-                request_user=request_user,
-            )
-        except:
-            return Response(
-                {"error": "You are not authorized to modify this record"},
-                status=HTTP_401_UNAUTHORIZED,
-            )
-
-        serializer = DatalabSerializer(instance=updated_datalab)
-
-        return JsonResponse(serializer.data)
-
-    @list_route(methods=["patch"])
-    def update_web_form(self, request, id=None):
-        request_user = request.user.email
-
-        datalab = Datalab.objects.get(id=request.data["dataLabId"])
-
-        try:
-            update_form_data(
-                datalab=datalab,
-                step=int(request.data["stepIndex"]),
-                field=request.data["field"],
-                primary=request.data["primary"],
-                value=request.data["value"],
-                request_user=request_user,
-                is_web_form=True,
-            )
-        except Exception:
-            return JsonResponse(
-                {"error": "You are not authorized to modify this record"}
-            )
-
-        form_data = retrieve_form_data(
-            datalab=datalab,
-            step=int(request.data["stepIndex"]),
-            request_user=request_user,
-        )
-
-        return JsonResponse(form_data)
-
     @detail_route(methods=["post"])
     def clone_datalab(self, request, id=None):
         datalab = self.get_object()
@@ -449,17 +301,5 @@ class DatalabViewSet(viewsets.ModelViewSet):
         serializer = DatalabSerializer(data=datalab)
         serializer.is_valid()
         serializer.save()
-
-        audit = AuditSerializer(
-            data={
-                "model": "datalab",
-                "document": str(id),
-                "action": "clone",
-                "user": self.request.user.email,
-                "diff": {"new_document": str(serializer.instance.id)},
-            }
-        )
-        audit.is_valid()
-        audit.save()
 
         return JsonResponse({"success": 1})

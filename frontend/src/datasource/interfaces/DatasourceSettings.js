@@ -1,8 +1,7 @@
 import React from "react";
-import apiRequest from "../shared/apiRequest";
+import apiRequest from "../../shared/apiRequest";
 import {
   Button,
-  Modal,
   Form,
   Input,
   Alert,
@@ -15,19 +14,16 @@ import {
 } from "antd";
 import _ from "lodash";
 
-import formItemLayout from "../shared/FormItemLayout";
+import formItemLayout from "../../shared/FormItemLayout";
 
-import "./Datasource.css";
-import ContainerContext from "../container/ContainerContext";
+import "../Datasource.css";
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
 const Option = Select.Option;
 const Dragger = Upload.Dragger;
 
-class DatasourceModal extends React.Component {
-  static contextType = ContainerContext;
-
+class DatasourceSettings extends React.Component {
   constructor(props) {
     super(props);
 
@@ -41,9 +37,14 @@ class DatasourceModal extends React.Component {
   }
 
   handleOk = () => {
-    const { form, selected, data, closeModal } = this.props;
+    const {
+      form,
+      datasource,
+      containerId,
+      history,
+      updateDatasource
+    } = this.props;
     const { file, fileError } = this.state;
-    const { updateContainers } = this.context;
 
     form.validateFields((err, values) => {
       if (err || fileError) return;
@@ -51,7 +52,7 @@ class DatasourceModal extends React.Component {
       if (
         ["xlsXlsxFile", "csvTextFile"].includes(values.connection.dbType) &&
         !file &&
-        !selected
+        !datasource
       ) {
         this.setState({ fileError: "File is required" });
         return;
@@ -70,49 +71,35 @@ class DatasourceModal extends React.Component {
       }
 
       let url = "/datasource/";
-      if (selected) {
-        url += `${selected.id}/`;
+      if (datasource) {
+        url += `${datasource.id}/`;
       } else {
         if (file) {
-          payload.append("container", data.containerId);
+          payload.append("container", containerId);
         } else {
-          payload.container = data.containerId;
+          payload.container = containerId;
         }
       }
 
       apiRequest(url, {
-        method: selected ? "PATCH" : "POST",
+        method: datasource ? "PATCH" : "POST",
         payload,
         isJSON: !file,
-        onSuccess: () => {
+        onSuccess: updatedDatasource => {
           this.setState({ loading: false, error: null });
-          form.resetFields();
-          closeModal();
-          updateContainers();
+          updateDatasource(updatedDatasource);
           notification["success"]({
-            message: `Datasource ${selected ? "updated" : "created"}`,
+            message: `Datasource ${datasource ? "updated" : "added"}`,
             description: `The datasource was successfully ${
-              selected ? "updated" : "created"
+              datasource ? "updated" : "added"
             }.`
           });
+          if (!datasource)
+            history.push(`/datasource/${updatedDatasource.id}/settings`);
         },
         onError: error => this.setState({ loading: false, error })
       });
     });
-  };
-
-  handleCancel = () => {
-    const { form, closeModal } = this.props;
-
-    this.setState({
-      file: null,
-      fileError: null,
-      loading: false,
-      error: null,
-      sheetnames: null
-    });
-    form.resetFields();
-    closeModal();
   };
 
   fetchSheetnames = (file, payload) => {
@@ -140,6 +127,8 @@ class DatasourceModal extends React.Component {
   };
 
   handleFileDrop = e => {
+    const { form } = this.props;
+
     const file = e.file;
     const fileName = file.name.split(".");
     const extension = fileName[fileName.length - 1].toLowerCase();
@@ -155,7 +144,10 @@ class DatasourceModal extends React.Component {
       file: fileError ? null : file // If there are no errors, then save the file in the state
     });
 
-    if (file) this.filenameAutocomplete(file.name);
+    if (file && !form.getFieldValue("name"))
+      form.setFieldsValue({
+        name: file.name.substring(0, file.name.lastIndexOf("."))
+      });
   };
 
   validateFile = (extension, fileSize) => {
@@ -167,39 +159,13 @@ class DatasourceModal extends React.Component {
     if (fileSize > 2) return "File must not be larger than 2MB";
   };
 
-  filenameAutocomplete = name => {
-    const { containers, form, datasource } = this.props;
-    if (!name || form.getFieldValue("name") || datasource.selected) return;
-
-    const { containerId } = this.props.datasource.data;
-
-    const container = containers.find(c => c.id === containerId);
-
-    const datasourceNames = container.datasources.map(data => data.name);
-    const sortedName = [...datasourceNames].sort();
-
-    const lastIndex = name.lastIndexOf(".");
-    const currentName = name.substring(0, lastIndex);
-
-    let i = 0;
-    let resultname = currentName;
-    sortedName.forEach(n => {
-      if (n === resultname) {
-        i++;
-        resultname = `${currentName}_${i}`;
-      }
-    });
-
-    form.setFieldsValue({ name: resultname });
-  };
-
   S3Bucket = (fileName, extension) => {
-    const { form, selected } = this.props;
+    const { form, datasource } = this.props;
     const { getFieldValue, getFieldDecorator } = form;
 
     const bucketName = getFieldValue("connection.bucket")
       ? getFieldValue("connection.bucket")
-      : _.get(selected, "connection.bucket", "YOUR_BUCKET_NAME");
+      : _.get(datasource, "connection.bucket", "YOUR_BUCKET_NAME");
 
     const permission = {
       Version: "2012-10-17",
@@ -234,14 +200,14 @@ class DatasourceModal extends React.Component {
       <div>
         <FormItem {...formItemLayout} label="Bucket name">
           {getFieldDecorator("connection.bucket", {
-            initialValue: _.get(selected, "connection.bucket"),
+            initialValue: _.get(datasource, "connection.bucket"),
             rules: [{ required: true, message: "Bucket name is required" }]
           })(<Input />)}
         </FormItem>
 
         <FormItem {...formItemLayout} label="File name">
           {getFieldDecorator("connection.fileName", {
-            initialValue: _.get(selected, "connection.fileName"),
+            initialValue: _.get(datasource, "connection.fileName"),
             rules: [{ required: true, message: "File name is required" }]
           })(
             <Input
@@ -290,13 +256,13 @@ class DatasourceModal extends React.Component {
   };
 
   Delimiter = () => {
-    const { form, selected } = this.props;
+    const { form, datasource } = this.props;
     const { getFieldDecorator } = form;
 
     return (
       <FormItem {...formItemLayout} label="Delimiter">
         {getFieldDecorator("connection.delimiter", {
-          initialValue: _.get(selected, "connection.delimiter", ",")
+          initialValue: _.get(datasource, "connection.delimiter", ",")
         })(
           <Select>
             <Option value=",">Comma ,</Option>
@@ -334,14 +300,14 @@ class DatasourceModal extends React.Component {
   );
 
   SheetNames = () => {
-    const { form, selected } = this.props;
+    const { form, datasource } = this.props;
     const { sheetnames } = this.state;
     const { getFieldDecorator } = form;
 
     return (
       <FormItem {...formItemLayout} label="Sheet name">
         {getFieldDecorator("connection.sheetname", {
-          initialValue: _.get(selected, "connection.sheetname"),
+          initialValue: _.get(datasource, "connection.sheetname"),
           rules: [{ required: true, message: "Sheet name is required" }]
         })(
           <Select>
@@ -355,28 +321,28 @@ class DatasourceModal extends React.Component {
   };
 
   ConnectionSettings = () => {
-    const { form, selected } = this.props;
+    const { form, datasource } = this.props;
     const { getFieldDecorator } = form;
 
     return (
       <div>
         <FormItem {...formItemLayout} label="Host">
           {getFieldDecorator("connection.host", {
-            initialValue: _.get(selected, "connection.host"),
+            initialValue: _.get(datasource, "connection.host"),
             rules: [{ required: true, message: "Host is required" }]
           })(<Input />)}
         </FormItem>
 
         <FormItem {...formItemLayout} label="Database">
           {getFieldDecorator("connection.database", {
-            initialValue: _.get(selected, "connection.database"),
+            initialValue: _.get(datasource, "connection.database"),
             rules: [{ required: true, message: "Database is required" }]
           })(<Input />)}
         </FormItem>
 
         <FormItem {...formItemLayout} label="User">
           {getFieldDecorator("connection.user", {
-            initialValue: _.get(selected, "connection.user"),
+            initialValue: _.get(datasource, "connection.user"),
             rules: [{ required: true, message: "Database user is required" }]
           })(<Input />)}
         </FormItem>
@@ -384,19 +350,22 @@ class DatasourceModal extends React.Component {
         <FormItem {...formItemLayout} label="Password">
           {getFieldDecorator("connection.password", {
             rules: [
-              { required: !selected, message: "Database password is required" }
+              {
+                required: !datasource,
+                message: "Database password is required"
+              }
             ]
           })(
             <Input
               type="password"
-              placeholder={selected && "Change password"}
+              placeholder={datasource && "Change password"}
             />
           )}
         </FormItem>
 
         <FormItem {...formItemLayout} label="Query">
           {getFieldDecorator("connection.query", {
-            initialValue: _.get(selected, "connection.query"),
+            initialValue: _.get(datasource, "connection.query"),
             rules: [{ required: true, message: "Database query is required" }]
           })(<TextArea rows={2} />)}
         </FormItem>
@@ -405,18 +374,18 @@ class DatasourceModal extends React.Component {
   };
 
   render() {
-    const { visible, selected, form } = this.props;
+    const { datasource, form } = this.props;
     const { loading, error, file, fileError, sheetnames } = this.state;
 
     const { getFieldValue, getFieldDecorator } = form;
 
     const fileType = getFieldValue("connection.dbType")
       ? getFieldValue("connection.dbType")
-      : _.get(selected, "connection.dbType");
+      : _.get(datasource, "connection.dbType");
 
     const fileName = getFieldValue("connection.fileName")
       ? getFieldValue("connection.fileName")
-      : _.get(selected, "connection.fileName");
+      : _.get(datasource, "connection.fileName");
 
     const extension = fileName
       ? fileName
@@ -438,70 +407,73 @@ class DatasourceModal extends React.Component {
     ].includes(fileType);
 
     return (
-      <Modal
-        visible={visible}
+      <Form
+        layout="horizontal"
         className="datasource"
-        title={selected ? "Update datasource" : "Create datasource"}
-        okText={selected ? "Update" : "Create"}
-        onCancel={this.handleCancel}
-        onOk={this.handleOk}
-        confirmLoading={loading}
+        style={{ maxWidth: 500, overflow: "hidden" }}
       >
-        <Form layout="horizontal">
-          <FormItem {...formItemLayout} label="Type">
-            {getFieldDecorator("connection.dbType", {
-              initialValue: _.get(selected, "connection.dbType"),
-              rules: [{ required: true, message: "Type is required" }],
-              onChange: () => this.setState({ sheetnames: null })
-            })(
-              <Select>
-                <Option value="mysql">MySQL</Option>
-                <Option value="postgresql">PostgreSQL</Option>
-                <Option value="csvTextFile">csv/text file</Option>
-                <Option value="xlsXlsxFile">xls/xlsx file</Option>
-                <Option value="s3BucketFile">S3 bucket file</Option>
-                <Option value="sqlite" disabled>
-                  SQLite
-                </Option>
-                <Option value="mssql" disabled>
-                  MSSQL
-                </Option>
-              </Select>
-            )}
-          </FormItem>
-
-          <FormItem {...formItemLayout} label="Datasource name">
-            {getFieldDecorator("name", {
-              initialValue: _.get(selected, "name"),
-              rules: [{ required: true, message: "Name is required" }]
-            })(<Input />)}
-          </FormItem>
-
-          {fileType === "s3BucketFile" && this.S3Bucket(fileName, extension)}
-
-          {requiresDelimiter && this.Delimiter()}
-
-          {requiresUpload && this.LocalFile(fileType)}
-
-          {file && (
-            <div>
-              <Icon type="paper-clip" />
-              {file.name}
-            </div>
+        <FormItem {...formItemLayout} label="Type">
+          {getFieldDecorator("connection.dbType", {
+            initialValue: _.get(datasource, "connection.dbType"),
+            rules: [{ required: true, message: "Type is required" }],
+            onChange: () => this.setState({ sheetnames: null })
+          })(
+            <Select>
+              <Option value="mysql">MySQL</Option>
+              <Option value="postgresql">PostgreSQL</Option>
+              <Option value="csvTextFile">csv/text file</Option>
+              <Option value="xlsXlsxFile">xls/xlsx file</Option>
+              <Option value="s3BucketFile">S3 bucket file</Option>
+              <Option value="sqlite" disabled>
+                SQLite
+              </Option>
+              <Option value="mssql" disabled>
+                MSSQL
+              </Option>
+            </Select>
           )}
+        </FormItem>
 
-          {requiresSheetname && sheetnames && this.SheetNames()}
+        <FormItem {...formItemLayout} label="Datasource name">
+          {getFieldDecorator("name", {
+            initialValue: _.get(datasource, "name"),
+            rules: [{ required: true, message: "Name is required" }]
+          })(<Input />)}
+        </FormItem>
 
-          {requiresConnection && this.ConnectionSettings()}
+        {fileType === "s3BucketFile" && this.S3Bucket(fileName, extension)}
 
-          {fileError && (
-            <Alert className="error" message={fileError} type="error" />
-          )}
-          {error && <Alert className="error" message={error} type="error" />}
-        </Form>
-      </Modal>
+        {requiresDelimiter && this.Delimiter()}
+
+        {requiresUpload && this.LocalFile(fileType)}
+
+        {file && (
+          <div>
+            <Icon type="paper-clip" />
+            {file.name}
+          </div>
+        )}
+
+        {requiresSheetname && sheetnames && this.SheetNames()}
+
+        {requiresConnection && this.ConnectionSettings()}
+
+        {fileError && (
+          <Alert className="error" message={fileError} type="error" />
+        )}
+        {error && <Alert className="error" message={error} type="error" />}
+
+        <Button
+          loading={loading}
+          type="primary"
+          onClick={this.handleOk}
+          style={{ marginTop: 20 }}
+        >
+          {datasource ? "Save" : "Submit"}
+        </Button>
+      </Form>
     );
   }
 }
 
-export default Form.create()(DatasourceModal);
+export default Form.create()(DatasourceSettings);

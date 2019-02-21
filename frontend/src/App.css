@@ -26,10 +26,8 @@
 }
 
 .app .wrapper {
+  margin-top: 25px;
   padding: 0 50px;
-}
-.app .breadcrumbs {
-  margin: 16px 0;
 }
 .app .layout {
   padding: 24px 0;

@@ -1,167 +1,114 @@
-from django.http import JsonResponse
 from mongoengine.queryset.visitor import Q
-from rest_framework_mongoengine import viewsets
-from rest_framework_mongoengine.validators import ValidationError
-from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError, NotFound, PermissionDenied
+from rest_framework.status import HTTP_201_CREATED, HTTP_200_OK
 
-from .serializers import ContainerSerializer
+from .serializers import ContainerSerializer, DashboardSerializer
 from .models import Container
-from .permissions import ContainerPermissions
 
-from datasource.models import Datasource
-from datalab.models import Datalab
-from audit.serializers import AuditSerializer
- # The below serializer only uses fields that are relevant to datalabs
-from datalab.serializers import DatasourceSerializer
+from form.models import Form
 
 
-class ContainerViewSet(viewsets.ModelViewSet):
-    lookup_field = "id"
-    serializer_class = ContainerSerializer
-    permission_classes = [IsAuthenticated, ContainerPermissions]
+class ListContainers(APIView):
+    def get(self, request):
+        accessible_forms = Form.objects.filter(
+            (Q(ltiAccess=True) | Q(emailAccess=True))
+            & Q(permitted_users__in=request.user.permission_values)
+        )
+        related_containers = set(form.container.id for form in accessible_forms)
 
-    def get_queryset(self):
-        request_user = self.request.user.email
-
-        return Container.objects.filter(
-            Q(owner=request_user) | Q(sharing__contains=request_user)
+        containers = Container.objects.filter(
+            Q(owner=request.user.email)
+            | Q(sharing__contains=request.user.email)
+            | Q(id__in=related_containers)
         )
 
-    def perform_create(self, serializer):
-        request_user = self.request.user.email
+        response = []
+        for container in containers:
+            serializer = DashboardSerializer(
+                container,
+                context={
+                    "has_full_permission": container.has_full_permission(request.user),
+                    "accessible_forms": accessible_forms,
+                },
+            )
+            response.append(serializer.data)
 
-        # We are manually checking that the combination of (owner, code) is unique.
-        # We cannot take advantage of MongoEngine's inbuilt "unique_with" attribute
-        # in the Container model, because we are not sending the owner attribute in
-        # the request body (rather, it is provided by the request.user).
-        queryset = Container.objects.filter(
-            owner=request_user, code=self.request.data["code"]
-        )
-        if queryset.count():
+        return Response(response)
+
+    def post(self, request):
+        # Ensure that the container code is not a duplicate for this user
+        if Container.objects.filter(
+            owner=request.user.email, code=request.data["code"]
+        ).first():
             raise ValidationError("A container with this code already exists")
 
-        container = serializer.save(owner=request_user)
-
-        audit = AuditSerializer(
-            data={
-                "model": "container",
-                "document": str(container.id),
-                "action": "create",
-                "user": request_user,
-            }
-        )
-        audit.is_valid()
-        audit.save()
-
-    def perform_update(self, serializer):
-        container = self.get_object()
-        request_user = self.request.user.email
-
-        self.check_object_permissions(self.request, container)
-
-        # Ensure that the owner cannot be changed by a malicious payload
-        if "owner" in self.request.data:
-            del self.request.data["owner"]
-
-        # Ensure that only the owner can edit sharing permissions
-        if request_user != container.owner and "sharing" in self.request.data:
-            del self.request.data["sharing"]
-
-        # If we are editing an actual container, as opposed to editing the sharing
-        # permissions of a container
-        if "code" in self.request.data:
-            queryset = Container.objects.filter(
-                # We only want to check against the documents that are not the document
-                # being updated. I.e. only include objects in the filter that do not have
-                # the same id as the current object. We are making use of a MongoEngine
-                # query operator [field]__ne (i.e. field not equal to). Refer to
-                # http://docs.mongoengine.org/guide/querying.html#query-operators for
-                # more information.
-                id__ne=container.id,
-                owner=request_user,
-                code=self.request.data["code"],
-            )
-            if queryset.count():
-                raise ValidationError("A container with this code already exists")
-
+        container = Container(owner=request.user.email)
+        serializer = ContainerSerializer(container, data=request.data)
+        serializer.is_valid()
         serializer.save()
 
-        # Identify the changes made to the container
-        diff = {}
-        for field in container:
-            old_value = container[field]
-            new_value = serializer.instance[field]
-            if old_value != new_value:
-                diff[field] = {"from": old_value, "to": new_value}
+        return Response(serializer.data, status=HTTP_201_CREATED)
 
-        # If changes were detected, add a record to the audit collection
-        if len(diff.keys()):
-            audit = AuditSerializer(
-                data={
-                    "model": "container",
-                    "document": str(container.id),
-                    "action": "edit",
-                    "user": request_user,
-                    "diff": diff,
-                }
-            )
-            audit.is_valid()
-            audit.save()
 
-    def perform_destroy(self, container):
-        request_user = self.request.user.email
+class DetailContainer(APIView):
+    def patch(self, request, id):
+        try:
+            container = Container.objects.get(id=id)
+        except:
+            raise NotFound()
 
-        self.check_object_permissions(self.request, container)
+        # Only owner or users with shared access can edit a container
+        if not container.has_full_permission(request.user):
+            raise PermissionDenied()
+
+        # Ensure that the owner cannot be changed by a malicious payload
+        if "owner" in request.data:
+            del request.data["owner"]
+
+        # Ensure that only the owner can edit sharing permissions
+        if request.user.email != container.owner and "sharing" in request.data:
+            del request.data["sharing"]
+
+        # Ensure that the container code is not a duplicate for this user
+        if "code" in request.data:
+            if Container.objects.filter(
+                id__ne=container.id, owner=request.user.email, code=request.data["code"]
+            ).first():
+                raise ValidationError("A container with this code already exists")
+
+        serializer = ContainerSerializer(container, data=request.data, partial=True)
+        serializer.is_valid()
+        serializer.save()
+
+        return Response(status=HTTP_200_OK)
+
+    def delete(self, request, id):
+        try:
+            container = Container.objects.get(id=id)
+        except:
+            raise NotFound()
+
+        # Only owner can delete a container
+        if not container.is_owner(request.user):
+            raise PermissionDenied()
 
         container.delete()
 
-        audit = AuditSerializer(
-            data={
-                "model": "container",
-                "document": str(container.id),
-                "action": "delete",
-                "user": request_user,
-            }
-        )
-        audit.is_valid()
-        audit.save()
-        
-    @action(detail=True, methods=["post"])
-    def surrender_access(self, request, id=None):
-        """Revoke the requesting user's access to the given container"""
+        return Response(status=HTTP_200_OK)
+
+
+@api_view(["POST"])
+def SurrenderAccess(request, id):
+    try:
         container = Container.objects.get(id=id)
+    except:
+        raise NotFound()
 
-        sharing = container.sharing
-        request_user = request.user.email
+    if request.user.email in container.sharing:
+        container.sharing.remove(request.user.email)
+        container.save()
 
-        if request_user in sharing:
-            sharing.remove(request_user)
-
-            container.save(sharing=sharing)
-
-            audit = AuditSerializer(
-                data={
-                    "model": "container",
-                    "document": str(container.id),
-                    "action": "surrender_access",
-                    "user": request_user,
-                }
-            )
-            audit.is_valid()
-            audit.save()
-
-        return JsonResponse({"success": 1})
-
-    @action(detail=True, methods=["get"])
-    def datasources(self, request, id=None):
-        container = self.get_object()
-        self.check_object_permissions(request, container)
-
-        datasources = Datasource.objects(container=container.id).only(
-            "id", "name", "fields"
-        )
-        serializer = DatasourceSerializer(datasources, many=True)
-
-        return Response(serializer.data)
+    return Response(status=HTTP_200_OK)

@@ -9,18 +9,7 @@ services:
     volumes: 
       - ./data/rabbitmq:/var/lib/rabbitmq/mnesia
 
-  sql:
-    restart: always
-    image: postgres:10.5
-    environment:
-      - POSTGRES_DB=ontask
-      - POSTGRES_USER=ontask
-      - POSTGRES_PASSWORD=ontask
-      - PGDATA=/var/lib/postgresql/data
-    volumes:
-      - ./data/sql:/var/lib/postgresql/data
-
-  nosql:
+  db:
     restart: always
     image: mongo:4
     volumes:
@@ -34,8 +23,7 @@ services:
     volumes:
       - ./backend:/backend
     depends_on:
-      - sql
-      - nosql
+      - db
     command: uwsgi --ini uwsgi.ini --lazy-apps
 
   celery:

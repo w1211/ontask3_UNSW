@@ -18,16 +18,13 @@ class Login extends React.Component {
     registerVisible: false
   };
 
-  beginLogin = () => {
-    this.setState({ loading: true });
-  };
-
   finishLogin = response => {
     const { onLogin } = this.props;
 
     this.setState({ loading: false });
     localStorage.setItem("token", response.token);
     localStorage.setItem("email", response.email);
+    localStorage.setItem("name", response.name);
 
     onLogin();
   };
@@ -45,7 +42,9 @@ class Login extends React.Component {
     form.validateFields((err, values) => {
       if (err) return;
 
-      login(values, this.beginLogin, this.finishLogin, this.onError);
+      this.setState({ loading: true });
+
+      login(values, this.finishLogin, this.onError);
     });
   };
 

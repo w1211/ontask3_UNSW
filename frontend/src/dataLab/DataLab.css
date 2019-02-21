@@ -4,9 +4,6 @@
   flex-direction: column;
   margin-bottom: 20px;
 }
-.dataLab .model {
-  padding-right: 180px;
-}
 .dataLab .actions {
   margin-bottom: 20px;
 }
@@ -357,36 +354,25 @@
 .dataLab .filter {
   display: flex;
   align-items: center;
-  position: absolute;
-  top: -60px;
-  right: 0;
+  margin: -10px 0px 15px 0px;
 }
 .dataLab .searchbar {
   width: 200px;
-  margin-left: 20px;
+  margin: 0 10px;
 }
 .dataLab .data_manipulation .saved {
   background: #E8F5E9;
 }
-/* Fix visual bug in Firefox where column sorter appears below header text */
-.dataLab .data_manipulation .column > span {
-  display: inline-flex;
-  align-items: center;
-}
-.dataLab .data_manipulation .column .ant-table-column-sorter {
-  margin-top: 4px;
-}
-/* ---- */
 .dataLab .data_manipulation .column_header {
   display: inline;
 }
-.dataLab .data_manipulation .column_header .datasource {
+.dataLab .data_manipulation .column_header.datasource {
   color: #2196F3;
 }
-.dataLab .data_manipulation .column_header .form {
+.dataLab .data_manipulation .column_header.form {
   color: #9C27B0;
 }
-.dataLab .data_manipulation .column_header .computed {
+.dataLab .data_manipulation .column_header.computed {
   color: #66BB6A;
 }
 .dataLab .data_manipulation .menu_icon {
@@ -468,7 +454,58 @@
   display: flex;
   align-items: center;
 }
+.data_manipulation .ant-table-fixed {
+  width: auto !important;
+}
 
 .field-design .ant-form-item {
   margin-bottom: 3px;
+}
+.field-design .option {
+  display: flex;
+  align-items: center;
+}
+.form-drawer .ant-drawer-content-wrapper {
+  width: 80% !important;
+  max-width: 1000px;
+}
+
+.dataLab .form .ant-select-disabled .ant-select-selection {
+  background: none;
+}
+
+.dataLab .components {
+  text-align: center;
+  display: inline-flex;
+  flex-direction: column;
+  border: 1px solid #d9d9d9;
+  border-radius: 5px;
+  padding: 10px;
+  background: #fafafa;
+  box-shadow: 0 2px 4px 0 rgba(0,0,0,0.10);
+}
+.dataLab .components > div:first-child {
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+.dataLab .components button {
+  padding: 0 11px !important;
+}
+.dataLab .components button:not(:first-child):not(:last-child) {
+  margin: 0 10px;
+}
+.dataLab .components button.datasource {
+  background: #e6f7ff;
+  border-color: #91d5ff;
+  color: #1890ff;
+}
+.dataLab .components button.computed {
+  background: #f6ffed;
+  border-color: #b7eb8f;
+  color: #52c41a;
+}
+.dataLab .components button.form {
+  background: #f9f0ff;
+  border-color: #d3adf7;
+  color: #722ed1;
 }

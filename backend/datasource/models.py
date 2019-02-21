@@ -8,7 +8,7 @@ from mongoengine.fields import (
     EmbeddedDocumentField,
     DateTimeField,
 )
-from datetime import datetime
+from datetime import datetime as dt
 import pandas as pd
 
 from container.models import Container
@@ -47,8 +47,8 @@ class Connection(EmbeddedDocument):
 
 
 class Schedule(EmbeddedDocument):
-    startTime = DateTimeField()
-    endTime = DateTimeField()
+    startTime = DateTimeField(null=True)
+    endTime = DateTimeField(null=True)
     time = DateTimeField(required=True)
     frequency = StringField(required=True, choices=("daily", "weekly", "monthly"))
     dayFrequency = IntField(min_value=1)  # I.e. every n days
@@ -69,7 +69,7 @@ class Datasource(Document):
     data = ListField(DictField())
     schedule = EmbeddedDocumentField(Schedule, null=True)
     # Last time the data was updated
-    lastUpdated = DateTimeField(default=datetime.utcnow)
+    lastUpdated = DateTimeField(default=dt.utcnow)
     fields = ListField(StringField())
     types = DictField()
 
@@ -112,6 +112,6 @@ class Datasource(Document):
         ]:
             self.data = self.retrieve_data()
             self.fields = [field for field in self.data[0]]
-            self.lastUpdated = datetime.utcnow
+            self.lastUpdated = dt.utcnow()
             
             self.save()

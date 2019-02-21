@@ -13,13 +13,15 @@ from pylti.common import LTIException, verify_request_common
 from jwt import decode
 import os
 
-from .models import OneTimeToken
+from .models import OneTimeToken, lti
 from .utils import (
     get_or_create_user,
     generate_one_time_token,
     seed_data,
     user_signup_notification,
 )
+
+from container.models import Container
 
 from ontask.settings import SECRET_KEY, AAF_CONFIG, LTI_CONFIG, FRONTEND_DOMAIN
 
@@ -38,24 +40,17 @@ class LocalAuth(APIView):
                 {"error": "User registration is disabled"}, status=HTTP_400_BAD_REQUEST
             )
 
-        credentials = {
-            "email": request.data["email"],
-            "password": request.data["password"],
-            "name": request.data["fullname"],
-        }
-
-        try:
-            user = User.objects.create_user(**credentials)
-            users_group = Group.objects.get(name='users')
-            user.groups.add(users_group)
-
-        except IntegrityError:
+        if User.objects.filter(email=request.data["email"]).first():
             return Response(
                 {"error": "Email is already being used"}, status=HTTP_400_BAD_REQUEST
             )
 
+        user = User.objects.create_user(request.data["email"], **request.data)
+        users_group = Group.objects.get(name='users')
+        user.groups.add(users_group)
+        
         # Give the user a container with example datasources, datalabs, actions, etc
-        seed_data(user)
+        # seed_data(user)
 
         # Send a notification to admins on user signup, if OnTask is in demo mode
         user_signup_notification(user)
@@ -63,11 +58,7 @@ class LocalAuth(APIView):
         return Response({"success": "User creation successful"})
 
     def post(self, request, format=None):
-        credentials = {
-            "username": request.data["email"],
-            "password": request.data["password"],
-        }
-        user = authenticate(**credentials)
+        user = authenticate(**request.data)
 
         if not user:
             return Response(
@@ -75,7 +66,13 @@ class LocalAuth(APIView):
             )
 
         long_term_token, _ = Token.objects.get_or_create(user=user)
-        return Response({"token": str(long_term_token), "email": user.email})
+        return Response(
+            {
+                "token": str(long_term_token),
+                "email": user.email,
+                "name": f"{user.first_name} {user.last_name}",
+            }
+        )
 
 
 class AAFAuth(APIView):
@@ -96,13 +93,15 @@ class AAFAuth(APIView):
             )
 
         user_attributes = verified_jwt["https://aaf.edu.au/attributes"]
-        email = user_attributes["mail"]
-        fullname = user_attributes["displayname"]
-
-        user = get_or_create_user(email, fullname)
+        data = {
+            "email": user_attributes["mail"],
+            "first_name": user_attributes["givenname"],
+            "last_name": user_attributes["surname"],
+        }
+        user = get_or_create_user(data)
         users_group = Group.objects.get(name='users')
         user.groups.add(users_group)
-
+        
         # Update the user's role to staff if necessary
         roles = user_attributes["edupersonscopedaffiliation"][0].split(";")
         if (
@@ -136,15 +135,41 @@ class LTIAuth(APIView):
             # TODO: Implement logging of this error
             return redirect(FRONTEND_DOMAIN + "/error")
 
-        email = payload["lis_person_contact_email_primary"]
-        fullname = payload["lis_person_name_full"]
+        data = {
+            "email": payload["lis_person_contact_email_primary"],
+            "first_name": payload["lis_person_name_given"],
+            "last_name": payload["lis_person_name_family"],
+        }
+        user = get_or_create_user(data)
 
-        user = get_or_create_user(email, fullname)
         token = generate_one_time_token(user)
         users_group = Group.objects.get(name='users')
         user.groups.add(users_group)
 
-        return redirect(FRONTEND_DOMAIN + "?tkn=" + token)
+        # Store the important LTI fields for this user
+        # These fields be used to grant permissions in containers
+        lti_payload = {
+            "user_id": payload["user_id"],
+            "ext_user_username": payload["ext_user_username"],
+            "lis_person_contact_email_primary": payload[
+                "lis_person_contact_email_primary"
+            ],
+        }
+        lti.objects(user=user.id).update_one(payload=lti_payload, upsert=True)
+
+        # If any containers have been bound to this LTI resource, then
+        # redirect to that container
+        # Otherwise, prompt the user to choose a container for binding
+        lti_resource_id = payload["resource_link_id"]
+        try:
+            container = Container.objects.get(lti_resource=lti_resource_id)
+            return redirect(
+                FRONTEND_DOMAIN + "?tkn=" + token + "&container=" + str(container.id)
+            )
+        except:
+            return redirect(
+                FRONTEND_DOMAIN + "?tkn=" + token + "&lti=" + lti_resource_id
+            )
 
 
 class ValidateOneTimeToken(APIView):
@@ -179,4 +204,10 @@ class ValidateOneTimeToken(APIView):
         # Get or create a long term token for this user
         long_term_token, _ = Token.objects.get_or_create(user=user)
 
-        return Response({"token": str(long_term_token), "email": user.email})
+        return Response(
+            {
+                "token": str(long_term_token),
+                "email": user.email,
+                "name": f"{user.first_name} {user.last_name}",
+            }
+        )
