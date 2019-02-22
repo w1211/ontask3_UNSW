@@ -1,6 +1,6 @@
 from mongoengine import Document
 from mongoengine.fields import ReferenceField, StringField, DictField
-from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.contrib.auth.models import AbstractUser, BaseUserManager, Group
 from django.db import models
 
 
@@ -35,10 +35,13 @@ class UserManager(BaseUserManager):
     def create_superuser(self, email, password, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
-        return self._create_user(email, password, **extra_fields)
+        user = self._create_user(email, password, **extra_fields)
+        user.groups.add(Group.objects.get(name="admin"))
+        return user
 
 
 class User(AbstractUser):
+    username = models.CharField(max_length=40, db_index=False, unique=False, null=True)
     email = models.EmailField(unique=True, db_index=True)
 
     USERNAME_FIELD = "email"
