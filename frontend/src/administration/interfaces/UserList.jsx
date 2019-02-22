@@ -3,12 +3,6 @@ import { Table, Input, Button, Icon, Select, notification, Spin } from "antd";
 import apiRequest from "../../shared/apiRequest";
 import "./UserList.css";
 
-const groupsHierarchy = {
-  admin: 3,
-  instructor: 2,
-  user: 1
-};
-
 const groupLabelMap = {
   admin: "Admin",
   instructor: "Instructor",
@@ -76,7 +70,7 @@ class GroupSelect extends Component {
             onBlur={() => this.setState({ editing: false })}
           >
             {["admin", "instructor", "user"].map(group => (
-              <Select.Option value={group}>
+              <Select.Option value={group} key={group}>
                 {groupLabelMap[group]}
               </Select.Option>
             ))}
@@ -91,7 +85,7 @@ class GroupSelect extends Component {
 
 class UsersList extends Component {
   state = {
-    usersList: [],
+    data: [],
     pagination: {},
     searchTerm: "",
     fetching: true,
@@ -203,7 +197,7 @@ class UsersList extends Component {
       method: "GET",
       onSuccess: res => {
         this.setState({
-          usersList: res.results,
+          data: res.results,
           pagination: { ...this.state.pagination, total: res.count }
         });
         this.setState({ fetching: false, loading: false });
@@ -264,7 +258,7 @@ class UsersList extends Component {
       onSuccess: res => {
         this.setState({
           loading: false,
-          usersList: res
+          data: res
         });
       },
       onError: res => {
@@ -274,7 +268,7 @@ class UsersList extends Component {
   };
 
   render() {
-    const { searchTerm } = this.state;
+    const { searchTerm, data } = this.state;
     const columns = [
       {
         title: "Name",
@@ -331,42 +325,23 @@ class UsersList extends Component {
         title: "Action",
         width: 130,
         fixed: "right",
-        render: record => {
-          return (
-            <div>
-              {!sessionStorage.getItem("token_copy") && !record.is_admin && (
-                <div style={{ display: "inline" }}>
-                  <Button
-                    size="small"
-                    type="primary"
-                    onClick={() => this.handleImpersonation(record.email)}
-                  >
-                    Login as
-                  </Button>
-                </div>
-              )}
-            </div>
-          );
-        }
+        render: record => (
+          <div>
+            {!sessionStorage.getItem("token_copy") && record.group !== "admin" && (
+              <div style={{ display: "inline" }}>
+                <Button
+                  size="small"
+                  type="primary"
+                  onClick={() => this.handleImpersonation(record.email)}
+                >
+                  Login as
+                </Button>
+              </div>
+            )}
+          </div>
+        )
       }
     ];
-
-    const data = this.state.usersList.map((user, index) => {
-      const hierarchy = user.groups.map(group => {
-        return groupsHierarchy[group.name];
-      });
-      const group = this.findKeys(groupsHierarchy, hierarchy);
-      const user_data = {
-        key: user.id,
-        id: user.id,
-        email: user.email,
-        name: `${user.first_name} ${user.last_name}`,
-        is_admin: user.is_staff,
-        group
-      };
-
-      return user_data;
-    });
 
     const term = searchTerm.trim().toLowerCase();
 

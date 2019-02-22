@@ -50,6 +50,10 @@ class User(AbstractUser):
     objects = UserManager()
 
     @property
+    def name(self):
+        return f"{self.first_name} {self.last_name}"
+
+    @property
     def permission_values(self):
         values = [self.email]
 
