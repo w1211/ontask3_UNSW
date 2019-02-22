@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from rest_framework_mongoengine.serializers import DocumentSerializer
+from datetime import datetime as dt
 
 from .models import Form
 
@@ -19,12 +20,21 @@ class FormSerializer(DocumentSerializer):
 class RestrictedFormSerializer(DocumentSerializer):
     data = serializers.SerializerMethodField()
     editable_records = serializers.SerializerMethodField()
+    is_active = serializers.SerializerMethodField()
 
     def get_data(self, form):
         return self.context.get("data")
 
     def get_editable_records(self, form):
         return self.context.get("editable_records")
+
+    def get_is_active(self, form):
+        return not (
+            form.activeFrom is not None
+            and form.activeFrom > dt.utcnow()
+            or form.activeTo is not None
+            and form.activeTo < dt.utcnow()
+        )
 
     class Meta:
         model = Form
@@ -35,8 +45,7 @@ class RestrictedFormSerializer(DocumentSerializer):
             "primary",
             "layout",
             "fields",
-            "activeFrom",
-            "activeTo",
             "data",
             "editable_records",
+            "is_active",
         ]

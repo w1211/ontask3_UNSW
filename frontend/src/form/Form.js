@@ -56,7 +56,8 @@ class Form extends React.Component {
         render: (text, record) => {
           const field =
             form.editable_records.includes(_.get(record, form.primary)) &&
-            form.fields.find(field => field.name === column);
+            form.fields.find(field => field.name === column) &&
+            form.is_active;
 
           return (
             <Field
@@ -128,7 +129,7 @@ class Form extends React.Component {
   componentWillUnmount() {
     clearTimeout(this.updateSuccess);
   }
-  
+
   render() {
     const {
       fetching,
