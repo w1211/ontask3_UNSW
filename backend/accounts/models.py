@@ -54,13 +54,15 @@ class User(AbstractUser):
         return f"{self.first_name} {self.last_name}"
 
     @property
-    def permission_values(self):
-        values = [self.email]
-
+    def lti(self):
+        lti_values = []
         try:
             lti_payload = lti.objects.get(user=self.id).payload
-            values.extend(lti_payload.values())
+            lti_values.extend(lti_payload.values())
         except:
             pass
+        return lti_values
 
-        return values
+    @property
+    def permission_values(self):
+        return [self.email] + self.lti

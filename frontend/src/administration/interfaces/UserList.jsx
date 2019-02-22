@@ -285,6 +285,12 @@ class UsersList extends Component {
         ...this.getColumnSearchProps("email")
       },
       {
+        title: "LTI",
+        key: "lti",
+        dataIndex: "lti",
+        render: lti => lti.length > 0 ? `[${lti.join(", ")}]` : ""
+      },
+      {
         title: "Group",
         key: "group",
         dataIndex: "group",
