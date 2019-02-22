@@ -569,6 +569,10 @@ class Dashboard extends React.Component {
 
                     {dashboard.length > 0 ? (
                       this.ContainerList()
+                    ) : sessionStorage.getItem("group") === "user" ? (
+                      <h2>
+                        You have not received any correspondence via OnTask.
+                      </h2>
                     ) : (
                       <h2>
                         <Icon type="info-circle-o" className="info_icon" />

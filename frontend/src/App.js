@@ -14,7 +14,7 @@ import Dashboard from "./container/Dashboard";
 import Datasource from "./datasource/Datasource";
 import DataLab from "./dataLab/DataLab";
 import Action from "./action/Action";
-import Administration from "./administration/Administration"
+import Administration from "./administration/Administration";
 import Form from "./form/Form";
 import Forbidden from "./error/Forbidden";
 
@@ -30,11 +30,14 @@ class App extends React.Component {
   }
 
   logout = () => {
+    const { history } = this.props;
+
     sessionStorage.removeItem("token");
     sessionStorage.removeItem("email");
     sessionStorage.removeItem("name");
     sessionStorage.removeItem("group");
     this.setState({ hasToken: false });
+    history.push("/");
   };
 
   componentWillMount() {
@@ -190,11 +193,11 @@ class App extends React.Component {
             component: Form
           })}
 
-          {sessionStorage.getItem("group") === "admin" && this.AuthenticatedRoute({
+          {this.AuthenticatedRoute({
             path: "/administration",
-            component: Administration,
+            component: Administration
           })}
-          
+
           <Route exact path="/forbidden" component={Forbidden} />
 
           <Route

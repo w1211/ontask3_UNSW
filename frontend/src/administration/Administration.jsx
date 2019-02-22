@@ -16,7 +16,6 @@ class Administration extends Component {
   render() {
     const { match, location } = this.props;
     const { navigation } = this.state;
-    const currentKey = location.pathname.split("/")[1].toLowerCase();
 
     return (
       <div>
@@ -25,10 +24,10 @@ class Administration extends Component {
             <Content className="content">
               <Layout className="content_body">
                 {navigation && (
-                  <Sider width={200}>
+                  <Sider width={200} style={{ background: "transparent" }}>
                     <Menu
                       mode="inline"
-                      selectedKeys={[currentKey]}
+                      selectedKeys={[location.pathname.split("/")[2]]}
                       style={{ height: "100%" }}
                     >
                       <Menu.Item key="back">
@@ -40,8 +39,8 @@ class Administration extends Component {
 
                       <Menu.Divider />
 
-                      <Menu.Item key="administration">
-                        <Link to={`/administration`}>
+                      <Menu.Item key="users">
+                        <Link to={`/administration/users`}>
                           <Icon type="team" />
                           <span>Users</span>
                         </Link>

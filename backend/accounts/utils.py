@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from datetime import datetime, timedelta
 from jwt import encode
 from random import randint
@@ -43,6 +44,7 @@ def get_or_create_user(data):
         # Randomly generate a password for users coming from AAF or LTI
         data["password"] = uuid.uuid4().hex
         user = User.objects.create_user(email, **data)
+        user.groups.add(Group.objects.get(name="user"))
 
         # Send a notification to admins on user signup, if OnTask is in demo mode
         user_signup_notification(user)
