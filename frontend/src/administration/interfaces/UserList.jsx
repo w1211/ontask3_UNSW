@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Table, Input, Button, Icon, Select, Spin, notification } from "antd";
+import { Table, Input, Button, Icon, Select, notification, Spin } from "antd";
 import apiRequest from "../../shared/apiRequest";
 import "./UserList.css";
 
@@ -219,7 +219,34 @@ class UsersList extends Component {
     });
   };
 
-  handleImpersonation = username => {};
+  handleImpersonation = email => {
+    const { history } = this.props;
+
+    apiRequest(`/auth/impersonate/`, {
+      method: "POST",
+      payload: { email },
+      onSuccess: response => {
+        // Create a copy of the current user's credentials
+        sessionStorage.setItem("token_copy", sessionStorage.getItem("token"));
+        sessionStorage.setItem("email_copy", sessionStorage.getItem("email"));
+        sessionStorage.setItem("name_copy", sessionStorage.getItem("name"));
+        sessionStorage.setItem("group_copy", sessionStorage.getItem("group"));
+
+        // Set the new user's credentials in sessionStorage
+        sessionStorage.setItem("token", response.token);
+        sessionStorage.setItem("email", response.email);
+        sessionStorage.setItem("name", response.name);
+        sessionStorage.setItem("group", response.group);
+
+        history.push("/dashboard");
+      },
+      onError: () => {
+        notification["error"]({
+          message: "Failed to impersonate user"
+        });
+      }
+    });
+  };
 
   handleGlobalSearch = e => {
     const query = e.target.value;
@@ -299,6 +326,28 @@ class UsersList extends Component {
             />
           );
         }
+      },
+      {
+        title: "Action",
+        width: 130,
+        fixed: "right",
+        render: record => {
+          return (
+            <div>
+              {!sessionStorage.getItem("token_copy") && !record.is_admin && (
+                <div style={{ display: "inline" }}>
+                  <Button
+                    size="small"
+                    type="primary"
+                    onClick={() => this.handleImpersonation(record.email)}
+                  >
+                    Login as
+                  </Button>
+                </div>
+              )}
+            </div>
+          );
+        }
       }
     ];
 
@@ -312,6 +361,7 @@ class UsersList extends Component {
         id: user.id,
         email: user.email,
         name: `${user.first_name} ${user.last_name}`,
+        is_admin: user.is_staff,
         group
       };
 
@@ -342,7 +392,7 @@ class UsersList extends Component {
           <h2>All Users</h2>
           <Input.Search
             placeholder="Quick Search"
-            onChange={e => this.handleGlobalSearch(e)} //this.setState({ searchTerm: e.target.value })}
+            onChange={e => this.handleGlobalSearch(e)}
             style={{ width: 200, height: 30 }}
           />
         </div>

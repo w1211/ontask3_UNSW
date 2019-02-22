@@ -20,7 +20,7 @@ EMAIL_NAME = None
 EMAIL_ALIAS = None
 AWS_PROFILE = None
 
-from .env import *
+from ontask.env import *
 
 if os.environ.get("ONTASK_DEVELOPMENT"):
     FRONTEND_DOMAIN = (
