@@ -4,10 +4,12 @@ from rest_framework.permissions import AllowAny
 from rest_framework.authtoken.models import Token
 from rest_framework.status import HTTP_401_UNAUTHORIZED, HTTP_400_BAD_REQUEST
 
+from django.contrib.auth.models import Group
 from django.shortcuts import redirect
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.models import Group
 from django.db.utils import IntegrityError
+from django.urls import reverse
 
 from pylti.common import LTIException, verify_request_common
 from jwt import decode
@@ -23,7 +25,13 @@ from .utils import (
 
 from container.models import Container
 
-from ontask.settings import SECRET_KEY, AAF_CONFIG, LTI_CONFIG, FRONTEND_DOMAIN
+from ontask.settings import (
+    SECRET_KEY,
+    AAF_CONFIG,
+    LTI_CONFIG,
+    BACKEND_DOMAIN,
+    FRONTEND_DOMAIN,
+)
 
 User = get_user_model()
 
@@ -45,7 +53,7 @@ class LocalAuth(APIView):
                 {"error": "Email is already being used"}, status=HTTP_400_BAD_REQUEST
             )
 
-        user = User.objects.create_user(request.data["email"], **request.data)
+        user = User.objects.create_user(**request.data)
         user.groups.add(Group.objects.get(name="user"))
 
         # Give the user a container with example datasources, datalabs, actions, etc
@@ -70,7 +78,7 @@ class LocalAuth(APIView):
                 "token": str(long_term_token),
                 "email": user.email,
                 "name": f"{user.first_name} {user.last_name}",
-                "group": ",".join([group.name for group in user.groups.all()])
+                "group": ",".join([group.name for group in user.groups.all()]),
             }
         )
 
@@ -99,7 +107,6 @@ class AAFAuth(APIView):
             "last_name": user_attributes["surname"],
         }
         user = get_or_create_user(data)
-        user.groups.add(Group.objects.get(name="user"))
 
         # Update the user's role to staff if necessary
         roles = user_attributes["edupersonscopedaffiliation"][0].split(";")
@@ -119,7 +126,7 @@ class LTIAuth(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request, format=None):
-        url = request.build_absolute_uri()
+        url = f"{BACKEND_DOMAIN}{reverse('lti')}"
         consumers = LTI_CONFIG["consumers"]
         method = request.method
         headers = request.META
@@ -132,7 +139,7 @@ class LTIAuth(APIView):
         # This page would be displayed in an iframe on Moodle
         except LTIException:
             # TODO: Implement logging of this error
-            return redirect(FRONTEND_DOMAIN + "/error")
+            return redirect(FRONTEND_DOMAIN + "/forbidden")
 
         data = {
             "email": payload["lis_person_contact_email_primary"],
@@ -141,8 +148,14 @@ class LTIAuth(APIView):
         }
         user = get_or_create_user(data)
 
+        # Elevate the user to instructor group if they have a staff role in LTI
+        # If they are already instructor or admin, then do nothing
+        user_groups = [group.name for group in user.groups.all()]
+        is_lti_instructor = payload["roles"] == LTI_CONFIG.get("staff_role")
+        if "user" in user_groups and is_lti_instructor:
+            user.groups.set([Group.objects.get(name="instructor")])
+
         token = generate_one_time_token(user)
-        user.groups.add(Group.objects.get(name="user"))
 
         # Store the important LTI fields for this user
         # These fields be used to grant permissions in containers
@@ -206,7 +219,7 @@ class ValidateOneTimeToken(APIView):
             {
                 "token": str(long_term_token),
                 "email": user.email,
-                "name": f"{user.first_name} {user.last_namFe}",
+                "name": f"{user.first_name} {user.last_name}",
                 "group": ",".join([group.name for group in user.groups.all()]),
             }
         )

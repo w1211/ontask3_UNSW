@@ -7,7 +7,7 @@ class CanCreateObjects(BasePermission):
     """
 
     def has_permission(self, request, view):
-        permissable_groups = ["owner", "instructor"]
+        permissable_groups = ["admin", "instructor"]
         return any(
             [group.name in permissable_groups for group in request.user.groups.all()]
         )

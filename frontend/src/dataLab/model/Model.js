@@ -119,7 +119,7 @@ class Model extends React.Component {
           this.setState({ loading: false });
           updateDatalab(dataLab);
           if (!selectedId)
-            history.push({ pathname: `/datalab/${dataLab.id}/settings` });
+            history.push({ pathname: `/datalab/${dataLab.id}/data` });
         },
         onError: error => {
           this.setState({ loading: false });
