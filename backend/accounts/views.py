@@ -1,8 +1,9 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.authtoken.models import Token
-from rest_framework.status import HTTP_401_UNAUTHORIZED, HTTP_400_BAD_REQUEST
+from rest_framework.status import HTTP_401_UNAUTHORIZED, HTTP_400_BAD_REQUEST, HTTP_200_OK
+from rest_framework.exceptions import NotFound, PermissionDenied
 
 from django.contrib.auth.models import Group
 from django.shortcuts import redirect
@@ -22,6 +23,7 @@ from .utils import (
     seed_data,
     user_signup_notification,
 )
+
 
 from container.models import Container
 
@@ -66,7 +68,6 @@ class LocalAuth(APIView):
 
     def post(self, request, format=None):
         user = authenticate(**request.data)
-
         if not user:
             return Response(
                 {"error": "Invalid credentials"}, status=HTTP_401_UNAUTHORIZED
@@ -222,4 +223,32 @@ class ValidateOneTimeToken(APIView):
                 "name": f"{user.first_name} {user.last_name}",
                 "group": ",".join([group.name for group in user.groups.all()]),
             }
+        )
+
+
+class ImpersonateUser(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get_object(self, email):
+        try:
+            return User.objects.get(email=email)
+        except:
+            raise NotFound()
+
+    def post(self, request):
+        email = request.data.get("email")
+        user = self.get_object(email)
+
+        if user.is_staff:
+            raise PermissionDenied()
+        
+        long_term_token, _ = Token.objects.get_or_create(user=user)
+        return Response(
+            {
+                "token": str(long_term_token),
+                "email": user.email,
+                "name": f"{user.first_name} {user.last_name}",
+                "group": ",".join([group.name for group in user.groups.all()])
+            },
+            status=HTTP_200_OK
         )

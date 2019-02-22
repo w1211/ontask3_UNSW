@@ -28,6 +28,7 @@
 1. Create an environment file `env.py` in the `backend/ontask/` directory
 2. Run `pip install cryptography`
 3. From a Python shell, run the following command:
+
 ```python
 from cryptography.fernet import Fernet
 # The following generated secret key will be used for encrypting sensitive data
@@ -35,6 +36,7 @@ from cryptography.fernet import Fernet
 # This is a breaking issue for dynamic data sources, as update attempts will fail
 Fernet.generate_key().decode("utf-8")
 ```
+
 4. Configure the environment file as follows:
 
 ```python
@@ -56,7 +58,7 @@ ALLOWED_HOSTS = ["<YOUR_FRONTEND_DOMAIN>"] # Without the protocol specified
 EMAIL_HOST = "<YOUR_SMTP_HOST>"
 EMAIL_PORT = 587
 EMAIL_NAME = "OnTask" # Default name to appear in emails sent
-EMAIL_ALIAS = "<YOUR_EMAIL_ALIAS>" # Default alias email to use in emails sent 
+EMAIL_ALIAS = "<YOUR_EMAIL_ALIAS>" # Default alias email to use in emails sent
 EMAIL_HOST_USER = "<YOUR_SMTP_USER>" # SMTP login user
 EMAIL_HOST_PASSWORD = "<YOUR_SMTP_PASSWORD>" # SMTP login password
 EMAIL_USE_TLS = True
@@ -74,7 +76,7 @@ AAF_CONFIG = {
 }
 
 LTI_CONFIG = {
-    "staff_roles": ["Instructor"], # Roles that will be granted escalated privileges when coming from LTI
+    "staff_role": "Instructor", # Role that will be added to the instructor group when coming from LTI
     "consumers": {
         "ontask": { # App name registered in LTI
             "secret": "<YOUR_LTI_SECRET>"
@@ -116,7 +118,6 @@ REACT_APP_AAF_URL = "<YOUR_AAF_IDP>";
 | memoize-one      | [MIT](https://github.com/alexreardon/memoize-one/blob/master/LICENSE)     |
 | highcharts       | [CC](https://shop.highsoft.com/highcharts)                                |
 | d3               | [BSD](https://github.com/d3/d3/blob/master/LICENSE)                       |
-
 
 ### Backend Dependencies
 

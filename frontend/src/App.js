@@ -29,15 +29,28 @@ class App extends React.Component {
     this.state = { hasToken: false };
   }
 
-  logout = () => {
+  logout = isImpersonating => {
     const { history } = this.props;
 
-    sessionStorage.removeItem("token");
-    sessionStorage.removeItem("email");
-    sessionStorage.removeItem("name");
-    sessionStorage.removeItem("group");
-    this.setState({ hasToken: false });
-    history.push("/");
+    if (isImpersonating) {
+      sessionStorage.setItem("token", sessionStorage.getItem("token_copy"));
+      sessionStorage.setItem("email", sessionStorage.getItem("email_copy"));
+      sessionStorage.setItem("name", sessionStorage.getItem("name_copy"));
+      sessionStorage.setItem("group", sessionStorage.getItem("group_copy"));
+
+      sessionStorage.removeItem("token_copy");
+      sessionStorage.removeItem("email_copy");
+      sessionStorage.removeItem("name_copy");
+      sessionStorage.removeItem("group_copy");
+      history.push("/administration/users");
+    } else {
+      sessionStorage.removeItem("token");
+      sessionStorage.removeItem("email");
+      sessionStorage.removeItem("name");
+      sessionStorage.removeItem("group");
+      this.setState({ hasToken: false });
+      history.push("/");
+    }
   };
 
   componentWillMount() {
@@ -117,6 +130,8 @@ class App extends React.Component {
     if (!hasToken && shouldRedirectToAAF && process.env.REACT_APP_AAF_URL)
       window.location = process.env.REACT_APP_AAF_URL;
 
+    const isImpersonating = !!sessionStorage.getItem("token_copy");
+
     return (
       <Layout className="app">
         <Header className="header">
@@ -127,8 +142,12 @@ class App extends React.Component {
               <span style={{ marginRight: 10 }}>
                 Logged in as: <strong>{sessionStorage.getItem("name")}</strong>
               </span>
-              <Tooltip title="Logout">
-                <Button icon="logout" onClick={this.logout} />
+
+              <Tooltip title={isImpersonating ? "Switch User" : "Logout"}>
+                <Button
+                  icon="logout"
+                  onClick={() => this.logout(isImpersonating)}
+                />
               </Tooltip>
             </div>
           )}

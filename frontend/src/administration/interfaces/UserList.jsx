@@ -1,13 +1,7 @@
 import React, { Component } from "react";
-import { Table, Input, Button, Icon, Select, Spin, notification } from "antd";
+import { Table, Input, Button, Icon, Select, notification, Spin } from "antd";
 import apiRequest from "../../shared/apiRequest";
 import "./UserList.css";
-
-const groupsHierarchy = {
-  admin: 3,
-  instructor: 2,
-  user: 1
-};
 
 const groupLabelMap = {
   admin: "Admin",
@@ -76,7 +70,7 @@ class GroupSelect extends Component {
             onBlur={() => this.setState({ editing: false })}
           >
             {["admin", "instructor", "user"].map(group => (
-              <Select.Option value={group}>
+              <Select.Option value={group} key={group}>
                 {groupLabelMap[group]}
               </Select.Option>
             ))}
@@ -91,7 +85,7 @@ class GroupSelect extends Component {
 
 class UsersList extends Component {
   state = {
-    usersList: [],
+    data: [],
     pagination: {},
     searchTerm: "",
     fetching: true,
@@ -203,7 +197,7 @@ class UsersList extends Component {
       method: "GET",
       onSuccess: res => {
         this.setState({
-          usersList: res.results,
+          data: res.results,
           pagination: { ...this.state.pagination, total: res.count }
         });
         this.setState({ fetching: false, loading: false });
@@ -219,7 +213,34 @@ class UsersList extends Component {
     });
   };
 
-  handleImpersonation = username => {};
+  handleImpersonation = email => {
+    const { history } = this.props;
+
+    apiRequest(`/auth/impersonate/`, {
+      method: "POST",
+      payload: { email },
+      onSuccess: response => {
+        // Create a copy of the current user's credentials
+        sessionStorage.setItem("token_copy", sessionStorage.getItem("token"));
+        sessionStorage.setItem("email_copy", sessionStorage.getItem("email"));
+        sessionStorage.setItem("name_copy", sessionStorage.getItem("name"));
+        sessionStorage.setItem("group_copy", sessionStorage.getItem("group"));
+
+        // Set the new user's credentials in sessionStorage
+        sessionStorage.setItem("token", response.token);
+        sessionStorage.setItem("email", response.email);
+        sessionStorage.setItem("name", response.name);
+        sessionStorage.setItem("group", response.group);
+
+        history.push("/dashboard");
+      },
+      onError: () => {
+        notification["error"]({
+          message: "Failed to impersonate user"
+        });
+      }
+    });
+  };
 
   handleGlobalSearch = e => {
     const query = e.target.value;
@@ -237,7 +258,7 @@ class UsersList extends Component {
       onSuccess: res => {
         this.setState({
           loading: false,
-          usersList: res
+          data: res
         });
       },
       onError: res => {
@@ -247,7 +268,7 @@ class UsersList extends Component {
   };
 
   render() {
-    const { searchTerm } = this.state;
+    const { searchTerm, data } = this.state;
     const columns = [
       {
         title: "Name",
@@ -299,24 +320,28 @@ class UsersList extends Component {
             />
           );
         }
+      },
+      {
+        title: "Action",
+        width: 130,
+        fixed: "right",
+        render: record => (
+          <div>
+            {!sessionStorage.getItem("token_copy") && record.group !== "admin" && (
+              <div style={{ display: "inline" }}>
+                <Button
+                  size="small"
+                  type="primary"
+                  onClick={() => this.handleImpersonation(record.email)}
+                >
+                  Login as
+                </Button>
+              </div>
+            )}
+          </div>
+        )
       }
     ];
-
-    const data = this.state.usersList.map((user, index) => {
-      const hierarchy = user.groups.map(group => {
-        return groupsHierarchy[group.name];
-      });
-      const group = this.findKeys(groupsHierarchy, hierarchy);
-      const user_data = {
-        key: user.id,
-        id: user.id,
-        email: user.email,
-        name: `${user.first_name} ${user.last_name}`,
-        group
-      };
-
-      return user_data;
-    });
 
     const term = searchTerm.trim().toLowerCase();
 
@@ -342,7 +367,7 @@ class UsersList extends Component {
           <h2>All Users</h2>
           <Input.Search
             placeholder="Quick Search"
-            onChange={e => this.handleGlobalSearch(e)} //this.setState({ searchTerm: e.target.value })}
+            onChange={e => this.handleGlobalSearch(e)}
             style={{ width: 200, height: 30 }}
           />
         </div>
