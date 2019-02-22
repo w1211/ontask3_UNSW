@@ -16,6 +16,9 @@ body, #root {
 }
 
 /* Border bug fix for ant design sider */
+.ant-layout-sider {
+  background: none;
+}
 .ant-layout-sider-children {
   margin-top: 0;
 }
