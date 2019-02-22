@@ -54,14 +54,15 @@ class Form extends React.Component {
         dataIndex: column,
         key: columnIndex,
         render: (text, record) => {
-          const field =
+          const field = form.fields.find(field => field.name === column);
+          const editable =
+            form.is_active &&
             form.editable_records.includes(_.get(record, form.primary)) &&
-            form.fields.find(field => field.name === column) &&
-            form.is_active;
+            field;
 
           return (
             <Field
-              readOnly={!field}
+              readOnly={!editable}
               field={field}
               value={column in record ? text : null}
               onSave={value =>
