@@ -4,6 +4,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.authtoken.models import Token
 from rest_framework.status import HTTP_401_UNAUTHORIZED, HTTP_400_BAD_REQUEST
 
+from django.contrib.auth.models import Group
 from django.shortcuts import redirect
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.models import Group
@@ -24,7 +25,13 @@ from .utils import (
 
 from container.models import Container
 
-from ontask.settings import SECRET_KEY, AAF_CONFIG, LTI_CONFIG, BACKEND_DOMAIN, FRONTEND_DOMAIN
+from ontask.settings import (
+    SECRET_KEY,
+    AAF_CONFIG,
+    LTI_CONFIG,
+    BACKEND_DOMAIN,
+    FRONTEND_DOMAIN,
+)
 
 User = get_user_model()
 
@@ -140,6 +147,13 @@ class LTIAuth(APIView):
             "last_name": payload["lis_person_name_family"],
         }
         user = get_or_create_user(data)
+
+        # Elevate the user to instructor group if they have a staff role in LTI
+        # If they are already instructor or admin, then do nothing
+        user_groups = [group.name for group in user.groups.all()]
+        is_lti_instructor = payload["roles"] == LTI_CONFIG.get("staff_role")
+        if "user" in user_groups and is_lti_instructor:
+            user.groups.set([Group.objects.get(name="instructor")])
 
         token = generate_one_time_token(user)
 
