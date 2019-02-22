@@ -8,6 +8,7 @@ from django.shortcuts import redirect
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.models import Group
 from django.db.utils import IntegrityError
+from django.urls import reverse
 
 from pylti.common import LTIException, verify_request_common
 from jwt import decode
@@ -23,7 +24,7 @@ from .utils import (
 
 from container.models import Container
 
-from ontask.settings import SECRET_KEY, AAF_CONFIG, LTI_CONFIG, FRONTEND_DOMAIN
+from ontask.settings import SECRET_KEY, AAF_CONFIG, LTI_CONFIG, BACKEND_DOMAIN, FRONTEND_DOMAIN
 
 User = get_user_model()
 
@@ -70,7 +71,7 @@ class LocalAuth(APIView):
                 "token": str(long_term_token),
                 "email": user.email,
                 "name": f"{user.first_name} {user.last_name}",
-                "group": ",".join([group.name for group in user.groups.all()])
+                "group": ",".join([group.name for group in user.groups.all()]),
             }
         )
 
@@ -118,7 +119,7 @@ class LTIAuth(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request, format=None):
-        url = request.build_absolute_uri()
+        url = f"{BACKEND_DOMAIN}{reverse('lti')}"
         consumers = LTI_CONFIG["consumers"]
         method = request.method
         headers = request.META
@@ -131,7 +132,7 @@ class LTIAuth(APIView):
         # This page would be displayed in an iframe on Moodle
         except LTIException:
             # TODO: Implement logging of this error
-            return redirect(FRONTEND_DOMAIN + "/error")
+            return redirect(FRONTEND_DOMAIN + "/forbidden")
 
         data = {
             "email": payload["lis_person_contact_email_primary"],
