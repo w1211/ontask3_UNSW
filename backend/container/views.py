@@ -24,7 +24,7 @@ def Dashboard(request):
         Q(owner=request.user.email)
         | Q(sharing__contains=request.user.email)
         | Q(id__in=related_containers)
-    )
+    ).order_by("code")
 
     response = []
     for container in containers:
