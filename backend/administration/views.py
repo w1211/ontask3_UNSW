@@ -36,7 +36,7 @@ def ChangeGroup(request, pk):
 @api_view(["GET"])
 @permission_classes([IsAdminUser])
 def ListUsers(request):
-    users = User.objects.all()
+    users = list(User.objects.all())
 
     paginator = PageNumberPagination()
     paginator.page_size = 10
