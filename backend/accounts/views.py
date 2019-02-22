@@ -45,7 +45,7 @@ class LocalAuth(APIView):
                 {"error": "Email is already being used"}, status=HTTP_400_BAD_REQUEST
             )
 
-        user = User.objects.create_user(request.data["email"], **request.data)
+        user = User.objects.create_user(**request.data)
         user.groups.add(Group.objects.get(name="user"))
 
         # Give the user a container with example datasources, datalabs, actions, etc

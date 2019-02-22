@@ -17,10 +17,10 @@ from datalab.models import (
     Datalab,
     Module,
     DatasourceModule,
-    #FormModule,
+    # FormModule,
     ComputedModule,
     ComputedField,
-    #FormField,
+    # FormField,
     Column,
 )
 from datalab.utils import bind_column_types
@@ -32,18 +32,16 @@ User = get_user_model()
 
 
 def get_or_create_user(data):
-    email = data["email"]
-
     # Find the user based on the email provided in the payload
     # The user is implicitly being authenticated simply because we trust
     # the assertions received from AAF/LTI
     try:
-        user = User.objects.get(email=email)
+        user = User.objects.get(email=data["email"])
     # If the user doesn't exist, then create them
     except User.DoesNotExist:
         # Randomly generate a password for users coming from AAF or LTI
         data["password"] = uuid.uuid4().hex
-        user = User.objects.create_user(email, **data)
+        user = User.objects.create_user(**data)
         user.groups.add(Group.objects.get(name="user"))
 
         # Send a notification to admins on user signup, if OnTask is in demo mode
@@ -189,11 +187,10 @@ def seed_data(user):
         )
     )
 
-    #attendance_form_fields = [
+    # attendance_form_fields = [
     #    FormField(name=f"attendance_w{i+1}", type="checkbox") for i in range(4)
-    #]
+    # ]
 
-    
     # grade_form_fields = [
     #     FormField(
     #         name=field,
