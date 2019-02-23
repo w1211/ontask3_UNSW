@@ -90,7 +90,8 @@ class ActionTab extends React.Component {
         title: "Name",
         dataIndex: "name",
         key: "name",
-        sorter: (a, b) => a.name.localeCompare(b.name)
+        sorter: (a, b) => a.name.localeCompare(b.name),
+        sortOrder: "ascend"
       },
       {
         title: "Description",
