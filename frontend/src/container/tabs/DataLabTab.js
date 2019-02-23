@@ -99,13 +99,20 @@ class DataLabTab extends React.Component {
             title: datasource.name,
             visible: true,
             content: (
-              <Table
-                rowKey={(record, index) => index}
-                columns={Object.keys(datasource.data[0]).map(k => {
-                  return { title: k, dataIndex: k };
-                })}
-                dataSource={datasource.data}
-              />
+              <div>
+                <div style={{ marginBottom: 20 }}>
+                  Number of records: <strong>{datasource.data.length}</strong>
+                </div>
+
+                <Table
+                  style={{ maxHeight: "80vh" }}
+                  rowKey={(record, index) => index}
+                  columns={Object.keys(datasource.data[0]).map(k => {
+                    return { title: k, dataIndex: k };
+                  })}
+                  dataSource={datasource.data}
+                />
+              </div>
             )
           }
         })
