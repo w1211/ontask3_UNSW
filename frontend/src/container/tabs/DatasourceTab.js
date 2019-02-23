@@ -1,5 +1,5 @@
 import React from "react";
-import { Tooltip, Button, Modal, notification, Table, Tag } from "antd";
+import { Tooltip, Button, Modal, notification, Table, Tag, Drawer } from "antd";
 
 import apiRequest from "../../shared/apiRequest";
 import ContainerContext from "../ContainerContext";
@@ -21,7 +21,7 @@ const TYPEMAP = {
 class DatasourceTab extends React.Component {
   static contextType = ContainerContext;
 
-  state = { deleting: {}, refreshing: {} };
+  state = { deleting: {}, refreshing: {}, previewing: {}, drawer: {} };
 
   deleteDatasource = datasourceId => {
     const { fetchDashboard } = this.context;
@@ -86,9 +86,43 @@ class DatasourceTab extends React.Component {
     });
   };
 
+  previewDatasource = datasourceId => {
+    const { previewing } = this.state;
+
+    this.setState({ previewing: { ...previewing, [datasourceId]: true } });
+
+    apiRequest(`/datasource/${datasourceId}/`, {
+      method: "GET",
+      onSuccess: datasource =>
+        this.setState({
+          drawer: {
+            title: datasource.name,
+            visible: true,
+            content: (
+              <div>
+                <div style={{ marginBottom: 20 }}>
+                  Number of records: <strong>{datasource.data.length}</strong>
+                </div>
+
+                <Table
+                  style={{ maxHeight: "80vh" }}
+                  rowKey={(record, index) => index}
+                  columns={Object.keys(datasource.data[0]).map(k => {
+                    return { title: k, dataIndex: k };
+                  })}
+                  dataSource={datasource.data}
+                />
+              </div>
+            )
+          },
+          previewing: { ...previewing, [datasourceId]: false }
+        })
+    });
+  };
+
   render() {
     const { containerId, datasources } = this.props;
-    const { deleting, refreshing } = this.state;
+    const { deleting, refreshing, previewing, drawer } = this.state;
     const { history } = this.context;
 
     const canScheduleUpdates = dbType =>
@@ -211,9 +245,8 @@ class DatasourceTab extends React.Component {
                 <Button
                   style={{ margin: 3 }}
                   icon="database"
-                  onClick={() => {
-                    history.push(`/datasource/${datasource.id}/preview`);
-                  }}
+                  loading={previewing[datasource.id] || false}
+                  onClick={() => this.previewDatasource(datasource.id)}
                 />
               </Tooltip>
 
@@ -247,6 +280,16 @@ class DatasourceTab extends React.Component {
         >
           Add Datasource
         </Button>
+
+        <Drawer
+          className="datalab-drawer"
+          title={drawer.title}
+          placement="right"
+          onClose={() => this.setState({ drawer: { visible: false } })}
+          visible={drawer.visible}
+        >
+          {drawer.content}
+        </Drawer>
 
         <Table
           bordered
