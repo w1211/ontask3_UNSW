@@ -211,6 +211,10 @@ class Email extends React.Component {
         { title: "Recipient", dataIndex: "recipient", key: "recipient" },
         {
           title: "Feedback",
+          sorter: (a, b) =>
+            (a.feedback_datetime || "").localeCompare(
+              b.feedback_datetime || ""
+            ),
           render: (text, record) => {
             if (!job.included_feedback) return <Icon type="minus" />;
 
@@ -232,6 +236,7 @@ class Email extends React.Component {
           title: "Tracking",
           dataIndex: "track_count",
           key: "track_count",
+          sorter: (a, b) => (a.track_count > b.track_count ? 1 : -1),
           render: (count, record) =>
             count > 0 ? (
               <Popover content={this.TrackingDetails(record)} trigger="hover">

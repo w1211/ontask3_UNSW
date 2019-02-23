@@ -6,7 +6,7 @@ import json
 from dateutil import parser
 from uuid import uuid4
 
-from ontask.settings import EMAIL_ALIAS, EMAIL_NAME
+from ontask.settings import EMAIL_ALIAS, EMAIL_NAME, EMAIL_HOST_USER
 
 
 def generate_task_name(task):
