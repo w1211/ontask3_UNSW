@@ -98,7 +98,7 @@ def workflow_send_email(action_id, job_type="Scheduled"):
         messages[i : i + batch_size] for i in range(0, len(messages), batch_size)
     ]
 
-    recipient_count = 1
+    recipient_count = 0
     for batch_index, batch in enumerate(email_batches):
         print(f"Starting batch {batch_index + 1} of {len(email_batches)}.")
 
@@ -108,7 +108,7 @@ def workflow_send_email(action_id, job_type="Scheduled"):
                 
             for index, item in enumerate(batch):
                 recipient = item.get(email_settings.field)
-                email_content = populated_content[index]
+                email_content = populated_content[recipient_count]
 
                 email_id = uuid.uuid4().hex
                 tracking_token = jwt.encode(
@@ -154,12 +154,12 @@ def workflow_send_email(action_id, job_type="Scheduled"):
                     )
                     successes.append(recipient)
                     print(
-                        f"Successfully sent email to {recipient} ({recipient_count} of {len(messages)})."
+                        f"Successfully sent email to {recipient} ({recipient_count + 1} of {len(messages)})."
                     )
                 else:
                     failures.append(recipient)
                     print(
-                        f"Failed to send email to {recipient} ({recipient_count} of {len(messages)})."
+                        f"Failed to send email to {recipient} ({recipient_count + 1} of {len(messages)})."
                     )
 
                 recipient_count += 1
