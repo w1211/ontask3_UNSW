@@ -10,11 +10,17 @@ class DatasourcePreview extends React.Component {
     });
 
     return (
-      <Table
-        rowKey={(record, index) => index}
-        columns={columns}
-        dataSource={data}
-      />
+      <div>
+        <div style={{ marginBottom: 10 }}>
+          Number of records: <strong>{data.length}</strong>
+        </div>
+
+        <Table
+          rowKey={(record, index) => index}
+          columns={columns}
+          dataSource={data}
+        />
+      </div>
     );
   }
 }
