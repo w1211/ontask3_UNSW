@@ -56,8 +56,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 )
 
         datalab = serializer.save(steps=steps, order=order)
-        relations = set_relations(datalab)
-        datalab.relations = relations
+        datalab.relations = set_relations(datalab)
         datalab.save()
 
     def perform_update(self, serializer):
@@ -117,9 +116,9 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 if not order_item:
                     order.append({"stepIndex": step_index, "field": field})
 
-        relations = set_relations(datalab)
-
-        serializer.save(steps=steps, order=order, relations=relations)
+        datalab = serializer.save(steps=steps, order=order)
+        datalab.relations = set_relations(datalab)
+        datalab.save()
 
     def perform_destroy(self, datalab):
         self.check_object_permissions(self.request, datalab)
