@@ -181,69 +181,72 @@ def calculate_computed_field(formula, record, build_fields, tracking_feedback_da
         return None
 
 
-def set_relations(datalab):
+def get_relations(steps, datalab_id=None, skip_last=False):
     required_fields = set()
 
     # Identify the fields used in any associated forms or actions
-    forms = Form.objects(datalab=datalab)
-    for form in forms:
-        required_fields.add(form.primary)
-        required_fields.add(form.permission)
+    if datalab_id:
+        forms = Form.objects(datalab=datalab_id)
+        for form in forms:
+            required_fields.add(form.primary)
+            required_fields.add(form.permission)
 
     # Identify the fields used as matching keys for datasource modules
     datasource_steps = [
-        step.datasource for step in datalab.steps if step.type == "datasource"
+        step["datasource"] for step in steps if step["type"] == "datasource"
     ]
 
     for step_index, step in enumerate(datasource_steps):
         # Always add the primary key of the first module
         # Use its label if provided, otherwise just use the field name
         if step_index == 0:
-            required_fields.add(step.labels.get(step.primary, step.primary))
+            required_fields.add(step["labels"].get(step["primary"], step["primary"]))
         else:
-            required_fields.add(step.matching)
+            required_fields.add(step["matching"])
 
+    if skip_last:
+        datasource_steps = datasource_steps[:-1]
+    
     relations = pd.DataFrame()
     for step_index, step in enumerate(datasource_steps):
-        datasource = Datasource.objects.get(id=step.id)
+        datasource = Datasource.objects.get(id=step["id"])
 
         # If this datasource has fields that are used by forms, actions, or datasources,
         # then ensure that these fields are included in the relation table
         used_fields = []
-        for field, label in step.labels.items():
+        for field, label in step["labels"].items():
             if label in required_fields:
                 used_fields.append(field)
 
         data = (
             pd.DataFrame(data=datasource.data)
-            .set_index(step.primary)
+            .set_index(step["primary"])
             .filter(items=used_fields)  # Only include required fields
-            .rename(columns={field: step.labels[field] for field in used_fields})
+            .rename(columns={field: step["labels"][field] for field in used_fields})
         )
 
         if step_index == 0:
             relations = data.reset_index().rename(
                 columns={
-                    step.primary: step.labels.get(step.primary, step.primary)
+                    step["primary"]: step["labels"].get(step["primary"], step["primary"])
                 }  # Rename the primary key if it has a label
             )
         else:
-            if step.discrepencies.primary and step.discrepencies.matching:
+            if step["discrepencies"]["primary"] and step["discrepencies"]["matching"]:
                 # Full outer join
                 how = "outer"
-            elif step.discrepencies.primary:
+            elif step["discrepencies"]["primary"]:
                 how = "right"
-            elif step.discrepencies.matching:
+            elif step["discrepencies"]["matching"]:
                 how = "left"
             else:
                 how = "inner"
 
             relations = relations.merge(
-                data, how=how, left_on=step.matching, right_index=True
+                data, how=how, left_on=step["matching"], right_index=True
             ).reset_index(drop=True)
 
     # Replace NaN values with None to make it storable in MongoDB
     relations.replace({pd.np.nan: None}, inplace=True)
-
 
     return relations.to_dict("records")

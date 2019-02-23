@@ -4,6 +4,7 @@ from rest_framework_mongoengine.validators import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action, list_route, detail_route
 from rest_framework.response import Response
+from rest_framework.exceptions import NotFound
 from rest_framework.status import HTTP_401_UNAUTHORIZED
 from mongoengine.queryset.visitor import Q
 
@@ -12,7 +13,7 @@ import json
 from .serializers import DatalabSerializer
 from .permissions import DatalabPermissions
 from .models import Datalab
-from .utils import bind_column_types, set_relations
+from .utils import bind_column_types, get_relations
 
 from container.models import Container
 from datasource.models import Datasource
@@ -55,9 +56,10 @@ class DatalabViewSet(viewsets.ModelViewSet):
                     }
                 )
 
-        datalab = serializer.save(steps=steps, order=order)
-        datalab.relations = set_relations(datalab)
-        datalab.save()
+        relations = get_relations(steps)
+        
+        datalab = serializer.save(steps=steps, order=order, relations=relations)
+
 
     def perform_update(self, serializer):
         datalab = self.get_object()
@@ -116,9 +118,9 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 if not order_item:
                     order.append({"stepIndex": step_index, "field": field})
 
-        datalab = serializer.save(steps=steps, order=order)
-        datalab.relations = set_relations(datalab)
-        datalab.save()
+        relations = get_relations(steps, datalab_id=datalab.id)
+
+        datalab = serializer.save(steps=steps, order=order, relations=relations)
 
     def perform_destroy(self, datalab):
         self.check_object_permissions(self.request, datalab)
@@ -126,10 +128,24 @@ class DatalabViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"])
     def check_discrepencies(self, request):
-        check_module = request.data["partial"][-1]["datasource"]
-        partial_build = request.data["partial"][:-1]
+        datalab_id = request.data.get("dataLabId")
 
-        data = []  # combine_data(partial_build)
+        if datalab_id:
+            try:
+                datalab = Datalab.objects.get(id=request.data.get("dataLabId"))
+                self.check_object_permissions(self.request, datalab)
+            except:
+                raise NotFound()
+                
+        steps = request.data.get("partial", [])
+
+        # Use all steps to calculate the required_fields, but skip the last step
+        # when actually constructing the relations table. This is only done when
+        # checking for discrepencies, as we want to compare the joined table 
+        # against this step's primary key.
+        data = get_relations(steps, datalab_id=datalab_id, skip_last=True)
+
+        check_module = steps[-1]["datasource"]
         datasource = Datasource.objects.get(id=check_module["id"])
 
         primary_records = {item[check_module["primary"]] for item in datasource.data}

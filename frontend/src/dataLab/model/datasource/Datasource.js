@@ -276,7 +276,7 @@ class DatasourceModule extends React.Component {
 
   checkForDiscrepencies = matchingField => {
     const { stepIndex } = this.props;
-    const { form } = this.context;
+    const { form, selectedId } = this.context;
     const { discrepencies } = this.state;
     const { getFieldValue } = form;
 
@@ -289,7 +289,7 @@ class DatasourceModule extends React.Component {
 
     apiRequest(`/datalab/check_discrepencies/`, {
       method: "POST",
-      payload: { partial },
+      payload: { partial, dataLabId: selectedId },
       onSuccess: discrepencies => {
         if (
           (discrepencies.matching || []).length > 0 ||
@@ -398,7 +398,7 @@ class DatasourceModule extends React.Component {
         <Tooltip title="Check discrepencies">
           <Icon
             type={discrepencies.loading ? "loading" : "disconnect"}
-            // onClick={() => this.checkForDiscrepencies()}
+            onClick={() => this.checkForDiscrepencies()}
           />
         </Tooltip>
       );
@@ -487,7 +487,7 @@ class DatasourceModule extends React.Component {
               })(
                 <Select
                   placeholder="Matching field"
-                  // onChange={this.checkForDiscrepencies}
+                  onChange={this.checkForDiscrepencies}
                   disabled={
                     !datasource ||
                     !getFieldValue(`steps[${stepIndex}].datasource.primary`)

@@ -11,7 +11,7 @@ from .serializers import FormSerializer, RestrictedFormSerializer
 from .models import Form
 
 from accounts.models import lti
-from datalab.utils import set_relations
+from datalab.utils import get_relations
 from datalab.models import Datalab, Column
 from datalab.serializers import DatalabSerializer
 
@@ -29,7 +29,7 @@ class ListForms(APIView):
         form = serializer.save()
 
         datalab = form.datalab
-        datalab.relations = set_relations(datalab)
+        datalab.relations = get_relations(datalab)
         datalab.save()
 
         form.refresh_access()
@@ -99,7 +99,7 @@ class DetailForm(APIView):
         serializer.is_valid()
         serializer.save()
 
-        datalab.relations = set_relations(datalab)
+        datalab.relations = get_relations(datalab)
         datalab.save()
 
         form.refresh_access()

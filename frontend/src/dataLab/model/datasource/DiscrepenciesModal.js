@@ -58,8 +58,8 @@ class DiscrepenciesModal extends React.Component {
         {primary.length > 0 && (
           <div className="conflict">
             <p>
-              The following records occur in this datasource but not in the
-              DataLab:
+              The following <strong>{primary.length}</strong> records occur in
+              this datasource but not in the DataLab:
             </p>
 
             <Table
@@ -95,8 +95,8 @@ class DiscrepenciesModal extends React.Component {
         {matching.length > 0 && (
           <div className="conflict">
             <p>
-              The following records occur in the DataLab but not in this
-              datasource:
+              The following <strong>{matching.length}</strong> records occur in
+              the DataLab but not in this datasource:
             </p>
 
             <Table
