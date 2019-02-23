@@ -341,6 +341,10 @@ class DatasourceViewSet(viewsets.ModelViewSet):
         response["Content-Disposition"] = f"attachment; filename={datasource.name}.csv"
         response["Access-Control-Expose-Headers"] = "Content-Disposition"
         data = pd.DataFrame(datasource.data)
+
+        # Re-order the columns to match the original datasource data
+        data = data[list(datasource.data[0].keys())]
+        
         data.to_csv(path_or_buf=response, index=False)
 
         return response
