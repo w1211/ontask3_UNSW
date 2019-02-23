@@ -29,7 +29,7 @@ class ListForms(APIView):
         form = serializer.save()
 
         datalab = form.datalab
-        datalab.relations = get_relations(datalab)
+        datalab.relations = get_relations(datalab.steps)
         datalab.save()
 
         form.refresh_access()
@@ -99,7 +99,7 @@ class DetailForm(APIView):
         serializer.is_valid()
         serializer.save()
 
-        datalab.relations = get_relations(datalab)
+        datalab.relations = get_relations(datalab.steps)
         datalab.save()
 
         form.refresh_access()

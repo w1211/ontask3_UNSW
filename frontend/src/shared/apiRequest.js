@@ -52,7 +52,7 @@ const apiRequest = async (
 
   let result;
 
-  const responseType = response.headers.get("content-type", "");
+  const responseType = response.headers.get("content-type") || "";
   if (responseType.indexOf("application/json") !== -1) {
     try {
       result = await response.json();

@@ -334,7 +334,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
             datalab.order, many=True, context={"steps": datalab.steps}
         )
         reordered_columns = [item.get("label") for item in order.data]
-        data = data[reordered_columns]
+        data = data.reindex(columns=reordered_columns)
 
         data.to_csv(path_or_buf=response, index=False)
 

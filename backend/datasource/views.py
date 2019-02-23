@@ -343,8 +343,8 @@ class DatasourceViewSet(viewsets.ModelViewSet):
         data = pd.DataFrame(datasource.data)
 
         # Re-order the columns to match the original datasource data
-        data = data[list(datasource.data[0].keys())]
-        
+        data = data.reindex(columns=list(datasource.data[0].keys()))
+
         data.to_csv(path_or_buf=response, index=False)
 
         return response
