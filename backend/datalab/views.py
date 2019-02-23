@@ -1,4 +1,4 @@
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
 from rest_framework.permissions import IsAuthenticated
@@ -7,10 +7,11 @@ from rest_framework.response import Response
 from rest_framework.exceptions import NotFound
 from rest_framework.status import HTTP_401_UNAUTHORIZED
 from mongoengine.queryset.visitor import Q
+import pandas as pd
 
 import json
 
-from .serializers import DatalabSerializer
+from .serializers import DatalabSerializer, OrderItemSerializer
 from .permissions import DatalabPermissions
 from .models import Datalab
 from .utils import bind_column_types, get_relations
@@ -57,9 +58,8 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 )
 
         relations = get_relations(steps)
-        
-        datalab = serializer.save(steps=steps, order=order, relations=relations)
 
+        datalab = serializer.save(steps=steps, order=order, relations=relations)
 
     def perform_update(self, serializer):
         datalab = self.get_object()
@@ -136,12 +136,12 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 self.check_object_permissions(self.request, datalab)
             except:
                 raise NotFound()
-                
+
         steps = request.data.get("partial", [])
 
         # Use all steps to calculate the required_fields, but skip the last step
         # when actually constructing the relations table. This is only done when
-        # checking for discrepencies, as we want to compare the joined table 
+        # checking for discrepencies, as we want to compare the joined table
         # against this step's primary key.
         data = get_relations(steps, datalab_id=datalab_id, skip_last=True)
 
@@ -318,3 +318,24 @@ class DatalabViewSet(viewsets.ModelViewSet):
         serializer.save()
 
         return JsonResponse({"success": 1})
+
+    @detail_route(methods=["post"])
+    def csv(self, request, id=None):
+        datalab = self.get_object()
+        self.check_object_permissions(self.request, datalab)
+
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = f"attachment; filename={datalab.name}.csv"
+        response["Access-Control-Expose-Headers"] = "Content-Disposition"
+        data = pd.DataFrame(datalab.data)
+
+        # Re-order the columns to match the original datasource data
+        order = OrderItemSerializer(
+            datalab.order, many=True, context={"steps": datalab.steps}
+        )
+        reordered_columns = [item.get("label") for item in order.data]
+        data = data[reordered_columns]
+
+        data.to_csv(path_or_buf=response, index=False)
+
+        return response

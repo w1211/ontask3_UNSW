@@ -296,6 +296,20 @@ class Data extends React.Component {
     clearTimeout(this.updateSuccess);
   }
 
+  exportToCSV = () => {
+    const { selectedId } = this.props;
+
+    this.setState({ exporting: true });
+
+    apiRequest(`/datalab/${selectedId}/csv/`, {
+      method: "POST",
+      onSuccess: () => {
+        this.setState({ exporting: false });
+      },
+      onError: () => this.setState({ exporting: false })
+    });
+  };
+
   render() {
     const {
       data,
@@ -306,7 +320,14 @@ class Data extends React.Component {
       updateDatalab,
       selectedId
     } = this.props;
-    const { visualisation, edit, saved, searchTerm, view } = this.state;
+    const {
+      visualisation,
+      edit,
+      saved,
+      searchTerm,
+      view,
+      exporting
+    } = this.state;
 
     const totalDataAmount = data ? data.length : 0;
 
@@ -332,6 +353,17 @@ class Data extends React.Component {
           >
             <Icon type="area-chart" size="large" />
             Visualise
+          </Button>
+
+          <Button
+            size="large"
+            onClick={this.exportToCSV}
+            type="primary"
+            icon="export"
+            loading={exporting}
+            style={{ marginLeft: 10 }}
+          >
+            Export to CSV
           </Button>
 
           <Radio.Group
