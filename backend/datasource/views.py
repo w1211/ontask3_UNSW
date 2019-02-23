@@ -1,4 +1,4 @@
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
 from rest_framework.decorators import list_route, detail_route
@@ -234,7 +234,7 @@ class DatasourceViewSet(viewsets.ModelViewSet):
 
         schedule["taskName"] = task_name
         schedule["asyncTasks"] = async_tasks
-        
+
         datasource.update(unset__schedule=1)
         serializer = DatasourceSerializer(
             datasource, data={"schedule": schedule}, partial=True
@@ -331,3 +331,16 @@ class DatasourceViewSet(viewsets.ModelViewSet):
         datasource.refresh_data()
         serializer = DatasourceSerializer(datasource)
         return Response(serializer.data)
+
+    @detail_route(methods=["post"])
+    def csv(self, request, id=None):
+        datasource = self.get_object()
+        self.check_object_permissions(self.request, datasource)
+
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = f"attachment; filename={datasource.name}.csv"
+        response["Access-Control-Expose-Headers"] = "Content-Disposition"
+        data = pd.DataFrame(datasource.data)
+        data.to_csv(path_or_buf=response, index=False)
+
+        return response

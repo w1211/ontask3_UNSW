@@ -154,7 +154,7 @@ class Datasource extends React.Component {
                       <Menu.Item key="preview">
                         <Link to={`${match.url}/preview`}>
                           <Icon type="database" />
-                          <span>Data preview</span>
+                          <span>Data</span>
                         </Link>
                       </Menu.Item>
                     </Menu>
@@ -218,7 +218,7 @@ class Datasource extends React.Component {
 
                           <Route
                             path={`${match.url}/preview`}
-                            render={() => <Preview data={datasource.data} />}
+                            render={() => <Preview datasource={datasource} />}
                           />
                         </Switch>
                       ) : (
