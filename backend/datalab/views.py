@@ -8,8 +8,9 @@ from rest_framework.exceptions import NotFound
 from rest_framework.status import HTTP_401_UNAUTHORIZED
 from mongoengine.queryset.visitor import Q
 import pandas as pd
-
+import zipfile
 import json
+from io import BytesIO
 
 from .serializers import DatalabSerializer, OrderItemSerializer
 from .permissions import DatalabPermissions
@@ -160,16 +161,51 @@ class DatalabViewSet(viewsets.ModelViewSet):
         # Values which are in the matching datasource but not the primary
         matching_discrepencies = matching_records - primary_records
 
-        return Response(
-            {
-                "primary": list(primary_discrepencies)
-                if len(primary_discrepencies) > 0
-                else [],
-                "matching": list(matching_discrepencies)
-                if len(matching_discrepencies) > 0
-                else [],
-            }
-        )
+        if request.data.get("isExport"):
+            primary_discrepencies = pd.DataFrame(
+                list(primary_discrepencies),
+                columns=[f"{check_module['primary']}_discrepencies"],
+            )
+            matching_discrepencies = pd.DataFrame(
+                list(matching_discrepencies),
+                columns=[f"{check_module['matching']}_discrepencies"],
+            )
+            name = Datasource.objects.get(id=check_module["id"]).name
+
+            output = BytesIO()
+            csv_zip = zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED)
+            if len(primary_discrepencies > 0):
+                csv_zip.writestr(
+                    f"{check_module['primary']}_discrepencies.csv",
+                    primary_discrepencies.to_csv(),
+                )
+            if len(matching_discrepencies > 0):
+                csv_zip.writestr(
+                    f"{check_module['matching']}_discrepencies.csv",
+                    matching_discrepencies.to_csv(),
+                )
+            csv_zip.close()
+            output.seek(0)
+
+            response = HttpResponse(output, content_type="application/zip")
+            response[
+                "Content-Disposition"
+            ] = f"attachment; filename={name}_discrepencies.zip"
+            response["Access-Control-Expose-Headers"] = "Content-Disposition"
+
+            return response
+
+        else:
+            return Response(
+                {
+                    "primary": list(primary_discrepencies)
+                    if len(primary_discrepencies) > 0
+                    else [],
+                    "matching": list(matching_discrepencies)
+                    if len(matching_discrepencies) > 0
+                    else [],
+                }
+            )
 
     @detail_route(methods=["patch"])
     def change_column_order(self, request, id=None):

@@ -62,14 +62,17 @@ const apiRequest = async (
     }
   }
 
-  if (responseType.indexOf("text/csv") !== -1) {
+  if (
+    responseType.indexOf("text/csv") !== -1 ||
+    responseType.indexOf("application/zip") !== -1
+  ) {
     const blob = await response.blob();
     const fileName = response.headers
       .get("content-disposition")
       .split("filename=")[1];
 
     let a = window.document.createElement("a");
-    a.href = window.URL.createObjectURL(blob, { type: "text/csv" });
+    a.href = window.URL.createObjectURL(blob, { type: responseType });
     a.download = fileName;
 
     document.body.appendChild(a);

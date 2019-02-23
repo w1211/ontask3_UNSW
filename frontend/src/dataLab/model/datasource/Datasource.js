@@ -274,7 +274,7 @@ class DatasourceModule extends React.Component {
     this.cancelEdit();
   };
 
-  checkForDiscrepencies = matchingField => {
+  checkForDiscrepencies = ({ matchingField, isExport }) => {
     const { stepIndex } = this.props;
     const { form, selectedId } = this.context;
     const { discrepencies } = this.state;
@@ -285,26 +285,34 @@ class DatasourceModule extends React.Component {
     if (matchingField)
       partial[partial.length - 1].datasource.matching = matchingField;
 
-    this.setState({ discrepencies: { ...discrepencies, loading: true } });
+    const key = isExport ? "exporting" : "loading";
+    this.setState({ discrepencies: { ...discrepencies, [key]: true } });
 
     apiRequest(`/datalab/check_discrepencies/`, {
       method: "POST",
-      payload: { partial, dataLabId: selectedId },
-      onSuccess: discrepencies => {
+      payload: { partial, dataLabId: selectedId, isExport },
+      onSuccess: result => {
+        if (isExport) {
+          this.setState({
+            discrepencies: { ...discrepencies, [key]: false }
+          });
+          return;
+        }
+
         if (
-          (discrepencies.matching || []).length > 0 ||
-          (discrepencies.primary || []).length > 0
+          (result.matching || []).length > 0 ||
+          (result.primary || []).length > 0
         ) {
           this.setState({
             discrepencies: {
               visible: true,
-              loading: false,
-              ...discrepencies
+              [key]: false,
+              ...result
             }
           });
         } else {
           this.setState({
-            discrepencies: { ...discrepencies, loading: false }
+            discrepencies: { [key]: false }
           });
           notification["success"]({
             message: "No discrepencies found",
@@ -315,7 +323,11 @@ class DatasourceModule extends React.Component {
       },
       onError: error => {
         this.setState({
-          discrepencies: { ...discrepencies, loading: false }
+          discrepencies: { [key]: false }
+        });
+        notification["error"]({
+          message: "Failed to check discrepencies",
+          description: error
         });
       }
     });
@@ -398,7 +410,7 @@ class DatasourceModule extends React.Component {
         <Tooltip title="Check discrepencies">
           <Icon
             type={discrepencies.loading ? "loading" : "disconnect"}
-            onClick={() => this.checkForDiscrepencies()}
+            onClick={this.checkForDiscrepencies}
           />
         </Tooltip>
       );
@@ -487,7 +499,9 @@ class DatasourceModule extends React.Component {
               })(
                 <Select
                   placeholder="Matching field"
-                  onChange={this.checkForDiscrepencies}
+                  onChange={matchingField =>
+                    this.checkForDiscrepencies({ matchingField })
+                  }
                   disabled={
                     !datasource ||
                     !getFieldValue(`steps[${stepIndex}].datasource.primary`)
@@ -654,6 +668,7 @@ class DatasourceModule extends React.Component {
                 }
               })
             }
+            exportToCSV={() => this.checkForDiscrepencies({ isExport: true })}
           />
         )}
       </Card>

@@ -17,7 +17,9 @@ class DiscrepenciesModal extends React.Component {
       stepIndex,
       step,
       datasource,
-      closeModal
+      closeModal,
+      exportToCSV,
+      exporting
     } = this.props;
     const { form } = this.context;
     const { getFieldDecorator, setFieldsValue, getFieldValue } = form;
@@ -43,6 +45,14 @@ class DiscrepenciesModal extends React.Component {
           </div>
         }
         footer={[
+          <Button
+            key="export"
+            type="primary"
+            onClick={exportToCSV}
+            loading={exporting}
+          >
+            Export to csv
+          </Button>,
           <Button key="ok" type="primary" onClick={closeModal}>
             OK
           </Button>
@@ -55,7 +65,7 @@ class DiscrepenciesModal extends React.Component {
           handled?
         </p>
 
-        {primary.length > 0 && (
+        {(primary || []).length > 0 && (
           <div className="conflict">
             <p>
               The following <strong>{primary.length}</strong> records occur in
@@ -92,7 +102,7 @@ class DiscrepenciesModal extends React.Component {
           </div>
         )}
 
-        {matching.length > 0 && (
+        {(matching || []).length > 0 && (
           <div className="conflict">
             <p>
               The following <strong>{matching.length}</strong> records occur in
