@@ -9,6 +9,7 @@ import random
 import os
 from collections import defaultdict
 from dateutil import parser
+import pandas as pd
 
 from ontask.settings import (
     SECRET_KEY,
@@ -16,6 +17,20 @@ from ontask.settings import (
     AWS_PROFILE
 )
 
+def process_data(data):
+    df = pd.DataFrame(data)
+
+    # Replace illegal characters in column headers
+    df.columns = df.columns.str.replace('[', '(')
+    df.columns = df.columns.str.replace(']', ')')
+
+    # Remove percentage signs from each cell
+    df = df.applymap(
+        lambda x: x.rstrip("%") if isinstance(x, str) and x.endswith("%") else x
+    )
+
+    return df.to_dict("records")
+    
 
 def retrieve_sql_data(connection):
     """Generic service to retrieve data from an SQL server with a provided query"""

@@ -28,6 +28,7 @@ from .utils import (
     retrieve_file_from_s3,
     retrieve_sql_data,
     guess_column_types,
+    process_data,
 )
 from scheduler.methods import (
     create_scheduled_task,
@@ -95,12 +96,7 @@ class DatasourceViewSet(viewsets.ModelViewSet):
         if not len(data):
             raise ValidationError("No data was returned from the datasource")
 
-        # Process the data to correctly parse percentages as numbers
-        df = pd.DataFrame(data)
-        df = df.applymap(
-            lambda x: x.rstrip("%") if isinstance(x, str) and x.endswith("%") else x
-        )
-        data = df.to_dict("records")
+        data = process_data(data)
 
         # Identify the field names from the keys of the first row of the data
         # This is sufficient, as we can assume that all rows have the same keys
@@ -182,12 +178,7 @@ class DatasourceViewSet(viewsets.ModelViewSet):
             self.delete_schedule(self.request, datasource.id)
 
         if data:
-            # Process the data to correctly parse percentages as numbers
-            df = pd.DataFrame(data)
-            df = df.applymap(
-                lambda x: x.rstrip("%") if isinstance(x, str) and x.endswith("%") else x
-            )
-            data = df.to_dict("records")
+            data = process_data(data)
 
             # Identify the field names from the keys of the first row of the data
             # This is sufficient, as we can assume that all rows have the same keys
@@ -331,7 +322,6 @@ class DatasourceViewSet(viewsets.ModelViewSet):
             return JsonResponse(data)
         except:
             raise ValidationError("Error reading Excel file")
-
 
     @detail_route(methods=["post"])
     def force_refresh(self, request, id=None):

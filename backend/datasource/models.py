@@ -18,6 +18,7 @@ from .utils import (
     retrieve_excel_data,
     retrieve_file_from_s3,
     retrieve_sql_data,
+    process_data
 )
 
 
@@ -93,13 +94,7 @@ class Datasource(Document):
             delimiter = connection.get("delimiter")
             data = retrieve_csv_data(file, delimiter)
 
-        # Process the data to correctly parse percentages as numbers
-        df = pd.DataFrame(data)
-        df = df.applymap(
-            lambda x: x.rstrip("%") if isinstance(x, str) and x.endswith("%") else x
-        )
-        data = df.to_dict("records")
-        
+        data = process_data(data)
         return data
 
     def refresh_data(self):
