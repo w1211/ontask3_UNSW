@@ -177,12 +177,12 @@ class DatalabViewSet(viewsets.ModelViewSet):
             if len(primary_discrepencies > 0):
                 csv_zip.writestr(
                     f"{check_module['primary']}_discrepencies.csv",
-                    primary_discrepencies.to_csv(),
+                    primary_discrepencies.to_csv(index=False),
                 )
             if len(matching_discrepencies > 0):
                 csv_zip.writestr(
                     f"{check_module['matching']}_discrepencies.csv",
-                    matching_discrepencies.to_csv(),
+                    matching_discrepencies.to_csv(index=False),
                 )
             csv_zip.close()
             output.seek(0)
