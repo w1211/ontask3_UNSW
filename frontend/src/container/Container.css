@@ -75,3 +75,6 @@
   width: 80% !important;
   max-width: 800px;
 }
+.ant-collapse-item.ant-collapse-item-active .ant-collapse-header {
+  background: #EEEEEE;
+}
