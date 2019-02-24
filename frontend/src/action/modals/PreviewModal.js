@@ -24,6 +24,7 @@ class PreviewModal extends React.Component {
         onCancel={this.handleClose}
         footer={null}
         className="preview"
+        style={{ minWidth: "60%" }}
       >
         <div style={{ display: "flex", flexDirection: "column" }}>
           <Button.Group
