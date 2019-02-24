@@ -173,6 +173,11 @@ class AccessForm(APIView):
         )
 
         form_data = pd.DataFrame(data=form.data)
+        # Only include fields that are in the form design
+        # (Some fields may have data, but were removed)
+        form_fields = [form.primary] + [field.name for field in form.fields]
+        form_data = form_data.reindex(columns=form_fields)
+
         if form.primary in form_data:
             form_data.set_index(form.primary, inplace=True)
 
