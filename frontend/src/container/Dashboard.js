@@ -632,7 +632,15 @@ class Dashboard extends React.Component {
                           {
                             title: formPermissions.permissionField,
                             dataIndex: formPermissions.permissionField,
-                            key: "permission"
+                            key: "permission",
+                            sorter: (a, b) =>
+                              _.get(
+                                a,
+                                formPermissions.permissionField,
+                                ""
+                              ).localeCompare(
+                                _.get(b, formPermissions.permissionField, "")
+                              )
                           }
                         ]}
                         rowKey={(record, i) => i}
