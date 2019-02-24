@@ -18,7 +18,7 @@ from .utils import (
     retrieve_excel_data,
     retrieve_file_from_s3,
     retrieve_sql_data,
-    process_data
+    process_data,
 )
 
 
@@ -108,5 +108,24 @@ class Datasource(Document):
             self.data = self.retrieve_data()
             self.fields = [field for field in self.data[0]]
             self.lastUpdated = dt.utcnow()
-            
+
             self.save()
+            self.update_associated_datalabs()
+
+    def update_associated_datalabs(self):
+        from datalab.models import Datalab
+        from datalab.utils import get_relations
+        from form.models import Form
+
+        # Find any datalabs that use this datasource and update their relations table
+        # But only if any of the datasource's fields actually appears in the relations table
+        for datalab in Datalab.objects.filter(steps__datasource__id=str(self.id)):
+            relations = pd.DataFrame(datalab.relations)
+            if any([field in relations for field in self.fields]):
+                datalab.relations = get_relations(datalab.steps, datalab.id)
+                print(datalab.relations)
+                datalab.save()
+
+                # Find any forms that use this datalab and update their permissions values
+                for form in Form.objects.filter(datalab=datalab):
+                    form.refresh_access()

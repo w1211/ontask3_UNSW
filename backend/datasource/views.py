@@ -185,13 +185,14 @@ class DatasourceViewSet(viewsets.ModelViewSet):
             fields = list(data[0].keys())
             types = guess_column_types(data)
 
-            serializer.save(
+            datasource = serializer.save(
                 connection=connection,
                 data=data,
                 fields=fields,
                 types=types,
                 lastUpdated=datetime.utcnow(),
             )
+            datasource.update_associated_datalabs()
         else:
             serializer.save(connection=connection)
 
