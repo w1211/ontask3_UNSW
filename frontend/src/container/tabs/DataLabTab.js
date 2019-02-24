@@ -90,8 +90,8 @@ class DataLabTab extends React.Component {
     });
   };
 
-  previewDatasource = datasourceId => {
-    apiRequest(`/datasource/${datasourceId}/`, {
+  previewDatasource = (objectId, isDatasource) => {
+    apiRequest(`/${isDatasource ? "datasource" : "datalab"}/${objectId}/`, {
       method: "GET",
       onSuccess: datasource =>
         this.setState({
@@ -162,23 +162,28 @@ class DataLabTab extends React.Component {
           let didIncludeComputed = false;
 
           return steps.map((step, stepIndex) => {
-            if (step.type === "datasource")
+            if (step.type === "datasource") {
+              const datasource = datasources.find(
+                datasource => datasource.id === step.datasource.id
+              );
+              const dataLab = dataLabs.find(
+                dataLab => dataLab.id === step.datasource.id
+              );
+
               return (
                 <Tag
                   color="blue"
                   key={stepIndex}
                   style={{ margin: 3 }}
-                  onClick={() => this.previewDatasource(step.datasource.id)}
+                  onClick={() =>
+                    this.previewDatasource(step.datasource.id, !!datasource)
+                  }
                 >
                   <Icon type="database" style={{ marginRight: 5 }} />
-                  {
-                    datasources.find(
-                      datasource => datasource.id === step.datasource.id
-                    ).name
-                  }
+                  {(datasource || dataLab).name}
                 </Tag>
               );
-            else if (step.type === "form") {
+            } else if (step.type === "form") {
               return (
                 <Tag
                   color="purple"
@@ -260,7 +265,7 @@ class DataLabTab extends React.Component {
           onClick={() =>
             history.push({
               pathname: "/datalab",
-              state: { containerId, datasources }
+              state: { containerId, datasources, dataLabs }
             })
           }
         >

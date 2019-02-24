@@ -29,7 +29,15 @@ class Details extends React.Component {
   };
 
   render() {
-    const { datasources, selectedId, order, steps, updateDatalab, forms } = this.props;
+    const {
+      datasources,
+      dataLabs,
+      selectedId,
+      order,
+      steps,
+      updateDatalab,
+      forms
+    } = this.props;
 
     let columns = [];
     let tableData = [];
@@ -174,9 +182,9 @@ class Details extends React.Component {
           const module = step.type;
           step = step.datasource;
 
-          const datasource = datasources.find(
-            datasource => datasource.id === step.id
-          );
+          const datasource =
+            datasources.find(datasource => datasource.id === step.id) ||
+            dataLabs.find(dataLab => dataLab.id === step.id);
 
           step.fields.forEach((field, fieldIndex) => {
             const orderItem = getOrder(stepIndex, field);

@@ -8,7 +8,6 @@ import _ from "lodash";
 import "./DataLab.css";
 
 import Model from "./model/Model";
-import Details from "./details/Details";
 import Data from "./data/Data";
 import DataLabForm from "./form/Form";
 
@@ -31,6 +30,7 @@ class DataLab extends React.Component {
       this.setState({
         fetching: false,
         datasources: _.get(location, "state.datasources", []),
+        dataLabs: _.get(location, "state.dataLabs", []),
         containerId
       });
     } else if (match.params.id) {
@@ -88,6 +88,7 @@ class DataLab extends React.Component {
     const {
       fetching,
       datasources,
+      dataLabs,
       name,
       steps,
       order,
@@ -201,6 +202,7 @@ class DataLab extends React.Component {
                               <Model
                                 {...props}
                                 datasources={datasources}
+                                dataLabs={dataLabs}
                                 forms={forms}
                                 selectedId={selectedId}
                                 name={name}
@@ -219,24 +221,10 @@ class DataLab extends React.Component {
                                 data={data}
                                 order={order}
                                 datasources={datasources}
+                                dataLabs={dataLabs}
                                 selectedId={selectedId}
                                 updateDatalab={this.updateDatalab}
                                 updateData={this.updateData}
-                                forms={forms}
-                              />
-                            )}
-                          />
-
-                          <Route
-                            path={`${match.url}/details`}
-                            render={props => (
-                              <Details
-                                {...props}
-                                datasources={datasources}
-                                selectedId={selectedId}
-                                steps={steps}
-                                order={order}
-                                updateDatalab={this.updateDatalab}
                                 forms={forms}
                               />
                             )}
@@ -278,6 +266,7 @@ class DataLab extends React.Component {
                           history={history}
                           location={location}
                           datasources={datasources}
+                          dataLabs={dataLabs}
                           updateDatalab={this.updateDatalab}
                         />
                       )}

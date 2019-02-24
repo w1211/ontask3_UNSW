@@ -1,13 +1,13 @@
 from collections import defaultdict
 from datetime import datetime
 import numexpr as ne
+import pandas as pd
 
 from .models import Datalab
 from datasource.models import Datasource
 from workflow.models import Workflow
 from form.models import Form
-
-import pandas as pd
+from datalab.serializers import OtherDatalabSerializer
 
 
 def bind_column_types(steps):
@@ -15,6 +15,8 @@ def bind_column_types(steps):
         if step["type"] == "datasource":
             step = step["datasource"]
             datasource = None
+            datalab = None
+            datalab_fields = None
 
             fields = step["fields"]
             types = step["types"] if "types" in step else {}
@@ -22,9 +24,27 @@ def bind_column_types(steps):
             for field in fields:
                 if field not in types:
                     if not datasource:
-                        datasource_id = step["id"]
-                        datasource = Datasource.objects.get(id=datasource_id)
-                    types[field] = datasource["types"][field]
+                        try:
+                            datasource = Datasource.objects.get(id=step["id"])
+                        except:
+                            pass
+
+                    if datasource:
+                        types[field] = datasource["types"][field]
+
+                    if not datalab:
+                        try:
+                            datalab = Datalab.objects.get(id=step["id"])
+                            datalab_fields = OtherDatalabSerializer(datalab).data[
+                                "columns"
+                            ]
+                        except:
+                            pass
+
+                    if datalab and datalab_fields:
+                        for datalab_field in datalab_fields:
+                            if datalab_field["label"] == field:
+                                types[field] = datalab_field["type"]
 
             step["types"] = types
 
@@ -206,10 +226,18 @@ def get_relations(steps, datalab_id=None, skip_last=False):
 
     if skip_last:
         datasource_steps = datasource_steps[:-1]
-    
+
     relations = pd.DataFrame()
     for step_index, step in enumerate(datasource_steps):
-        datasource = Datasource.objects.get(id=step["id"])
+        try:
+            datasource = Datasource.objects.get(id=step["id"])
+        except:
+            pass
+
+        try:
+            datasource = Datalab.objects.get(id=step["id"])
+        except:
+            pass
 
         # If this datasource has fields that are used by forms, actions, or datasources,
         # then ensure that these fields are included in the relation table
@@ -228,7 +256,9 @@ def get_relations(steps, datalab_id=None, skip_last=False):
         if step_index == 0:
             relations = data.reset_index().rename(
                 columns={
-                    step["primary"]: step["labels"].get(step["primary"], step["primary"])
+                    step["primary"]: step["labels"].get(
+                        step["primary"], step["primary"]
+                    )
                 }  # Rename the primary key if it has a label
             )
         else:

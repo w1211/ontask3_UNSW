@@ -276,14 +276,16 @@ class Field extends React.Component {
                 if (!value) return null;
 
                 if (value instanceof Array) {
-                  return value
-                    .map(item => {
-                      const option = field.options.find(
-                        option => option.value === item
-                      );
-                      return option ? option.label : null;
-                    })
-                    .join(", ");
+                  return `[${value
+                    .map(x => (x ? x.toString() : ""))
+                    .join(", ")}]`;
+                  // .map(item => {
+                  //   const option = field.options.find(
+                  //     option => option.value === item
+                  //   );
+                  //   return option ? option.label : null;
+                  // })
+                  // .join(", ");
                 }
 
                 const option = field.options.find(

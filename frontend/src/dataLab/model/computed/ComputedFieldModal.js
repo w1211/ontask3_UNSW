@@ -51,7 +51,7 @@ class ComputedFieldModal extends React.Component {
 
   generateTreeData = () => {
     const { stepIndex } = this.props;
-    const { datasources, form, actions, forms } = this.context;
+    const { datasources, form, actions, forms, dataLabs } = this.context;
     const { getFieldValue } = form;
 
     const treeData = [];
@@ -62,9 +62,9 @@ class ComputedFieldModal extends React.Component {
         if (step.type === "datasource") {
           step = step.datasource;
 
-          const datasource = datasources.find(
-            datasource => datasource.id === step.id
-          );
+          const datasource =
+            datasources.find(datasource => datasource.id === step.id) ||
+            dataLabs.find(dataLab => dataLab.id === step.id);
           if (!datasource) return;
 
           treeData.push({

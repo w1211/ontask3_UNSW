@@ -337,8 +337,6 @@ class VisualisationModal extends React.Component {
     const { form } = this.props;
     const { column } = form.getFieldsValue();
 
-    console.log(data);
-
     return (
       <HighchartsReact
         key={this.chartKey}

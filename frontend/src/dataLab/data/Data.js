@@ -320,6 +320,7 @@ class Data extends React.Component {
       steps,
       forms,
       datasources,
+      dataLabs,
       updateDatalab,
       selectedId
     } = this.props;
@@ -430,6 +431,7 @@ class Data extends React.Component {
           {view === "details" && (
             <Details
               datasources={datasources}
+              dataLabs={dataLabs}
               selectedId={selectedId}
               steps={steps}
               order={order}

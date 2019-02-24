@@ -150,14 +150,26 @@ class Workflow(Document):
             module_labels = {}
 
             if step.type == "datasource":
-                module["name"] = Datasource.objects.get(id=step.datasource.id).name
-                for field in step.datasource.fields:
-                    label = step.datasource.labels[field]
-                    module["fields"].append(label)
-                    types[label] = step.datasource.types[field]
-                    module_labels[field] = label
-                modules.append(module)
-                labels.append(module_labels)
+                datasource = None
+                try:
+                    datasource = Datasource.objects.get(id=step.datasource.id)
+                except:
+                    pass
+
+                try:
+                    datasource = Datalab.objects.get(id=step.datasource.id)
+                except:
+                    pass
+
+                if datasource:
+                    module["name"] = datasource.name
+                    for field in step.datasource.fields:
+                        label = step.datasource.labels[field]
+                        module["fields"].append(label)
+                        types[label] = step.datasource.types[field]
+                        module_labels[field] = label
+                    modules.append(module)
+                    labels.append(module_labels)
 
             if step.type == "form":
                 form = Form.objects.get(id=step.form)

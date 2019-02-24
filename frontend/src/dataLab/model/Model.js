@@ -176,7 +176,15 @@ class Model extends React.Component {
   };
 
   render() {
-    const { form, datasources, forms, actions, name, selectedId } = this.props;
+    const {
+      form,
+      datasources,
+      dataLabs,
+      forms,
+      actions,
+      name,
+      selectedId
+    } = this.props;
     const { loading, error, stepKeys, steps } = this.state;
     const { getFieldDecorator, getFieldValue } = form;
 
@@ -188,6 +196,7 @@ class Model extends React.Component {
           stepKeys,
           labelsUsed: this.labelsUsed,
           datasources,
+          dataLabs,
           forms,
           actions,
           deleteModule: this.deleteModule,

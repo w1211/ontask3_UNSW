@@ -147,7 +147,15 @@ class DatalabViewSet(viewsets.ModelViewSet):
         data = get_relations(steps, datalab_id=datalab_id, skip_last=True)
 
         check_module = steps[-1]["datasource"]
-        datasource = Datasource.objects.get(id=check_module["id"])
+        try:
+            datasource = Datasource.objects.get(id=check_module["id"])
+        except:
+            pass
+
+        try:
+            datasource = Datalab.objects.get(id=check_module["id"])
+        except:
+            pass
 
         primary_records = {item[check_module["primary"]] for item in datasource.data}
         matching_records = {
@@ -170,7 +178,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 list(matching_discrepencies),
                 columns=[f"{check_module['matching']}_discrepencies"],
             )
-            name = Datasource.objects.get(id=check_module["id"]).name
+            name = datasource.name
 
             output = BytesIO()
             csv_zip = zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED)

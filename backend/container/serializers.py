@@ -8,6 +8,7 @@ from mongoengine.queryset.visitor import Q
 from .models import Container
 from datasource.models import Datasource
 from datalab.models import Datalab, Module, DatasourceModule
+from datalab.serializers import OrderItemSerializer
 from workflow.models import Workflow
 from form.models import Form
 
@@ -54,10 +55,19 @@ class ModuleSerializer(EmbeddedDocumentSerializer):
 
 class DatalabSerializer(EmbeddedDocumentSerializer):
     steps = ModuleSerializer(many=True)
+    columns = serializers.SerializerMethodField()
+
+    def get_columns(self, datalab):
+        return [
+            {"label": item.get("label"), "type": item.get("field_type")}
+            for item in OrderItemSerializer(
+                datalab.order, many=True, context={"steps": datalab.steps}
+            ).data
+        ]
 
     class Meta:
         model = Datalab
-        fields = ["id", "name", "steps"]
+        fields = ["id", "name", "steps", "columns"]
 
 
 class ActionSerializer(EmbeddedDocumentSerializer):

@@ -37,6 +37,9 @@ class DatasourceModule(EmbeddedDocument):
     labels = DictField()
     types = DictField()
     discrepencies = EmbeddedDocumentField(Discrepencies)
+    source_type = StringField(
+        choices=("datasource", "datalab"), required=True, default="datasource"
+    )
 
 
 class ComputedField(EmbeddedDocument):
@@ -90,34 +93,42 @@ class Datalab(Document):
         build_fields = []
         combined_data = pd.DataFrame(self.relations)
 
-    # # Gather all tracking and feedback data for associated actions
-    # # Consumed by the computed column
-    # tracking_feedback_data = {}
-    # if datalab_id:
-    #     actions = Workflow.objects(datalab=datalab_id)
-    #     for action in actions:
-    #         action_id = str(action.id)
-    #         if not "emailSettings" in action or not len(action["emailJobs"]):
-    #             continue
+        # # Gather all tracking and feedback data for associated actions
+        # # Consumed by the computed column
+        # tracking_feedback_data = {}
+        # if datalab_id:
+        #     actions = Workflow.objects(datalab=datalab_id)
+        #     for action in actions:
+        #         action_id = str(action.id)
+        #         if not "emailSettings" in action or not len(action["emailJobs"]):
+        #             continue
 
-    #         tracking_feedback_data[action_id] = {
-    #             "email_field": action["emailSettings"]["field"],
-    #             "jobs": {},
-    #         }
-    #         for email_job in action["emailJobs"]:
-    #             job_id = str(email_job.job_id)
+        #         tracking_feedback_data[action_id] = {
+        #             "email_field": action["emailSettings"]["field"],
+        #             "jobs": {},
+        #         }
+        #         for email_job in action["emailJobs"]:
+        #             job_id = str(email_job.job_id)
 
-    #             tracking_feedback_data[action_id]["jobs"][job_id] = {
-    #                 "tracking": {
-    #                     email["recipient"]: email["track_count"]
-    #                     for email in email_job["emails"]
-    #                 }
-    #             }
-                
+        #             tracking_feedback_data[action_id]["jobs"][job_id] = {
+        #                 "tracking": {
+        #                     email["recipient"]: email["track_count"]
+        #                     for email in email_job["emails"]
+        #                 }
+        #             }
+
         for step_index, step in enumerate(self.steps):
             if step.type == "datasource":
                 step = step.datasource
-                datasource = Datasource.objects.get(id=step.id)
+                try:
+                    datasource = Datasource.objects.get(id=step.id)
+                except:
+                    pass
+                
+                try:
+                    datasource = Datalab.objects.get(id=step.id)
+                except:
+                    pass
 
                 build_fields.append([step.labels[field] for field in step.fields])
 

@@ -262,43 +262,6 @@ class DatasourceViewSet(viewsets.ModelViewSet):
         serializer = DatasourceSerializer(self.get_object())
         return JsonResponse(serializer.data)
 
-    @list_route(methods=["post"])
-    def compare_matched_fields(self, request):
-        matching_field = self.request.data["matchingField"]
-        matching_datasource = Datasource.objects.get(id=matching_field["datasource"])
-        matching_fields = set(
-            [record[matching_field["field"]] for record in matching_datasource["data"]]
-        )
-
-        primary_key = self.request.data["primaryKey"]
-        primary_datasource = Datasource.objects.get(id=primary_key["datasource"])
-        primary_keys = set(
-            [record[primary_key["field"]] for record in primary_datasource["data"]]
-        )
-
-        response = {}
-
-        # Values which are in the matching datasource but not the primary
-        unique_in_matching = matching_fields - primary_keys
-
-        if len(unique_in_matching) == len(matching_fields):
-            raise ValidationError(
-                "Matching field failed to match with the primary key. \
-                Are you sure the right matching field is set?"
-            )
-
-        if len(unique_in_matching) > 0:
-            response["matching"] = [value for value in unique_in_matching]
-            response["matching_datasource_name"] = matching_datasource.name
-
-        # Values which are in the primary datasource but not the matching
-        unique_in_primary = primary_keys - matching_fields
-
-        if len(unique_in_primary) > 0:
-            response["primary"] = [value for value in unique_in_primary]
-            response["primary_datasource_name"] = primary_datasource.name
-
-        return JsonResponse(response, safe=False)
 
     @list_route(methods=["post"])
     def get_sheetnames(self, request):

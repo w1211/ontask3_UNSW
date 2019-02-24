@@ -36,9 +36,10 @@ class DatasourceModule extends React.Component {
   };
 
   datasource = memoize(datasourceId => {
-    const { datasources } = this.context;
-    return (datasources || []).find(
-      datasource => datasource.id === datasourceId
+    const { datasources, dataLabs } = this.context;
+    return (
+      (datasources || []).find(datasource => datasource.id === datasourceId) ||
+      (dataLabs || []).find(dataLab => dataLab.id === datasourceId)
     );
   });
 
@@ -52,7 +53,7 @@ class DatasourceModule extends React.Component {
 
     const labels = labelsUsed();
     const fieldsToAdd = [];
-    datasource.fields.forEach(field => {
+    (datasource.fields || datasource.columns).forEach(field => {
       // Field was already added to this datasource
       if (addedFields.includes(field)) return;
 
@@ -364,6 +365,7 @@ class DatasourceModule extends React.Component {
     const { stepIndex, step } = this.props;
     const {
       datasources,
+      dataLabs,
       form,
       labelsUsed,
       stepKeys,
@@ -440,11 +442,28 @@ class DatasourceModule extends React.Component {
                 initialValue: _.get(step, "datasource.id")
               })(
                 <Select placeholder="Choose datasource">
-                  {(datasources || []).map(datasource => (
-                    <Option value={datasource.id} key={datasource.id}>
-                      {datasource.name}
-                    </Option>
-                  ))}
+                  {dataLabs && dataLabs.length > 0
+                    ? [
+                        <Select.OptGroup label="Datasources" key="datasources">
+                          {(datasources || []).map(datasource => (
+                            <Option value={datasource.id} key={datasource.id}>
+                              {datasource.name}
+                            </Option>
+                          ))}
+                        </Select.OptGroup>,
+                        <Select.OptGroup label="DataLabs" key="datalabs">
+                          {(dataLabs || []).map(dataLab => (
+                            <Option value={dataLab.id} key={dataLab.id}>
+                              {dataLab.name}
+                            </Option>
+                          ))}
+                        </Select.OptGroup>
+                      ]
+                    : (datasources || []).map(datasource => (
+                        <Option value={datasource.id} key={datasource.id}>
+                          {datasource.name}
+                        </Option>
+                      ))}
                 </Select>
               )}
             </FormItem>
@@ -466,7 +485,10 @@ class DatasourceModule extends React.Component {
             })(
               <Select placeholder="Primary key" disabled={!datasource}>
                 {datasource &&
-                  datasource.fields.map(field => (
+                  (
+                    datasource.fields ||
+                    datasource.columns.map(field => field.label)
+                  ).map(field => (
                     <Option
                       value={field}
                       key={`${datasource.id}_${field}_primary`}
@@ -561,7 +583,10 @@ class DatasourceModule extends React.Component {
 
                 <OptGroup label="Datasource fields">
                   {datasource &&
-                    datasource.fields.map(field => {
+                    (
+                      datasource.fields ||
+                      datasource.columns.map(field => field.label)
+                    ).map(field => {
                       const isEditing = editing.field === field;
 
                       const label =
