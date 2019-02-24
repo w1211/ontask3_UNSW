@@ -438,10 +438,9 @@ class Dashboard extends React.Component {
 
                   {tabKey === "information_submission" && (
                     <List
-                      grid={{
-                        gutter: 16
-                      }}
+                      grid={{ gutter: 16 }}
                       dataSource={container.information_submission}
+                      className="cards"
                       renderItem={form => (
                         <List.Item>
                           <Card title={form.name} style={{ maxWidth: 320 }}>

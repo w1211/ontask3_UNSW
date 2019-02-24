@@ -78,3 +78,8 @@
 .ant-collapse-item.ant-collapse-item-active .ant-collapse-header {
   background: #EEEEEE;
 }
+
+.container_list .cards .ant-row {
+  display: flex;
+  flex-wrap: wrap;
+}
