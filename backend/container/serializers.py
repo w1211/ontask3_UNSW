@@ -69,9 +69,16 @@ class ActionSerializer(EmbeddedDocumentSerializer):
 
 
 class InformationSubmissionSerializer(DocumentSerializer):
+    def __init__(self, *args, **kwargs):
+        super(InformationSubmissionSerializer, self).__init__(*args, **kwargs)
+
+        if not self.context.get("has_full_permission"):
+            self.fields.pop("permitted_users")
+            self.fields.pop("permission")
+
     class Meta:
         model = Form
-        fields = ["id", "name", "description"]
+        fields = ["id", "name", "description", "permitted_users", "permission"]
 
 
 class DashboardSerializer(DocumentSerializer):
@@ -104,7 +111,8 @@ class DashboardSerializer(DocumentSerializer):
         return serializer.data
 
     def get_information_submission(self, container):
-        if self.context.get("has_full_permission"):
+        has_full_permission = self.context.get("has_full_permission")
+        if has_full_permission:
             forms = Form.objects.filter(
                 Q(container=container) & (Q(ltiAccess=True) | Q(emailAccess=True))
             )
@@ -115,7 +123,9 @@ class DashboardSerializer(DocumentSerializer):
                 if form.container == container
             ]
 
-        serializer = InformationSubmissionSerializer(forms, many=True)
+        serializer = InformationSubmissionSerializer(
+            forms, many=True, context={"has_full_permission": has_full_permission}
+        )
         return serializer.data
 
     def __init__(self, *args, **kwargs):

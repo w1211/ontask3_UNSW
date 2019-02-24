@@ -11,8 +11,10 @@ import {
   Collapse,
   notification,
   Menu,
-  Card
+  Card,
+  Table
 } from "antd";
+import _ from "lodash";
 
 import ContainerModal from "./ContainerModal";
 import ContainerShare from "./ContainerShare";
@@ -36,7 +38,8 @@ class Dashboard extends React.Component {
     container: { visible: false, selected: null },
     sharing: { visible: false, selected: null },
     lti: { visible: false },
-    deleting: {}
+    deleting: {},
+    formPermissions: {}
   };
 
   fetchDashboard = () => {
@@ -441,7 +444,7 @@ class Dashboard extends React.Component {
                       dataSource={container.information_submission}
                       renderItem={form => (
                         <List.Item>
-                          <Card title={form.name} style={{ maxWidth: 300 }}>
+                          <Card title={form.name} style={{ maxWidth: 320 }}>
                             <div style={{ marginBottom: 10 }}>
                               {form.description}
                             </div>
@@ -453,6 +456,26 @@ class Dashboard extends React.Component {
                             >
                               Open
                             </Button>
+
+                            {_.get(form, "permitted_users", []).length > 0 && (
+                              <Button
+                                style={{ marginLeft: 10 }}
+                                icon="lock"
+                                onClick={() =>
+                                  this.setState({
+                                    formPermissions: {
+                                      visible: true,
+                                      users: form.permitted_users,
+                                      name: form.name,
+                                      permissionField: form.permission
+                                    }
+                                  })
+                                }
+                              >
+                                Access list (
+                                {_.get(form, "permitted_users", []).length})
+                              </Button>
+                            )}
                           </Card>
                         </List.Item>
                       )}
@@ -469,7 +492,14 @@ class Dashboard extends React.Component {
 
   render() {
     const { history } = this.props;
-    const { fetching, dashboard, container, sharing, lti } = this.state;
+    const {
+      fetching,
+      dashboard,
+      container,
+      sharing,
+      lti,
+      formPermissions
+    } = this.state;
 
     return (
       <ContainerContext.Provider
@@ -565,6 +595,48 @@ class Dashboard extends React.Component {
                             </Select.Option>
                           ))}
                       </Select>
+                    </Modal>
+
+                    <Modal
+                      visible={formPermissions.visible}
+                      title="Form access list"
+                      onCancel={() =>
+                        this.setState({ formPermissions: { visible: false } })
+                      }
+                      footer={[
+                        <Button
+                          key="ok"
+                          type="primary"
+                          onClick={() =>
+                            this.setState({
+                              formPermissions: { visible: false }
+                            })
+                          }
+                        >
+                          OK
+                        </Button>
+                      ]}
+                    >
+                      <p>
+                        The following users have access to{" "}
+                        <strong>{formPermissions.name}</strong>:
+                      </p>
+
+                      <Table
+                        dataSource={_.get(formPermissions, "users", []).map(
+                          user => ({
+                            [formPermissions.permissionField]: user
+                          })
+                        )}
+                        columns={[
+                          {
+                            title: formPermissions.permissionField,
+                            dataIndex: formPermissions.permissionField,
+                            key: "permission"
+                          }
+                        ]}
+                        rowKey={(record, i) => i}
+                      />
                     </Modal>
 
                     {dashboard.length > 0 ? (
