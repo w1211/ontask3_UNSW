@@ -12,6 +12,7 @@ import {
   Radio
 } from "antd";
 import memoize from "memoize-one";
+import _ from "lodash";
 
 import Visualisation from "./Visualisation";
 import Details from "../details/Details";
@@ -201,8 +202,28 @@ class Data extends React.Component {
         // return a.toString().localeCompare(b.toString());
         // },
         // sortOrder: sort && sort.field === label && sort.order,
-        render: (text, record, index) =>
-          this.renderFormField(field, text, record[form.primary], formId, index)
+        render: (text, record, index) => {
+          if (field && field.type === "checkbox-group")
+            text = _.pick(record, field.columns);
+
+          return (
+            <div className="editable-field">
+              <Field
+                field={field}
+                value={text}
+                readOnly={edit.field !== field.name}
+                onSave={(value, column) => {
+                  const payload = {
+                    field: column ? column : field.name,
+                    primary: record[form.primary],
+                    value
+                  };
+                  this.handleFormUpdate(formId, payload, index);
+                }}
+              />
+            </div>
+          );
+        }
       });
     });
 
@@ -240,28 +261,6 @@ class Data extends React.Component {
     });
 
     return columns;
-  };
-
-  renderFormField = (field, text, primary, formId, index) => {
-    const { edit } = this.state;
-
-    return (
-      <div className="editable-field">
-        <Field
-          field={field}
-          value={text}
-          readOnly={edit.field !== field.name}
-          onSave={value => {
-            const payload = {
-              field: field.name,
-              primary,
-              value
-            };
-            this.handleFormUpdate(formId, payload, index);
-          }}
-        />
-      </div>
-    );
   };
 
   handleFormUpdate = (formId, payload, index) => {

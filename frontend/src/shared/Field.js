@@ -11,6 +11,8 @@ import {
 import moment from "moment";
 import { range } from "lodash";
 
+import "./Field.css";
+
 const Option = Select.Option;
 const RadioGroup = Radio.Group;
 const CheckboxGroup = Checkbox.Group;
@@ -216,6 +218,37 @@ class Field extends React.Component {
     );
   };
 
+  CheckboxGroup = () => {
+    const { field, onSave } = this.props;
+    const { value } = this.state;
+
+    return (
+      <div className="checkbox-group">
+        {field.columns.map(column => (
+          <div
+            className={value[column] ? "active" : "inactive"}
+            key={column}
+            onClick={() => {
+              const newValue = !value[column];
+
+              this.setState({
+                value: { ...value, [column]: newValue }
+              });
+
+              if (!onSave) return;
+
+              if (this.props.value[column] !== newValue) {
+                onSave(newValue, column);
+              }
+            }}
+          >
+            {column}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   render() {
     const { field, readOnly, value, showName } = this.props;
 
@@ -258,6 +291,20 @@ class Field extends React.Component {
                 );
                 return option ? option.label : null;
 
+              case "checkbox-group":
+                return (
+                  <div className="checkbox-group disabled">
+                    {field.columns.map(column => (
+                      <div
+                        className={value[column] ? "active" : "inactive"}
+                        key={column}
+                      >
+                        {column}
+                      </div>
+                    ))}
+                  </div>
+                );
+
               default:
                 return value;
             }
@@ -282,6 +329,9 @@ class Field extends React.Component {
 
                 case "checkbox":
                   return this.BooleanField();
+
+                case "checkbox-group":
+                  return this.CheckboxGroup();
 
                 default:
                   return this.TextField();

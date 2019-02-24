@@ -21,7 +21,8 @@ class Form extends React.Component {
       onSuccess: form => {
         const columnNames = [
           ...new Set([
-            ...Object.keys(form.data[0]),
+            form.primary,
+            ...form.visibleFields,
             ...form.fields.map(field => field.name)
           ])
         ];
@@ -48,25 +49,36 @@ class Form extends React.Component {
   }
 
   generateColumns = (form, columnNames) => {
+    const { singleRecordIndex } = this.state;
+
     if (form.layout === "table") {
       return columnNames.map((column, columnIndex) => ({
         title: column,
         dataIndex: column,
         key: columnIndex,
-        render: (text, record) => {
+        render: (value, record, index) => {
           const field = form.fields.find(field => field.name === column);
           const editable =
             form.is_active &&
             form.editable_records.includes(_.get(record, form.primary)) &&
             field;
 
+          if (field && field.type === "checkbox-group")
+            value = _.pick(record, field.columns);
+
           return (
             <Field
               readOnly={!editable}
               field={field}
-              value={column in record ? text : null}
-              onSave={value =>
-                this.handleSubmit(record[form.primary], field.name, value)
+              value={value}
+              onSave={(value, column) =>
+                this.handleSubmit(
+                  record[form.primary],
+                  column ? column : field.name,
+                  value,
+                  index,
+                  field.name
+                )
               }
             />
           );
@@ -81,20 +93,35 @@ class Form extends React.Component {
         {
           title: "Value",
           dataIndex: "value",
-          render: (text, record) => {
+          render: (value, record) => {
             const primary = _.get(record.item, form.primary);
 
-            const field =
+            const field = form.fields.find(
+              field => field.name === record.column
+            );
+            const editable =
+              form.is_active &&
               form.editable_records.includes(primary) &&
-              form.fields.find(field => field.name === record.column);
+              field;
+
+            if (field && field.type === "checkbox-group")
+              value = _.pick(record.item, field.columns);
 
             return (
               <Field
                 primaryKey={primary}
-                readOnly={!field}
+                readOnly={!editable}
                 field={field}
-                value={text}
-                onSave={value => this.handleSubmit(primary, field.name, value)}
+                value={value}
+                onSave={(value, column) =>
+                  this.handleSubmit(
+                    primary,
+                    column ? column : field.name,
+                    value,
+                    singleRecordIndex,
+                    field.name
+                  )
+                }
               />
             );
           }
@@ -103,27 +130,35 @@ class Form extends React.Component {
     }
   };
 
-  handleSubmit = (primary, field, value) => {
+  handleSubmit = (primary, field, value, index, loadingKey) => {
     const { match } = this.props;
-    const { saved } = this.state;
+    const { saved, form } = this.state;
+
+    const data = form.data;
+    data[index][field] = value;
+    this.setState({ form: { ...form, data } });
 
     apiRequest(`/form/${match.params.id}/access/`, {
       method: "PATCH",
       payload: { primary, field, value },
-      onSuccess: form => {
-        const value = _.get(saved, primary, {});
-        value[field] = true;
-        this.setState({ form, saved: { ...saved, [primary]: value } }, () => {
+      onSuccess: () => {
+        const savedRecord = _.get(saved, primary, {});
+        savedRecord[loadingKey] = true;
+        this.setState({ saved: { ...saved, [primary]: savedRecord } }, () => {
           this.updateSuccess = setTimeout(() => {
-            value[field] = false;
-            this.setState({ saved: { ...saved, [primary]: value } });
+            savedRecord[loadingKey] = false;
+            this.setState({ saved: { ...saved, [primary]: savedRecord } });
           }, 1500);
         });
       },
-      onError: () =>
+      onError: () => {
         notification["error"]({
           message: "Failed to update form"
-        })
+        });
+        // Revert the form data using the original form state
+        // (const is instantiated at the start of handleSubmit, before the setState)
+        this.setState({ form });
+      }
     });
   };
 

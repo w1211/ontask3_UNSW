@@ -175,7 +175,13 @@ class AccessForm(APIView):
         form_data = pd.DataFrame(data=form.data)
         # Only include fields that are in the form design
         # (Some fields may have data, but were removed)
-        form_fields = [form.primary] + [field.name for field in form.fields]
+        form_fields = [form.primary]
+        for field in form.fields:
+            if field.type == "checkbox-group":
+                form_fields.extend(field.columns)
+            else:
+                form_fields.append(field.name)
+
         form_data = form_data.reindex(columns=form_fields)
 
         if form.primary in form_data:
@@ -244,10 +250,4 @@ class AccessForm(APIView):
         form.data = data
         form.save()
 
-        # TODO: return the data more efficiently than going through this whole process again
-        [form, data, editable_records] = self.get_data(id)
-        serializer = RestrictedFormSerializer(
-            form, context={"data": data, "editable_records": editable_records}
-        )
-
-        return Response(serializer.data)
+        return Response(status=HTTP_200_OK)

@@ -36,7 +36,7 @@ class Field(EmbeddedDocument):
     interval = FloatField(null=True)
     numberDisplay = StringField(null=True)
     useIcon = BooleanField(null=True)
-
+    columns = ListField(StringField())
 
 class Form(Document):
     container = ReferenceField(

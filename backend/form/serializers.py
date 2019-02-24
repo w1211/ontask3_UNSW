@@ -43,6 +43,7 @@ class RestrictedFormSerializer(DocumentSerializer):
             "name",
             "description",
             "primary",
+            "visibleFields",
             "layout",
             "fields",
             "data",

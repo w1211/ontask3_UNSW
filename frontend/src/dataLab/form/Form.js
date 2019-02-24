@@ -244,13 +244,16 @@ class DataLabForm extends React.Component {
         key: columnIndex,
         render: (text, record) => {
           const field = (fields || []).find(field => field.name === column);
-          return (
-            <Field
-              readOnly={!field}
-              field={field}
-              value={column in record ? text : null}
-            />
-          );
+          let value = column in record ? text : null;
+
+          if (field && field.type === "checkbox-group") {
+            value = {};
+            field.columns.forEach(column => {
+              if (column in record) value[column] = record[column];
+            });
+          }
+
+          return <Field readOnly={!field} field={field} value={value} />;
         }
       }));
 

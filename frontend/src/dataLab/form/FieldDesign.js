@@ -273,6 +273,21 @@ class FieldDesign extends React.Component {
     );
   };
 
+  CheckboxGroupField = () => {
+    const { field, fieldIndex, form } = this.props;
+    const { getFieldDecorator } = form;
+
+    return (
+      <div>
+        <FormItem {...FormItemLayout} label="Fields">
+          {getFieldDecorator(`fields[${fieldIndex}].columns`, {
+            initialValue: _.get(field, "columns") || []
+          })(<Select mode="tags" dropdownStyle={{ display: "none" }} />)}
+        </FormItem>
+      </div>
+    );
+  };
+
   render() {
     const { labels, field, fieldIndex, deleteField, form } = this.props;
     const { getFieldDecorator, getFieldValue } = form;
@@ -316,6 +331,7 @@ class FieldDesign extends React.Component {
               <Option value="number">Number</Option>
               <Option value="date">Date</Option>
               <Option value="checkbox">Checkbox</Option>
+              <Option value="checkbox-group">Checkbox Group</Option>
             </Select>
           )}
         </FormItem>
@@ -328,6 +344,9 @@ class FieldDesign extends React.Component {
 
         {getFieldValue(`fields[${fieldIndex}].type`) === "number" &&
           this.NumberField()}
+
+        {getFieldValue(`fields[${fieldIndex}].type`) === "checkbox-group" &&
+          this.CheckboxGroupField()}
       </div>
     );
   }
