@@ -29,7 +29,7 @@ class ListForms(APIView):
         form = serializer.save()
 
         datalab = form.datalab
-        datalab.relations = get_relations(datalab.steps)
+        datalab.relations = get_relations(datalab.steps, datalab_id=datalab.id)
         datalab.save()
 
         form.refresh_access()
@@ -99,7 +99,7 @@ class DetailForm(APIView):
         serializer.is_valid()
         serializer.save()
 
-        datalab.relations = get_relations(datalab.steps)
+        datalab.relations = get_relations(datalab.steps, datalab_id=datalab.id)
         datalab.save()
 
         form.refresh_access()
@@ -155,7 +155,7 @@ class AccessForm(APIView):
             else:
                 editable_records = accessible_records[
                     accessible_records[form.permission].isin(user_values)
-                ]   
+                ]
 
             if not len(editable_records):
                 # User does not have access to any records, so return a 403
