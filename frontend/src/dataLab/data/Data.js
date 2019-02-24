@@ -264,8 +264,10 @@ class Data extends React.Component {
   };
 
   handleFormUpdate = (formId, payload, index) => {
-    const { updateData } = this.props;
+    const { updateData, data } = this.props;
     const { saved } = this.state;
+
+    updateData(index, payload.field, payload.value);
 
     apiRequest(`/form/${formId}/access/`, {
       method: "PATCH",
@@ -278,12 +280,14 @@ class Data extends React.Component {
             1500
           );
         });
-        updateData(index, payload.field, payload.value);
       },
-      onError: () =>
+      onError: () => {
         notification["error"]({
           message: "Failed to update form"
-        })
+        });
+        // Revert the change
+        updateData(index, payload.field, data[index][payload.field]);
+      }
     });
   };
 

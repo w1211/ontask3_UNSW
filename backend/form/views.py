@@ -135,7 +135,8 @@ class AccessForm(APIView):
             .filter(items=[form.primary, form.permission])
         )
 
-        if form.container.has_full_permission(self.request.user):
+        has_full_permission = form.container.has_full_permission(self.request.user)
+        if has_full_permission:
             editable_records = accessible_records.index.values
         else:
             user_values = []
@@ -198,11 +199,9 @@ class AccessForm(APIView):
 
         data = data.to_dict("records")
 
-        if (
-            form.activeFrom is not None
-            and form.activeFrom > dt.utcnow()
-            or form.activeTo is not None
-            and form.activeTo < dt.utcnow()
+        if not has_full_permission and (
+            (form.activeFrom is not None and form.activeFrom > dt.utcnow())
+            or (form.activeTo is not None and form.activeTo < dt.utcnow())
         ):
             editable_records = []
 
