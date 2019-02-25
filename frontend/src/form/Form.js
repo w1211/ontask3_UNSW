@@ -225,19 +225,19 @@ class Form extends React.Component {
                                   marginBottom: 10
                                 }}
                                 allowClear
+                                showSearch
                                 onChange={grouping =>
                                   this.setState({
                                     grouping,
                                     singleRecordIndex: form.data.findIndex(
                                       item =>
-                                        (_.get(item, form.groupBy) ||
-                                          "null") === grouping || 0
+                                        _.get(item, form.groupBy) === grouping
                                     )
                                   })
                                 }
                               >
-                                {[...groups].map(group => (
-                                  <Select.Option key={group}>
+                                {[...groups].sort().map((group, i) => (
+                                  <Select.Option value={group} key={i}>
                                     {group ? group : <i>No value</i>}
                                   </Select.Option>
                                 ))}
@@ -266,9 +266,8 @@ class Form extends React.Component {
                               )}
                             >
                               {form.data.map((record, index) =>
-                                !grouping ||
-                                (_.get(record, form.groupBy) || "null") ===
-                                  grouping ? (
+                                grouping === undefined ||
+                                _.get(record, form.groupBy) === grouping ? (
                                   <Select.Option key={index}>
                                     {record[form.primary]}
                                   </Select.Option>
@@ -312,10 +311,11 @@ class Form extends React.Component {
                             style={{ width: "100%", maxWidth: 350 }}
                             key="groups"
                             allowClear
+                            showSearch
                             onChange={grouping => this.setState({ grouping })}
                           >
-                            {[...groups].map(group => (
-                              <Select.Option key={group}>
+                            {[...groups].sort().map((group, i) => (
+                              <Select.Option value={group} key={i}>
                                 {group ? group : <i>No value</i>}
                               </Select.Option>
                             ))}
@@ -326,11 +326,9 @@ class Form extends React.Component {
                         <Table
                           columns={tableColumns}
                           dataSource={
-                            grouping
+                            grouping !== undefined
                               ? form.data.filter(
-                                  item =>
-                                    (_.get(item, form.groupBy) || "null") ===
-                                    grouping
+                                  item => _.get(item, form.groupBy) === grouping
                                 )
                               : form.data
                           }

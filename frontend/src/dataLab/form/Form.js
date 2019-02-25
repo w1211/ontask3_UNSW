@@ -255,12 +255,8 @@ class DataLabForm extends React.Component {
           const field = (fields || []).find(field => field.name === column);
           let value = column in record ? text : null;
 
-          if (field && field.type === "checkbox-group") {
-            value = {};
-            field.columns.forEach(column => {
-              if (column in record) value[column] = record[column];
-            });
-          }
+          if (field && field.type === "checkbox-group")
+            value = _.pick(record, field.columns);
 
           return <Field readOnly={!field} field={field} value={value} />;
         }
@@ -276,10 +272,11 @@ class DataLabForm extends React.Component {
               style={{ width: "100%", maxWidth: 350 }}
               key="groups"
               allowClear
+              showSearch
               onChange={grouping => this.setState({ grouping })}
             >
-              {[...groups].map(group => (
-                <Select.Option key={group}>
+              {[...groups].sort().map((group, i) => (
+                <Select.Option value={group} key={i}>
                   {group ? group : <i>No value</i>}
                 </Select.Option>
               ))}
@@ -290,10 +287,8 @@ class DataLabForm extends React.Component {
           <Table
             columns={tableColumns}
             dataSource={
-              grouping
-                ? data.filter(
-                    item => (_.get(item, groupBy) || "null") === grouping
-                  )
+              grouping !== undefined
+                ? data.filter(item => _.get(item, groupBy) === grouping)
                 : data
             }
             scroll={{ x: (columns.length - 1) * 175 }}
@@ -314,17 +309,20 @@ class DataLabForm extends React.Component {
         {
           title: "Value",
           dataIndex: "value",
-          render: (text, record) => {
+          render: (value, record) => {
             const field = (fields || []).find(
               field => field.name === record.column
             );
+
+            if (field && field.type === "checkbox-group")
+              value = _.pick(record.item, field.columns);
 
             return (
               <Field
                 primaryKey={_.get(record.item, primary)} // Force re-render of the field component after changing the selected record
                 readOnly={!field}
                 field={field}
-                value={text}
+                value={value}
               />
             );
           }
@@ -341,17 +339,18 @@ class DataLabForm extends React.Component {
               key="groups"
               style={{ width: "100%", maxWidth: 350, marginBottom: 10 }}
               allowClear
+              showSearch
               onChange={grouping =>
                 this.setState({
                   grouping,
                   singleRecordIndex: data.findIndex(
-                    item => (_.get(item, groupBy) || "null") === grouping || 0
+                    item => _.get(item, groupBy) === grouping
                   )
                 })
               }
             >
-              {[...groups].map(group => (
-                <Select.Option key={group}>
+              {[...groups].sort().map((group, i) => (
+                <Select.Option value={group} key={i}>
                   {group ? group : <i>No value</i>}
                 </Select.Option>
               ))}
@@ -373,7 +372,7 @@ class DataLabForm extends React.Component {
             value={_.get(data, `${singleRecordIndex}.${primary}`)}
           >
             {data.map((record, index) =>
-              !grouping || (_.get(record, groupBy) || "null") === grouping ? (
+              grouping === undefined || _.get(record, groupBy) === grouping ? (
                 <Select.Option key={index}>{record[primary]}</Select.Option>
               ) : null
             )}
