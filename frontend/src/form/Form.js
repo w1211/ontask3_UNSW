@@ -135,7 +135,9 @@ class Form extends React.Component {
     const { saved, form } = this.state;
 
     const data = form.data;
-    data[index][field] = value;
+    data.forEach(item => {
+      if (item[form.primary] === primary) item[field] = value;
+    });
     this.setState({ form: { ...form, data } });
 
     apiRequest(`/form/${match.params.id}/access/`, {
@@ -173,8 +175,14 @@ class Form extends React.Component {
       tableColumns,
       columnNames,
       singleRecordIndex,
-      saved
+      saved,
+      grouping
     } = this.state;
+
+    const groups =
+      form && form.groupBy
+        ? new Set(form.data.map(item => item[form.groupBy]))
+        : [];
 
     return (
       <div className="form">
@@ -204,6 +212,41 @@ class Form extends React.Component {
                       <div>
                         {form.data.length > 1 && (
                           <div>
+                            {form.groupBy && [
+                              <div style={{ marginBottom: 5 }} key="text">
+                                Group by:
+                              </div>,
+                              <Select
+                                key="groups"
+                                style={{
+                                  width: "100%",
+                                  maxWidth: 350,
+                                  marginBottom: 10
+                                }}
+                                allowClear
+                                onChange={grouping =>
+                                  this.setState({
+                                    grouping,
+                                    singleRecordIndex: form.data.findIndex(
+                                      item =>
+                                        (_.get(item, form.groupBy) ||
+                                          "null") === grouping || 0
+                                    )
+                                  })
+                                }
+                              >
+                                {[...groups].map(group => (
+                                  <Select.Option key={group}>
+                                    {group ? group : <i>No value</i>}
+                                  </Select.Option>
+                                ))}
+                              </Select>
+                            ]}
+
+                            <div style={{ marginBottom: 5 }}>
+                              Choose a record:
+                            </div>
+
                             <Select
                               showSearch
                               allowClear
@@ -221,11 +264,15 @@ class Form extends React.Component {
                                 `${singleRecordIndex}.${form.primary}`
                               )}
                             >
-                              {form.data.map((record, index) => (
-                                <Select.Option key={index}>
-                                  {record[form.primary]}
-                                </Select.Option>
-                              ))}
+                              {form.data.map((record, index) =>
+                                !grouping ||
+                                (_.get(record, form.groupBy) || "null") ===
+                                  grouping ? (
+                                  <Select.Option key={index}>
+                                    {record[form.primary]}
+                                  </Select.Option>
+                                ) : null
+                              )}
                             </Select>
 
                             <Divider />
@@ -255,23 +302,52 @@ class Form extends React.Component {
                         />
                       </div>
                     ) : (
-                      <Table
-                        columns={tableColumns}
-                        dataSource={form.data}
-                        scroll={{ x: (tableColumns.length - 1) * 175 }}
-                        pagination={{
-                          showSizeChanger: true,
-                          pageSizeOptions: ["10", "25", "50", "100"]
-                        }}
-                        rowKey={(record, i) => i}
-                        rowClassName={record => {
-                          const primary = record[form.primary];
-                          return primary in saved &&
-                            Object.values(saved[primary]).includes(true)
-                            ? "saved"
-                            : "";
-                        }}
-                      />
+                      <div>
+                        {form.groupBy && [
+                          <div style={{ marginBottom: 5 }} key="text">
+                            Group by:
+                          </div>,
+                          <Select
+                            style={{ width: "100%", maxWidth: 350 }}
+                            key="groups"
+                            allowClear
+                            onChange={grouping => this.setState({ grouping })}
+                          >
+                            {[...groups].map(group => (
+                              <Select.Option key={group}>
+                                {group ? group : <i>No value</i>}
+                              </Select.Option>
+                            ))}
+                          </Select>,
+                          <Divider key="divider" />
+                        ]}
+
+                        <Table
+                          columns={tableColumns}
+                          dataSource={
+                            grouping
+                              ? form.data.filter(
+                                  item =>
+                                    (_.get(item, form.groupBy) || "null") ===
+                                    grouping
+                                )
+                              : form.data
+                          }
+                          scroll={{ x: (tableColumns.length - 1) * 175 }}
+                          pagination={{
+                            showSizeChanger: true,
+                            pageSizeOptions: ["10", "25", "50", "100"]
+                          }}
+                          rowKey={(record, i) => i}
+                          rowClassName={record => {
+                            const primary = record[form.primary];
+                            return primary in saved &&
+                              Object.values(saved[primary]).includes(true)
+                              ? "saved"
+                              : "";
+                          }}
+                        />
+                      </div>
                     )}
                   </div>
                 )}

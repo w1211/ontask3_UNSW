@@ -49,4 +49,5 @@ class RestrictedFormSerializer(DocumentSerializer):
             "data",
             "editable_records",
             "is_active",
+            "groupBy"
         ]

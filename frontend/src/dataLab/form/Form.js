@@ -227,15 +227,23 @@ class DataLabForm extends React.Component {
 
   preview = () => {
     const { form, data } = this.props;
-    const { singleRecordIndex } = this.state;
+    const { singleRecordIndex, grouping } = this.state;
     const { getFieldsValue } = form;
-    const { primary, visibleFields, fields, layout } = getFieldsValue();
+    const {
+      primary,
+      visibleFields,
+      groupBy,
+      fields,
+      layout
+    } = getFieldsValue();
 
     const columns = [
       primary,
       ...visibleFields,
       ...(fields || []).map(field => field.name)
     ];
+
+    const groups = groupBy ? new Set(data.map(item => item[groupBy])) : [];
 
     if (layout === "table") {
       const tableColumns = columns.map((column, columnIndex) => ({
@@ -258,16 +266,43 @@ class DataLabForm extends React.Component {
       }));
 
       return (
-        <Table
-          columns={tableColumns}
-          dataSource={data}
-          scroll={{ x: (columns.length - 1) * 175 }}
-          pagination={{
-            showSizeChanger: true,
-            pageSizeOptions: ["10", "25", "50", "100"]
-          }}
-          rowKey={(record, i) => i}
-        />
+        <div>
+          {groupBy && [
+            <div style={{ marginBottom: 5 }} key="text">
+              Group by:
+            </div>,
+            <Select
+              style={{ width: "100%", maxWidth: 350 }}
+              key="groups"
+              allowClear
+              onChange={grouping => this.setState({ grouping })}
+            >
+              {[...groups].map(group => (
+                <Select.Option key={group}>
+                  {group ? group : <i>No value</i>}
+                </Select.Option>
+              ))}
+            </Select>,
+            <Divider key="divider" />
+          ]}
+
+          <Table
+            columns={tableColumns}
+            dataSource={
+              grouping
+                ? data.filter(
+                    item => (_.get(item, groupBy) || "null") === grouping
+                  )
+                : data
+            }
+            scroll={{ x: (columns.length - 1) * 175 }}
+            pagination={{
+              showSizeChanger: true,
+              pageSizeOptions: ["10", "25", "50", "100"]
+            }}
+            rowKey={(record, i) => i}
+          />
+        </div>
       );
     } else if (layout === "vertical") {
       const tableColumns = [
@@ -297,6 +332,31 @@ class DataLabForm extends React.Component {
 
       return (
         <div>
+          {groupBy && [
+            <div style={{ marginBottom: 5 }} key="text">
+              Group by:
+            </div>,
+            <Select
+              key="groups"
+              style={{ width: "100%", maxWidth: 350, marginBottom: 10 }}
+              allowClear
+              onChange={grouping =>
+                this.setState({
+                  grouping,
+                  singleRecordIndex: data.findIndex(
+                    item => (_.get(item, groupBy) || "null") === grouping || 0
+                  )
+                })
+              }
+            >
+              {[...groups].map(group => (
+                <Select.Option key={group}>
+                  {group ? group : <i>No value</i>}
+                </Select.Option>
+              ))}
+            </Select>
+          ]}
+
           <div style={{ marginBottom: 5 }}>Choose a record:</div>
 
           <Select
@@ -311,9 +371,11 @@ class DataLabForm extends React.Component {
             }
             value={_.get(data, `${singleRecordIndex}.${primary}`)}
           >
-            {(data || []).map((record, index) => (
-              <Select.Option key={index}>{record[primary]}</Select.Option>
-            ))}
+            {data.map((record, index) =>
+              !grouping || (_.get(record, groupBy) || "null") === grouping ? (
+                <Select.Option key={index}>{record[primary]}</Select.Option>
+              ) : null
+            )}
           </Select>
 
           <Divider />
@@ -417,7 +479,16 @@ class DataLabForm extends React.Component {
             getValueFromEvent: this.onChangePrimary,
             initialValue: _.get(formDetails, "primary")
           })(
-            <Select>
+            <Select
+              onChange={e => {
+                if (
+                  ![e, ...getFieldValue("visibleFields")].includes(
+                    getFieldValue("groupBy")
+                  )
+                )
+                  form.resetFields(["groupBy"]);
+              }}
+            >
               {labels.map(label => (
                 <Select.Option value={label} key={label}>
                   {label}
@@ -452,22 +523,62 @@ class DataLabForm extends React.Component {
               maxTagCount={5}
               maxTagPlaceholder={`...${getFieldValue("visibleFields").length -
                 5} more fields selected`}
+              onChange={e => {
+                if (
+                  ![getFieldValue("primary"), ...e].includes(
+                    getFieldValue("groupBy")
+                  )
+                )
+                  form.resetFields(["groupBy"]);
+              }}
             >
-              {labels.map(label => (
-                <Select.Option
-                  disabled={label === primary}
-                  value={label}
-                  key={label}
-                >
-                  <Tooltip
-                    title={
-                      label === primary
-                        ? "The primary key of the form is included by default"
-                        : ""
-                    }
+              {labels
+                .filter(label => !fields.some(field => field.name === label))
+                .map(label => (
+                  <Select.Option
+                    disabled={label === primary}
+                    value={label}
+                    key={label}
                   >
-                    {label}
-                  </Tooltip>
+                    <Tooltip
+                      title={
+                        label === primary
+                          ? "The primary key of the form is included by default"
+                          : ""
+                      }
+                    >
+                      {label}
+                    </Tooltip>
+                  </Select.Option>
+                ))}
+            </Select>
+          )}
+        </Form.Item>
+
+        <Form.Item
+          {...formItemLayout}
+          label={
+            <span>
+              Group by
+              <Tooltip title="Group form records by the chosen field">
+                <Icon
+                  style={{ marginLeft: 5, cursor: "help" }}
+                  type="question-circle"
+                />
+              </Tooltip>
+            </span>
+          }
+        >
+          {getFieldDecorator("groupBy", {
+            initialValue: _.get(formDetails, "groupBy", [])
+          })(
+            <Select>
+              {[
+                getFieldValue("primary"),
+                ...getFieldValue("visibleFields")
+              ].map(label => (
+                <Select.Option value={label} key={label}>
+                  {label}
                 </Select.Option>
               ))}
             </Select>

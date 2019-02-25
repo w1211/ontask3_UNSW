@@ -226,7 +226,7 @@ class Field extends React.Component {
       <div className="checkbox-group">
         {field.columns.map(column => (
           <div
-            className={value[column] ? "active" : "inactive"}
+            className={value && value[column] ? "active" : "inactive"}
             key={column}
             onClick={() => {
               const newValue = !value[column];
@@ -298,7 +298,9 @@ class Field extends React.Component {
                   <div className="checkbox-group disabled">
                     {field.columns.map(column => (
                       <div
-                        className={value[column] ? "active" : "inactive"}
+                        className={
+                          value && value[column] ? "active" : "inactive"
+                        }
                         key={column}
                       >
                         {column}
