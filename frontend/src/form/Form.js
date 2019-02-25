@@ -56,6 +56,7 @@ class Form extends React.Component {
         title: column,
         dataIndex: column,
         key: columnIndex,
+        sorter: (a, b) => (a[column] || "").localeCompare(b[column] || ""),
         render: (value, record, index) => {
           const field = form.fields.find(field => field.name === column);
           const editable =

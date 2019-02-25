@@ -250,6 +250,7 @@ class DataLabForm extends React.Component {
         title: column,
         dataIndex: column,
         key: columnIndex,
+        sorter: (a, b) => (a[column] || "").localeCompare(b[column] || ""),
         render: (text, record) => {
           const field = (fields || []).find(field => field.name === column);
           let value = column in record ? text : null;
