@@ -3,6 +3,7 @@ import { Switch, Redirect, Link, Route } from "react-router-dom";
 import { Layout, Menu, Icon } from "antd";
 
 import UserList from "./interfaces/UserList";
+import DataLabDump from "./interfaces/DataLabDump";
 
 const { Content, Sider } = Layout;
 
@@ -45,6 +46,13 @@ class Administration extends Component {
                           <span>Users</span>
                         </Link>
                       </Menu.Item>
+
+                      <Menu.Item key="dump">
+                        <Link to={`/administration/dump`}>
+                          <Icon type="rest" />
+                          <span>Data dump</span>
+                        </Link>
+                      </Menu.Item>
                     </Menu>
                   </Sider>
                 )}
@@ -61,6 +69,16 @@ class Administration extends Component {
                       path={`${match.url}/users`}
                       render={props => (
                         <UserList
+                          {...props}
+                          showNavigation={this.showNavigation}
+                        />
+                      )}
+                    />
+
+                    <Route
+                      path={`${match.url}/dump`}
+                      render={props => (
+                        <DataLabDump
                           {...props}
                           showNavigation={this.showNavigation}
                         />

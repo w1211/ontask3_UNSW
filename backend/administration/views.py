@@ -8,9 +8,21 @@ from rest_framework.exceptions import ValidationError, PermissionDenied
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAdminUser
+from rest_framework.views import APIView
+from bson import ObjectId
+from datetime import datetime as dt, timedelta
 
 from .serializers import *
+from .models import *
+from datalab.models import Datalab
+from scheduler.methods import (
+    create_scheduled_task,
+    remove_scheduled_task,
+    remove_async_task,
+)
+from scheduler.tasks import dump_datalab_data
 
+from collections import defaultdict
 
 User = get_user_model()
 
@@ -63,3 +75,66 @@ def SearchUsers(request):
 
     serializer = UserSerializer(users, many=True)
     return Response(serializer.data)
+
+
+class DataLabDump(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, format=None):
+        datalabs = Datalab.objects.all()
+
+        containers = defaultdict(list)
+        for datalab in datalabs:
+            containers[datalab.container.code].append(
+                {"id": str(datalab.id), "name": datalab.name}
+            )
+
+        dump = Dump.objects.all()
+        last_run = None
+        if len(dump) > 0:
+            last_run = dump[0].last_run
+            dump = [str(datalab.id) for datalab in dump[0].datalabs]
+        else:
+            dump = []
+
+        return Response({"containers": containers, "dump": dump, "last_run": last_run})
+
+    def put(self, request, format=None):
+        datalabs = [ObjectId(datalab) for datalab in request.data.get("datalabs", [])]
+        scheduled = request.data.get("scheduled")
+
+        dump = Dump.objects.all()
+        if len(dump) > 0:
+            dump = dump[0]
+            dump.datalabs = datalabs
+        else:
+            dump = Dump(datalabs=datalabs)
+
+        dump.save()
+
+        if scheduled and not dump.task_name:
+            schedule = {
+                "dayFrequency": 1,
+                "frequency": "daily",
+                "time": dt.utcnow()
+                .replace(hour=21, minute=0)
+                .strftime("%Y-%m-%d %H:%M:%S"),
+            }
+            task_name, async_tasks = create_scheduled_task(
+                "dump_datalab_data", schedule, ""
+            )
+            dump.task_name = task_name
+            dump.async_tasks = async_tasks
+            dump.save()
+        elif not scheduled and dump.task_name:
+            remove_scheduled_task(dump.task_name)
+            remove_async_task(dump.async_tasks)
+            dump.task_name = None
+            dump.async_tasks = []
+            dump.save()
+
+        is_force = request.query_params.get("force")
+        if is_force:
+            dump_datalab_data.delay()
+
+        return Response()

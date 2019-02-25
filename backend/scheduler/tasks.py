@@ -8,8 +8,14 @@ import json
 import jwt
 import uuid
 from time import sleep
+from datetime import datetime as dt
+import boto3
+import pandas as pd
+from io import StringIO
 
 from datasource.models import Datasource
+from administration.models import Dump
+from datalab.models import Datalab
 
 from .utils import create_crontab, send_email
 
@@ -19,6 +25,8 @@ from ontask.settings import (
     FRONTEND_DOMAIN,
     EMAIL_BATCH_SIZE,
     EMAIL_BATCH_PAUSE,
+    AWS_PROFILE,
+    DATALAB_DUMP_BUCKET,
 )
 
 
@@ -66,6 +74,47 @@ def refresh_datasource_data(datasource_id):
 
 
 @shared_task
+def dump_datalab_data():
+    from datalab.serializers import OrderItemSerializer
+
+    dump = Dump.objects.all()
+    if not len(dump) > 0:
+        return "No DataLabs were marked for data dump"
+
+    if not DATALAB_DUMP_BUCKET:
+        return "No DataLab dump bucket has been specified"
+
+    dump = dump[0]
+    dump.last_run = dt.utcnow()
+    dump.save()
+
+    if AWS_PROFILE:
+        session = boto3.Session(profile_name=AWS_PROFILE)
+        s3 = session.resource("s3")
+    else:
+        s3 = boto3.resource("s3")
+
+    for datalab in dump.datalabs:
+        datalab = Datalab.objects.get(id=datalab.id)
+        data = pd.DataFrame(datalab.data)
+        csv_buffer = StringIO()
+
+        # Re-order the columns to match the original datasource data
+        order = OrderItemSerializer(
+            datalab.order, many=True, context={"steps": datalab.steps}
+        )
+        reordered_columns = [item.get("label") for item in order.data]
+        data = data.reindex(columns=reordered_columns)
+
+        data.to_csv(csv_buffer, index=False)
+        s3.Object(
+            DATALAB_DUMP_BUCKET, f"{datalab.container.code}_{datalab.name}.csv"
+        ).put(Body=csv_buffer.getvalue())
+
+    return "DataLab data dumped successfully"
+
+
+@shared_task
 def workflow_send_email(action_id, job_type="Scheduled"):
     """ Send email based on the schedule in workflow model """
     print("Email job initiated.")
@@ -93,7 +142,6 @@ def workflow_send_email(action_id, job_type="Scheduled"):
     batch_size = EMAIL_BATCH_SIZE if EMAIL_BATCH_SIZE else len(messages)
     batch_pause = EMAIL_BATCH_PAUSE if EMAIL_BATCH_PAUSE else 0
 
-
     email_batches = [
         messages[i : i + batch_size] for i in range(0, len(messages), batch_size)
     ]
@@ -105,7 +153,7 @@ def workflow_send_email(action_id, job_type="Scheduled"):
         # Open a connection to the SMTP server, which will be used for every email sent in this batch
         # It is done per batch to avoid the risk of the connection timing out if the batch_delay is long
         with get_connection() as connection:
-                
+
             for index, item in enumerate(batch):
                 recipient = item.get(email_settings.field)
                 email_content = populated_content[recipient_count]

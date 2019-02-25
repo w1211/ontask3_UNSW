@@ -19,6 +19,7 @@ import mongoengine
 EMAIL_NAME = None
 EMAIL_ALIAS = None
 AWS_PROFILE = None
+DATALAB_DUMP_BUCKET = None
 
 from ontask.env import *
 
