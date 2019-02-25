@@ -91,13 +91,22 @@ class DataLabDump(APIView):
 
         dump = Dump.objects.all()
         last_run = None
+        scheduled = False
         if len(dump) > 0:
             last_run = dump[0].last_run
+            scheduled  = bool(dump[0].task_name)
             dump = [str(datalab.id) for datalab in dump[0].datalabs]
         else:
             dump = []
 
-        return Response({"containers": containers, "dump": dump, "last_run": last_run})
+        return Response(
+            {
+                "containers": containers,
+                "dump": dump,
+                "last_run": last_run,
+                "scheduled": scheduled,
+            }
+        )
 
     def put(self, request, format=None):
         datalabs = [ObjectId(datalab) for datalab in request.data.get("datalabs", [])]
