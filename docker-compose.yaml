@@ -1,11 +1,11 @@
-version: '3'
+version: "3"
 
 services:
   rabbitmq:
     image: rabbitmq:3.7
     environment:
       - RABBITMQ_MNESIA_BASE=/var/lib/rabbitmq/mnesia
-    volumes: 
+    volumes:
       - ./data/rabbitmq:/var/lib/rabbitmq/mnesia
 
   db:
@@ -42,12 +42,30 @@ services:
 
   celery_beat:
     build: ./backend
+    volumes:
+      - ./backend:/backend
+      - ~/.aws:/root/.aws
     environment:
       - ONTASK_DEVELOPMENT=true
       - DJANGO_DEBUG=true
     depends_on:
       - celery
-    command: celery -A ontask beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    command: celery beat -A ontask -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+
+  flower:
+    image: mher/flower
+    build: ./backend
+    volumes:
+      - ./backend:/backend
+    environment:
+      - ONTASK_DEVELOPMENT=true
+    ports:
+      - "5555:5555"
+    env_file:
+      - flower.env
+    depends_on:
+      - celery_beat
+    command: celery flower -A ontask --address=0.0.0.0 --port=5555
 
   nginx:
     image: nginx:alpine
@@ -59,7 +77,7 @@ services:
       - backend
     ports:
       - "8000:443"
-    
+
   frontend:
     build: ./frontend
     ports:

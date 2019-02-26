@@ -148,6 +148,6 @@ TIME_ZONE = "UTC"
 
 # Workaround for "BrokenPipeError: [Errno 32] Broken pipe" issue with Celery
 # Refer to https://github.com/celery/celery/issues/4226
-BROKER_POOL_LIMIT = 0
+BROKER_POOL_LIMIT = None
 
 DB_DRIVER_MAPPING = {"postgresql": "postgresql", "mysql": "mysql+pymysql"}
