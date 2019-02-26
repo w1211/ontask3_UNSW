@@ -25,6 +25,7 @@ backend/ontask/env.py
 backend/db.sqlite3
 backend/scheduler/*.state
 backend/static
+backend/celerybeat.pid
 
 # Backend virtual environment
 backend/virtualenv
