@@ -167,7 +167,7 @@ if ENABLE_CLOUDWATCH_LOGGING and LOG_GROUP:
         "disable_existing_loggers": False,
         "formatters": {
             "standard": {
-            "format": "[%(levelname)s] %(asctime)s (%(name)s) message: %(message)s",
+            "format": "%(levelname)s %(asctime)s (%(name)s) %(message)s",
                 "datefmt": "%Y-%m-%d %H:%M:%S",
             }
         },
