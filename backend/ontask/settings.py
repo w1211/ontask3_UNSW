@@ -21,6 +21,8 @@ EMAIL_ALIAS = None
 AWS_PROFILE = None
 DATALAB_DUMP_BUCKET = None
 LOG_GROUP = None
+EMAIL_BATCH_SIZE = None
+EMAIL_BATCH_PAUSE = None
 
 from ontask.env import *
 
