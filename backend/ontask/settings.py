@@ -11,15 +11,16 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import os
-
+import sys
 import mongoengine
-
+from boto3 import Session
 
 # Default settings
 EMAIL_NAME = None
 EMAIL_ALIAS = None
 AWS_PROFILE = None
 DATALAB_DUMP_BUCKET = None
+LOG_GROUP = None
 
 from ontask.env import *
 
@@ -52,20 +53,20 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Application definition
 
 INSTALLED_APPS = [
-    'accounts',
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'django_celery_beat',
-    'rest_framework',
-    'rest_framework.authtoken',
-    'rest_framework_mongoengine',
-    'scheduler',
-    'corsheaders',
-    'administration'
+    "accounts",
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "django_celery_beat",
+    "rest_framework",
+    "rest_framework.authtoken",
+    "rest_framework_mongoengine",
+    "scheduler",
+    "corsheaders",
+    "administration",
 ]
 
 MIDDLEWARE = [
@@ -151,3 +152,47 @@ TIME_ZONE = "UTC"
 BROKER_POOL_LIMIT = None
 
 DB_DRIVER_MAPPING = {"postgresql": "postgresql", "mysql": "mysql+pymysql"}
+
+if ENABLE_CLOUDWATCH_LOGGING and LOG_GROUP:
+    session = {"region_name": AWS_REGION}
+    if AWS_PROFILE:
+        session["profile_name"] = AWS_PROFILE
+
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "standard": {
+                "format": "level: %(levelname)s, time: %(asctime)s, logger: %(name)s location: %(pathname)s, module: %(module)s, message: %(message)s ",
+                "datefmt": "%Y-%m-%d %H:%M:%S",
+            }
+        },
+        "handlers": {
+            "console": {
+                "level": "DEBUG",
+                "class": "logging.StreamHandler",
+                "stream": sys.stdout,
+                "formatter": "standard",
+            },
+            "watchtower": {
+                "level": "INFO",
+                "class": "watchtower.django.CloudWatchLogHandler",
+                "boto3_session": Session(**session),
+                "log_group": LOG_GROUP,
+                "stream_name": os.environ.get("LOG_STREAM"),
+                "formatter": "standard",
+            },
+            "mail_admins": {
+                "level": "WARNING",
+                "class": "django.utils.log.AdminEmailHandler",
+                "include_html": True,
+            },
+        },
+        "loggers": {
+            "django": {
+                "level": "INFO",
+                "handlers": ["mail_admins", "watchtower", "console"],
+                "propagate": False,
+            }
+        },
+    }

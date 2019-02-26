@@ -24,6 +24,8 @@ services:
       - ./backend:/backend
     depends_on:
       - db
+    environment:
+      - LOG_STREAM=Django
     command: uwsgi --ini uwsgi.ini --lazy-apps
 
   celery:
@@ -34,6 +36,8 @@ services:
     depends_on:
       - rabbitmq
       - backend
+    environment:
+      - LOG_STREAM=Celery
     command: celery worker -A ontask --loglevel=INFO
 
   celery_beat:
@@ -41,6 +45,8 @@ services:
     build: ./backend
     depends_on:
       - celery
+    environment:
+      - LOG_STREAM=CeleryBeat
     command: celery -A ontask beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
 
   flower:

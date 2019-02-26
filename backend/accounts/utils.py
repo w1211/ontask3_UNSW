@@ -73,7 +73,7 @@ def generate_one_time_token(user):
 def user_signup_notification(user):
     # Notify admins of user sign-up
     if os.environ.get("ONTASK_DEMO"):
-        recipients = ", ".join(ADMINS)
+        recipients = ", ".join([admin[1] for admin in ADMINS])
         send_email(
             recipients,
             "OnTask - new user signup",

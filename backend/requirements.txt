@@ -17,4 +17,5 @@ SQLAlchemy==1.2.18
 xlrd==1.2.0
 python-dateutil==2.8.0
 numexpr==2.6.9
+watchtower==0.5.5
 tornado==4.5.3 # Version lock this dependency to resolve issues with asyncio in Flower
