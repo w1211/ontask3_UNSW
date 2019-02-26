@@ -33,6 +33,8 @@ if os.environ.get("ONTASK_DEVELOPMENT"):
     BACKEND_DOMAIN = "https://localhost:8000"
     ALLOWED_HOSTS = ["localhost"]
 
+SERVER_EMAIL = EMAIL_HOST_USER
+
 DEBUG = os.environ.get("DJANGO_DEBUG")
 
 # RabbitMQ served via Docker container (docker-compose)
@@ -165,7 +167,7 @@ if ENABLE_CLOUDWATCH_LOGGING and LOG_GROUP:
         "disable_existing_loggers": False,
         "formatters": {
             "standard": {
-                "format": "level: %(levelname)s, time: %(asctime)s, logger: %(name)s location: %(pathname)s, module: %(module)s, message: %(message)s ",
+            "format": "[%(levelname)s] %(asctime)s (%(name)s) message: %(message)s",
                 "datefmt": "%Y-%m-%d %H:%M:%S",
             }
         },
