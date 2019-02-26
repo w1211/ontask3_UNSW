@@ -87,6 +87,9 @@ class LocalAuth(APIView):
 class AAFAuth(APIView):
     permission_classes = (AllowAny,)
 
+    def head(self, request, format=None):
+        return Response()
+
     def post(self, request, format=None):
         # Decrypt the payload sent by AAF
         try:
