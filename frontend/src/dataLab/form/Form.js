@@ -570,9 +570,9 @@ class DataLabForm extends React.Component {
           }
         >
           {getFieldDecorator("groupBy", {
-            initialValue: _.get(formDetails, "groupBy", [])
+            initialValue: _.get(formDetails, "groupBy")
           })(
-            <Select>
+            <Select allowClear>
               {[
                 getFieldValue("primary"),
                 ...getFieldValue("visibleFields")
