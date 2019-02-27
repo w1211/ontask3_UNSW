@@ -50,10 +50,14 @@ class DatasourceModule extends React.Component {
 
     const datasourceId = getFieldValue(`steps[${stepIndex}].datasource.id`);
     const datasource = this.datasource(datasourceId);
+    const primary = getFieldValue(`steps[${stepIndex}].datasource.primary`);
 
     const labels = labelsUsed();
     const fieldsToAdd = [];
     (datasource.fields || datasource.columns).forEach(field => {
+      // Skip field if it's the primary key (after first module)
+      if (stepIndex !== 0 && field === primary) return;
+
       // Field was already added to this datasource
       if (addedFields.includes(field)) return;
 
