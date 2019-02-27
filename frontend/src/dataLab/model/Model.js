@@ -40,7 +40,7 @@ class Model extends React.Component {
   }
 
   labelsUsed = memoize(stepIndex => {
-    const { form } = this.props;
+    const { form, forms } = this.props;
     const { getFieldValue } = form;
     let steps = getFieldValue("steps");
 
@@ -53,7 +53,12 @@ class Model extends React.Component {
         stepLabels = Object.values(step.datasource.labels || {}).filter(
           label => !!label
         );
-      else if (["form", "computed"].includes(step.type)) {
+      else if (step.type === "form") {
+        const relatedForm = forms.find(form => form.id === step);
+        stepLabels = relatedForm
+          ? relatedForm.fields.map(field => field.name)
+          : [];
+      } else if (step.type === "computed") {
         stepLabels = _.get(step, `${step.type}.fields`, [])
           .filter(field => !!field.name)
           .map(field => field.name);
