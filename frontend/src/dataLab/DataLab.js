@@ -34,12 +34,17 @@ class DataLab extends React.Component {
         containerId
       });
     } else if (match.params.id) {
-      apiRequest(`/datalab/${match.params.id}/`, {
+      apiRequest(`/datalab/${match.params.id}/access/`, {
         method: "GET",
-        onSuccess: datalab => {
+        onSuccess: selected => {
+          const { datasources, dataLabs } = selected;
+          delete selected.datasources;
+          delete selected.dataLabs;
           this.setState({
             fetching: false,
-            ...datalab
+            selected,
+            datasources,
+            dataLabs
           });
         },
         onError: (error, status) => {
@@ -57,8 +62,12 @@ class DataLab extends React.Component {
     }
   }
 
-  updateDatalab = datalab => {
-    this.setState({ ...datalab });
+  updateDatalab = dataLab => {
+    const { selected } = this.state;
+
+    this.setState({
+      selected: { ...selected, ...dataLab }
+    });
   };
 
   updateData = (index, field, value) => {
@@ -85,110 +94,107 @@ class DataLab extends React.Component {
 
   render() {
     const { match, history, location } = this.props;
-    const {
-      fetching,
-      datasources,
-      dataLabs,
-      name,
-      steps,
-      order,
-      data,
-      container,
-      forms,
-      columns
-    } = this.state;
-
-    const selectedId = match.params.id;
+    const { fetching, datasources, dataLabs, selected } = this.state;
 
     let menuKey = [location.pathname.split("/")[3]];
     if (menuKey[0] === "form") menuKey.push(location.pathname.split("/")[4]);
+
+    // If the user does not have full permission to the datalab,
+    // then steps will not be included in the response body.
+    // So use steps as an indicator of has_full_permission
+    const restrictedView =
+      (selected && !selected.steps) ||
+      _.get(location, "state.restrictedView", false);
 
     return (
       <div className="dataLab">
         <Content className="wrapper">
           <Layout className="layout">
             <Content className="content">
-              <Layout className="content_body">
-                {selectedId && (
-                  <Sider width={200}>
-                    <Menu
-                      mode="inline"
-                      selectedKeys={menuKey}
-                      style={{ height: "100%" }}
-                      defaultOpenKeys={["form"]}
-                    >
-                      <Menu.Item key="back">
-                        <Link to="/dashboard">
-                          <Icon type="arrow-left" />
-                          <span>Back to dashboard</span>
-                        </Link>
-                      </Menu.Item>
+              {fetching ? (
+                <Spin size="large" />
+              ) : (
+                <Layout className="content_body">
+                  {selected && !restrictedView && (
+                    <Sider width={200}>
+                      <Menu
+                        mode="inline"
+                        selectedKeys={menuKey}
+                        style={{ height: "100%" }}
+                        defaultOpenKeys={["form"]}
+                      >
+                        <Menu.Item key="back">
+                          <Link to="/dashboard">
+                            <Icon type="arrow-left" />
+                            <span>Back to dashboard</span>
+                          </Link>
+                        </Menu.Item>
 
-                      <Menu.Divider />
+                        <Menu.Divider />
 
-                      <Menu.Item key="settings">
-                        <Link to={`${match.url}/settings`}>
-                          <Icon type="setting" />
-                          <span>Settings</span>
-                        </Link>
-                      </Menu.Item>
+                        <Menu.Item key="settings">
+                          <Link to={`${match.url}/settings`}>
+                            <Icon type="setting" />
+                            <span>Settings</span>
+                          </Link>
+                        </Menu.Item>
 
-                      <Menu.Item key="data">
-                        <Link to={`${match.url}/data`}>
-                          <Icon type="table" />
-                          <span>Data</span>
-                        </Link>
-                      </Menu.Item>
+                        <Menu.Item key="data">
+                          <Link to={`${match.url}/data`}>
+                            <Icon type="table" />
+                            <span>Data</span>
+                          </Link>
+                        </Menu.Item>
 
-                      <Menu.ItemGroup title="Extensions">
-                        <SubMenu
-                          key="form"
-                          title={
-                            <span>
-                              <Icon type="form" />
-                              <span>Forms ({forms.length})</span>
-                            </span>
-                          }
-                        >
-                          <Menu.Item key="create">
-                            <Link to={`${match.url}/form/create`}>
-                              <span>Create new form</span>
-                            </Link>
-                          </Menu.Item>
-
-                          {forms.length > 0 && <Menu.Divider />}
-
-                          {forms.map(form => (
-                            <Menu.Item key={form.id}>
-                              <Link to={`${match.url}/form/${form.id}`}>
-                                <span>{form.name}</span>
+                        <Menu.ItemGroup title="Extensions">
+                          <SubMenu
+                            key="form"
+                            title={
+                              <span>
+                                <Icon type="form" />
+                                <span>Forms ({selected.forms.length})</span>
+                              </span>
+                            }
+                          >
+                            <Menu.Item key="create">
+                              <Link to={`${match.url}/form/create`}>
+                                <span>Create new form</span>
                               </Link>
                             </Menu.Item>
-                          ))}
-                        </SubMenu>
-                      </Menu.ItemGroup>
-                    </Menu>
-                  </Sider>
-                )}
 
-                <Content className="content" style={{ overflowY: "hidden" }}>
-                  {fetching ? (
-                    <Spin size="large" />
-                  ) : (
+                            {selected.forms.length > 0 && <Menu.Divider />}
+
+                            {selected.forms.map(form => (
+                              <Menu.Item key={form.id}>
+                                <Link to={`${match.url}/form/${form.id}`}>
+                                  <span>{form.name}</span>
+                                </Link>
+                              </Menu.Item>
+                            ))}
+                          </SubMenu>
+                        </Menu.ItemGroup>
+                      </Menu>
+                    </Sider>
+                  )}
+
+                  <Content className="content" style={{ overflowY: "hidden" }}>
                     <div>
-                      {!selectedId && (
+                      {(!selected || restrictedView) && (
                         <Link
                           to="/dashboard"
-                          style={{ display: "inline-block", marginBottom: 20 }}
+                          style={{
+                            display: "inline-block",
+                            marginBottom: 20
+                          }}
                         >
                           <Icon type="arrow-left" style={{ marginRight: 5 }} />
                           <span>Back to dashboard</span>
                         </Link>
                       )}
 
-                      <h1>{name ? name : "Create DataLab"}</h1>
+                      <h1>{selected ? selected.name : "Create DataLab"}</h1>
 
-                      {selectedId ? (
+                      {selected && !restrictedView && (
                         <Switch>
                           <Redirect
                             exact
@@ -201,12 +207,10 @@ class DataLab extends React.Component {
                             render={props => (
                               <Model
                                 {...props}
+                                {...selected}
                                 datasources={datasources}
                                 dataLabs={dataLabs}
-                                forms={forms}
-                                selectedId={selectedId}
-                                name={name}
-                                steps={steps}
+                                selectedId={selected.id}
                                 updateDatalab={this.updateDatalab}
                               />
                             )}
@@ -217,15 +221,16 @@ class DataLab extends React.Component {
                             render={props => (
                               <Data
                                 {...props}
-                                steps={steps}
-                                data={data}
-                                order={order}
+                                steps={selected.steps}
+                                data={selected.data}
                                 datasources={datasources}
                                 dataLabs={dataLabs}
-                                selectedId={selectedId}
+                                selectedId={selected.id}
                                 updateDatalab={this.updateDatalab}
                                 updateData={this.updateData}
-                                forms={forms}
+                                forms={selected.forms}
+                                columns={selected.columns}
+                                groupBy={selected.groupBy}
                               />
                             )}
                           />
@@ -234,18 +239,18 @@ class DataLab extends React.Component {
                             path={`${match.url}/form/:formId`}
                             render={props => {
                               const formId = props.match.params.formId;
-                              const formIndex = forms.findIndex(
+                              const formIndex = selected.forms.findIndex(
                                 form => form.id === formId
                               );
                               return (
                                 <DataLabForm
                                   {...props}
-                                  columns={columns}
+                                  columns={selected.columns}
                                   selectedId={formId !== "create" && formId}
-                                  dataLabId={selectedId}
-                                  containerId={container}
+                                  dataLabId={selected.id}
+                                  containerId={selected.container}
                                   formDetails={
-                                    formIndex >= 0 && forms[formIndex]
+                                    formIndex >= 0 && selected.forms[formIndex]
                                   }
                                   updateForms={({ updatedForm, isDelete }) =>
                                     this.updateForms({
@@ -255,13 +260,26 @@ class DataLab extends React.Component {
                                     })
                                   }
                                   updateDatalab={this.updateDatalab}
-                                  data={data}
+                                  data={selected.data}
                                 />
                               );
                             }}
                           />
                         </Switch>
-                      ) : (
+                      )}
+
+                      {selected && restrictedView && (
+                        <Data
+                          restrictedView
+                          selectedId={match.params.id}
+                          data={selected.data}
+                          columns={selected.columns}
+                          groupBy={selected.groupBy}
+                          updateDatalab={this.updateDatalab}
+                        />
+                      )}
+
+                      {!selected && (
                         <Model
                           history={history}
                           location={location}
@@ -271,9 +289,9 @@ class DataLab extends React.Component {
                         />
                       )}
                     </div>
-                  )}
-                </Content>
-              </Layout>
+                  </Content>
+                </Layout>
+              )}
             </Content>
           </Layout>
         </Content>

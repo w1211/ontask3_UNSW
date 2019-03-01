@@ -79,8 +79,6 @@ class DataLabDump extends Component {
     } = this.state;
     const { getFieldDecorator } = form;
 
-    console.log(this.state);
-
     return this.state.fetching ? (
       <Spin size="large" />
     ) : (

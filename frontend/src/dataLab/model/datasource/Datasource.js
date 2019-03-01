@@ -92,11 +92,13 @@ class DatasourceModule extends React.Component {
     const fieldsToKeep = [];
     const labelsToRemove = {};
     fields.forEach(field => {
-      if (hasDependency(stepIndex, field)) {
+      const dependency = hasDependency(stepIndex, field);
+      if (dependency) {
         fieldsToKeep.push(field);
-        message.error(
-          `'${field}' cannot be removed because another component depends on it.`
-        );
+        notification["error"]({
+          message: `"${field}" cannot be removed`,
+          description: dependency
+        });
       } else {
         labelsToRemove[
           `steps[${stepIndex}].datasource.labels.${field}`
@@ -159,10 +161,12 @@ class DatasourceModule extends React.Component {
       // Identify the field removed
       const field = fields.filter(field => !e.includes(field))[0];
 
-      if (hasDependency(stepIndex, field)) {
-        message.error(
-          `'${field}' cannot be removed because another component depends on it.`
-        );
+      const dependency = hasDependency(stepIndex, field);
+      if (dependency) {
+        notification["error"]({
+          message: `"${field}" cannot be removed`,
+          description: dependency
+        });
         // Return the original fields (i.e. prevent removing this field)
         return fields;
       } else {
@@ -197,11 +201,15 @@ class DatasourceModule extends React.Component {
 
     const fields = getFieldValue(`steps[${stepIndex}].datasource.fields`) || [];
 
-    if (fields.includes(field) && hasDependency(stepIndex, field)) {
-      message.error(
-        `'${field}' cannot be renamed because another component depends on it.`
-      );
-      return;
+    if (fields.includes(field)) {
+      const dependency = hasDependency(stepIndex, field);
+      if (dependency) {
+        notification["error"]({
+          message: `"${field}" cannot be renamed`,
+          description: dependency
+        });
+        return;
+      }
     }
 
     this.setState({
@@ -343,21 +351,25 @@ class DatasourceModule extends React.Component {
     const { form, hasDependency, updateStep } = this.context;
     const { getFieldValue, resetFields } = form;
 
-    const fields = getFieldValue(`steps[${stepIndex}].datasource.fields`) || [];
-    const hasDependant = fields
-      .map(field => hasDependency(stepIndex, field))
-      .includes(true);
+    const datasource = getFieldValue(`steps[${stepIndex}].datasource`);
+    const fields = [
+      ...(datasource.primary ? [datasource.primary] : []),
+      ...(datasource.fields || [])
+    ];
 
-    if (hasDependant) {
-      message.error(
-        `Datasource cannot be changed because another component 
-        depends on one of its fields.`
-      );
+    for (let field of fields) {
+      const dependency = hasDependency(stepIndex, field);
+      if (dependency) {
+        notification["error"]({
+          message: `Datasource cannot be changed because of its field "${field}"`,
+          description: `${dependency}`
+        });
 
-      const currentDatasource = getFieldValue(
-        `steps[${stepIndex}].datasource.id`
-      );
-      return currentDatasource;
+        const currentDatasource = getFieldValue(
+          `steps[${stepIndex}].datasource.id`
+        );
+        return currentDatasource;
+      }
     }
 
     updateStep(stepIndex, { type: "datasource", datasource: {} });

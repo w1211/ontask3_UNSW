@@ -11,13 +11,13 @@ import {
   Collapse,
   notification,
   Menu,
-  Card,
-  Table
+  Card
 } from "antd";
 import _ from "lodash";
 
 import ContainerModal from "./ContainerModal";
 import ContainerShare from "./ContainerShare";
+import AccessListModal from "./AccessListModal";
 
 import DatasourceTab from "./tabs/DatasourceTab";
 import DataLabTab from "./tabs/DataLabTab";
@@ -238,7 +238,9 @@ class Dashboard extends React.Component {
     if (container) {
       tabKey = container.has_full_permission
         ? "datasources"
-        : ["information_submission"].find(type => container[type].length > 0);
+        : ["shared_datalabs", "information_submission"].find(
+            type => container[type].length > 0
+          );
 
       this.setState({ accordionKey: containerId, tabKey });
       sessionStorage.setItem("accordionKey", containerId);
@@ -403,6 +405,12 @@ class Dashboard extends React.Component {
                       type => container[type].length > 0
                     ) && <Menu.Divider />}
 
+                  {container.shared_datalabs.length > 0 && (
+                    <Menu.Item key="shared_datalabs">
+                      Shared DataLabs ({container.shared_datalabs.length})
+                    </Menu.Item>
+                  )}
+
                   {container.information_submission.length > 0 && (
                     <Menu.Item key="information_submission">
                       Information Submission (
@@ -462,17 +470,67 @@ class Dashboard extends React.Component {
                                 icon="lock"
                                 onClick={() =>
                                   this.setState({
-                                    formPermissions: {
+                                    accessList: {
                                       visible: true,
                                       users: form.permitted_users,
                                       name: form.name,
-                                      permissionField: form.permission
+                                      permission: form.permission
                                     }
                                   })
                                 }
                               >
                                 Access list (
                                 {_.get(form, "permitted_users", []).length})
+                              </Button>
+                            )}
+                          </Card>
+                        </List.Item>
+                      )}
+                    />
+                  )}
+
+                  {tabKey === "shared_datalabs" && (
+                    <List
+                      grid={{ gutter: 16 }}
+                      dataSource={container.shared_datalabs}
+                      className="cards"
+                      renderItem={dataLab => (
+                        <List.Item>
+                          <Card title={dataLab.name} style={{ maxWidth: 320 }}>
+                            <div style={{ marginBottom: 10 }}>
+                              {dataLab.description}
+                            </div>
+
+                            <Button
+                              icon="arrow-right"
+                              type="primary"
+                              onClick={() =>
+                                history.push(`/datalab/${dataLab.id}`, {
+                                  restrictedView: true
+                                })
+                              }
+                            >
+                              Open
+                            </Button>
+
+                            {_.get(dataLab, "permitted_users", []).length >
+                              0 && (
+                              <Button
+                                style={{ marginLeft: 10 }}
+                                icon="lock"
+                                onClick={() =>
+                                  this.setState({
+                                    accessList: {
+                                      visible: true,
+                                      users: dataLab.permitted_users,
+                                      name: dataLab.name,
+                                      permission: dataLab.permission
+                                    }
+                                  })
+                                }
+                              >
+                                Access list (
+                                {_.get(dataLab, "permitted_users", []).length})
                               </Button>
                             )}
                           </Card>
@@ -497,7 +555,7 @@ class Dashboard extends React.Component {
       container,
       sharing,
       lti,
-      formPermissions
+      accessList
     } = this.state;
 
     return (
@@ -596,55 +654,12 @@ class Dashboard extends React.Component {
                       </Select>
                     </Modal>
 
-                    <Modal
-                      visible={formPermissions.visible}
-                      title="Form access list"
-                      onCancel={() =>
-                        this.setState({ formPermissions: { visible: false } })
+                    <AccessListModal
+                      {...accessList}
+                      closeModal={() =>
+                        this.setState({ accessList: { visible: false } })
                       }
-                      footer={[
-                        <Button
-                          key="ok"
-                          type="primary"
-                          onClick={() =>
-                            this.setState({
-                              formPermissions: { visible: false }
-                            })
-                          }
-                        >
-                          OK
-                        </Button>
-                      ]}
-                    >
-                      <p>
-                        The following users have access to{" "}
-                        <strong>{formPermissions.name}</strong>:
-                      </p>
-
-                      <Table
-                        dataSource={_.get(formPermissions, "users", []).map(
-                          user => ({
-                            [formPermissions.permissionField]: user
-                          })
-                        )}
-                        columns={[
-                          {
-                            title: formPermissions.permissionField,
-                            dataIndex: formPermissions.permissionField,
-                            key: "permission",
-                            sorter: (a, b) =>
-                              _.get(
-                                a,
-                                formPermissions.permissionField,
-                                ""
-                              ).localeCompare(
-                                _.get(b, formPermissions.permissionField, "")
-                              )
-                          }
-                        ]}
-                        rowKey={(record, i) => i}
-                      />
-                    </Modal>
+                    />
 
                     {dashboard.length > 0 ? (
                       this.ContainerList()

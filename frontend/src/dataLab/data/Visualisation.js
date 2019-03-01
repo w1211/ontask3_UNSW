@@ -41,23 +41,9 @@ class VisualisationModal extends React.Component {
 
   chartKey = 0;
 
-  type = memoize(column => {
-    const { fields, steps, forms } = this.props;
-
-    const fieldItem = fields.find(item => item.label === column);
-    if (!fieldItem) return;
-
-    const { stepIndex, field } = fieldItem;
-    const step = steps[stepIndex];
-    if (step.type === "datasource") return step.datasource.types[field];
-
-    if (step.type === "form")
-      return forms
-        .find(form => form.id === step.form)
-        .fields.find(field => field.name === column).type;
-
-    if (step.type === "computed")
-      return step[step.type].fields.find(field => field.name === column).type;
+  type = memoize(label => {
+    const { columns } = this.props;
+    return columns.find(column => column.details.label === label).details.type
   });
 
   transformData = memoize((column, chartType, plotBy, showPercentage) => {
@@ -413,7 +399,7 @@ class VisualisationModal extends React.Component {
   };
 
   render() {
-    const { visible, fields, form, chart } = this.props;
+    const { visible, columns, form, chart } = this.props;
     const {
       getFieldDecorator,
       getFieldsValue,
@@ -427,9 +413,9 @@ class VisualisationModal extends React.Component {
       onChange: this.onColumnChange
     })(
       <Select style={{ minWidth: 135 }}>
-        {fields.map(field => (
-          <Option key={field.label} value={field.label}>
-            {field.label}
+        {columns.map(column => (
+          <Option key={column.details.label} value={column.details.label}>
+            {column.details.label}
           </Option>
         ))}
       </Select>
@@ -468,9 +454,9 @@ class VisualisationModal extends React.Component {
       initialValue: _.get(chart, "plotBy")
     })(
       <Select style={{ width: 135 }} allowClear>
-        {fields.map(field => (
-          <Option key={field.label} value={field.label}>
-            {field.label}
+        {columns.map(column => (
+          <Option key={column.details.label} value={column.details.label}>
+            {column.details.label}
           </Option>
         ))}
       </Select>

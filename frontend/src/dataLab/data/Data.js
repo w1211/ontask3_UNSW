@@ -9,7 +9,8 @@ import {
   Button,
   Input,
   notification,
-  Radio
+  Radio,
+  Select
 } from "antd";
 import memoize from "memoize-one";
 import _ from "lodash";
@@ -51,40 +52,73 @@ class Data extends React.Component {
   });
 
   initialiseColumns = () => {
-    const { steps, order } = this.props;
+    const { steps, columns, data } = this.props;
 
-    if (!steps) return [];
+    if (data.length > 1)
+      return columns
+        .filter(column => column.visible)
+        .map(column => ({
+          fixed: column.pin ? "left" : false,
+          className: "column",
+          dataIndex: column.details.label,
+          key: column.details.label,
+          sorter: (a, b) =>
+            (a[column.details.label] || "")
+              .toString()
+              .localeCompare((b[column.details.label] || "").toString()),
+          title: (
+            <span
+              className={`column_header ${_.get(
+                steps,
+                `${column.stepIndex}.type`,
+                ""
+              )}`}
+            >
+              {this.TruncatedLabel(column.details.label)}
+            </span>
+          ),
+          render: (value, record) => {
+            if (column.details.type === "checkbox-group")
+              value = _.pick(record, column.details.fields);
 
-    // Initialise the columns of the data table
-    const columns = [];
-    steps.forEach((step, stepIndex) => {
-      if (step.type === "datasource")
-        columns.push(...this.DatasourceColumns(stepIndex));
+            return (
+              <Field
+                readOnly
+                field={{
+                  type: column.details.type,
+                  columns: column.details.fields
+                }}
+                value={value}
+              />
+            );
+          }
+        }));
 
-      if (step.type === "form") columns.push(...this.FormColumns(stepIndex));
+    return [
+      {
+        title: "Field",
+        dataIndex: "column.details.label"
+      },
+      {
+        title: "Value",
+        dataIndex: "value",
+        render: (value, record) => {
+          if (record.column.details.field_type === "checkbox-group")
+            value = _.pick(record.item, record.column.details.columns);
 
-      if (step.type === "computed")
-        columns.push(...this.ComputedColumns(stepIndex));
-    });
-
-    // Order the columns
-    const unPinnedColumns = [];
-    const pinnedColumns = [];
-    order.forEach(orderItem => {
-      const column = columns.find(
-        column =>
-          column.stepIndex === orderItem.stepIndex &&
-          column.field === orderItem.field
-      );
-      if (column && orderItem.visible) {
-        if (!orderItem.pinned) unPinnedColumns.push(column);
-        if (orderItem.pinned) pinnedColumns.push({ ...column, fixed: "left" });
+          return (
+            <Field
+              readOnly
+              field={{
+                type: record.column.details.type,
+                columns: record.column.details.columns
+              }}
+              value={value}
+            />
+          );
+        }
       }
-    });
-
-    const orderedColumns = pinnedColumns.concat(unPinnedColumns);
-
-    return orderedColumns;
+    ];
   };
 
   TruncatedLabel = label =>
@@ -316,13 +350,11 @@ class Data extends React.Component {
   render() {
     const {
       data,
-      order,
-      steps,
-      forms,
-      datasources,
-      dataLabs,
+      groupBy,
+      columns,
       updateDatalab,
-      selectedId
+      selectedId,
+      restrictedView
     } = this.props;
     const {
       visualisation,
@@ -330,16 +362,9 @@ class Data extends React.Component {
       saved,
       searchTerm,
       view,
-      exporting
+      exporting,
+      grouping
     } = this.state;
-
-    const totalDataAmount = data ? data.length : 0;
-
-    // Similarly, the table data is initialised on every render, so that
-    // changes to values in form columns can be reflected
-    const tableData = this.initialiseData(data, searchTerm);
-
-    const tableDataAmount = tableData.length;
 
     // Columns are initialised on every render, so that changes to the sort
     // in local state can be reflected in the table columns. Otherwise the
@@ -347,79 +372,113 @@ class Data extends React.Component {
     // for the first time
     const orderedColumns = this.initialiseColumns();
 
+    // Similarly, the table data is initialised on every render, so that
+    // changes to values in form columns can be reflected
+    const tableData = this.initialiseData(data, searchTerm);
+    const totalDataAmount = data ? data.length : 0;
+
+    const tableDataAmount = tableData.length;
+
+    const groups = groupBy ? new Set(data.map(item => item[groupBy])) : [];
+
     return (
       <div className="data" style={{ marginTop: 25 }}>
-        <div className="filter">
-          <Button
-            size="large"
-            onClick={() => this.setState({ visualisation: true })}
-            type="primary"
-          >
-            <Icon type="area-chart" size="large" />
-            Visualise
-          </Button>
+        {data.length > 1 && [
+          <div className="filter" key="viz">
+            <Button
+              size="large"
+              onClick={() => this.setState({ visualisation: true })}
+              type="primary"
+            >
+              <Icon type="area-chart" size="large" />
+              Visualise
+            </Button>
 
-          <Button
-            size="large"
-            onClick={this.exportToCSV}
-            type="primary"
-            icon="export"
-            loading={exporting}
-            style={{ marginLeft: 10 }}
-          >
-            Export to CSV
-          </Button>
+            <Button
+              size="large"
+              onClick={this.exportToCSV}
+              type="primary"
+              icon="export"
+              loading={exporting}
+              style={{ marginLeft: 10 }}
+            >
+              Export to CSV
+            </Button>
 
-          <Radio.Group
-            size="large"
-            style={{ marginLeft: 10 }}
-            value={view}
-            onChange={e => this.setState({ view: e.target.value })}
-          >
-            <Radio.Button value="data">Data</Radio.Button>
-            <Radio.Button value="details">Details</Radio.Button>
-          </Radio.Group>
+            <Radio.Group
+              size="large"
+              style={{ marginLeft: 10 }}
+              value={view}
+              onChange={e => this.setState({ view: e.target.value })}
+            >
+              <Radio.Button value="data">Data</Radio.Button>
+              <Radio.Button value="details">Details</Radio.Button>
+            </Radio.Group>
+          </div>,
 
-          <Search
-            className="searchbar"
-            size="large"
-            placeholder="Search..."
-            value={searchTerm}
-            onChange={e => this.setState({ searchTerm: e.target.value })}
-          />
+          <div className="filter" style={{ marginTop: 10 }} key="search">
+            <Select
+              style={{ width: "100%", maxWidth: 225, marginRight: 15 }}
+              placeholder="Group by"
+              allowClear
+              showSearch
+              onChange={grouping => this.setState({ grouping })}
+            >
+              {[...groups].sort().map((group, i) => (
+                <Select.Option value={group} key={i}>
+                  {group ? group : <i>No value</i>}
+                </Select.Option>
+              ))}
+            </Select>
 
-          <div>
-            {tableDataAmount} records selected out of {totalDataAmount} (
-            {totalDataAmount - tableDataAmount} filtered out)
+            <Search
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={e => this.setState({ searchTerm: e.target.value })}
+              style={{ width: "auto", marginRight: 15 }}
+            />
+            <div>
+              {tableDataAmount} records selected out of {totalDataAmount} (
+              {totalDataAmount - tableDataAmount} filtered out)
+            </div>
           </div>
-        </div>
+        ]}
 
         <div className="data_manipulation">
           <Visualisation
             visible={visualisation}
-            steps={steps}
-            order={order}
-            data={data}
-            fields={orderedColumns.map(item => ({
-              label: item.dataIndex,
-              stepIndex: item.stepIndex,
-              field: item.field
-            }))}
+            columns={columns}
+            data={tableData}
             closeModal={() => this.setState({ visualisation: false })}
-            forms={forms}
           />
 
           {view === "data" && (
             <Table
               rowKey={(record, index) => index}
               columns={orderedColumns}
-              dataSource={orderedColumns.length > 0 ? tableData : []}
+              dataSource={
+                data.length > 1
+                  ? grouping !== undefined
+                    ? tableData.filter(
+                        item => _.get(item, groupBy) === grouping
+                      )
+                    : tableData
+                  : columns.map((column, i) => ({
+                      column,
+                      value: _.get(data[0], column.details.label),
+                      item: data[0]
+                    }))
+              }
               scroll={{ x: (orderedColumns.length - 1) * 175 }}
               onChange={this.handleChange}
-              pagination={{
-                showSizeChanger: true,
-                pageSizeOptions: ["10", "25", "50", "100"]
-              }}
+              pagination={
+                data.length > 1
+                  ? {
+                      showSizeChanger: true,
+                      pageSizeOptions: ["10", "25", "50", "100"]
+                    }
+                  : false
+              }
               rowClassName={record =>
                 edit.primary in record && saved[record[edit.primary]]
                   ? "saved"
@@ -430,13 +489,10 @@ class Data extends React.Component {
 
           {view === "details" && (
             <Details
-              datasources={datasources}
-              dataLabs={dataLabs}
               selectedId={selectedId}
-              steps={steps}
-              order={order}
+              columns={columns}
               updateDatalab={updateDatalab}
-              forms={forms}
+              restrictedView={restrictedView}
             />
           )}
         </div>

@@ -200,6 +200,7 @@
 /* Override the 'disabled' cursor on the select option during editing mode */
 .dataLab .module .datasource .editing_field.ant-select-dropdown-menu-item-disabled {
   cursor: default;
+  padding-right: 10px;
 }
 /* Darker background for the '...N more fields selected' tag */
 .dataLab .module .datasource .select .ant-select-selection__choice__disabled {

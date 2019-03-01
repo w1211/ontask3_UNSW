@@ -2,17 +2,21 @@ from django.http import JsonResponse, HttpResponse
 from rest_framework_mongoengine import viewsets
 from rest_framework_mongoengine.validators import ValidationError
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import action, list_route, detail_route
+from rest_framework.decorators import action, list_route, detail_route, api_view
 from rest_framework.response import Response
-from rest_framework.exceptions import NotFound
-from rest_framework.status import HTTP_401_UNAUTHORIZED
+from rest_framework.exceptions import NotFound, PermissionDenied
+from rest_framework.status import HTTP_401_UNAUTHORIZED, HTTP_200_OK
 from mongoengine.queryset.visitor import Q
 import pandas as pd
 import zipfile
 import json
 from io import BytesIO
 
-from .serializers import DatalabSerializer, OrderItemSerializer
+from .serializers import (
+    DatalabSerializer,
+    OrderItemSerializer,
+    RestrictedDatalabSerializer,
+)
 from .permissions import DatalabPermissions
 from .models import Datalab
 from .utils import bind_column_types, get_relations
@@ -58,9 +62,10 @@ class DatalabViewSet(viewsets.ModelViewSet):
                     }
                 )
 
-        relations = get_relations(steps)
+        relations = get_relations(steps, permission=self.request.data.get("permission"))
 
         datalab = serializer.save(steps=steps, order=order, relations=relations)
+        datalab.refresh_access()
 
     def perform_update(self, serializer):
         datalab = self.get_object()
@@ -119,9 +124,12 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 if not order_item:
                     order.append({"stepIndex": step_index, "field": field})
 
-        relations = get_relations(steps, datalab_id=datalab.id)
+        relations = get_relations(
+            steps, datalab_id=datalab.id, permission=self.request.data.get("permission")
+        )
 
         datalab = serializer.save(steps=steps, order=order, relations=relations)
+        datalab.refresh_access()
 
     def perform_destroy(self, datalab):
         self.check_object_permissions(self.request, datalab)
@@ -268,7 +276,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
         serializer.is_valid()
         serializer.save()
 
-        return JsonResponse(serializer.data)
+        return Response(status=HTTP_200_OK)
 
     @detail_route(methods=["patch"])
     def change_pinned_status(self, request, id=None):
@@ -295,7 +303,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
         serializer.is_valid()
         serializer.save()
 
-        return JsonResponse(serializer.data)
+        return Response(status=HTTP_200_OK)
 
     @detail_route(methods=["patch"])
     def update_field_type(self, request, id=None):
@@ -325,8 +333,7 @@ class DatalabViewSet(viewsets.ModelViewSet):
 
         datalab.save()
 
-        serializer = DatalabSerializer(instance=datalab)
-        return JsonResponse(serializer.data)
+        return Response(status=HTTP_200_OK)
 
     @detail_route(methods=["patch"])
     def update_chart(self, request, id=None):
@@ -363,23 +370,82 @@ class DatalabViewSet(viewsets.ModelViewSet):
 
         return JsonResponse({"success": 1})
 
-    @detail_route(methods=["post"])
-    def csv(self, request, id=None):
-        datalab = self.get_object()
-        self.check_object_permissions(self.request, datalab)
 
-        response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = f"attachment; filename={datalab.name}.csv"
-        response["Access-Control-Expose-Headers"] = "Content-Disposition"
-        data = pd.DataFrame(datalab.data)
+@api_view(["GET"])
+def AccessDataLab(request, id):
+    try:
+        datalab = Datalab.objects.get(id=id)
+    except:
+        raise NotFound()
 
-        # Re-order the columns to match the original datasource data
-        order = OrderItemSerializer(
-            datalab.order, many=True, context={"steps": datalab.steps}
-        )
-        reordered_columns = [item.get("label") for item in order.data]
-        data = data.reindex(columns=reordered_columns)
+    if datalab.container.has_full_permission(request.user):
+        serializer = DatalabSerializer(datalab)
+        return Response(serializer.data)
 
-        data.to_csv(path_or_buf=response, index=False)
+    user_values = []
+    if datalab.emailAccess:
+        user_values.append(request.user.email)
+    if datalab.ltiAccess:
+        try:
+            lti_object = lti.objects.get(user=request.user.id)
+            user_values.extend(lti_object.payload.values())
+        except:
+            pass
 
-        return response
+    accessible_records = pd.DataFrame(data=datalab.data)
+    accessible_records = accessible_records[
+        accessible_records[datalab.permission].isin(user_values)
+    ]
+
+    if not len(accessible_records):
+        # User does not have access to any records, so return a 403
+        raise PermissionDenied()
+
+    data = None
+    if datalab.restriction == "private":
+        data = accessible_records.to_dict("records")
+
+    serializer = RestrictedDatalabSerializer(datalab, context={"data": data})
+
+    return Response(serializer.data)
+
+
+@api_view(["POST"])
+def ExportToCSV(request, id):
+    try:
+        datalab = Datalab.objects.get(id=id)
+    except:
+        raise NotFound()
+
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = f"attachment; filename={datalab.name}.csv"
+    response["Access-Control-Expose-Headers"] = "Content-Disposition"
+
+    data = pd.DataFrame(datalab.data)
+
+    if not datalab.container.has_full_permission(request.user):
+        user_values = []
+        if datalab.emailAccess:
+            user_values.append(request.user.email)
+        if datalab.ltiAccess:
+            try:
+                lti_object = lti.objects.get(user=request.user.id)
+                user_values.extend(lti_object.payload.values())
+            except:
+                pass
+        data = data[data[datalab.permission].isin(user_values)]
+
+    if not len(data):
+        # User does not have access to any records, so return a 403
+        raise PermissionDenied()
+
+    # Re-order the columns to match the original datasource data
+    order = OrderItemSerializer(
+        datalab.order, many=True, context={"steps": datalab.steps}
+    )
+    reordered_columns = [item["details"]["label"] for item in order.data]
+    data = data.reindex(columns=reordered_columns)
+
+    data.to_csv(path_or_buf=response, index=False)
+
+    return response

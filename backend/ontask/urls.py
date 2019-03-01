@@ -39,6 +39,7 @@ urlpatterns = [
     path("form/", include("form.urls")),
     path("administration/", include("administration.urls")),
     *router.urls,
+    path("datalab/", include("datalab.urls")),
     url(r"feedback/(?P<datalab_id>[a-z\d]+)/", FeedbackView.as_view())
 ]
 

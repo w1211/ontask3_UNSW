@@ -79,11 +79,18 @@ class Datalab(Document):
     # Cascade delete if container is deleted
     container = ReferenceField(Container, required=True, reverse_delete_rule=2)
     name = StringField(required=True)
+    description = StringField(null=True)
     steps = EmbeddedDocumentListField(Module)
     order = EmbeddedDocumentListField(Column)
     charts = EmbeddedDocumentListField(Chart)
 
     relations = ListField(DictField())
+    permitted_users = ListField(StringField())
+    ltiAccess = BooleanField(default=False)
+    emailAccess = BooleanField(default=False)
+    permission = StringField(null=True)
+    restriction = StringField(choices=("private", "open"), default="private")
+    groupBy = StringField(null=True)
 
     @property
     def data(self):
@@ -124,7 +131,7 @@ class Datalab(Document):
                     datasource = Datasource.objects.get(id=step.id)
                 except:
                     pass
-                
+
                 try:
                     datasource = Datalab.objects.get(id=step.id)
                 except:
@@ -184,3 +191,12 @@ class Datalab(Document):
         combined_data.replace({pd.np.nan: None}, inplace=True)
 
         return combined_data.to_dict("records")
+
+    # Flat representation of which users should see this DataLab when they load the dashboard
+    def refresh_access(self):
+        users = set(record.get(self.permission) for record in self.relations)
+        if None in users:
+            users.remove(None)
+
+        self.permitted_users = list(users)
+        self.save()

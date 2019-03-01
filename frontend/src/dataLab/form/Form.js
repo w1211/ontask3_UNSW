@@ -574,8 +574,10 @@ class DataLabForm extends React.Component {
           })(
             <Select allowClear>
               {[
-                getFieldValue("primary"),
-                ...getFieldValue("visibleFields")
+                ...(getFieldValue("primary") ? [getFieldValue("primary")] : []),
+                ...(getFieldValue("visibleFields")
+                  ? getFieldValue("visibleFields")
+                  : [])
               ].map(label => (
                 <Select.Option value={label} key={label}>
                   {label}

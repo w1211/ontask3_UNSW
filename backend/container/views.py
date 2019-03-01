@@ -9,16 +9,25 @@ from .serializers import ContainerSerializer, DashboardSerializer
 from .models import Container
 
 from form.models import Form
+from datalab.models import Datalab
 from accounts.permissions import CanCreateObjects
 
 
 @api_view(["GET"])
 def Dashboard(request):
-    accessible_forms = Form.objects.filter(
-        (Q(ltiAccess=True) | Q(emailAccess=True))
-        & Q(permitted_users__in=request.user.permission_values)
-    )
-    related_containers = set(form.container.id for form in accessible_forms)
+    related_containers = set()
+
+    access_context = {}
+    for obj in [(Datalab, "datalabs"), (Form, "forms")]:
+        db_model = obj[0]
+        accessible_objects = db_model.objects.filter(
+            (Q(ltiAccess=True) | Q(emailAccess=True))
+            & Q(permitted_users__in=request.user.permission_values)
+        )
+        related_containers.update(item.container.id for item in accessible_objects)
+
+        context_key = obj[1]
+        access_context[f"accessible_{context_key}"] = accessible_objects
 
     containers = Container.objects.filter(
         Q(owner=request.user.email)
@@ -32,7 +41,7 @@ def Dashboard(request):
             container,
             context={
                 "has_full_permission": container.has_full_permission(request.user),
-                "accessible_forms": accessible_forms,
+                **access_context,
             },
         )
         response.append(serializer.data)

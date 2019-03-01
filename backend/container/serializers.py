@@ -91,12 +91,26 @@ class InformationSubmissionSerializer(DocumentSerializer):
         fields = ["id", "name", "description", "permitted_users", "permission"]
 
 
+class SharedDataLabSerializer(DocumentSerializer):
+    def __init__(self, *args, **kwargs):
+        super(SharedDataLabSerializer, self).__init__(*args, **kwargs)
+
+        if not self.context.get("has_full_permission"):
+            self.fields.pop("permitted_users")
+            self.fields.pop("permission")
+
+    class Meta:
+        model = Datalab
+        fields = ["id", "name", "description", "permitted_users", "permission"]
+
+
 class DashboardSerializer(DocumentSerializer):
     has_full_permission = serializers.SerializerMethodField()
     datasources = serializers.SerializerMethodField()
     datalabs = serializers.SerializerMethodField()
     actions = serializers.SerializerMethodField()
     information_submission = serializers.SerializerMethodField()
+    shared_datalabs = serializers.SerializerMethodField()
 
     def get_has_full_permission(self, container):
         return self.context.get("has_full_permission", False)
@@ -138,6 +152,24 @@ class DashboardSerializer(DocumentSerializer):
         )
         return serializer.data
 
+    def get_shared_datalabs(self, container):
+        has_full_permission = self.context.get("has_full_permission")
+        if has_full_permission:
+            datalabs = Datalab.objects.filter(
+                Q(container=container) & (Q(ltiAccess=True) | Q(emailAccess=True))
+            )
+        else:
+            datalabs = [
+                datalab
+                for datalab in self.context.get("accessible_datalabs")
+                if datalab.container == container
+            ]
+
+        serializer = SharedDataLabSerializer(
+            datalabs, many=True, context={"has_full_permission": has_full_permission}
+        )
+        return serializer.data
+
     def __init__(self, *args, **kwargs):
         super(DashboardSerializer, self).__init__(*args, **kwargs)
 
@@ -147,6 +179,7 @@ class DashboardSerializer(DocumentSerializer):
                 "code",
                 "has_full_permission",
                 "information_submission",
+                "shared_datalabs",
             ]
             for field in set(self.fields) - set(allowed_fields):
                 self.fields.pop(field)

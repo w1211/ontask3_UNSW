@@ -201,8 +201,11 @@ def calculate_computed_field(formula, record, build_fields, tracking_feedback_da
         return None
 
 
-def get_relations(steps, datalab_id=None, skip_last=False):
+def get_relations(steps, datalab_id=None, skip_last=False, permission=None):
     required_fields = set()
+
+    if permission:
+        required_fields.add(permission)
 
     # Identify the fields used in any associated forms or actions
     if datalab_id:

@@ -122,17 +122,23 @@ class Datasource(Document):
         for datalab in Datalab.objects.filter(steps__datasource__id=str(self.id)):
             relations = pd.DataFrame(datalab.relations)
             if any([field in relations for field in self.fields]):
-                datalab.relations = get_relations(datalab.steps, datalab.id)
+                datalab.relations = get_relations(
+                    datalab.steps, datalab.id, permission=datalab.permission
+                )
                 datalab.save()
+                datalab.refresh_access()
 
                 # Find any other datalabs that use this datalab and update their relations table
                 for other_datalab in Datalab.objects.filter(
                     steps__datasource__id=str(datalab.id)
                 ):
                     other_datalab.relations = get_relations(
-                        other_datalab.steps, other_datalab.id
+                        other_datalab.steps,
+                        other_datalab.id,
+                        permission=other_datalab.permission,
                     )
                     other_datalab.save()
+                    other_datalab.refresh_access()
 
                     # Find any forms that use the other datalab and update their permissions values
                     for form in Form.objects.filter(datalab=other_datalab):

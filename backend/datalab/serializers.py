@@ -47,37 +47,56 @@ class DatasourceSerializer(DocumentSerializer):
 
 
 class OrderItemSerializer(EmbeddedDocumentSerializer):
-    label = serializers.SerializerMethodField()
-    field_type = serializers.SerializerMethodField()
+    details = serializers.SerializerMethodField()
 
-    def get_label(self, order_item):
+    def get_details(self, order_item):
         module = self.context["steps"][order_item.stepIndex]
 
-        if module.type == "datasource":
-            return module.datasource.labels.get(order_item.field)
-
-        return order_item.field
-
-    def get_field_type(self, order_item):
-        module = self.context["steps"][order_item.stepIndex]
+        details = {"label": order_item.field, "module_type": module.type}
 
         if module.type == "datasource":
-            return module.datasource.types.get(order_item.field)
+            try:
+                datasource = Datasource.objects.get(id=module.datasource.id)
+            except:
+                pass
+
+            try:
+                datasource = Datalab.objects.get(id=module.datasource.id)
+            except:
+                pass
+
+            details["from"] = datasource.name
+            details["label"] = module.datasource.labels.get(order_item.field)
+            details["field_type"] = module.datasource.types.get(order_item.field)
 
         elif module.type == "form":
             form = Form.objects.get(id=module.form)
+            details["from"] = form.name
             for field in form.fields:
                 if field.name == order_item.field:
-                    return field.type
+                    details["field_type"] = field.type
+
+                    if field.type == "checkbox-group":
+                        details["fields"] = field.columns
 
         elif module.type == "computed":
             for field in module.computed.fields:
                 if field.name == order_item.field:
-                    return field.type
+                    details["field_type"] = field.type
+
+        return details
 
     class Meta:
         model = Column
         fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super(OrderItemSerializer, self).__init__(*args, **kwargs)
+
+        if self.context.get("restricted"):
+            disallowed_fields = ["stepIndex", "field"]
+            for field in disallowed_fields:
+                self.fields.pop(field)
 
 
 class OtherDatalabSerializer(DocumentSerializer):
@@ -85,7 +104,7 @@ class OtherDatalabSerializer(DocumentSerializer):
 
     def get_columns(self, datalab):
         return [
-            {"label": item.get("label"), "type": item.get("field_type")}
+            {"label": item.get("label"), "type": item.get("type")}
             for item in OrderItemSerializer(
                 datalab.order, many=True, context={"steps": datalab.steps}
             ).data
@@ -132,3 +151,22 @@ class DatalabSerializer(DocumentSerializer):
     class Meta:
         model = Datalab
         fields = "__all__"
+
+
+class RestrictedDatalabSerializer(DocumentSerializer):
+    columns = serializers.SerializerMethodField()
+    data = serializers.SerializerMethodField()
+
+    def get_columns(self, datalab):
+        return OrderItemSerializer(
+            datalab.order,
+            many=True,
+            context={"steps": datalab.steps, "restricted": True},
+        ).data
+
+    def get_data(self, datalab):
+        return self.context.get("data", datalab.data)
+
+    class Meta:
+        model = Datalab
+        fields = ["name", "columns", "data", "groupBy"]

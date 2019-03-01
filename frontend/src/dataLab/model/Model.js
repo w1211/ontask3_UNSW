@@ -8,7 +8,9 @@ import {
   Tooltip,
   notification,
   Affix,
-  Icon
+  Icon,
+  Select,
+  Checkbox
 } from "antd";
 import _ from "lodash";
 import memoize from "memoize-one";
@@ -20,8 +22,7 @@ import ComputedModule from "./computed/Computed";
 import ModelContext from "./ModelContext";
 
 import apiRequest from "../../shared/apiRequest";
-
-const FormItem = Form.Item;
+import formItemLayout from "../../shared/FormItemLayout";
 
 class Model extends React.Component {
   constructor(props) {
@@ -42,7 +43,7 @@ class Model extends React.Component {
   labelsUsed = memoize(stepIndex => {
     const { form, forms } = this.props;
     const { getFieldValue } = form;
-    let steps = getFieldValue("steps");
+    let steps = getFieldValue("steps") || [];
 
     if (stepIndex) steps = steps.filter((step, i) => i < stepIndex);
 
@@ -54,7 +55,7 @@ class Model extends React.Component {
           label => !!label
         );
       else if (step.type === "form") {
-        const relatedForm = forms.find(form => form.id === step);
+        const relatedForm = forms.find(form => form.id === step.form);
         stepLabels = relatedForm
           ? relatedForm.fields.map(field => field.name)
           : [];
@@ -69,30 +70,47 @@ class Model extends React.Component {
   });
 
   hasDependency = (stepIndex, field) => {
-    const { form } = this.props;
+    const { form, datasources, forms } = this.props;
     const { getFieldValue } = form;
 
     // If a datasource field is being checked, then use the field's label
-    let relatedSteps = getFieldValue("steps");
-    if (relatedSteps[stepIndex].type === "datasource")
-      field = relatedSteps[stepIndex].datasource.labels[field];
+    let steps = getFieldValue("steps");
+    if (steps[stepIndex].type === "datasource")
+      field = (steps[stepIndex].datasource.labels || {})[field];
 
-    // Check whether this field is used as a matching field for any modules
-    relatedSteps = relatedSteps.slice(stepIndex + 1).filter(step => {
-      if (step.type === "datasource")
-        return _.get(step, "datasource.matching") === field;
+    // Check whether this field is used anywhere else
+    for (let step of steps.slice(stepIndex + 1)) {
+      if (step.type === "datasource") {
+        if (_.get(step, "datasource.matching") === field) {
+          const relatedDatasource = datasources.find(
+            datasource => datasource.id === step.datasource.id
+          );
+          if (!relatedDatasource) break;
 
-      if (step.type === "form")
-        return [
-          _.get(step, "form.primary") === field,
-          _.get(step, "form.webForm.permission") === field,
-          _.get(step, "webForm.visibleFields", []).includes(field)
-        ].includes(true);
+          return `The datasource component "${
+            relatedDatasource.name
+          }" is using it as a matching field.`;
+        }
+      }
 
-      return null;
-    });
+      if (step.type === "form") {
+        const relatedForm = forms.find(form => form.id === step.form);
+        if (!relatedForm) break;
 
-    return relatedSteps.length > 0;
+        if (relatedForm.primary === field)
+          return `The form "${relatedForm.name}" is using it as a primary key.`;
+        else if (relatedForm.permission === field)
+          return `The form "${
+            relatedForm.name
+          }" is using it as a permission field.`;
+        else if ((relatedForm.visibleFields || []).includes(field))
+          return `The form "${
+            relatedForm.name
+          }" is using it as an additional field.`;
+      }
+    }
+
+    return false;
   };
 
   handleSave = () => {
@@ -188,7 +206,13 @@ class Model extends React.Component {
       forms,
       actions,
       name,
-      selectedId
+      description,
+      groupBy,
+      selectedId,
+      emailAccess,
+      ltiAccess,
+      permission,
+      restriction
     } = this.props;
     const { loading, error, stepKeys, steps } = this.state;
     const { getFieldDecorator, getFieldValue } = form;
@@ -209,23 +233,7 @@ class Model extends React.Component {
           updateStep: this.updateStep
         }}
       >
-        <div className="model" style={{ maxWidth: 1300 }}>
-          <h2>Details</h2>
-
-          <div className="name">
-            <FormItem label="Name">
-              {getFieldDecorator("name", {
-                rules: [
-                  {
-                    required: true,
-                    message: "DataLab name is required"
-                  }
-                ],
-                initialValue: name
-              })(<Input />)}
-            </FormItem>
-          </div>
-
+        <div className="model" style={{ maxWidth: 2000 }}>
           <h2>Data Model</h2>
 
           <Affix offsetTop={25}>
@@ -307,6 +315,159 @@ class Model extends React.Component {
                 />
                 Add your first component by clicking the Datasource module in
                 the Components toolbox above.
+              </div>
+            )}
+          </div>
+
+          <div style={{ maxWidth: 700, marginBottom: 20 }}>
+            <h2>Details/Access</h2>
+
+            <Form.Item
+              {...formItemLayout}
+              label={
+                <span>
+                  DataLab name
+                  <Tooltip
+                    title="The name provided will be used as the page title 
+                when a user accesses the DataLab"
+                  >
+                    <Icon
+                      style={{ marginLeft: 5, cursor: "help" }}
+                      type="question-circle"
+                    />
+                  </Tooltip>
+                </span>
+              }
+            >
+              {getFieldDecorator("name", {
+                initialValue: name,
+                rules: [{ required: true, message: "Name is required" }]
+              })(<Input />)}
+            </Form.Item>
+
+            <Form.Item
+              {...formItemLayout}
+              label={
+                <span>
+                  Description
+                  <Tooltip title="A description that users will see when accessing the DataLab">
+                    <Icon
+                      style={{ marginLeft: 5, cursor: "help" }}
+                      type="question-circle"
+                    />
+                  </Tooltip>
+                </span>
+              }
+            >
+              {getFieldDecorator("description", {
+                initialValue: description
+              })(<Input.TextArea />)}
+            </Form.Item>
+
+            <Form.Item
+              {...formItemLayout}
+              label={
+                <span>
+                  Group by
+                  <Tooltip title="Group records by the chosen field when users access the DataLab">
+                    <Icon
+                      style={{ marginLeft: 5, cursor: "help" }}
+                      type="question-circle"
+                    />
+                  </Tooltip>
+                </span>
+              }
+            >
+              {getFieldDecorator("groupBy", {
+                initialValue: groupBy
+              })(
+                <Select allowClear>
+                  {this.labelsUsed().map(label => (
+                    <Select.Option value={label} key={label}>
+                      {label}
+                    </Select.Option>
+                  ))}
+                </Select>
+              )}
+            </Form.Item>
+
+            <Form.Item {...formItemLayout} label="Allow access via user email">
+              {getFieldDecorator("emailAccess", {
+                initialValue: emailAccess || false,
+                valuePropName: "checked"
+              })(<Checkbox />)}
+            </Form.Item>
+
+            <Form.Item {...formItemLayout} label="Allow access via LTI">
+              {getFieldDecorator("ltiAccess", {
+                initialValue: ltiAccess || false,
+                valuePropName: "checked"
+              })(<Checkbox />)}
+            </Form.Item>
+
+            {(getFieldValue("emailAccess") || getFieldValue("ltiAccess")) && (
+              <div>
+                <Form.Item
+                  {...formItemLayout}
+                  label={
+                    <span>
+                      Match permission with
+                      <Tooltip
+                        title="Grant access on a record-by-record basis by comparing the given 
+                DataLab field value with the access method(s) specified above"
+                      >
+                        <Icon
+                          style={{ marginLeft: 5, cursor: "help" }}
+                          type="question-circle"
+                        />
+                      </Tooltip>
+                    </span>
+                  }
+                >
+                  {getFieldDecorator("permission", {
+                    rules: [
+                      {
+                        required: true,
+                        message:
+                          "Permission matching field is required if access is allowed via LTI or user email"
+                      }
+                    ],
+                    initialValue: permission
+                  })(
+                    <Select>
+                      {this.labelsUsed().map(label => (
+                        <Select.Option value={label} key={label}>
+                          {label}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  )}
+                </Form.Item>
+
+                <Form.Item {...formItemLayout} label="Restriction type">
+                  {getFieldDecorator("restriction", {
+                    rules: [
+                      {
+                        required: true,
+                        message: "Restriction type is required"
+                      }
+                    ],
+                    initialValue: restriction || "private"
+                  })(
+                    <Select>
+                      <Select.Option value="private">
+                        <Tooltip title="Users can only see the records for which they have explicit access">
+                          Limited read
+                        </Tooltip>
+                      </Select.Option>
+                      <Select.Option value="open">
+                        <Tooltip title="Users that have access to at least one record can see all other records">
+                          Open read
+                        </Tooltip>
+                      </Select.Option>
+                    </Select>
+                  )}
+                </Form.Item>
               </div>
             )}
           </div>
