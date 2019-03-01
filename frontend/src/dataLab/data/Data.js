@@ -417,19 +417,21 @@ class Data extends React.Component {
           </div>,
 
           <div className="filter" style={{ marginTop: 10 }} key="search">
-            <Select
-              style={{ width: "100%", maxWidth: 225, marginRight: 15 }}
-              placeholder="Group by"
-              allowClear
-              showSearch
-              onChange={grouping => this.setState({ grouping })}
-            >
-              {[...groups].sort().map((group, i) => (
-                <Select.Option value={group} key={i}>
-                  {group ? group : <i>No value</i>}
-                </Select.Option>
-              ))}
-            </Select>
+            {groupBy && (
+              <Select
+                style={{ width: "100%", maxWidth: 225, marginRight: 15 }}
+                placeholder="Group by"
+                allowClear
+                showSearch
+                onChange={grouping => this.setState({ grouping })}
+              >
+                {[...groups].sort().map((group, i) => (
+                  <Select.Option value={group} key={i}>
+                    {group ? group : <i>No value</i>}
+                  </Select.Option>
+                ))}
+              </Select>
+            )}
 
             <Search
               placeholder="Search..."
