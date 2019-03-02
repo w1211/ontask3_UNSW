@@ -55,19 +55,10 @@ class ModuleSerializer(EmbeddedDocumentSerializer):
 
 class DatalabSerializer(EmbeddedDocumentSerializer):
     steps = ModuleSerializer(many=True)
-    columns = serializers.SerializerMethodField()
-
-    def get_columns(self, datalab):
-        return [
-            {"label": item.get("label"), "type": item.get("field_type")}
-            for item in OrderItemSerializer(
-                datalab.order, many=True, context={"steps": datalab.steps}
-            ).data
-        ]
 
     class Meta:
         model = Datalab
-        fields = ["id", "name", "steps", "columns"]
+        fields = ["id", "name", "steps"]
 
 
 class ActionSerializer(EmbeddedDocumentSerializer):
