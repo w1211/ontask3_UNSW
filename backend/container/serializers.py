@@ -8,7 +8,6 @@ from mongoengine.queryset.visitor import Q
 from .models import Container
 from datasource.models import Datasource
 from datalab.models import Datalab, Module, DatasourceModule
-from datalab.serializers import OrderItemSerializer
 from workflow.models import Workflow
 from form.models import Form
 

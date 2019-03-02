@@ -50,27 +50,40 @@ class OrderItemSerializer(EmbeddedDocumentSerializer):
     details = serializers.SerializerMethodField()
 
     def get_details(self, order_item):
+        if not "objects" in self.context:
+            self.context["objects"] = {}
+
         module = self.context["steps"][order_item.stepIndex]
 
         details = {"label": order_item.field, "module_type": module.type}
 
         if module.type == "datasource":
-            try:
-                datasource = Datasource.objects.get(id=module.datasource.id)
-            except:
-                pass
+            if module.datasource.id in self.context["objects"]:
+                datasource = self.context["objects"][module.datasource.id]
+            else:
+                try:
+                    datasource = Datasource.objects.get(id=module.datasource.id)
+                except:
+                    pass
 
-            try:
-                datasource = Datalab.objects.get(id=module.datasource.id)
-            except:
-                pass
+                try:
+                    datasource = Datalab.objects.get(id=module.datasource.id)
+                except:
+                    pass
+
+                self.context["objects"][module.datasource.id] = datasource
 
             details["from"] = datasource.name
             details["label"] = module.datasource.labels.get(order_item.field)
             details["field_type"] = module.datasource.types.get(order_item.field)
 
         elif module.type == "form":
-            form = Form.objects.get(id=module.form)
+            if module.form in self.context["objects"]:
+                form = self.context["objects"][module.form]
+            else:
+                form = Form.objects.get(id=module.form)
+                self.context["objects"][module.form] = form
+
             details["from"] = form.name
             for field in form.fields:
                 if field.name == order_item.field:
