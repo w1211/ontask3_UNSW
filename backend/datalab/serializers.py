@@ -116,12 +116,10 @@ class OtherDatalabSerializer(DocumentSerializer):
     columns = serializers.SerializerMethodField()
 
     def get_columns(self, datalab):
-        return [
-            {"label": item.get("label"), "type": item.get("type")}
-            for item in OrderItemSerializer(
-                datalab.order, many=True, context={"steps": datalab.steps}
-            ).data
-        ]
+        serializer = OrderItemSerializer(
+            datalab.order, many=True, context={"steps": datalab.steps}
+        )
+        return serializer.data
 
     class Meta:
         model = Datalab

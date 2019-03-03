@@ -43,8 +43,8 @@ def bind_column_types(steps):
 
                     if datalab and datalab_fields:
                         for datalab_field in datalab_fields:
-                            if datalab_field["label"] == field:
-                                types[field] = datalab_field["type"]
+                            if datalab_field["details"]["label"] == field:
+                                types[field] = datalab_field["details"]["field_type"]
 
             step["types"] = types
 

@@ -54,7 +54,9 @@ class DatasourceModule extends React.Component {
 
     const labels = labelsUsed();
     const fieldsToAdd = [];
-    (datasource.fields || datasource.columns).forEach(field => {
+    (
+      datasource.fields || datasource.columns.map(field => field.details.label)
+    ).forEach(field => {
       // Skip field if it's the primary key (after first module)
       if (stepIndex !== 0 && field === primary) return;
 
@@ -503,7 +505,7 @@ class DatasourceModule extends React.Component {
                 {datasource &&
                   (
                     datasource.fields ||
-                    datasource.columns.map(field => field.label)
+                    datasource.columns.map(field => field.details.label)
                   ).map(field => (
                     <Option
                       value={field}
@@ -601,10 +603,9 @@ class DatasourceModule extends React.Component {
                   {datasource &&
                     (
                       datasource.fields ||
-                      datasource.columns.map(field => field.label)
+                      datasource.columns.map(field => field.details.label)
                     ).map(field => {
                       const isEditing = editing.field === field;
-
                       const label =
                         getFieldValue(
                           `steps[${stepIndex}].datasource.labels.${field}`
