@@ -392,19 +392,18 @@ def AccessDataLab(request, id):
         except:
             pass
 
-    accessible_records = pd.DataFrame(data=datalab.data)
-    accessible_records = accessible_records[
-        accessible_records[datalab.permission].isin(user_values)
-    ]
+    data = pd.DataFrame(data=datalab.data)
+    accessible_records = data[data[datalab.permission].isin(user_values)]
 
     if not len(accessible_records):
         # User does not have access to any records, so return a 403
         raise PermissionDenied()
 
-    data = None
     if datalab.restriction == "private":
         data = accessible_records.to_dict("records")
-
+    else:
+        data = data.to_dict("records")
+    
     serializer = RestrictedDatalabSerializer(datalab, context={"data": data})
 
     return Response(serializer.data)
@@ -433,12 +432,15 @@ def ExportToCSV(request, id):
                 user_values.extend(lti_object.payload.values())
             except:
                 pass
-        data = data[data[datalab.permission].isin(user_values)]
+        accessible_records = data[data[datalab.permission].isin(user_values)]
 
-    if not len(data):
-        # User does not have access to any records, so return a 403
-        raise PermissionDenied()
+        if not len(accessible_records):
+            # User does not have access to any records, so return a 403
+            raise PermissionDenied()
 
+        if datalab.restriction == "private":
+            data = accessible_records
+            
     # Re-order the columns to match the original datasource data
     order = OrderItemSerializer(
         datalab.order, many=True, context={"steps": datalab.steps}
