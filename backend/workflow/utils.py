@@ -33,6 +33,10 @@ def did_pass_test(test, value, param_type):
             return value == comparator
         elif operator == "!=":
             return value != comparator
+        elif operator == "IS_NULL":
+            return value == "" or value is None
+        elif operator == "IS_NOT_NULL":
+            return value != "" or value is not None
         elif operator == "<":
             return value < comparator
         elif operator == "<=":

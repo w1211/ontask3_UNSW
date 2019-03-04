@@ -136,7 +136,8 @@ class QueryBuilder extends React.Component {
     let operations = [];
     if (type === "number" || type === "date")
       operations = [">", ">=", "<", "<=", "==", "!=", "between"];
-    else if (type === "text") operations = ["==", "!="];
+    else if (type === "text")
+      operations = ["==", "!=", "IS_NULL", "IS_NOT_NULL"];
     else if (type === "list") operations = ["contains"];
 
     return operations.map((operation, i) => (
@@ -227,14 +228,15 @@ class QueryBuilder extends React.Component {
 
     return (
       <FormItem>
-        {getFieldDecorator(`rule.${fieldBase}comparator`, {
-          rules: [
-            {
-              required: true
-            }
-          ],
-          initialValue: initialValue(`${fieldBase}comparator`)
-        })(this.Element(type, `rule.${fieldBase}comparator`))}
+        {!["IS_NULL", "IS_NOT_NULL"].includes(operation) &&
+          getFieldDecorator(`rule.${fieldBase}comparator`, {
+            rules: [
+              {
+                required: true
+              }
+            ],
+            initialValue: initialValue(`${fieldBase}comparator`)
+          })(this.Element(type, `rule.${fieldBase}comparator`))}
       </FormItem>
     );
   };
@@ -336,7 +338,21 @@ class QueryBuilder extends React.Component {
             operator => operator === "!="
           ) &&
           // And the two formulas have a different comparator
-          formula1.comparator !== formula2.comparator
+          formula1.comparator !== formula2.comparator,
+        (formula1, formula2) =>
+          [formula1.operator, formula2.operator].some(
+            operator => operator === "IS_NOT_NULL"
+          ) &&
+          [formula1.operator, formula2.operator].some(operator =>
+            ["!=", "=="].includes(operator)
+          ),
+        (formula1, formula2) =>
+          [formula1.operator, formula2.operator].every(
+            operator => operator === "IS_NOT_NULL"
+          ) ||
+          [formula1.operator, formula2.operator].every(
+            operator => operator === "IS_NULL"
+          )
       ];
 
       // If *any* of the logical tests above returns true, then there is an overlap
@@ -609,120 +625,116 @@ class QueryBuilder extends React.Component {
             )}
           </FormItem>
 
-          {parameters &&
-            parameters.length > 0 && (
-              <div>
-                {type === "rule" && (
-                  <FormItem label="Conditions" {...formItemLayout}>
-                    <Tooltip title="Add condition">
-                      <Button
-                        icon="plus"
-                        size="small"
-                        type="primary"
-                        onClick={this.addCondition}
-                      />
-                    </Tooltip>
-                  </FormItem>
-                )}
+          {parameters && parameters.length > 0 && (
+            <div>
+              {type === "rule" && (
+                <FormItem label="Conditions" {...formItemLayout}>
+                  <Tooltip title="Add condition">
+                    <Button
+                      icon="plus"
+                      size="small"
+                      type="primary"
+                      onClick={this.addCondition}
+                    />
+                  </Tooltip>
+                </FormItem>
+              )}
 
-                <ul className="conditions">
-                  {conditionKeys.map((key, conditionIndex) => (
-                    <li
-                      key={key}
-                      className={
-                        overlappingConditions &&
-                        overlappingConditions.includes(conditionIndex)
-                          ? "overlap"
-                          : ""
-                      }
-                    >
-                      {conditionKeys.length > 1 && (
-                        <div className="delete">
-                          <Tooltip title="Delete condition">
-                            <Button
-                              icon="close"
-                              shape="circle"
-                              size="small"
-                              disabled={conditionKeys.length <= 1}
-                              onClick={() =>
-                                this.deleteCondition(conditionIndex)
-                              }
-                            />
-                          </Tooltip>
-                        </div>
-                      )}
-
-                      <div className="parameters">
-                        {parameters.map((parameter, parameterIndex) => {
-                          if (selectedClone)
-                            getFieldDecorator(
-                              `rule.conditions[${conditionIndex}].conditionId`,
-                              {
-                                initialValue: _.get(
-                                  selectedClone,
-                                  `conditions[${conditionIndex}].conditionId`
-                                )
-                              }
-                            );
-
-                          return (
-                            <div className="field" key={`${key}_${parameter}`}>
-                              <div className="name">{parameter}</div>
-
-                              <div className="operation">
-                                <FormItem>
-                                  {getFieldDecorator(
-                                    `rule.conditions[${conditionIndex}].formulas[${parameterIndex}].operator`,
-                                    {
-                                      rules: [
-                                        {
-                                          required: true
-                                        }
-                                      ],
-                                      initialValue: _.get(
-                                        selectedClone,
-                                        `conditions[${conditionIndex}].formulas[${parameterIndex}].operator`
-                                      )
-                                    }
-                                  )(
-                                    <Select
-                                      showArrow={false}
-                                      dropdownMatchSelectWidth={false}
-                                    >
-                                      {this.Operations(types[parameter])}
-                                    </Select>
-                                  )}
-                                </FormItem>
-                              </div>
-
-                              <div className="comparator">
-                                {this.Comparator(
-                                  types[parameter],
-                                  conditionIndex,
-                                  parameterIndex
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
+              <ul className="conditions">
+                {conditionKeys.map((key, conditionIndex) => (
+                  <li
+                    key={key}
+                    className={
+                      overlappingConditions &&
+                      overlappingConditions.includes(conditionIndex)
+                        ? "overlap"
+                        : ""
+                    }
+                  >
+                    {conditionKeys.length > 1 && (
+                      <div className="delete">
+                        <Tooltip title="Delete condition">
+                          <Button
+                            icon="close"
+                            shape="circle"
+                            size="small"
+                            disabled={conditionKeys.length <= 1}
+                            onClick={() => this.deleteCondition(conditionIndex)}
+                          />
+                        </Tooltip>
                       </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+                    )}
 
-          {overlappingConditions &&
-            overlappingConditions.length > 0 && (
-              <Alert
-                message="Condition overlap detected"
-                description="For the conditions marked in red, a record could 
+                    <div className="parameters">
+                      {parameters.map((parameter, parameterIndex) => {
+                        if (selectedClone)
+                          getFieldDecorator(
+                            `rule.conditions[${conditionIndex}].conditionId`,
+                            {
+                              initialValue: _.get(
+                                selectedClone,
+                                `conditions[${conditionIndex}].conditionId`
+                              )
+                            }
+                          );
+
+                        return (
+                          <div className="field" key={`${key}_${parameter}`}>
+                            <div className="name">{parameter}</div>
+
+                            <div className="operation">
+                              <FormItem>
+                                {getFieldDecorator(
+                                  `rule.conditions[${conditionIndex}].formulas[${parameterIndex}].operator`,
+                                  {
+                                    rules: [
+                                      {
+                                        required: true
+                                      }
+                                    ],
+                                    initialValue: _.get(
+                                      selectedClone,
+                                      `conditions[${conditionIndex}].formulas[${parameterIndex}].operator`
+                                    )
+                                  }
+                                )(
+                                  <Select
+                                    showArrow={false}
+                                    dropdownMatchSelectWidth={false}
+                                  >
+                                    {this.Operations(types[parameter])}
+                                  </Select>
+                                )}
+                              </FormItem>
+                            </div>
+
+                            <div className="comparator">
+                              {this.Comparator(
+                                types[parameter],
+                                conditionIndex,
+                                parameterIndex
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {overlappingConditions && overlappingConditions.length > 0 && (
+            <Alert
+              message="Condition overlap detected"
+              description="For the conditions marked in red, a record could
               match multiple conditions at the same time. Adjust the settings to ensure
               mutual exclusivity before continuing."
-                type="error"
-                showIcon
-              />
-            )}
+              type="error"
+              showIcon
+            />
+          )}
 
           {hasMissingValues && (
             <Alert
