@@ -140,6 +140,7 @@ def workflow_send_email(action_id, job_type="Scheduled"):
 
     successes = []
     failures = []
+    null_recipients = 0
 
     messages = action.data["records"]
     batch_size = EMAIL_BATCH_SIZE if EMAIL_BATCH_SIZE else len(messages)
@@ -161,59 +162,60 @@ def workflow_send_email(action_id, job_type="Scheduled"):
 
             for index, item in enumerate(batch):
                 recipient = item.get(email_settings.field)
-                email_content = populated_content[recipient_count]
-
-                email_id = uuid.uuid4().hex
-                tracking_token = jwt.encode(
-                    {
-                        "action_id": str(action.id),
-                        "job_id": str(job_id),
-                        "email_id": str(email_id),
-                    },
-                    SECRET_KEY,
-                    algorithm="HS256",
-                ).decode("utf-8")
-
-                tracking_link = (
-                    f"{BACKEND_DOMAIN}/workflow/read_receipt/?email={tracking_token}"
-                )
-                tracking_pixel = f"<img src='{tracking_link}'/>"
-                email_content += tracking_pixel
-
-                if email_settings.include_feedback:
-                    feedback_link = f"{FRONTEND_DOMAIN}/feedback/{action.id}/?job={job_id}&email={email_id}"
-                    email_content += (
-                        "<p>Did you find this correspondence useful? Please provide your "
-                        f"feedback by <a href='{feedback_link}'>clicking here</a>.</p>"
-                    )
-
-                email_sent = send_email(
-                    recipient,
-                    email_settings.subject,
-                    email_content,
-                    from_name=email_settings.fromName,
-                    reply_to=email_settings.replyTo,
-                    connection=connection,
-                )
-
-                if email_sent:
-                    job.emails.append(
-                        Email(
-                            email_id=email_id,
-                            recipient=recipient,
-                            # Content without the tracking pixel
-                            content=populated_content[index],
-                        )
-                    )
-                    successes.append(recipient)
-                    logger.info(
-                        f"{action_id} - Action - Successfully sent email to {recipient} ({recipient_count + 1} of {len(messages)})"
-                    )
+                if recipient == "" or recipient is None:
+                    null_recipients = +1
                 else:
-                    failures.append(recipient)
-                    logger.info(
-                        f"{action_id} - Action - Failed to send email to {recipient} ({recipient_count + 1} of {len(messages)})"
+                    email_content = populated_content[recipient_count]
+
+                    email_id = uuid.uuid4().hex
+                    tracking_token = jwt.encode(
+                        {
+                            "action_id": str(action.id),
+                            "job_id": str(job_id),
+                            "email_id": str(email_id),
+                        },
+                        SECRET_KEY,
+                        algorithm="HS256",
+                    ).decode("utf-8")
+
+                    tracking_link = f"{BACKEND_DOMAIN}/workflow/read_receipt/?email={tracking_token}"
+                    tracking_pixel = f"<img src='{tracking_link}'/>"
+                    email_content += tracking_pixel
+
+                    if email_settings.include_feedback:
+                        feedback_link = f"{FRONTEND_DOMAIN}/feedback/{action.id}/?job={job_id}&email={email_id}"
+                        email_content += (
+                            "<p>Did you find this correspondence useful? Please provide your "
+                            f"feedback by <a href='{feedback_link}'>clicking here</a>.</p>"
+                        )
+
+                    email_sent = send_email(
+                        recipient,
+                        email_settings.subject,
+                        email_content,
+                        from_name=email_settings.fromName,
+                        reply_to=email_settings.replyTo,
+                        connection=connection,
                     )
+
+                    if email_sent:
+                        job.emails.append(
+                            Email(
+                                email_id=email_id,
+                                recipient=recipient,
+                                # Content without the tracking pixel
+                                content=populated_content[index],
+                            )
+                        )
+                        successes.append(recipient)
+                        logger.info(
+                            f"{action_id} - Action - Successfully sent email to {recipient} ({recipient_count + 1} of {len(messages)})"
+                        )
+                    else:
+                        failures.append(recipient)
+                        logger.info(
+                            f"{action_id} - Action - Failed to send email to {recipient} ({recipient_count + 1} of {len(messages)})"
+                        )
 
                 recipient_count += 1
 
@@ -226,7 +228,7 @@ def workflow_send_email(action_id, job_type="Scheduled"):
     action.emailJobs.append(job)
 
     action.save()
-    if len(failures) == 0:
+    if len(failures) == 0 and null_recipients == 0:
         send_email(
             action.container.owner,
             "Email job completed",
@@ -238,14 +240,12 @@ def workflow_send_email(action_id, job_type="Scheduled"):
             action.container.owner,
             "Email job completed",
             f"""
-                The following {len(failures)} emails were unsuccessful: {failures_concat}
-                <br><br>
-                The other {len(successes)} emails were successfully sent
+                {f"The following {len(failures)} emails were unsuccessful: {failures_concat}<br><br>" if len(failures) else ""}
+                {f"There were {null_recipients} recipients without an email address<br><br>" if null_recipients > 0 else ""}
+                {f"The other {len(successes)} emails were successfully sent" if len(successes) else ""}
             """,
         )
 
-    logger.info(
-        f"{action_id} - Action - {job_type} email job completed"
-    )
+    logger.info(f"{action_id} - Action - {job_type} email job completed")
 
     return "Email job completed."
