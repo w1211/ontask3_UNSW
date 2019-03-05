@@ -30,10 +30,10 @@ class Login extends React.Component {
     onLogin();
   };
 
-  onError = error => {
+  onError = (error, status) => {
     this.setState({
       loading: false,
-      error
+      error: [403, 401].includes(status) ? "Invalid credentials" : error
     });
   };
 

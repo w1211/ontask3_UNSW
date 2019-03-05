@@ -16,7 +16,7 @@ export const login = (payload, finishLogin, onError) => {
     payload,
     isAuthenticated: false,
     onSuccess: response => finishLogin(response),
-    onError: error => onError(error)
+    onError: (error, status) => onError(error, status)
   });
 };
 

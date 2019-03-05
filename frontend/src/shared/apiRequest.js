@@ -34,13 +34,13 @@ const apiRequest = async (
       options
     );
   } catch (err) {
-    onError("Failed to contact server. Please try again.");
+    onError("Failed to contact server. Please try again.", response.status);
     return;
   }
 
   // 401 User unauthorized was returned
   if (response.status === 401) {
-    onError("You are not authorized to perform that action.");
+    onError("You are not authorized to perform that action.", response.status);
     return;
   }
 
