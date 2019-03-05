@@ -150,7 +150,6 @@ class Data extends React.Component {
           b = label in b && b[label] !== null ? b[label] : "";
           return a.toString().localeCompare(b.toString());
         },
-        sortOrder: sort && sort.field === label && sort.order,
         title: (
           <span className="column_header datasource">{truncatedLabel}</span>
         ),
@@ -235,7 +234,6 @@ class Data extends React.Component {
         // b = label in b ? b[label] : "";
         // return a.toString().localeCompare(b.toString());
         // },
-        // sortOrder: sort && sort.field === label && sort.order,
         render: (text, record, index) => {
           if (field && field.type === "checkbox-group")
             text = _.pick(record, field.columns);
@@ -287,7 +285,6 @@ class Data extends React.Component {
           b = label in b && b[label] !== null ? b[label] : "";
           return a.toString().localeCompare(b.toString());
         },
-        sortOrder: sort && sort.field === label && sort.order,
         render: text => {
           return <Field readOnly field={field} value={text} />;
         }

@@ -152,7 +152,7 @@ class DataLabTab extends React.Component {
         dataIndex: "name",
         key: "name",
         sorter: (a, b) => a.name.localeCompare(b.name),
-        sortOrder: "ascend"
+        defaultSortOrder: "ascend"
       },
       {
         title: "Modules",
