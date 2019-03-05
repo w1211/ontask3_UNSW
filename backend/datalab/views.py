@@ -7,12 +7,17 @@ from rest_framework.response import Response
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.status import HTTP_401_UNAUTHORIZED, HTTP_200_OK
 from mongoengine.queryset.visitor import Q
+from rest_framework.views import APIView
+
 import pandas as pd
 import zipfile
 import json
 from io import BytesIO
+from bson import ObjectId
 
 from .serializers import (
+    OtherDatalabSerializer,
+    DatasourceSerializer,
     DatalabSerializer,
     OrderItemSerializer,
     RestrictedDatalabSerializer,
@@ -452,3 +457,29 @@ def ExportToCSV(request, id):
     data.to_csv(path_or_buf=response, index=False)
 
     return response
+
+
+@api_view(["GET"])
+def CreateDataLab(request):
+    container_id = request.query_params.get("container")
+    if not container_id:
+        raise ValidationError("A container must be specified when creating a DataLab")
+
+    try:
+        container = Container.objects.get(id=ObjectId(container_id))
+    except:
+        raise NotFound()
+
+    if not container.has_full_permission(request.user):
+        raise PermissionDenied()
+
+    response = {
+        "datasources": DatasourceSerializer(
+            Datasource.objects(container=container), many=True
+        ).data,
+        "dataLabs": OtherDatalabSerializer(
+            Datalab.objects(container=container), many=True
+        ).data,
+    }
+
+    return Response(response, status=HTTP_200_OK)

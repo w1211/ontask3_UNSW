@@ -265,7 +265,7 @@ class DataLabTab extends React.Component {
           onClick={() =>
             history.push({
               pathname: "/datalab",
-              state: { containerId, datasources, dataLabs }
+              state: { containerId }
             })
           }
         >

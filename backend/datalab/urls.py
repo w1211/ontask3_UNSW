@@ -4,4 +4,5 @@ from .views import *
 urlpatterns = [
     path("<id>/access/", AccessDataLab),
     path("<id>/csv/", ExportToCSV),
+    path("create/", CreateDataLab)
 ]

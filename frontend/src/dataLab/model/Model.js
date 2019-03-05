@@ -216,7 +216,7 @@ class Model extends React.Component {
     } = this.props;
     const { loading, error, stepKeys, steps } = this.state;
     const { getFieldDecorator, getFieldValue } = form;
-
+    
     return (
       <ModelContext.Provider
         value={{

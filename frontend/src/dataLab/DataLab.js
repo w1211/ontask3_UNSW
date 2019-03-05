@@ -27,11 +27,22 @@ class DataLab extends React.Component {
     // User pressed "Create DataLab", as the containerId is only set in the
     // location state when the navigation occurs
     if (containerId) {
-      this.setState({
-        fetching: false,
-        datasources: _.get(location, "state.datasources", []),
-        dataLabs: _.get(location, "state.dataLabs", []),
-        containerId
+      apiRequest(`/datalab/create/?container=${containerId}`, {
+        method: "GET",
+        onSuccess: ({ datasources, dataLabs }) => {
+          this.setState({
+            fetching: false,
+            datasources,
+            dataLabs
+          });
+        },
+        onError: (error, status) => {
+          if (status === 403) {
+            history.replace("/forbidden");
+          } else {
+            this.setState({ fetching: false });
+          }
+        }
       });
     } else if (match.params.id) {
       apiRequest(`/datalab/${match.params.id}/access/`, {
