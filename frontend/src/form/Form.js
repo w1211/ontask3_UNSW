@@ -31,7 +31,8 @@ class Form extends React.Component {
           fetching: false,
           form,
           columnNames,
-          tableColumns: this.generateColumns(form, columnNames)
+          tableColumns: this.generateColumns(form, columnNames),
+          grouping: form.default_group
         });
       },
       onError: (error, status) => {
@@ -227,13 +228,17 @@ class Form extends React.Component {
                                 }}
                                 allowClear
                                 showSearch
+                                value={grouping}
                                 onChange={grouping =>
                                   this.setState({
                                     grouping,
-                                    singleRecordIndex: form.data.findIndex(
-                                      item =>
-                                        _.get(item, form.groupBy) === grouping
-                                    )
+                                    singleRecordIndex: grouping
+                                      ? form.data.findIndex(
+                                          item =>
+                                            _.get(item, form.groupBy) ===
+                                            grouping
+                                        )
+                                      : singleRecordIndex
                                   })
                                 }
                               >

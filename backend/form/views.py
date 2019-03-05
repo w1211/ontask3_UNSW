@@ -133,17 +133,19 @@ class AccessForm(APIView):
         except:
             raise NotFound()
 
-        accessible_records = (
-            pd.DataFrame(data=form.datalab.relations)
-            .set_index(form.primary)
-            .filter(items=[form.primary, form.permission])
+        accessible_records = pd.DataFrame(data=form.datalab.data).set_index(
+            form.primary
         )
 
         has_full_permission = form.container.has_full_permission(self.request.user)
+        user_values = []
+
         if has_full_permission:
             editable_records = accessible_records.index.values
+            default_group = (
+                accessible_records[form.groupBy].iloc[0] if form.groupBy else None
+            )
         else:
-            user_values = []
             if form.emailAccess:
                 user_values.append(self.request.user.email)
             if form.ltiAccess:
@@ -165,6 +167,10 @@ class AccessForm(APIView):
             if not len(editable_records):
                 # User does not have access to any records, so return a 403
                 raise PermissionDenied()
+
+            default_group = (
+                editable_records[form.groupBy].iloc[0] if form.groupBy else None
+            )
 
             if form.restriction == "open":
                 editable_records = accessible_records.index.values
@@ -209,13 +215,18 @@ class AccessForm(APIView):
         ):
             editable_records = []
 
-        return [form, data, editable_records]
+        return [form, data, editable_records, default_group]
 
     def get(self, request, id):
-        [form, data, editable_records] = self.get_data(id)
+        [form, data, editable_records, default_group] = self.get_data(id)
 
         serializer = RestrictedFormSerializer(
-            form, context={"data": data, "editable_records": editable_records}
+            form,
+            context={
+                "data": data,
+                "editable_records": editable_records,
+                "default_group": default_group,
+            },
         )
 
         return Response(serializer.data)

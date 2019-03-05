@@ -20,6 +20,7 @@ class FormSerializer(DocumentSerializer):
 class RestrictedFormSerializer(DocumentSerializer):
     data = serializers.SerializerMethodField()
     editable_records = serializers.SerializerMethodField()
+    default_group = serializers.SerializerMethodField()
     is_active = serializers.SerializerMethodField()
 
     def get_data(self, form):
@@ -27,6 +28,9 @@ class RestrictedFormSerializer(DocumentSerializer):
 
     def get_editable_records(self, form):
         return self.context.get("editable_records")
+
+    def get_default_group(self, form):
+        return self.context.get("default_group")
 
     def get_is_active(self, form):
         return not (
@@ -49,5 +53,6 @@ class RestrictedFormSerializer(DocumentSerializer):
             "data",
             "editable_records",
             "is_active",
-            "groupBy"
+            "groupBy",
+            "default_group",
         ]
