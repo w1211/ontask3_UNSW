@@ -167,6 +167,7 @@ class DatalabSerializer(DocumentSerializer):
 class RestrictedDatalabSerializer(DocumentSerializer):
     columns = serializers.SerializerMethodField()
     data = serializers.SerializerMethodField()
+    default_group = serializers.SerializerMethodField()
 
     def get_columns(self, datalab):
         return OrderItemSerializer(
@@ -178,6 +179,10 @@ class RestrictedDatalabSerializer(DocumentSerializer):
     def get_data(self, datalab):
         return self.context.get("data", datalab.data)
 
+    def get_default_group(self, datalab):
+        return self.context.get("default_group")
+
+
     class Meta:
         model = Datalab
-        fields = ["name", "columns", "data", "groupBy"]
+        fields = ["name", "columns", "data", "groupBy", "default_group"]

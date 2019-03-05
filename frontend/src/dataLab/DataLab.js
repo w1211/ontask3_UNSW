@@ -286,6 +286,7 @@ class DataLab extends React.Component {
                           data={selected.data}
                           columns={selected.columns}
                           groupBy={selected.groupBy}
+                          defaultGroup={selected.default_group}
                           updateDatalab={this.updateDatalab}
                         />
                       )}

@@ -407,9 +407,14 @@ def AccessDataLab(request, id):
     if datalab.restriction == "private":
         data = accessible_records
 
+    default_group = (
+        accessible_records[datalab.groupBy].iloc[0] if datalab.groupBy else None
+    )
+
     data.replace({pd.np.nan: None}, inplace=True)
     serializer = RestrictedDatalabSerializer(
-        datalab, context={"data": data.to_dict("records")}
+        datalab,
+        context={"data": data.to_dict("records"), "default_group": default_group},
     )
 
     return Response(serializer.data)

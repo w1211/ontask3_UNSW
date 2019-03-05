@@ -24,15 +24,21 @@ import Field from "../../shared/Field";
 const Search = Input.Search;
 
 class Data extends React.Component {
-  state = {
-    sort: {},
-    editable: {},
-    edit: { field: null, primary: null },
-    saved: {},
-    searchTerm: "",
-    visualisation: false,
-    view: "data"
-  };
+  constructor(props) {
+    super(props);
+    const { defaultGroup } = this.props;
+
+    this.state = {
+      sort: {},
+      editable: {},
+      edit: { field: null, primary: null },
+      saved: {},
+      searchTerm: "",
+      visualisation: false,
+      view: "data",
+      grouping: defaultGroup
+    };
+  }
 
   initialiseData = memoize((data, searchTerm) => {
     if (!data) return [];
@@ -418,6 +424,7 @@ class Data extends React.Component {
                 placeholder="Group by"
                 allowClear
                 showSearch
+                value={grouping}
                 onChange={grouping => this.setState({ grouping })}
               >
                 {[...groups].sort().map((group, i) => (
