@@ -400,11 +400,12 @@ def AccessDataLab(request, id):
         raise PermissionDenied()
 
     if datalab.restriction == "private":
-        data = accessible_records.to_dict("records")
-    else:
-        data = data.to_dict("records")
-    
-    serializer = RestrictedDatalabSerializer(datalab, context={"data": data})
+        data = accessible_records
+
+    data.replace({pd.np.nan: None}, inplace=True)
+    serializer = RestrictedDatalabSerializer(
+        datalab, context={"data": data.to_dict("records")}
+    )
 
     return Response(serializer.data)
 
@@ -440,7 +441,7 @@ def ExportToCSV(request, id):
 
         if datalab.restriction == "private":
             data = accessible_records
-            
+
     # Re-order the columns to match the original datasource data
     order = OrderItemSerializer(
         datalab.order, many=True, context={"steps": datalab.steps}
