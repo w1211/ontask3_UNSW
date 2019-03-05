@@ -318,6 +318,7 @@ class Form extends React.Component {
                             key="groups"
                             allowClear
                             showSearch
+                            value={grouping}
                             onChange={grouping => this.setState({ grouping })}
                           >
                             {[...groups].sort().map((group, i) => (
