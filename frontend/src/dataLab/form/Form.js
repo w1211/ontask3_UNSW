@@ -31,7 +31,7 @@ class DataLabForm extends React.Component {
   componentWillMount() {
     const { columns, formDetails } = this.props;
 
-    const labels = columns.map(item => item.label);
+    const labels = columns.map(item => item.details.label);
 
     const fields = _.get(formDetails, "fields", []);
 
