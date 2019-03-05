@@ -40,7 +40,7 @@ class DataLab extends React.Component {
           if (status === 403) {
             history.replace("/forbidden");
           } else {
-            this.setState({ fetching: false });
+            history.replace("/error");
           }
         }
       });
@@ -62,7 +62,7 @@ class DataLab extends React.Component {
           if (status === 403) {
             history.replace("/forbidden");
           } else {
-            this.setState({ fetching: false });
+            history.replace("/error");
           }
         }
       });

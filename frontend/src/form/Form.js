@@ -40,10 +40,11 @@ class Form extends React.Component {
           return;
         }
 
-        this.setState({
-          fetching: false,
-          error: error.detail
-        });
+        // this.setState({
+        //   fetching: false,
+        //   error: error.detail
+        // });
+        history.replace("/error");
       }
     });
   }

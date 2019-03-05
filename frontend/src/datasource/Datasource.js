@@ -31,7 +31,7 @@ class Datasource extends React.Component {
           if (status === 403) {
             history.replace("/forbidden");
           } else {
-            this.setState({ fetching: false });
+            history.replace("/error");
           }
         }
       });

@@ -17,6 +17,7 @@ import Action from "./action/Action";
 import Administration from "./administration/Administration";
 import Form from "./form/Form";
 import Forbidden from "./error/Forbidden";
+import ServerError from "./error/ServerError";
 
 import "./App.css";
 
@@ -218,6 +219,7 @@ class App extends React.Component {
           })}
 
           <Route exact path="/forbidden" component={Forbidden} />
+          <Route exact path="/error" component={ServerError} />
 
           <Route
             path="/feedback/:id"
