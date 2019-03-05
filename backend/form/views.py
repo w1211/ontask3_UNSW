@@ -232,7 +232,7 @@ class AccessForm(APIView):
         return Response(serializer.data)
 
     def patch(self, request, id):
-        [form, data, editable_records] = self.get_data(id)
+        [form, data, editable_records, default_group] = self.get_data(id)
 
         primary = request.data.get("primary")
         if primary not in editable_records:
