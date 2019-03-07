@@ -56,8 +56,11 @@ class LocalAuth(APIView):
             )
 
         user = User.objects.create_user(**request.data)
-        user.groups.add(Group.objects.get(name="user"))
-
+        if os.environ.get("ONTASK_DEMO"):
+            user.groups.add(Group.objects.get(name="instructor"))
+        else:
+            user.groups.add(Group.objects.get(name="user"))
+            
         # Give the user a container with example datasources, datalabs, actions, etc
         # seed_data(user)
 

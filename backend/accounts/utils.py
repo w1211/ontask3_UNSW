@@ -42,7 +42,10 @@ def get_or_create_user(data):
         # Randomly generate a password for users coming from AAF or LTI
         data["password"] = uuid.uuid4().hex
         user = User.objects.create_user(**data)
-        user.groups.add(Group.objects.get(name="user"))
+        if os.environ.get("ONTASK_DEMO"):
+            user.groups.add(Group.objects.get(name="instructor"))
+        else:
+            user.groups.add(Group.objects.get(name="user"))
 
         # Send a notification to admins on user signup, if OnTask is in demo mode
         user_signup_notification(user)
