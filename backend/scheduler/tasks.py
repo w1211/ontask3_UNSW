@@ -13,12 +13,13 @@ import boto3
 import pandas as pd
 from io import StringIO
 import logging
+import os
 
 from datasource.models import Datasource
 from administration.models import Dump
 from datalab.models import Datalab
 
-from .utils import create_crontab, send_email
+from .utils import create_crontab, send_email, should_run
 
 from ontask.settings import (
     SECRET_KEY,
@@ -67,9 +68,11 @@ def remove_periodic_task(task_name):
 
 
 @shared_task
-def refresh_datasource_data(datasource_id):
+@should_run
+def refresh_datasource_data(datasource_id=None, **kwargs):
     """ Reads the query data from the external source and
         inserts the data into the datasource """
+
     datasource = Datasource.objects.get(id=ObjectId(datasource_id))
     datasource.refresh_data()
 
@@ -77,7 +80,7 @@ def refresh_datasource_data(datasource_id):
 
 
 @shared_task
-def dump_datalab_data():
+def dump_datalab_data(**kwargs):
     from datalab.serializers import OrderItemSerializer
 
     dump = Dump.objects.all()
@@ -118,7 +121,8 @@ def dump_datalab_data():
 
 
 @shared_task
-def workflow_send_email(action_id, job_type="Scheduled"):
+@should_run
+def workflow_send_email(action_id=None, job_type="Scheduled", **kwargs):
     """ Send email based on the schedule in workflow model """
     logger.info(f"{action_id} - Action - {job_type} email job initiated")
 
@@ -189,14 +193,26 @@ def workflow_send_email(action_id, job_type="Scheduled"):
                             f"feedback by <a href='{feedback_link}'>clicking here</a>.</p>"
                         )
 
-                    email_sent = send_email(
-                        recipient,
-                        email_settings.subject,
-                        email_content,
-                        from_name=email_settings.fromName,
-                        reply_to=email_settings.replyTo,
-                        connection=connection,
-                    )
+                    if os.environ.get("ONTASK_DEVELOPMENT"):
+                        email_sent = True
+                        logger.info(
+                            f"""
+                                To: {recipient}
+                                From: {email_settings.fromName}
+                                Reply To: {email_settings.replyTo}
+                                Subject: {email_settings.subject}
+                                Content:\n{email_content}
+                            """
+                        )
+                    else:
+                        email_sent = send_email(
+                            recipient,
+                            email_settings.subject,
+                            email_content,
+                            from_name=email_settings.fromName,
+                            reply_to=email_settings.replyTo,
+                            connection=connection,
+                        )
 
                     if email_sent:
                         job.emails.append(
@@ -228,23 +244,25 @@ def workflow_send_email(action_id, job_type="Scheduled"):
     action.emailJobs.append(job)
 
     action.save()
-    if len(failures) == 0 and null_recipients == 0:
-        send_email(
-            action.container.owner,
-            "Email job completed",
-            f"All {len(successes)} emails were successfully sent",
-        )
-    else:
-        failures_concat = ", ".join(failures)
-        send_email(
-            action.container.owner,
-            "Email job completed",
-            f"""
-                {f"The following {len(failures)} emails were unsuccessful: {failures_concat}<br><br>" if len(failures) else ""}
-                {f"There were {null_recipients} recipients without an email address<br><br>" if null_recipients > 0 else ""}
-                {f"The other {len(successes)} emails were successfully sent" if len(successes) else ""}
-            """,
-        )
+
+    if not os.environ.get("ONTASK_DEVELOPMENT"):
+        if len(failures) == 0 and null_recipients == 0:
+            send_email(
+                action.container.owner,
+                "Email job completed",
+                f"All {len(successes)} emails were successfully sent",
+            )
+        else:
+            failures_concat = ", ".join(failures)
+            send_email(
+                action.container.owner,
+                "Email job completed",
+                f"""
+                    {f"The following {len(failures)} emails were unsuccessful: {failures_concat}<br><br>" if len(failures) else ""}
+                    {f"There were {null_recipients} recipients without an email address<br><br>" if null_recipients > 0 else ""}
+                    {f"The other {len(successes)} emails were successfully sent" if len(successes) else ""}
+                """,
+            )
 
     logger.info(f"{action_id} - Action - {job_type} email job completed")
 

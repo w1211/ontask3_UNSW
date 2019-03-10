@@ -59,19 +59,15 @@ class Content(EmbeddedDocument):
 
 
 class Schedule(EmbeddedDocument):
-    startTime = DateTimeField()
-    endTime = DateTimeField()
+    active_from = DateTimeField(null=True)
+    active_to = DateTimeField(null=True)
     time = DateTimeField(required=True)
     frequency = StringField(required=True, choices=("daily", "weekly", "monthly"))
-    dayFrequency = IntField(min_value=1)  # I.e. every n days
-    dayOfWeek = ListField(
-        StringField()
-    )  # List of shorthand day names, e.g. ['mon', 'wed', 'fri']
-    dayOfMonth = (
-        DateTimeField()
-    )  # Number representing the date in the month, e.g. 1 is the 1st
-    taskName = StringField()  # The name of the celery task
-    asyncTasks = ListField(StringField())  # async tasks
+    # List of shorthand day names, e.g. ['mon', 'wed', 'fri']
+    day_of_week = ListField(StringField())
+    # Number representing the date in the month, e.g. 1 is the 1st
+    day_of_month = DateTimeField()
+    task_name = StringField()  # The name of the celery task
 
 
 class Option(EmbeddedDocument):
@@ -303,4 +299,4 @@ class Workflow(Document):
         return self.content
 
     def send_email(self):
-        workflow_send_email.delay(str(self.id), job_type="Manual")
+        workflow_send_email.delay(action_id=str(self.id), job_type="Manual")

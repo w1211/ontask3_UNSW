@@ -9,7 +9,7 @@ from mongoengine.queryset.visitor import Q
 import json
 import boto3
 from xlrd import open_workbook
-from datetime import datetime
+from datetime import datetime as dt
 import os
 import pandas as pd
 
@@ -30,11 +30,7 @@ from .utils import (
     guess_column_types,
     process_data,
 )
-from scheduler.methods import (
-    create_scheduled_task,
-    remove_scheduled_task,
-    remove_async_task,
-)
+from scheduler.utils import create_task, delete_task
 
 from container.models import Container
 from datalab.models import Datalab
@@ -190,7 +186,7 @@ class DatasourceViewSet(viewsets.ModelViewSet):
                 data=data,
                 fields=fields,
                 types=types,
-                lastUpdated=datetime.utcnow(),
+                lastUpdated=dt.utcnow(),
             )
             datasource.update_associated_datalabs()
         else:
@@ -219,26 +215,15 @@ class DatasourceViewSet(viewsets.ModelViewSet):
 
         # If a schedule already exists for this datasource, then delete it
         if "schedule" in datasource:
-            if "taskName" in datasource["schedule"]:
-                remove_scheduled_task(datasource["schedule"]["taskName"])
+            delete_task(datasource.schedule.task_name)
 
-            if "asyncTasks" in datasource["schedule"]:
-                remove_async_task(datasource["schedule"]["asyncTasks"])
-
-        schedule = request.data
-
-        # Create new schedule tasks
-        arguments = json.dumps({"datasource_id": id})
-        task_name, async_tasks = create_scheduled_task(
-            "refresh_datasource_data", schedule, arguments
+        task_name = create_task(
+            "refresh_datasource_data", request.data, {"datasource_id": id}
         )
+        request.data["task_name"] = task_name
 
-        schedule["taskName"] = task_name
-        schedule["asyncTasks"] = async_tasks
-
-        datasource.update(unset__schedule=1)
         serializer = DatasourceSerializer(
-            datasource, data={"schedule": schedule}, partial=True
+            datasource, data={"schedule": request.data}, partial=True
         )
         serializer.is_valid()
         serializer.save()
@@ -251,17 +236,13 @@ class DatasourceViewSet(viewsets.ModelViewSet):
 
         self.check_object_permissions(self.request, datasource)
 
-        if "schedule" in datasource and "taskName" in datasource["schedule"]:
-            remove_scheduled_task(datasource["schedule"]["taskName"])
+        if "schedule" in datasource:
+            delete_task(datasource.schedule.task_name)
+            datasource.schedule = None
+            datasource.save()
 
-        if "schedule" in datasource and "asyncTasks" in datasource["schedule"]:
-            remove_async_task(datasource["schedule"]["asyncTasks"])
-
-        datasource.update(unset__schedule=1)
-
-        serializer = DatasourceSerializer(self.get_object())
+        serializer = DatasourceSerializer(datasource)
         return JsonResponse(serializer.data)
-
 
     @list_route(methods=["post"])
     def get_sheetnames(self, request):

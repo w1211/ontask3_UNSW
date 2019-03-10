@@ -7,6 +7,5 @@ from datalab.models import Datalab
 class Dump(Document):
     # Cascade delete if datalab is deleted
     task_name = StringField()
-    async_tasks = ListField(StringField())
     datalabs = ListField(ReferenceField(Datalab, reverse_delete_rule=2))
     last_run = DateTimeField()

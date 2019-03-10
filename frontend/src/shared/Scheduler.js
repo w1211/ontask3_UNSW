@@ -98,32 +98,10 @@ class Scheduler extends React.Component {
           )}
         </FormItem>
 
-        {getFieldValue("frequency") === "daily" && (
-          <FormItem {...formItemLayout} label="When">
-            {getFieldDecorator("dayFrequency", {
-              initialValue:
-                schedule && schedule.dayFrequency
-                  ? schedule.dayFrequency.toString()
-                  : null,
-              rules: [
-                { required: true, message: "When is required" },
-                { pattern: "^[1-9][0-9]*$", message: "Must be an integer" }
-              ]
-            })(
-              <Input
-                addonBefore="Every"
-                addonAfter={
-                  form.getFieldValue("dayFrequency") > 1 ? "days" : "day"
-                }
-              />
-            )}
-          </FormItem>
-        )}
-
         {getFieldValue("frequency") === "weekly" && (
           <FormItem {...formItemLayout} label="When">
-            {getFieldDecorator("dayOfWeek", {
-              initialValue: schedule ? schedule.dayOfWeek : [],
+            {getFieldDecorator("day_of_week", {
+              initialValue: schedule ? schedule.day_of_week : [],
               rules: [{ required: true, message: "When is required" }]
             })(
               <Select mode="multiple">
@@ -141,10 +119,10 @@ class Scheduler extends React.Component {
 
         {getFieldValue("frequency") === "monthly" && (
           <FormItem {...formItemLayout} label="When">
-            {getFieldDecorator("dayOfMonth", {
+            {getFieldDecorator("day_of_month", {
               initialValue:
-                schedule && schedule.dayOfMonth
-                  ? moment.utc(schedule.dayOfMonth).local()
+                schedule && schedule.day_of_month
+                  ? moment.utc(schedule.day_of_month).local()
                   : null,
               rules: [{ required: true, message: "When is required" }]
             })(<DatePicker format={"Do"} />)}
@@ -152,19 +130,19 @@ class Scheduler extends React.Component {
         )}
 
         <FormItem {...formItemLayout} label="Active from">
-          {getFieldDecorator("startTime", {
+          {getFieldDecorator("active_from", {
             initialValue:
-              schedule && schedule.startTime
-                ? moment.utc(schedule.startTime).local()
+              schedule && schedule.active_from
+                ? moment.utc(schedule.active_from).local()
                 : undefined
           })(<DatePicker showTime format="DD/MM/YYYY HH:mm" />)}
         </FormItem>
 
         <FormItem {...formItemLayout} label="Active to">
-          {getFieldDecorator("endTime", {
+          {getFieldDecorator("active_to", {
             initialValue:
-              schedule && schedule.endTime
-                ? moment.utc(schedule.endTime).local()
+              schedule && schedule.active_to
+                ? moment.utc(schedule.active_to).local()
                 : undefined
           })(<DatePicker showTime format="DD/MM/YYYY HH:mm" />)}
         </FormItem>

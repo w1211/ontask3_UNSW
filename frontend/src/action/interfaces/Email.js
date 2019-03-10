@@ -411,12 +411,7 @@ class Email extends React.Component {
               </FormItem>
 
               <FormItem {...narrowFormItemLayout} label="Frequency">
-                {action.schedule.frequency === "daily" &&
-                  `
-                  Every ${action.schedule.dayFrequency} ${
-                    action.schedule.dayFrequency === "1" ? "day" : "days"
-                  }
-                `}
+                {action.schedule.frequency === "daily" && "Daily"}
 
                 {action.schedule.frequency === "weekly" &&
                   `

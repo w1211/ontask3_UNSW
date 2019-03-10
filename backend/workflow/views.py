@@ -30,11 +30,7 @@ from .permissions import WorkflowPermissions
 
 from container.models import Container
 
-from scheduler.methods import (
-    create_scheduled_task,
-    remove_scheduled_task,
-    remove_async_task,
-)
+from scheduler.utils import create_task, delete_task
 
 from ontask.settings import SECRET_KEY, BACKEND_DOMAIN
 
@@ -167,23 +163,19 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         self.check_object_permissions(request, action)
 
         # If a schedule already exists for this action, then delete it
-        if "schedule" in action and "taskName" in action["schedule"]:
-            remove_scheduled_task(action["schedule"]["taskName"])
-
-        if "schedule" in action and "asyncTasks" in action["schedule"]:
-            remove_async_task(action["schedule"]["asyncTasks"])
+        if "schedule" in action:
+            delete_task(action.schedule.task_name)
 
         if request.method == "PUT":
-            arguments = dumps({"action_id": id})
-
-            task_name, async_tasks = create_scheduled_task(
-                "workflow_send_email", request.data, arguments
+            task_name = create_task(
+                "workflow_send_email", request.data, {"action_id": id}
             )
-            request.data["taskName"] = task_name
-            request.data["asyncTasks"] = async_tasks
+            request.data["task_name"] = task_name
+
             action.schedule = Schedule(**request.data)
 
-        if request.method == "DELETE":
+        if request.method == "DELETE" and "schedule" in action:
+            delete_task(action.schedule.task_name)
             action.schedule = None
 
         action.save()
@@ -260,7 +252,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         return Response(status=HTTP_200_OK)
 
 
-
 class FeedbackView(APIView):
     permission_classes = [AllowAny]
 
@@ -268,11 +259,7 @@ class FeedbackView(APIView):
         try:
             action = Workflow.objects.get(id=kwargs.get("datalab_id"))
         except:
-            return JsonResponse(
-                {
-                    "error": "Correspondence does not exist"
-                }
-            )
+            return JsonResponse({"error": "Correspondence does not exist"})
 
         job_id = request.GET.get("job")
         email_id = request.GET.get("email")
@@ -305,11 +292,7 @@ class FeedbackView(APIView):
                         }
 
         if not payload:
-            return JsonResponse(
-                {
-                    "error": "Invalid feedback URL"
-                }
-            )
+            return JsonResponse({"error": "Invalid feedback URL"})
 
         return JsonResponse(payload)
 

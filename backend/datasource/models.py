@@ -48,17 +48,15 @@ class Connection(EmbeddedDocument):
 
 
 class Schedule(EmbeddedDocument):
-    startTime = DateTimeField(null=True)
-    endTime = DateTimeField(null=True)
+    active_from = DateTimeField(null=True)
+    active_to = DateTimeField(null=True)
     time = DateTimeField(required=True)
     frequency = StringField(required=True, choices=("daily", "weekly", "monthly"))
-    dayFrequency = IntField(min_value=1)  # I.e. every n days
     # List of shorthand day names, e.g. ['mon', 'wed', 'fri']
-    dayOfWeek = ListField(StringField())
+    day_of_week = ListField(StringField())
     # Number representing the date in the month, e.g. 1 is the 1st
-    dayOfMonth = DateTimeField()
-    taskName = StringField()  # The name of the celery task
-    asyncTasks = ListField(StringField())  # Async tasks
+    day_of_month = DateTimeField()
+    task_name = StringField()  # The name of the celery task
 
 
 class Datasource(Document):

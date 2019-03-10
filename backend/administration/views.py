@@ -15,11 +15,7 @@ from datetime import datetime as dt, timedelta
 from .serializers import *
 from .models import *
 from datalab.models import Datalab
-from scheduler.methods import (
-    create_scheduled_task,
-    remove_scheduled_task,
-    remove_async_task,
-)
+from scheduler.utils import create_task, delete_task
 from scheduler.tasks import dump_datalab_data
 
 from collections import defaultdict
@@ -94,7 +90,7 @@ class DataLabDump(APIView):
         scheduled = False
         if len(dump) > 0:
             last_run = dump[0].last_run
-            scheduled  = bool(dump[0].task_name)
+            scheduled = bool(dump[0].task_name)
             dump = [str(datalab.id) for datalab in dump[0].datalabs]
         else:
             dump = []
@@ -123,23 +119,18 @@ class DataLabDump(APIView):
 
         if scheduled and not dump.task_name:
             schedule = {
-                "dayFrequency": 1,
                 "frequency": "daily",
                 "time": dt.utcnow()
                 .replace(hour=21, minute=0)
-                .strftime("%Y-%m-%d %H:%M:%S"),
+                .strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             }
-            task_name, async_tasks = create_scheduled_task(
-                "dump_datalab_data", schedule, ""
-            )
+            task_name = create_task("dump_datalab_data", schedule)
             dump.task_name = task_name
-            dump.async_tasks = async_tasks
             dump.save()
+
         elif not scheduled and dump.task_name:
-            remove_scheduled_task(dump.task_name)
-            remove_async_task(dump.async_tasks)
+            delete_task(dump.task_name)
             dump.task_name = None
-            dump.async_tasks = []
             dump.save()
 
         is_force = request.query_params.get("force")
