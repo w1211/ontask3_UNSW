@@ -30,8 +30,6 @@ from ontask.settings import (
     DATALAB_DUMP_BUCKET,
 )
 
-logger = logging.getLogger("django")
-
 
 @shared_task
 @should_run
@@ -90,7 +88,7 @@ def dump_datalab_data(**kwargs):
 @should_run
 def workflow_send_email(action_id=None, job_type="Scheduled", **kwargs):
     """ Send email based on the schedule in workflow model """
-    logger.info(f"{action_id} - Action - {job_type} email job initiated")
+    logging.info(f"{action_id} - Action - {job_type} email job initiated")
 
     from workflow.models import Workflow, EmailJob, Email
 
@@ -122,7 +120,7 @@ def workflow_send_email(action_id=None, job_type="Scheduled", **kwargs):
 
     recipient_count = 0
     for batch_index, batch in enumerate(email_batches):
-        logger.info(
+        logging.info(
             f"{action_id} - Action - Starting batch {batch_index + 1} of {len(email_batches)}"
         )
 
@@ -161,7 +159,7 @@ def workflow_send_email(action_id=None, job_type="Scheduled", **kwargs):
 
                     if os.environ.get("ONTASK_DEVELOPMENT"):
                         email_sent = True
-                        logger.info(
+                        logging.info(
                             f"""
                                 To: {recipient}
                                 From: {email_settings.fromName}
@@ -190,19 +188,19 @@ def workflow_send_email(action_id=None, job_type="Scheduled", **kwargs):
                             )
                         )
                         successes.append(recipient)
-                        logger.info(
+                        logging.info(
                             f"{action_id} - Action - Successfully sent email to {recipient} ({recipient_count + 1} of {len(messages)})"
                         )
                     else:
                         failures.append(recipient)
-                        logger.info(
+                        logging.info(
                             f"{action_id} - Action - Failed to send email to {recipient} ({recipient_count + 1} of {len(messages)})"
                         )
 
                 recipient_count += 1
 
             if batch_index + 1 != len(email_batches) and batch_pause > 0:
-                logger.info(
+                logging.info(
                     f"{action_id} - Action - End of batch reached. Waiting for {batch_pause} seconds"
                 )
                 sleep(batch_pause)
@@ -230,6 +228,6 @@ def workflow_send_email(action_id=None, job_type="Scheduled", **kwargs):
                 """,
             )
 
-    logger.info(f"{action_id} - Action - {job_type} email job completed")
+    logging.info(f"{action_id} - Action - {job_type} email job completed")
 
     return "Email job completed."

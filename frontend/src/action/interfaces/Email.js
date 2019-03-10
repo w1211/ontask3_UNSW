@@ -415,7 +415,7 @@ class Email extends React.Component {
 
                 {action.schedule.frequency === "weekly" &&
                   `
-                  Every ${action.schedule.dayOfWeek
+                  Every ${action.schedule.day_of_week
                     .sort((a, b) => this.dayMap[a].order - this.dayMap[b].order)
                     .map(day => this.dayMap[day].label)
                     .join(", ")}
