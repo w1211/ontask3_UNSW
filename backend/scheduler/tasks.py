@@ -4,7 +4,6 @@ from celery.execute import send_task
 from django_celery_beat.models import PeriodicTask
 
 from bson.objectid import ObjectId
-import json
 import jwt
 import uuid
 from time import sleep
@@ -32,39 +31,6 @@ from ontask.settings import (
 )
 
 logger = logging.getLogger("django")
-
-
-@shared_task
-def instantiate_periodic_task(task, task_type, task_name, schedule, arguments):
-    crontab = create_crontab(schedule)
-
-    try:
-        if task_type == "interval":
-            periodic_task = PeriodicTask.objects.create(
-                interval=crontab, name=task_name, task=task, kwargs=arguments
-            )
-            send_task(task, kwargs=json.loads(arguments))
-
-        else:
-            periodic_task = PeriodicTask.objects.create(
-                crontab=crontab, name=task_name, task=task, kwargs=arguments
-            )
-
-        response_message = "Instantiated periodic task  - %s" % task_name
-    except Exception as exception:
-        response_message = exception
-    return response_message
-
-
-@shared_task
-def remove_periodic_task(task_name):
-    try:
-        task = PeriodicTask.objects.get(name=task_name)
-        task.delete()
-        response_message = "Removed task  - %s" % task_name
-    except Exception as exception:
-        response_message = exception
-    return response_message
 
 
 @shared_task
