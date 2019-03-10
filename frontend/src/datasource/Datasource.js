@@ -102,8 +102,8 @@ class Datasource extends React.Component {
     const scheduleIsActive =
       datasource &&
       datasource.schedule &&
-      moment(datasource.schedule.startTime || now).isSameOrBefore(now) &&
-      moment(datasource.schedule.endTime || now).isSameOrAfter(now);
+      moment(datasource.schedule.active_from || now).isSameOrBefore(now) &&
+      moment(datasource.schedule.active_to || now).isSameOrAfter(now);
 
     return (
       <div>
@@ -171,11 +171,11 @@ class Datasource extends React.Component {
                           to="/dashboard"
                           style={{ display: "inline-block", marginBottom: 20 }}
                         >
-                          <Icon type="arrow-left" style={{ marginRight: 5 }}/>
+                          <Icon type="arrow-left" style={{ marginRight: 5 }} />
                           <span>Back to dashboard</span>
                         </Link>
                       )}
-                      
+
                       <h1>{datasource ? datasource.name : "Add Datasource"}</h1>
 
                       {datasourceId ? (

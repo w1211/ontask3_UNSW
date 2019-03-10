@@ -27,7 +27,7 @@ class SchedulerModal extends React.Component {
       if (err) return;
 
       // Format the time fields to be in UTC
-      ["time", "startTime", "endTime", "dayOfMonth"].forEach(field => {
+      ["time", "active_from", "active_to", "day_of_month"].forEach(field => {
         if (field in payload && payload[field])
           payload[field] = payload[field].utc();
       });

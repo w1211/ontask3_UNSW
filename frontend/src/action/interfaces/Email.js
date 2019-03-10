@@ -394,15 +394,15 @@ class Email extends React.Component {
                 </Tooltip>
               </div>
 
-              {_.get(action, "schedule.startTime") && (
+              {_.get(action, "schedule.active_from") && (
                 <FormItem {...narrowFormItemLayout} label="Active from">
-                  {moment(action.schedule.startTime).format("YYYY/MM/DD HH:mm")}
+                  {moment(action.schedule.active_from).format("YYYY/MM/DD HH:mm")}
                 </FormItem>
               )}
 
-              {_.get(action, "schedule.endTime") && (
+              {_.get(action, "schedule.active_to") && (
                 <FormItem {...narrowFormItemLayout} label="Active to">
-                  {moment(action.schedule.endTime).format("YYYY/MM/DD HH:mm")}
+                  {moment(action.schedule.active_to).format("YYYY/MM/DD HH:mm")}
                 </FormItem>
               )}
 
@@ -422,7 +422,7 @@ class Email extends React.Component {
                 `}
 
                 {action.schedule.frequency === "monthly" &&
-                  `On the ${moment(action.schedule.dayOfMonth).format(
+                  `On the ${moment(action.schedule.day_of_month).format(
                     "Do"
                   )} of each month`}
               </FormItem>
