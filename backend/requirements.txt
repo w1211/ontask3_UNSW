@@ -17,4 +17,6 @@ xlrd==1.2.0
 python-dateutil==2.8.0
 numexpr==2.6.9
 watchtower==0.5.5
-tornado==4.5.3 # Version lock this dependency to resolve issues with asyncio in Flower
+# Version lock "sqlparse" to prevent Djongo migration error
+# Refer to https://github.com/nesdis/djongo/issues/244
+sqlparse==0.2.4
