@@ -42,6 +42,3 @@ tmp/*
 
 # Data files for docker containers
 data/*
-
-# Flower environment file
-flower.env
