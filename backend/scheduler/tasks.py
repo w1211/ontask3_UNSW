@@ -73,7 +73,9 @@ def dump_datalab_data(**kwargs):
         order = OrderItemSerializer(
             datalab.order, many=True, context={"steps": datalab.steps}
         )
-        reordered_columns = [item.get("label") for item in order.data]
+        reordered_columns = [
+            item.get("details", {}).get("label") for item in order.data
+        ]
         data = data.reindex(columns=reordered_columns)
 
         data.to_csv(csv_buffer, index=False)
