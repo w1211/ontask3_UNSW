@@ -38,6 +38,7 @@ class Field(EmbeddedDocument):
     useIcon = BooleanField(null=True)
     columns = ListField(StringField())
 
+
 class Form(Document):
     container = ReferenceField(
         Container, required=True, reverse_delete_rule=2
@@ -63,9 +64,12 @@ class Form(Document):
 
     # Flat representation of which users should see this form when they load the dashboard
     def refresh_access(self):
-        users = set(record.get(self.permission) for record in self.datalab.relations)
-        if None in users:
-            users.remove(None)
+        users = set(
+            record.get(self.permission, "").lower() for record in self.datalab.relations
+        )
+        for invalid_value in [None, ""]:
+            if invalid_value in users:
+                users.remove(invalid_value)
 
         self.permitted_users = list(users)
         self.save()

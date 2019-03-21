@@ -401,7 +401,7 @@ class Dashboard extends React.Component {
                   ]}
 
                   {container.has_full_permission &&
-                    ["information_submission"].some(
+                    ["shared_datalabs", "information_submission"].some(
                       type => container[type].length > 0
                     ) && <Menu.Divider />}
 

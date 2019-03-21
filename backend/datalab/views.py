@@ -389,16 +389,16 @@ def AccessDataLab(request, id):
 
     user_values = []
     if datalab.emailAccess:
-        user_values.append(request.user.email)
+        user_values.append(request.user.email.lower())
     if datalab.ltiAccess:
         try:
             lti_object = lti.objects.get(user=request.user.id)
-            user_values.extend(lti_object.payload.values())
+            user_values.extend([value.lower() for value in lti_object.payload.values()])
         except:
             pass
 
     data = pd.DataFrame(data=datalab.data)
-    accessible_records = data[data[datalab.permission].isin(user_values)]
+    accessible_records = data[data[datalab.permission].str.lower().isin(user_values)]
 
     if not len(accessible_records):
         # User does not have access to any records, so return a 403

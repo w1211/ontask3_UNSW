@@ -88,7 +88,8 @@ class DataLab extends React.Component {
   };
 
   updateForms = ({ formIndex, updatedForm, isDelete }) => {
-    const { forms } = this.state;
+    const { selected } = this.state;
+    const { forms } = selected;
 
     if (isDelete) {
       forms.splice(formIndex, 1);
@@ -100,7 +101,7 @@ class DataLab extends React.Component {
       }
     }
 
-    this.setState({ forms });
+    this.setState({ selected: { ...selected, forms } });
   };
 
   render() {

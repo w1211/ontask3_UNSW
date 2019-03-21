@@ -61,8 +61,8 @@ class User(AbstractUser):
             lti_values.extend(lti_payload.values())
         except:
             pass
-        return lti_values
+        return [value.lower() for value in lti_values]
 
     @property
     def permission_values(self):
-        return [self.email] + self.lti
+        return [self.email.lower()] + self.lti

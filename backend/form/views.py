@@ -147,21 +147,23 @@ class AccessForm(APIView):
             )
         else:
             if form.emailAccess:
-                user_values.append(self.request.user.email)
+                user_values.append(self.request.user.email.lower())
             if form.ltiAccess:
                 try:
                     lti_object = lti.objects.get(user=self.request.user.id)
-                    user_values.extend(lti_object.payload.values())
+                    user_values.extend(
+                        [value.lower() for value in lti_object.payload.values()]
+                    )
                 except:
                     pass
 
             if form.primary == form.permission:
                 editable_records = accessible_records[
-                    accessible_records.index.isin(user_values)
+                    accessible_records.index.str.lower().isin(user_values)
                 ]
             else:
                 editable_records = accessible_records[
-                    accessible_records[form.permission].isin(user_values)
+                    accessible_records[form.permission].str.lower().isin(user_values)
                 ]
 
             if not len(editable_records):
