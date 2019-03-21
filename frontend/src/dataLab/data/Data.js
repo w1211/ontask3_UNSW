@@ -92,7 +92,8 @@ class Data extends React.Component {
                 readOnly
                 field={{
                   type: column.details.field_type,
-                  columns: column.details.fields
+                  columns: column.details.fields,
+                  options: column.details.options
                 }}
                 value={value}
               />
@@ -110,14 +111,15 @@ class Data extends React.Component {
         dataIndex: "value",
         render: (value, record) => {
           if (record.column.details.field_type === "checkbox-group")
-            value = _.pick(record.item, record.column.details.columns);
+            value = _.pick(record.item, record.column.details.fields);
 
           return (
             <Field
               readOnly
               field={{
-                type: record.column.details.type,
-                columns: record.column.details.columns
+                type: record.column.details.field_type,
+                columns: record.column.details.fields,
+                options: record.column.details.options
               }}
               value={value}
             />

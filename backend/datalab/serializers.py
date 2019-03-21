@@ -92,6 +92,12 @@ class OrderItemSerializer(EmbeddedDocumentSerializer):
                     if field.type == "checkbox-group":
                         details["fields"] = field.columns
 
+                    if field.type == "list":
+                        details["options"] = [
+                            {"label": option.label, "value": option.value}
+                            for option in field.options
+                        ]
+
         elif module.type == "computed":
             for field in module.computed.fields:
                 if field.name == order_item.field:
@@ -181,7 +187,6 @@ class RestrictedDatalabSerializer(DocumentSerializer):
 
     def get_default_group(self, datalab):
         return self.context.get("default_group")
-
 
     class Meta:
         model = Datalab
