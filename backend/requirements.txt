@@ -17,6 +17,7 @@ xlrd==1.2.0
 python-dateutil==2.8.0
 numexpr==2.6.9
 watchtower==0.5.5
+requests==2.21.0
 # Version lock "sqlparse" to prevent Djongo migration error
 # Refer to https://github.com/nesdis/djongo/issues/244
 sqlparse==0.2.4

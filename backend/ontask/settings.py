@@ -19,6 +19,7 @@ from boto3 import Session
 EMAIL_NAME = None
 EMAIL_ALIAS = None
 AWS_PROFILE = None
+TEAMS_WEBHOOK = None
 DATALAB_DUMP_BUCKET = None
 LOG_GROUP = None
 EMAIL_BATCH_SIZE = None
@@ -140,6 +141,7 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework.authentication.TokenAuthentication",
     ),
+    "EXCEPTION_HANDLER": "helpers.exception_handler.JSONExceptionHandler",
 }
 
 AUTH_USER_MODEL = "accounts.User"
@@ -157,46 +159,48 @@ BROKER_POOL_LIMIT = None
 
 DB_DRIVER_MAPPING = {"postgresql": "postgresql", "mysql": "mysql+pymysql"}
 
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {
+            "format": "%(levelname)s %(asctime)s (%(name)s) %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        }
+    },
+    "handlers": {
+        "console": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+            "stream": sys.stdout,
+            "formatter": "standard",
+        }
+    },
+    "loggers": {
+        "django": {"level": "INFO", "handlers": ["console"], "propagate": False}
+    },
+}
+
+if TEAMS_WEBHOOK:
+    LOGGING["handlers"]["teams"] = {
+        "level": "WARNING",
+        "class": "helpers.teams_logger.TeamsExceptionHandler",
+    }
+    LOGGING["loggers"]["django"]["handlers"].append("teams")
+
+
 if ENABLE_CLOUDWATCH_LOGGING and LOG_GROUP:
     session = {"region_name": AWS_REGION}
     if AWS_PROFILE:
         session["profile_name"] = AWS_PROFILE
 
-    LOGGING = {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "formatters": {
-            "standard": {
-            "format": "%(levelname)s %(asctime)s (%(name)s) %(message)s",
-                "datefmt": "%Y-%m-%d %H:%M:%S",
-            }
-        },
-        "handlers": {
-            "console": {
-                "level": "DEBUG",
-                "class": "logging.StreamHandler",
-                "stream": sys.stdout,
-                "formatter": "standard",
-            },
-            "watchtower": {
-                "level": "INFO",
-                "class": "watchtower.django.CloudWatchLogHandler",
-                "boto3_session": Session(**session),
-                "log_group": LOG_GROUP,
-                "stream_name": os.environ.get("LOG_STREAM"),
-                "formatter": "standard",
-            },
-            "mail_admins": {
-                "level": "WARNING",
-                "class": "django.utils.log.AdminEmailHandler",
-                "include_html": True,
-            },
-        },
-        "loggers": {
-            "django": {
-                "level": "INFO",
-                "handlers": ["mail_admins", "watchtower", "console"],
-                "propagate": False,
-            }
-        },
+    LOGGING["handlers"]["watchtower"] = {
+        "level": "INFO",
+        "class": "watchtower.django.CloudWatchLogHandler",
+        "boto3_session": Session(**session),
+        "log_group": LOG_GROUP,
+        "stream_name": os.environ.get("LOG_STREAM"),
+        "formatter": "standard",
     }
+
+    LOGGING["loggers"]["django"]["handlers"].append("watchtower")
