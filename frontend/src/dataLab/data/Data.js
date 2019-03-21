@@ -128,8 +128,8 @@ class Data extends React.Component {
   };
 
   TruncatedLabel = label =>
-    label.length > 15 ? (
-      <Popover content={label}>{`${label.slice(0, 15)}...`}</Popover>
+    label.length > 25 ? (
+      <Popover content={label}>{`${label.slice(0, 25)}...`}</Popover>
     ) : (
       label
     );
