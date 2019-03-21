@@ -59,7 +59,7 @@ class Data extends React.Component {
 
   initialiseColumns = () => {
     const { steps, columns, data } = this.props;
-
+    
     if (data.length > 1)
       return columns
         .filter(column => column.visible)
@@ -84,14 +84,14 @@ class Data extends React.Component {
             </span>
           ),
           render: (value, record) => {
-            if (column.details.type === "checkbox-group")
+            if (column.details.field_type === "checkbox-group")
               value = _.pick(record, column.details.fields);
 
             return (
               <Field
                 readOnly
                 field={{
-                  type: column.details.type,
+                  type: column.details.field_type,
                   columns: column.details.fields
                 }}
                 value={value}
