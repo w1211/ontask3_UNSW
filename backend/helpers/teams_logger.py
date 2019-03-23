@@ -35,6 +35,7 @@ class TeamsExceptionHandler(AdminEmailHandler):
             "sections": [
                 {
                     "activityTitle": subject,
+                    "markdown": False,
                     "facts": [
                         {"name": "Level", "value": record.levelname},
                         {
