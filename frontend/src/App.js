@@ -4,6 +4,7 @@ import { withRouter } from "react-router";
 import { Layout, Tooltip, Button } from "antd";
 import queryString from "query-string";
 import _ from "lodash";
+import preval from "preval.macro";
 
 import logo from "./img/logo.png";
 
@@ -227,7 +228,13 @@ class App extends React.Component {
           />
         </Switch>
 
-        <Footer className="footer">© OnTask Project 2018</Footer>
+        <Footer className="footer">
+          © OnTask Project 2018
+          <span style={{ marginLeft: 15, color: "rgba(117, 117, 117, 0.5)" }}>
+            Build date{" "}
+            {preval`module.exports = new Date().toLocaleString("en", {year: "numeric", month: "2-digit", day: "numeric"});`}
+          </span>
+        </Footer>
       </Layout>
     );
   }

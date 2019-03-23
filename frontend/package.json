@@ -5,7 +5,7 @@
   "dependencies": {
     "@antv/data-set": "^0.8.9",
     "antd": "^3.13.0",
-    "bizcharts": "^3.1.10",
+    "bizcharts": "^3.5.1",
     "d3": "^5.7.0",
     "expr-eval": "^1.2.2",
     "highcharts": "^7.0.1",
@@ -22,7 +22,7 @@
     "react-dom": "^16.6.3",
     "react-draggable": "^3.0.5",
     "react-router-dom": "^4.3.1",
-    "react-scripts": "2.1.1",
+    "react-scripts": "^2.1.8",
     "sanitize-html": "^1.18.4",
     "slate": "^0.34.7",
     "slate-html-serializer": "^0.6.13",
@@ -31,7 +31,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "GENERATE_SOURCEMAP=false react-scripts build",
+    "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject"
   },
@@ -40,5 +40,8 @@
     "not dead",
     "not ie <= 11",
     "not op_mini all"
-  ]
+  ],
+  "devDependencies": {
+    "preval.macro": "^3.0.0"
+  }
 }
