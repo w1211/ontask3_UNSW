@@ -10,19 +10,17 @@ import os
 from collections import defaultdict
 from dateutil import parser
 import pandas as pd
+import re
 
-from ontask.settings import (
-    SECRET_KEY,
-    DB_DRIVER_MAPPING,
-    AWS_PROFILE
-)
+from ontask.settings import SECRET_KEY, DB_DRIVER_MAPPING, AWS_PROFILE
+
 
 def process_data(data):
     df = pd.DataFrame(data)
 
     # Replace illegal characters in column headers
-    df.columns = df.columns.str.replace('[', '(')
-    df.columns = df.columns.str.replace(']', ')')
+    df.columns = df.columns.str.replace("[", "(")
+    df.columns = df.columns.str.replace("]", ")")
 
     # Remove percentage signs from each cell
     df = df.applymap(
@@ -30,7 +28,7 @@ def process_data(data):
     )
 
     return df.to_dict("records")
-    
+
 
 def retrieve_sql_data(connection):
     """Generic service to retrieve data from an SQL server with a provided query"""
@@ -84,16 +82,10 @@ def retrieve_csv_data(file, delimiter):
     delimiter = "," if delimiter is None else delimiter
 
     file = file.read().decode("utf-8").splitlines()
-    column_headers = file.pop(0).split(delimiter)
-    for (index, header) in enumerate(column_headers):
-        for char in [".", "$", '"', "'"]:
-            if char in header:
-                column_headers[index] = column_headers[index].replace(char, "")
+    for char in [".", "$"]:
+        file[0] = file[0].replace(char, "")
 
-    file = "\r\n".join(file)
-    reader = csv.DictReader(
-        io.StringIO(file), fieldnames=column_headers, delimiter=delimiter
-    )
+    reader = csv.DictReader(file, delimiter=delimiter)
     data = list(reader)
 
     return data
