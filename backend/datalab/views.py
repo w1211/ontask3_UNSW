@@ -451,13 +451,23 @@ def ExportToCSV(request, id):
 
         if datalab.restriction == "private":
             data = accessible_records
-
+    
     # Re-order the columns to match the original datasource data
     order = OrderItemSerializer(
         datalab.order, many=True, context={"steps": datalab.steps}
     )
-    reordered_columns = [item["details"]["label"] for item in order.data]
+
+    reordered_columns = []
+    unwrapped_columns = []
+    for item in order.data:
+        if item["details"]["field_type"] == "checkbox-group":
+            reordered_columns.extend(item["details"]["fields"])
+            unwrapped_columns.extend(item["details"]["fields"])
+        else:
+            reordered_columns.append(item["details"]["label"])
+
     data = data.reindex(columns=reordered_columns)
+    data[unwrapped_columns] = data[unwrapped_columns].fillna(False)
 
     data.to_csv(path_or_buf=response, index=False)
 
