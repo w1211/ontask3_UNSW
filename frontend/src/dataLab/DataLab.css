@@ -492,9 +492,6 @@
 .dataLab .components button {
   padding: 0 11px !important;
 }
-.dataLab .components button:not(:first-child):not(:last-child) {
-  margin: 0 10px;
-}
 .dataLab .components button.datasource {
   background: #e6f7ff;
   border-color: #91d5ff;

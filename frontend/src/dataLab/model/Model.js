@@ -216,7 +216,7 @@ class Model extends React.Component {
     } = this.props;
     const { loading, error, stepKeys, steps } = this.state;
     const { getFieldDecorator, getFieldValue } = form;
-    
+
     return (
       <ModelContext.Provider
         value={{
@@ -248,14 +248,24 @@ class Model extends React.Component {
                     onClick={() => this.addModule("datasource")}
                   />
                 </Tooltip>
-                <Tooltip title="Add a form module">
+
+                <Tooltip
+                  title={
+                    selectedId
+                      ? "Add a form module"
+                      : "The DataLab must be created before you can add a form module"
+                  }
+                >
                   <Button
+                    disabled={!selectedId}
                     icon="form"
                     size="large"
                     className="form"
                     onClick={() => this.addModule("form")}
+                    style={{ margin: "0 10px" }}
                   />
                 </Tooltip>
+
                 <Tooltip title="Add a computed fields module">
                   <Button
                     icon="calculator"

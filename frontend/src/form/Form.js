@@ -1,6 +1,15 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Layout, Icon, Spin, Table, Divider, Select, notification } from "antd";
+import {
+  Layout,
+  Icon,
+  Spin,
+  Table,
+  Divider,
+  Select,
+  notification,
+  message
+} from "antd";
 import _ from "lodash";
 
 import apiRequest from "../shared/apiRequest";
@@ -32,7 +41,8 @@ class Form extends React.Component {
           form,
           columnNames,
           tableColumns: this.generateColumns(form, columnNames),
-          grouping: form.default_group
+          grouping: form.default_group,
+          searchField: form.primary
         });
       },
       onError: (error, status) => {
@@ -155,6 +165,7 @@ class Form extends React.Component {
             this.setState({ saved: { ...saved, [primary]: savedRecord } });
           }, 1500);
         });
+        message.success("Form successfully updated");
       },
       onError: () => {
         notification["error"]({
@@ -179,7 +190,8 @@ class Form extends React.Component {
       columnNames,
       singleRecordIndex,
       saved,
-      grouping
+      grouping,
+      searchField
     } = this.state;
 
     const groups =
@@ -254,32 +266,55 @@ class Form extends React.Component {
                               Choose a record:
                             </div>
 
-                            <Select
-                              showSearch
-                              allowClear
-                              style={{ width: "100%", maxWidth: 350 }}
-                              onChange={singleRecordIndex =>
-                                this.setState({ singleRecordIndex })
-                              }
-                              filterOption={(input, option) =>
-                                option.props.children
-                                  .toLowerCase()
-                                  .indexOf(input.toLowerCase()) >= 0
-                              }
-                              value={_.get(
-                                form.data,
-                                `${singleRecordIndex}.${form.primary}`
+                            <div>
+                              {form.searchBy.length > 0 && (
+                                <Select
+                                  style={{ marginRight: 10, minWidth: 150 }}
+                                  onChange={searchField =>
+                                    this.setState({ searchField })
+                                  }
+                                  value={searchField}
+                                >
+                                  {[
+                                    <Select.Option key={form.primary}>
+                                      {form.primary}
+                                    </Select.Option>,
+                                    ...form.searchBy.map((field, index) => (
+                                      <Select.Option key={field}>
+                                        {field}
+                                      </Select.Option>
+                                    ))
+                                  ]}
+                                </Select>
                               )}
-                            >
-                              {form.data.map((record, index) =>
-                                grouping === undefined ||
-                                _.get(record, form.groupBy) === grouping ? (
-                                  <Select.Option key={index}>
-                                    {record[form.primary]}
-                                  </Select.Option>
-                                ) : null
-                              )}
-                            </Select>
+
+                              <Select
+                                showSearch
+                                style={{ width: "100%", maxWidth: 350 }}
+                                onChange={singleRecordIndex =>
+                                  this.setState({ singleRecordIndex })
+                                }
+                                filterOption={(input, option) =>
+                                  option.props.children
+                                    .toLowerCase()
+                                    .indexOf(input.toLowerCase()) >= 0
+                                }
+                                value={_.get(
+                                  form.data,
+                                  `${singleRecordIndex}.${searchField}`
+                                )}
+                              >
+                                {form.data.map((record, index) =>
+                                  grouping === undefined ||
+                                  grouping === null ||
+                                  _.get(record, form.groupBy) === grouping ? (
+                                    <Select.Option key={index}>
+                                      {record[searchField]}
+                                    </Select.Option>
+                                  ) : null
+                                )}
+                              </Select>
+                            </div>
 
                             <Divider />
                           </div>
@@ -333,7 +368,7 @@ class Form extends React.Component {
                         <Table
                           columns={tableColumns}
                           dataSource={
-                            grouping !== undefined
+                            grouping !== undefined && grouping !== null
                               ? form.data.filter(
                                   item => _.get(item, form.groupBy) === grouping
                                 )

@@ -227,12 +227,13 @@ class DataLabForm extends React.Component {
 
   preview = () => {
     const { form, data } = this.props;
-    const { singleRecordIndex, grouping } = this.state;
+    const { singleRecordIndex, grouping, searchField } = this.state;
     const { getFieldsValue } = form;
     const {
       primary,
       visibleFields,
       groupBy,
+      searchBy,
       fields,
       layout
     } = getFieldsValue();
@@ -287,7 +288,7 @@ class DataLabForm extends React.Component {
           <Table
             columns={tableColumns}
             dataSource={
-              grouping !== undefined
+              grouping !== undefined || grouping !== null
                 ? data.filter(item => _.get(item, groupBy) === grouping)
                 : data
             }
@@ -359,24 +360,45 @@ class DataLabForm extends React.Component {
 
           <div style={{ marginBottom: 5 }}>Choose a record:</div>
 
-          <Select
-            showSearch
-            allowClear
-            style={{ width: "100%", maxWidth: 350 }}
-            onChange={singleRecordIndex => this.setState({ singleRecordIndex })}
-            filterOption={(input, option) =>
-              option.props.children
-                .toLowerCase()
-                .indexOf(input.toLowerCase()) >= 0
-            }
-            value={_.get(data, `${singleRecordIndex}.${primary}`)}
-          >
-            {data.map((record, index) =>
-              grouping === undefined || _.get(record, groupBy) === grouping ? (
-                <Select.Option key={index}>{record[primary]}</Select.Option>
-              ) : null
+          <div>
+            {searchBy.length > 0 && (
+              <Select
+                style={{ marginRight: 10, minWidth: 150 }}
+                onChange={searchField => this.setState({ searchField })}
+                value={searchField}
+              >
+                {[
+                  <Select.Option key={primary}>{primary}</Select.Option>,
+                  ...searchBy.map((field, index) => (
+                    <Select.Option key={field}>{field}</Select.Option>
+                  ))
+                ]}
+              </Select>
             )}
-          </Select>
+
+            <Select
+              style={{ width: "100%", maxWidth: 350 }}
+              onChange={singleRecordIndex =>
+                this.setState({ singleRecordIndex })
+              }
+              filterOption={(input, option) =>
+                option.props.children
+                  .toLowerCase()
+                  .indexOf(input.toLowerCase()) >= 0
+              }
+              value={_.get(data, `${singleRecordIndex}.${searchField}`)}
+            >
+              {data.map((record, index) =>
+                grouping === undefined ||
+                grouping === null ||
+                _.get(record, groupBy) === grouping ? (
+                  <Select.Option key={index}>
+                    {record[searchField]}
+                  </Select.Option>
+                ) : null
+              )}
+            </Select>
+          </div>
 
           <Divider />
 
@@ -581,6 +603,50 @@ class DataLabForm extends React.Component {
               ].map(label => (
                 <Select.Option value={label} key={label}>
                   {label}
+                </Select.Option>
+              ))}
+            </Select>
+          )}
+        </Form.Item>
+
+        <Form.Item
+          {...formItemLayout}
+          label={
+            <span>
+              Search by
+              <Tooltip title="Allow records to be searched by the chosen field">
+                <Icon
+                  style={{ marginLeft: 5, cursor: "help" }}
+                  type="question-circle"
+                />
+              </Tooltip>
+            </span>
+          }
+        >
+          {getFieldDecorator("searchBy", {
+            initialValue: _.get(formDetails, "searchBy")
+          })(
+            <Select allowClear mode="multiple">
+              {[
+                ...(getFieldValue("primary") ? [getFieldValue("primary")] : []),
+                ...(getFieldValue("visibleFields")
+                  ? getFieldValue("visibleFields")
+                  : [])
+              ].map(label => (
+                <Select.Option
+                  disabled={label === primary}
+                  value={label}
+                  key={label}
+                >
+                  <Tooltip
+                    title={
+                      label === primary
+                        ? "The primary key of the form is included by default"
+                        : ""
+                    }
+                  >
+                    {label}
+                  </Tooltip>
                 </Select.Option>
               ))}
             </Select>

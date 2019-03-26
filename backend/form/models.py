@@ -58,6 +58,7 @@ class Form(Document):
     emailAccess = BooleanField(default=False)
     permission = StringField(null=True)
     groupBy = StringField(null=True)
+    searchBy = ListField(StringField())
     data = ListField(DictField())
     permitted_users = ListField(StringField())
     restriction = StringField(choices=("private", "limited", "open"), default="private")
