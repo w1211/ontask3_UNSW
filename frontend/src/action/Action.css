@@ -172,3 +172,6 @@
 .action .formlist_item .ant-form-explain {
   display: none;
 }
+button.react-draggable {
+  transition: none;
+}
