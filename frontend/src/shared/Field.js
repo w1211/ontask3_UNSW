@@ -82,7 +82,9 @@ class Field extends React.Component {
 
   ListField = () => {
     const { field } = this.props;
-    const { value } = this.state;
+    let { value } = this.state;
+
+    if (!value) value = [];
 
     if (field.listStyle === "dropdown") {
       return (
@@ -250,7 +252,7 @@ class Field extends React.Component {
   };
 
   render() {
-    const { field, readOnly, value, showName } = this.props;
+    let { field, readOnly, value, showName } = this.props;
 
     return (
       <div>
@@ -275,23 +277,17 @@ class Field extends React.Component {
               case "list":
                 if (!value) return null;
 
-                if (value instanceof Array) {
-                  return `[${value
-                    .map(x => (x ? x.toString() : ""))
-                    .join(", ")}]`;
-                  // .map(item => {
-                  //   const option = field.options.find(
-                  //     option => option.value === item
-                  //   );
-                  //   return option ? option.label : null;
-                  // })
-                  // .join(", ");
-                }
+                const label = value => {
+                  const option = field.options.find(
+                    option => option.value === value
+                  );
+                  return option ? option.label : "";
+                };
 
-                const option = field.options.find(
-                  option => option.value === value
-                );
-                return option ? option.label : null;
+                if (value instanceof Array)
+                  return value.map(x => label(x)).join(", ");
+
+                return label(value);
 
               case "checkbox-group":
                 return (
