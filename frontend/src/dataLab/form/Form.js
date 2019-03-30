@@ -596,7 +596,6 @@ class DataLabForm extends React.Component {
           })(
             <Select allowClear>
               {[
-                ...(getFieldValue("primary") ? [getFieldValue("primary")] : []),
                 ...(getFieldValue("visibleFields")
                   ? getFieldValue("visibleFields")
                   : [])
