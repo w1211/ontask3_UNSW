@@ -78,7 +78,7 @@ class Option(EmbeddedDocument):
 class EmailSettings(EmbeddedDocument):
     subject = StringField(required=True)
     field = StringField(required=True)
-    fromName = StringField()
+    fromName = StringField(null=True)
     replyTo = StringField(required=True)
     include_feedback = BooleanField()
     feedback_list = BooleanField()
@@ -171,9 +171,15 @@ class Workflow(Document):
                 form = Form.objects.get(id=step.form)
                 module["name"] = form.name
                 for field in form.fields:
-                    module["fields"].append(field.name)
-                    types[field.name] = field.type
-                    module_labels[field.name] = field.name
+                    if field.type == "checkbox-group":
+                        for column in field.columns:
+                            module["fields"].append(column)
+                            types[column] = "checkbox"
+                            module_labels[column] = column
+                    else:
+                        module["fields"].append(field.name)
+                        types[field.name] = field.type
+                        module_labels[field.name] = field.name
                 modules.append(module)
                 labels.append(module_labels)
 
@@ -191,7 +197,7 @@ class Workflow(Document):
     @property
     def data(self):
         options = self.options
-
+    
         if self.filter:
             filtered_data = []
 
@@ -215,12 +221,17 @@ class Workflow(Document):
         else:
             filtered_data = self.datalab.data
 
-        labels = options["labels"]
         column_order = []
-        for item in self.datalab.order:
-            step_index = item["stepIndex"]
-            field = item["field"]
-            column_order.append(labels[step_index][field])
+        from datalab.serializers import OrderItemSerializer
+        order = OrderItemSerializer(
+            self.datalab.order, many=True, context={"steps": self.datalab.steps}
+        ).data
+            
+        for item in order:
+            if item["details"]["field_type"] == "checkbox-group":
+                column_order.extend(item["details"]["fields"])
+            else:
+                column_order.append(item["details"]["label"])
 
         return {
             "records": filtered_data,
@@ -267,6 +278,11 @@ class Workflow(Document):
         html = content["html"]
         result = []
 
+        from datalab.serializers import OrderItemSerializer
+        order = OrderItemSerializer(
+            self.datalab.order, many=True, context={"steps": self.datalab.steps}
+        ).data
+
         # Populate the content for each record
         for item_index, item in enumerate(filtered_data):
             populated_content = ""
@@ -275,9 +291,9 @@ class Workflow(Document):
                 if block["type"] == "condition":
                     condition_id = block["data"]["conditionId"]
                     if item_index in populated_rules.get(ObjectId(condition_id), {}):
-                        populated_content += parse_content_line(html[block_index], item)
+                        populated_content += parse_content_line(html[block_index], item, order)
                 else:
-                    populated_content += parse_content_line(html[block_index], item)
+                    populated_content += parse_content_line(html[block_index], item, order)
 
             result.append(populated_content)
 

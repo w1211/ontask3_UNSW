@@ -55,15 +55,39 @@ def did_pass_test(test, value, param_type):
         return False
 
 
-def populate_field(match, item):
+def populate_field(match, item, order):
     field = match.group(1)
-    if field in item:
-        return str(item[field])
-    else:
-        return None
+    value = item.get(field)
+
+    for item in order:
+        if item["details"]["label"] == field:
+            if item["details"]["field_type"] == "checkbox":
+                value = value if value else "False"
+
+            elif item["details"]["field_type"] == "list":
+                if not isinstance(value, list):
+                    value = [value]
+
+                mapping = {
+                    option["value"]: option["label"]
+                    for option in item["details"]["options"]
+                }
+                value = [mapping.get(value, "") for value in value]
+
+        elif field in item["details"].get("fields", []):
+            value = "False" if not value else value
+
+    if isinstance(value, list):
+        value = ", ".join(value if value else "")
+    elif not isinstance(value, str):
+        value = str(value)
+
+    return value
 
 
-def parse_content_line(line, item):
+def parse_content_line(line, item, order):
     return re.sub(
-        r"<attribute>(.*?)</attribute>", lambda match: populate_field(match, item), line
+        r"<attribute>(.*?)</attribute>",
+        lambda match: populate_field(match, item, order),
+        line,
     )
