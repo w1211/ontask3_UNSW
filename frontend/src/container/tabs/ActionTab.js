@@ -158,12 +158,18 @@ class ActionTab extends React.Component {
           style={{ marginBottom: 15 }}
           type="primary"
           icon="plus"
-          onClick={() =>
+          onClick={() => {
             history.push({
               pathname: "/action",
-              state: { containerId, dataLabs }
-            })
-          }
+              state: {
+                containerId,
+                dataLabs: dataLabs.map(dataLab => ({
+                  id: dataLab.id,
+                  name: dataLab.name
+                }))
+              }
+            });
+          }}
         >
           Create Action
         </Button>
