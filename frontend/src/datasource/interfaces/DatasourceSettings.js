@@ -32,7 +32,7 @@ class DatasourceSettings extends React.Component {
       fileError: null,
       loading: false,
       error: null,
-      sheetnames: null
+      sheetnames: []
     };
   }
 
@@ -116,7 +116,8 @@ class DatasourceSettings extends React.Component {
     const parameters = {
       method: "POST",
       onError: error => this.setState({ loading: false, error }),
-      onSuccess: sheetnames => {
+      onSuccess: response => {
+        const { sheetnames } = response;
         this.setState({ loading: false, sheetnames });
       },
       payload: data,
