@@ -93,7 +93,7 @@ class Field extends React.Component {
           mode={field.multiSelect ? "multiple" : "default"}
           allowClear={true}
           style={{ width: "100%" }}
-          onChange={value => this.handleChange(value)}
+          onChange={value => this.handleChange(value, true)}
           onBlur={this.handleSave}
         >
           {(field.options || []).map(option => (
@@ -161,7 +161,7 @@ class Field extends React.Component {
         <Select
           value={value}
           style={{ width: "100%" }}
-          onChange={value => this.handleChange(value)}
+          onChange={value => this.handleChange(value, true)}
           onBlur={this.handleSave}
         >
           {steps.map(step => (

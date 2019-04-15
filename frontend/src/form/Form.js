@@ -7,7 +7,6 @@ import {
   Table,
   Divider,
   Select,
-  notification,
   message
 } from "antd";
 import _ from "lodash";
@@ -153,6 +152,7 @@ class Form extends React.Component {
     });
     this.setState({ form: { ...form, data } });
 
+    const loading = message.loading("Saving form...", 0);
     apiRequest(`/form/${match.params.id}/access/`, {
       method: "PATCH",
       payload: { primary, field, value },
@@ -165,12 +165,12 @@ class Form extends React.Component {
             this.setState({ saved: { ...saved, [primary]: savedRecord } });
           }, 1500);
         });
-        message.success("Form successfully updated");
+        loading();
+        message.success("Form saved");
       },
       onError: () => {
-        notification["error"]({
-          message: "Failed to update form"
-        });
+        loading();
+        message.error("Failed to save form");
         // Revert the form data using the original form state
         // (const is instantiated at the start of handleSubmit, before the setState)
         this.setState({ form });
