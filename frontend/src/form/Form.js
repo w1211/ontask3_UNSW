@@ -7,7 +7,12 @@ import {
   Table,
   Divider,
   Select,
-  message
+  message,
+  Dropdown,
+  Button,
+  Menu,
+  Upload,
+  notification
 } from "antd";
 import _ from "lodash";
 
@@ -182,6 +187,67 @@ class Form extends React.Component {
     clearTimeout(this.updateSuccess);
   }
 
+  Tools = () => {
+    const { match } = this.props;
+
+    return (
+      <Menu
+        onClick={e => {
+          if (e.key === "export") {
+            this.setState({ loading: true });
+
+            apiRequest(`/form/${match.params.id}/export_structure/`, {
+              method: "POST",
+              onSuccess: () => {
+                this.setState({ loading: false });
+              },
+              onError: () => {
+                this.setState({ loading: false });
+              }
+            });
+          } else if (e.key === "import") {
+            this.setState({ upload: true });
+          }
+        }}
+      >
+        <Menu.Item key="export">Export structure</Menu.Item>
+        <Menu.Item key="import">Import form data</Menu.Item>
+      </Menu>
+    );
+  };
+
+  uploadData = e => {
+    const { match } = this.props;
+    const { form } = this.state;
+
+    const file = e.file;
+    const payload = new FormData();
+    payload.append("file", file, file.name);
+
+    this.setState({ loading: true });
+    apiRequest(`/form/${match.params.id}/import_data/`, {
+      method: "POST",
+      payload,
+      isJSON: false,
+      onSuccess: () => {
+        apiRequest(`/form/${match.params.id}/access/`, {
+          method: "GET",
+          onSuccess: form => {
+            this.setState({ loading: false, upload: false, form });
+            notification["success"]({
+              message: "Successfully imported form data"
+            });
+          }
+        });
+      },
+      onError: () => {
+        notification["error"]({
+          message: "Failed to import form data"
+        });
+      }
+    });
+  };
+
   render() {
     const {
       fetching,
@@ -191,7 +257,9 @@ class Form extends React.Component {
       singleRecordIndex,
       saved,
       grouping,
-      searchField
+      searchField,
+      loading,
+      upload
     } = this.state;
 
     const groups =
@@ -218,6 +286,46 @@ class Form extends React.Component {
                       <Icon type="arrow-left" style={{ marginRight: 5 }} />
                       <span>Back to dashboard</span>
                     </Link>
+
+                    {sessionStorage.getItem("group") === "admin" && (
+                      <div style={{ marginBottom: 10 }}>
+                        <Dropdown overlay={this.Tools} trigger={["click"]}>
+                          <Button loading={loading} type="primary" icon="tool">
+                            Tools <Icon type="down" />
+                          </Button>
+                        </Dropdown>
+
+                        {upload && (
+                          <Button
+                            type="danger"
+                            style={{ marginLeft: 5 }}
+                            onClick={() => this.setState({ upload: false })}
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                      </div>
+                    )}
+
+                    {upload && (
+                      <div style={{ maxWidth: 400, marginBottom: 10 }}>
+                        <Upload.Dragger
+                          accept="text/csv"
+                          name="data"
+                          listType="picture-card"
+                          showUploadList={false}
+                          customRequest={this.uploadData}
+                          disabled={loading}
+                        >
+                          <p className="ant-upload-drag-icon">
+                            <Icon type="inbox" />
+                          </p>
+                          <p className="ant-upload-text">
+                            Click or drag CSV to this area to upload
+                          </p>
+                        </Upload.Dragger>
+                      </div>
+                    )}
 
                     <h1>{form.name}</h1>
 

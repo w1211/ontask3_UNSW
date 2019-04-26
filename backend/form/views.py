@@ -1,11 +1,14 @@
+from django.http import HttpResponse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_200_OK
 from rest_framework.views import APIView
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.permissions import IsAdminUser
 
 import pandas as pd
 from datetime import datetime as dt
+import csv
 
 from .serializers import FormSerializer, RestrictedFormSerializer
 from .models import Form
@@ -267,3 +270,61 @@ class AccessForm(APIView):
         form.save()
 
         return Response(status=HTTP_200_OK)
+
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def ExportStructure(request, id):
+    try:
+        form = Form.objects.get(id=id)
+    except:
+        raise NotFound()
+
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = f"attachment; filename={form.name}.csv"
+    response["Access-Control-Expose-Headers"] = "Content-Disposition"
+
+    # Identify the form field names, include the form primary key as the
+    # first field so that the join can be performed on the later import
+    fields = [form.primary]
+    for field in form.fields:
+        if field.type == "checkbox-group":
+            fields.extend(field.columns)
+        else:
+            fields.append(field.name)
+
+    # Construct a csv with the form field names as headers
+    writer = csv.writer(response)
+    writer.writerow(fields)
+
+    return response
+
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def ImportData(request, id):
+    try:
+        form = Form.objects.get(id=id)
+    except:
+        raise NotFound()
+
+    form_data = pd.DataFrame(form.data).set_index(form.primary).T.to_dict()
+
+    imported_data = pd.DataFrame.from_csv(request.data["file"]).T.to_dict()
+    for primary, values in imported_data.items():
+        form_data[primary] = values
+
+    form_data = (
+        pd.DataFrame.from_dict(form_data, orient="index")
+        .rename_axis(form.primary)
+        .reset_index()
+    )
+    
+    # Replace NaN values with None
+    form_data.replace({pd.np.nan: None}, inplace=True)
+
+    form_data = form_data.to_dict("records")
+    form.data = form_data
+    form.save()
+
+    return Response(status=HTTP_200_OK)
