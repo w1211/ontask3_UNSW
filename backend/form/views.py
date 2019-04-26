@@ -293,9 +293,9 @@ def ExportStructure(request, id):
         else:
             fields.append(field.name)
 
-    # Construct a csv with the form field names as headers
-    writer = csv.writer(response)
-    writer.writerow(fields)
+    pd.DataFrame(data=form.data).reindex(columns=fields).to_csv(
+        path_or_buf=response, index=False
+    )
 
     return response
 
@@ -319,7 +319,7 @@ def ImportData(request, id):
         .rename_axis(form.primary)
         .reset_index()
     )
-    
+
     # Replace NaN values with None
     form_data.replace({pd.np.nan: None}, inplace=True)
 
