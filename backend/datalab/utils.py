@@ -2,6 +2,7 @@ from collections import defaultdict
 from datetime import datetime
 import numexpr as ne
 import pandas as pd
+import numpy as np
 
 from .models import Datalab
 from datasource.models import Datasource
@@ -75,7 +76,7 @@ def calculate_computed_field(formula, record, build_fields, tracking_feedback_da
 
     def cast_float(value):
         try:
-            return float(value)
+            return float(value) if not np.isnan(value) else 0
         except (ValueError, TypeError):
             return 0
 
