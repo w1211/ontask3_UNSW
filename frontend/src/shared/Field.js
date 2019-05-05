@@ -165,7 +165,7 @@ class Field extends React.Component {
           onBlur={this.handleSave}
         >
           {steps.map(step => (
-            <Option key={step}>{step}</Option>
+            <Option key={step} value={step}>{step}</Option>
           ))}
         </Select>
       );
