@@ -232,7 +232,7 @@ class App extends React.Component {
           © OnTask Project 2018
           <span style={{ marginLeft: 15, color: "rgba(117, 117, 117, 0.5)" }}>
             Build date{" "}
-            {preval`module.exports = new Date().toLocaleString("en", {year: "numeric", month: "2-digit", day: "numeric"});`}
+            {preval`module.exports = new Date().toLocaleString("en-AU", {year: "numeric", month: "2-digit", day: "2-digit"});`}
           </span>
         </Footer>
       </Layout>
