@@ -166,7 +166,8 @@ LOGGING = {
         "standard": {
             "format": "%(levelname)s %(asctime)s (%(name)s) %(message)s",
             "datefmt": "%Y-%m-%d %H:%M:%S",
-        }
+        },
+        "json": {"()": "json_log_formatter.JSONFormatter"},
     },
     "handlers": {
         "console": {
@@ -177,7 +178,8 @@ LOGGING = {
         }
     },
     "loggers": {
-        "django": {"level": "INFO", "handlers": ["console"], "propagate": False}
+        "django": {"level": "INFO", "handlers": ["console"], "propagate": False},
+        "ontask": {"level": "INFO", "handlers": [], "propagate": False},
     },
 }
 
@@ -194,13 +196,23 @@ if ENABLE_CLOUDWATCH_LOGGING and LOG_GROUP:
     if AWS_PROFILE:
         session["profile_name"] = AWS_PROFILE
 
-    LOGGING["handlers"]["watchtower"] = {
+    watchtower = {
         "level": "INFO",
         "class": "watchtower.django.CloudWatchLogHandler",
         "boto3_session": Session(**session),
         "log_group": LOG_GROUP,
-        "stream_name": os.environ.get("LOG_STREAM"),
-        "formatter": "standard",
     }
 
+    LOGGING["handlers"]["watchtower"] = {
+        **watchtower,
+        "formatter": "standard",
+        "stream_name": os.environ.get("LOG_STREAM"),
+    }
     LOGGING["loggers"]["django"]["handlers"].append("watchtower")
+
+    LOGGING["handlers"]["audit"] = {
+        **watchtower,
+        "formatter": "json",
+        "stream_name": "Audit",
+    }
+    LOGGING["loggers"]["ontask"]["handlers"].append("audit")

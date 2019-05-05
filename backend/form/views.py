@@ -18,6 +18,10 @@ from datalab.utils import get_relations
 from datalab.models import Datalab, Column
 from datalab.serializers import DatalabSerializer
 
+import logging
+
+logger = logging.getLogger("ontask")
+
 
 class ListForms(APIView):
     def post(self, request):
@@ -26,10 +30,13 @@ class ListForms(APIView):
             raise PermissionDenied()
 
         request.data["container"] = str(datalab.container.id)
-
         serializer = FormSerializer(data=request.data)
         serializer.is_valid()
         form = serializer.save()
+
+        logger.info(
+            "form.create", extra={"user": request.user.email, "payload": request.data}
+        )
 
         datalab = form.datalab
         datalab.relations = get_relations(
@@ -104,6 +111,11 @@ class DetailForm(APIView):
         serializer.is_valid()
         serializer.save()
 
+        logger.info(
+            "form.edit",
+            extra={"id": id, "user": request.user.email, "payload": request.data},
+        )
+
         datalab.relations = get_relations(
             datalab.steps, datalab_id=datalab.id, permission=datalab.permission
         )
@@ -125,6 +137,8 @@ class DetailForm(APIView):
                 raise ValidationError("Form is being used by a DataLab")
 
         form.delete()
+
+        logger.info("form.delete", extra={"id": id, "user": request.user.email})
 
         return Response(status=HTTP_200_OK)
 
@@ -234,6 +248,8 @@ class AccessForm(APIView):
             },
         )
 
+        logger.info("form.access", extra={"id": id, "user": request.user.email})
+
         return Response(serializer.data)
 
     def patch(self, request, id):
@@ -269,6 +285,11 @@ class AccessForm(APIView):
         form.data = data
         form.save()
 
+        logger.info(
+            "form.input",
+            extra={"id": id, "user": request.user.email, "payload": request.data},
+        )
+
         return Response(status=HTTP_200_OK)
 
 
@@ -297,6 +318,8 @@ def ExportStructure(request, id):
         path_or_buf=response, index=False
     )
 
+    logger.info("form.export", extra={"id": id, "user": request.user.email})
+
     return response
 
 
@@ -310,7 +333,11 @@ def ImportData(request, id):
 
     form_data = pd.DataFrame(form.data).set_index(form.primary).T.to_dict()
 
-    imported_data = pd.DataFrame.from_csv(request.data["file"]).T.to_dict()
+    imported_data = (
+        pd.DataFrame.from_csv(request.data["file"])
+        .replace({pd.np.nan: None})
+        .T.to_dict()
+    )
     for primary, values in imported_data.items():
         form_data[primary] = values
 
@@ -323,8 +350,16 @@ def ImportData(request, id):
     # Replace NaN values with None
     form_data.replace({pd.np.nan: None}, inplace=True)
 
-    form_data = form_data.to_dict("records")
-    form.data = form_data
+    form.data = form_data.to_dict("records")
     form.save()
+
+    logger.info(
+        "form.import",
+        extra={
+            "id": id,
+            "user": request.user.email,
+            "payload": imported_data
+        },
+    )
 
     return Response(status=HTTP_200_OK)
