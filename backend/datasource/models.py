@@ -47,8 +47,6 @@ class Connection(EmbeddedDocument):
     user = StringField()
     password = StringField()
     query = StringField()
-    delimiter = StringField()
-    sheetname = StringField()
     bucket = StringField()
     files = EmbeddedDocumentListField(File)
 
