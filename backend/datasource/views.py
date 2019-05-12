@@ -71,10 +71,10 @@ class DatasourceViewSet(viewsets.ModelViewSet):
             file = self.request.data["file"]
 
             if connection["dbType"] == "csvTextFile":
-                data = retrieve_csv_data(file, connection["delimiter"])
+                data = retrieve_csv_data(file, connection["files"][0]["delimiter"])
 
             elif connection["dbType"] == "xlsXlsxFile":
-                data = retrieve_excel_data(file, connection["sheetname"])
+                data = retrieve_excel_data(file, connection["files"][0]["sheetname"])
 
         else:
             connection = self.request.data["connection"]
@@ -125,27 +125,15 @@ class DatasourceViewSet(viewsets.ModelViewSet):
             file = self.request.data["file"]
 
             if connection["dbType"] == "csvTextFile":
-                data = retrieve_csv_data(file, connection["delimiter"])
+                data = retrieve_csv_data(file, connection["files"][0]["delimiter"])
 
             elif connection["dbType"] == "xlsXlsxFile":
-                data = retrieve_excel_data(file, connection["sheetname"])
+                data = retrieve_excel_data(file, connection["files"][0]["sheetname"])
 
         else:
             connection = self.request.data["connection"]
 
             if connection["dbType"] == "s3BucketFile":
-                if (
-                    not "sheetname" in connection
-                    and "sheetname" in datasource["connection"]
-                ):
-                    connection["sheetname"] = datasource["connection"]["sheetname"]
-
-                if (
-                    not "delimiter" in connection
-                    and "delimiter" in datasource["connection"]
-                ):
-                    connection["delimiter"] = datasource["connection"]["delimiter"]
-
                 data = retrieve_file_from_s3(connection)
 
             elif connection["dbType"] in ["mysql", "postgresql"]:
@@ -255,7 +243,7 @@ class DatasourceViewSet(viewsets.ModelViewSet):
         else:
             try:
                 s3 = boto3.resource("s3")
-                obj = s3.Object(request.data["bucket"], request.data["fileName"])
+                obj = s3.Object(request.data["bucket"], request.data["name"])
                 file = obj.get()["Body"]
             except:
                 raise ValidationError("Error reading file from s3 bucket")

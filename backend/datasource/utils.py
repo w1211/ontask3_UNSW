@@ -27,6 +27,7 @@ def process_data(data):
         lambda x: x.rstrip("%") if isinstance(x, str) and x.endswith("%") else x
     )
 
+    df.replace({pd.np.nan: None}, inplace=True)
     return df.to_dict("records")
 
 
@@ -128,12 +129,11 @@ def retrieve_file_from_s3(connection):
 
     try:
         bucket = connection["bucket"]
-        file_name = connection["fileName"]
-        delimiter = connection["delimiter"] if "delimiter" in connection else None
-        sheetname = connection["sheetname"] if "sheetname" in connection else None
+        files = connection["files"]
     except:
         raise Exception("Invalid connection settings")
 
+    data_files = []
     try:
         s3 = None
         if AWS_PROFILE:
@@ -142,19 +142,29 @@ def retrieve_file_from_s3(connection):
         else:
             s3 = boto3.resource("s3")
 
-        obj = s3.Object(bucket, file_name)
-        file = obj.get()["Body"]
+        for file in files:
+            file_name = file["name"]
 
-        # Parse the data based on the file type
-        if file_name.lower().endswith((".csv", ".txt")):
-            return retrieve_csv_data(file, delimiter)
-        elif file_name.lower().endswith((".xls", ".xlsx")):
-            return retrieve_excel_data(file, sheetname)
-        else:
-            raise Exception("File type is not supported")
+            obj = s3.Object(bucket, file_name)
+            data = obj.get()["Body"]
+
+            # Parse the data based on the file type
+            if file_name.lower().endswith((".csv", ".txt")):
+                data = retrieve_csv_data(data, file["delimiter"])
+            elif file_name.lower().endswith((".xls", ".xlsx")):
+                data = retrieve_excel_data(data, file["sheetname"])
+            else:
+                raise Exception("File type is not supported")
+            data_files.append(data)
     except:
         raise Exception("Error reading file from s3 bucket")
 
+    # TODO: Ensure that columns in each data file are identical
+
+    # Append the data
+    data = [record for file in data_files for record in file]
+
+    return data
 
 def guess_column_types(data):
     # Take 25 random records from the dataset, or the entire dataset if

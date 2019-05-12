@@ -13,6 +13,7 @@ import {
   notification
 } from "antd";
 import _ from "lodash";
+import memoize from "memoize-one";
 
 import formItemLayout from "../../shared/FormItemLayout";
 
@@ -23,18 +24,221 @@ const { TextArea } = Input;
 const Option = Select.Option;
 const Dragger = Upload.Dragger;
 
+class File extends React.Component {
+  state = {};
+
+  fetchSheetnames = () => {
+    const { form, bucket, i, file } = this.props;
+    const { sheetnames } = this.state;
+
+    if (sheetnames) return;
+
+    let data;
+    if (file) {
+      data = new FormData();
+      data.append("file", file, file.name);
+    } else {
+      data = {
+        bucket,
+        name: form.getFieldValue(`connection.files[${i}].name`)
+      };
+    }
+
+    this.setState({ loading: true });
+
+    const parameters = {
+      method: "POST",
+      onError: error => {
+        this.setState({ loading: false });
+        notification["error"]({ message: error });
+      },
+      onSuccess: response => {
+        const { sheetnames } = response;
+        this.setState({ loading: false, sheetnames });
+      },
+      payload: data,
+      isJSON: !file
+    };
+
+    apiRequest(`/datasource/get_sheetnames/`, parameters);
+  };
+
+  render() {
+    const {
+      form,
+      datasource,
+      i,
+      canDelete,
+      onDeleteField,
+      allowMultiple,
+      isUpload,
+      file
+    } = this.props;
+    const { loading, sheetnames } = this.state;
+    const { getFieldValue, getFieldDecorator } = form;
+
+    const index = !allowMultiple ? 0 : i;
+
+    return (
+      <div className="file">
+        <div style={{ display: "flex", alignItems: "flex-start" }}>
+          <FormItem
+            style={{ marginBottom: 0, flex: 1 }}
+            {...(isUpload ? formItemLayout : {})}
+            label={isUpload && "File name"}
+          >
+            {getFieldDecorator(`connection.files[${index}].name`, {
+              rules: [{ required: true, message: "File name is required" }],
+              initialValue:
+                form.getFieldValue(`connection.files[${index}].name`) ||
+                _.get(datasource, `connection.files[${index}].name`) ||
+                (file && file.name)
+            })(<Input disabled={isUpload} />)}
+          </FormItem>
+
+          {allowMultiple && (
+            <div style={{ lineHeight: "40px" }}>
+              <Tooltip title="Remove file">
+                <Button
+                  style={{ marginLeft: 5 }}
+                  type="danger"
+                  icon="delete"
+                  disabled={!canDelete}
+                  onClick={onDeleteField}
+                />
+              </Tooltip>
+            </div>
+          )}
+        </div>
+
+        {getFieldValue(`connection.files[${index}].name`) &&
+          ["csv", "txt"].includes(
+            getFieldValue(`connection.files[${index}].name`)
+              .split(".")
+              .pop()
+              .toLowerCase()
+          ) && (
+            <FormItem
+              {...formItemLayout}
+              label="Delimiter"
+              style={{ marginBottom: 0 }}
+            >
+              {getFieldDecorator(`connection.files[${index}].delimiter`, {
+                initialValue:
+                  _.get(
+                    datasource,
+                    `connection.files[${index}].delimiter`,
+                    ","
+                  ) || ",",
+                rules: [{ required: true, message: "Delimiter is required" }]
+              })(
+                <Select>
+                  <Option value=",">Comma ,</Option>
+                  <Option value=" ">Tabs " "</Option>
+                  <Option value=";">Semi-colons ;</Option>
+                  <Option value="|">Pipes |</Option>
+                  <Option value="^">Carets ^</Option>
+                  <Option value="~">Tildes ~</Option>
+                </Select>
+              )}
+            </FormItem>
+          )}
+
+        {getFieldValue(`connection.files[${index}].name`) &&
+          ["xlsx", "xls"].includes(
+            getFieldValue(`connection.files[${index}].name`)
+              .split(".")
+              .pop()
+              .toLowerCase()
+          ) && (
+            <FormItem
+              {...formItemLayout}
+              label="Sheet name"
+              style={{ marginBottom: 0 }}
+            >
+              {getFieldDecorator(`connection.files[${index}].sheetname`, {
+                initialValue: _.get(
+                  datasource,
+                  `connection.files[${i}].sheetname`
+                ),
+                rules: [{ required: true, message: "Sheet name is required" }]
+              })(
+                <Select
+                  notFoundContent={
+                    loading ? (
+                      <>
+                        <Icon type="loading" style={{ margin: "0 10px" }} />
+                        Fetching sheet names...
+                      </>
+                    ) : null
+                  }
+                  onFocus={this.fetchSheetnames}
+                >
+                  {sheetnames &&
+                    sheetnames.map(option => (
+                      <Option key={option}>{option}</Option>
+                    ))}
+                </Select>
+              )}
+            </FormItem>
+          )}
+      </div>
+    );
+  }
+}
+
 class DatasourceSettings extends React.Component {
   constructor(props) {
     super(props);
-
+    const { datasource } = props;
     this.state = {
       file: null,
       fileError: null,
       loading: false,
       error: null,
-      sheetnames: []
+      sheetnames: [],
+      fileKeys: (_.get(datasource, "connection.files", []).length > 1
+        ? datasource.connection.files
+        : [null]
+      ).map(() => _.uniqueId())
     };
   }
+
+  permission = memoize((bucket, files) =>
+    JSON.stringify(
+      {
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Sid: "Ontask access permission",
+            Effect: "Allow",
+            Principal: {
+              AWS: [process.env.REACT_APP_AWS_ID]
+            },
+            Action: ["s3:GetObject"],
+            Resource: files.map(
+              file =>
+                `arn:aws:s3:::${bucket || "YOUR_BUCKET_NAME"}/${
+                  file.name ? file.name : "YOUR_FILE_NAME"
+                }`
+            )
+          }
+        ]
+      },
+      null,
+      2
+    )
+  );
+
+  Policy = () => {
+    const { form } = this.props;
+    const { getFieldValue } = form;
+
+    const bucket = getFieldValue("connection.bucket");
+    const files = getFieldValue("connection.files");
+
+    return <pre>{this.permission(bucket, files)}</pre>;
+  };
 
   handleOk = () => {
     const {
@@ -102,31 +306,6 @@ class DatasourceSettings extends React.Component {
     });
   };
 
-  fetchSheetnames = (file, payload) => {
-    this.setState({ loading: true });
-
-    let data;
-    if (file) {
-      data = new FormData();
-      data.append("file", file, file.name);
-    } else {
-      data = payload;
-    }
-
-    const parameters = {
-      method: "POST",
-      onError: error => this.setState({ loading: false, error }),
-      onSuccess: response => {
-        const { sheetnames } = response;
-        this.setState({ loading: false, sheetnames });
-      },
-      payload: data,
-      isJSON: !file
-    };
-
-    apiRequest(`/datasource/get_sheetnames/`, parameters);
-  };
-
   handleFileDrop = e => {
     const { form } = this.props;
 
@@ -135,14 +314,14 @@ class DatasourceSettings extends React.Component {
     const extension = fileName[fileName.length - 1].toLowerCase();
     const fileSize = file.size / Math.pow(1024, 2); // File size in MB
 
-    if (["xlsx", "xls"].includes(extension)) {
-      this.fetchSheetnames(file);
-    }
-
     const fileError = this.validateFile(extension, fileSize);
     this.setState({
       fileError, // If there are errors, save them to the state so they can be shown in the interface
       file: fileError ? null : file // If there are no errors, then save the file in the state
+    });
+
+    form.getFieldDecorator(`connection.files[0].name`, {
+      initialValue: file.name
     });
 
     if (file && !form.getFieldValue("name"))
@@ -160,42 +339,29 @@ class DatasourceSettings extends React.Component {
     if (fileSize > 2) return "File must not be larger than 2MB";
   };
 
-  S3Bucket = (fileName, extension) => {
+  copyToClipboard = () => {
+    const { form } = this.props;
+    const { getFieldValue } = form;
+    var textField = document.createElement("textarea");
+    textField.innerHTML = this.permission(
+      getFieldValue("connection.bucket"),
+      getFieldValue("connection.files")
+    );
+    document.body.appendChild(textField);
+    textField.select();
+    document.execCommand("copy");
+    textField.remove();
+    message.success("Copied bucket policy to clipboard");
+  };
+
+  S3Bucket = () => {
     const { form, datasource } = this.props;
-    const { getFieldValue, getFieldDecorator } = form;
+    const { getFieldValue, getFieldDecorator, setFieldsValue } = form;
+    const { fileKeys } = this.state;
 
     const bucketName = getFieldValue("connection.bucket")
       ? getFieldValue("connection.bucket")
       : _.get(datasource, "connection.bucket", "YOUR_BUCKET_NAME");
-
-    const permission = {
-      Version: "2012-10-17",
-      Statement: [
-        {
-          Sid: "Ontask access permission",
-          Effect: "Allow",
-          Principal: {
-            AWS: [process.env.REACT_APP_AWS_ID]
-          },
-          Action: ["s3:GetObject"],
-          Resource: [
-            `arn:aws:s3:::${bucketName}/${
-              fileName ? fileName : "YOUR_FILE_NAME"
-            }`
-          ]
-        }
-      ]
-    };
-
-    const copyToClipboard = () => {
-      var textField = document.createElement("textarea");
-      textField.innerHTML = JSON.stringify(permission, null, 2);
-      document.body.appendChild(textField);
-      textField.select();
-      document.execCommand("copy");
-      textField.remove();
-      message.success("Copied bucket policy to clipboard");
-    };
 
     return (
       <div>
@@ -206,22 +372,39 @@ class DatasourceSettings extends React.Component {
           })(<Input />)}
         </FormItem>
 
-        <FormItem {...formItemLayout} label="File name">
-          {getFieldDecorator("connection.fileName", {
-            initialValue: _.get(datasource, "connection.fileName"),
-            rules: [{ required: true, message: "File name is required" }]
-          })(
-            <Input
-              onBlur={() => {
-                if (["xlsx", "xls"].includes(extension)) {
-                  this.fetchSheetnames(null, {
-                    bucket: bucketName,
-                    fileName: fileName
-                  });
-                }
+        <FormItem {...formItemLayout} label="File(s)">
+          <Button
+            size="small"
+            type="primary"
+            onClick={() => {
+              this.setState({
+                fileKeys: [...fileKeys, _.uniqueId()]
+              });
+            }}
+          >
+            Add file
+          </Button>
+
+          {fileKeys.map((key, i) => (
+            <File
+              key={i}
+              bucket={bucketName}
+              datasource={datasource}
+              form={form}
+              i={i}
+              canDelete={fileKeys.length !== 1}
+              onDeleteField={() => {
+                const files = getFieldValue("connection.files");
+
+                fileKeys.splice(i, 1);
+                files.splice(i, 1);
+
+                this.setState({ fileKeys });
+                setFieldsValue({ "connection.files": files });
               }}
+              allowMultiple={true}
             />
-          )}
+          ))}
         </FormItem>
 
         <Alert
@@ -248,33 +431,11 @@ class DatasourceSettings extends React.Component {
             shape="circle"
             icon="copy"
             size="small"
-            onClick={copyToClipboard}
+            onClick={this.copyToClipboard}
           />
-          <pre>{JSON.stringify(permission, null, 2)}</pre>
+          <this.Policy bucket={bucketName} form={form} />
         </code>
       </div>
-    );
-  };
-
-  Delimiter = () => {
-    const { form, datasource } = this.props;
-    const { getFieldDecorator } = form;
-
-    return (
-      <FormItem {...formItemLayout} label="Delimiter">
-        {getFieldDecorator("connection.delimiter", {
-          initialValue: _.get(datasource, "connection.delimiter", ",")
-        })(
-          <Select>
-            <Option value=",">Comma ,</Option>
-            <Option value=" ">Tabs " "</Option>
-            <Option value=";">Semi-colons ;</Option>
-            <Option value="|">Pipes |</Option>
-            <Option value="^">Carets ^</Option>
-            <Option value="~">Tildes ~</Option>
-          </Select>
-        )}
-      </FormItem>
     );
   };
 
@@ -286,6 +447,7 @@ class DatasourceSettings extends React.Component {
       beforeUpload={() => false} // Prevent immediate upload upon file drop
       action="" // The uploading URL (required) however we do not make use of
       showUploadList={false}
+      accept={fileType === "xlsXlsxFile" ? ".xls,.xlsx" : ".csv,.txt"}
     >
       <p className="ant-upload-drag-icon">
         <Icon type="inbox" />
@@ -299,27 +461,6 @@ class DatasourceSettings extends React.Component {
       </p>
     </Dragger>
   );
-
-  SheetNames = () => {
-    const { form, datasource } = this.props;
-    const { sheetnames } = this.state;
-    const { getFieldDecorator } = form;
-
-    return (
-      <FormItem {...formItemLayout} label="Sheet name">
-        {getFieldDecorator("connection.sheetname", {
-          initialValue: _.get(datasource, "connection.sheetname"),
-          rules: [{ required: true, message: "Sheet name is required" }]
-        })(
-          <Select>
-            {sheetnames.map((option, i) => (
-              <Option key={option}>{option}</Option>
-            ))}
-          </Select>
-        )}
-      </FormItem>
-    );
-  };
 
   ConnectionSettings = () => {
     const { form, datasource } = this.props;
@@ -376,29 +517,14 @@ class DatasourceSettings extends React.Component {
 
   render() {
     const { datasource, form } = this.props;
-    const { loading, error, file, fileError, sheetnames } = this.state;
+    const { loading, error, file, fileError } = this.state;
 
     const { getFieldValue, getFieldDecorator } = form;
 
     const fileType = getFieldValue("connection.dbType")
       ? getFieldValue("connection.dbType")
-      : _.get(datasource, "connection.dbType");
+      : _.get(datasource, "connection.dbType") || "csvTextFile";
 
-    const fileName = getFieldValue("connection.fileName")
-      ? getFieldValue("connection.fileName")
-      : _.get(datasource, "connection.fileName");
-
-    const extension = fileName
-      ? fileName
-          .split(".")
-          .pop()
-          .toLowerCase()
-      : null;
-
-    const requiresDelimiter =
-      fileType === "csvTextFile" || ["csv", "txt"].includes(extension);
-    const requiresSheetname =
-      fileType === "xlsXlsxFile" || ["xlsx", "xls"].includes(extension);
     const requiresUpload = ["xlsXlsxFile", "csvTextFile"].includes(fileType);
     const requiresConnection = [
       "mysql",
@@ -417,7 +543,7 @@ class DatasourceSettings extends React.Component {
           {getFieldDecorator("connection.dbType", {
             initialValue: _.get(datasource, "connection.dbType"),
             rules: [{ required: true, message: "Type is required" }],
-            onChange: () => this.setState({ sheetnames: null })
+            onChange: () => this.setState({ sheetnames: null, file: null })
           })(
             <Select>
               <Option value="mysql">MySQL</Option>
@@ -442,20 +568,24 @@ class DatasourceSettings extends React.Component {
           })(<Input />)}
         </FormItem>
 
-        {fileType === "s3BucketFile" && this.S3Bucket(fileName, extension)}
+        {fileType === "s3BucketFile" && this.S3Bucket()}
 
-        {requiresDelimiter && this.Delimiter()}
-
-        {requiresUpload && this.LocalFile(fileType)}
-
-        {file && (
-          <div>
-            <Icon type="paper-clip" />
-            {file.name}
-          </div>
+        {requiresUpload && (
+          <>
+            {this.LocalFile(fileType)}
+            {file && (
+              <div style={{ marginTop: 15 }}>
+                <File
+                  file={file}
+                  allowMultiple={false}
+                  datasource={datasource}
+                  form={form}
+                  isUpload={true}
+                />
+              </div>
+            )}
+          </>
         )}
-
-        {requiresSheetname && sheetnames && this.SheetNames()}
 
         {requiresConnection && this.ConnectionSettings()}
 

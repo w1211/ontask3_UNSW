@@ -6,6 +6,7 @@ from mongoengine.fields import (
     IntField,
     ReferenceField,
     EmbeddedDocumentField,
+    EmbeddedDocumentListField,
     DateTimeField,
 )
 from datetime import datetime as dt
@@ -20,6 +21,11 @@ from .utils import (
     retrieve_sql_data,
     process_data,
 )
+
+class File(EmbeddedDocument):
+    name = StringField()
+    delimiter = StringField()
+    sheetname = StringField()
 
 
 class Connection(EmbeddedDocument):
@@ -41,10 +47,10 @@ class Connection(EmbeddedDocument):
     user = StringField()
     password = StringField()
     query = StringField()
-    sheetname = StringField()
     delimiter = StringField()
+    sheetname = StringField()
     bucket = StringField()
-    fileName = StringField()
+    files = EmbeddedDocumentListField(File)
 
 
 class Schedule(EmbeddedDocument):
@@ -85,11 +91,11 @@ class Datasource(Document):
             data = retrieve_file_from_s3(connection)
 
         elif self.connection.dbType == "xlsXlsxFile":
-            sheetname = connection.get("sheetname")
+            sheetname = connection["files"][0]["sheetname"]
             data = retrieve_excel_data(file, sheetname)
 
         elif self.connection.dbType == "csvTextFile":
-            delimiter = connection.get("delimiter")
+            delimiter = connection["files"][0]["delimiter"]
             data = retrieve_csv_data(file, delimiter)
 
         data = process_data(data)

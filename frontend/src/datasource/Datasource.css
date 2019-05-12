@@ -25,3 +25,10 @@
 .datasource .info {
   margin-bottom: 10px;
 }
+
+.datasource .file {
+  padding: 10px;
+  background: rgba(238, 238, 238, 0.5);
+  margin-bottom: 10px;
+  border-radius: 4px;
+}

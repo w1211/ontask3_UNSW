@@ -218,7 +218,6 @@ class Form extends React.Component {
 
   uploadData = e => {
     const { match } = this.props;
-    const { form } = this.state;
 
     const file = e.file;
     const payload = new FormData();
