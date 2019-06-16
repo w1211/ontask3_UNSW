@@ -311,6 +311,8 @@ class ContentEditor extends React.Component {
     const { rules, types } = this.props;
     const rule = rules[ruleIndex];
 
+    if (!rule) return 'MISSING_RULE'
+
     const condition = rule.conditions.find(
       condition => condition.conditionId === conditionId
     );
