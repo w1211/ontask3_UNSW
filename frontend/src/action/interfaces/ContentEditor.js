@@ -723,6 +723,8 @@ class ContentEditor extends React.Component {
 
   onPaste = (event, change) => {
     const transfer = getEventTransfer(event);
+    if (transfer.type !== "html") return;
+
     const sanitizedHtml = sanitizeHtml(transfer.html, {
       allowedTags: sanitizeHtml.defaults.allowedTags.concat([
         "h1",
