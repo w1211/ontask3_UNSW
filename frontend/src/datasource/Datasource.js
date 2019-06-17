@@ -176,7 +176,7 @@ class Datasource extends React.Component {
                         </Link>
                       )}
 
-                      <h1>{datasource ? datasource.name : "Add Datasource"}</h1>
+                      <h1>{datasourceId ? datasource.name : "Add Datasource"}</h1>
 
                       {datasourceId ? (
                         <Switch>

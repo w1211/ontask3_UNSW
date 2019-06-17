@@ -516,7 +516,7 @@ class DatasourceSettings extends React.Component {
   };
 
   render() {
-    const { datasource, form } = this.props;
+    const { datasource, form, history } = this.props;
     const { loading, error, file, fileError } = this.state;
 
     const { getFieldValue, getFieldDecorator } = form;
@@ -593,6 +593,21 @@ class DatasourceSettings extends React.Component {
           <Alert className="error" message={fileError} type="error" />
         )}
         {error && <Alert className="error" message={error} type="error" />}
+
+        {datasource && (
+          <Button
+            style={{ marginRight: 15 }}
+            icon="plus"
+            onClick={() =>
+              history.push({
+                pathname: "/datasource",
+                state: { containerId: datasource.container }
+              })
+            }
+          >
+            Add Another Datasource
+          </Button>
+        )}
 
         <Button
           loading={loading}
