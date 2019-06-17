@@ -311,7 +311,7 @@ class ContentEditor extends React.Component {
     const { rules, types } = this.props;
     const rule = rules[ruleIndex];
 
-    if (!rule) return 'MISSING_RULE'
+    if (!rule) return "MISSING_RULE";
 
     const condition = rule.conditions.find(
       condition => condition.conditionId === conditionId
@@ -344,9 +344,11 @@ class ContentEditor extends React.Component {
       if (operator === "between") {
         label.push(`${parameter} >= ${configuration.rangeFrom}`);
         label.push(`${parameter} <= ${configuration.rangeTo}`);
-      } else {
+      } else if (configuration.comparator) {
         operator = operator in operatorMap ? operatorMap[operator] : operator;
         label.push(`${parameter} ${operator} ${configuration.comparator}`);
+      } else {
+        label.push(`${parameter} ${operator}`);
       }
     });
 

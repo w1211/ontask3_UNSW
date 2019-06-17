@@ -37,6 +37,8 @@ def did_pass_test(test, value, param_type):
             return value == "" or value is None
         elif operator == "IS_NOT_NULL":
             return value != "" and value is not None
+        elif operator == "IS_TRUE" or operator == "IS_FALSE":
+            return bool(value)
         elif operator == "<":
             return value < comparator
         elif operator == "<=":

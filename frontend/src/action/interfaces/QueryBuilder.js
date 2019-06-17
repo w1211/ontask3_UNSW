@@ -139,6 +139,7 @@ class QueryBuilder extends React.Component {
     else if (type === "text")
       operations = ["==", "!=", "IS_NULL", "IS_NOT_NULL"];
     else if (type === "list") operations = ["contains"];
+    else if (type === "checkbox") operations = ["IS_TRUE", "IS_FALSE"];
 
     return operations.map((operation, i) => (
       <Option value={operation} key={i}>
@@ -228,7 +229,7 @@ class QueryBuilder extends React.Component {
 
     return (
       <FormItem>
-        {!["IS_NULL", "IS_NOT_NULL"].includes(operation) &&
+        {!["IS_NULL", "IS_NOT_NULL"].includes(operation) && (type !== "checkbox") &&
           getFieldDecorator(`rule.${fieldBase}comparator`, {
             rules: [
               {
@@ -363,6 +364,10 @@ class QueryBuilder extends React.Component {
       // The only operator for lists is "contains", so the below test is sufficient
       if (formulas[0].comparator === formulas[1].comparator) return true;
     }
+
+    if (type === "checkbox") {
+      if (formulas[0].operator === formulas[1].operator) return true;
+    };
 
     if (type === "number" || type === "date") {
       const expressionGroups = []; // Two expression "groups", one for each condition
