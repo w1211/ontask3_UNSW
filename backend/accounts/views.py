@@ -162,7 +162,11 @@ class LTIAuth(APIView):
         # Elevate the user to instructor group if they have a staff role in LTI
         # If they are already instructor or admin, then do nothing
         user_groups = [group.name for group in user.groups.all()]
-        is_lti_instructor = LTI_CONFIG.get("staff_role") in payload["roles"].split(",")
+        is_lti_instructor = (
+            LTI_CONFIG["staff_role"] in payload["roles"].split(",")
+            if LTI_CONFIG.get("staff_role")
+            else False
+        )
         if "user" in user_groups and is_lti_instructor:
             user.groups.set([Group.objects.get(name="instructor")])
 

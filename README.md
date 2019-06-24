@@ -82,7 +82,8 @@ LTI_CONFIG = {
             "secret": "<YOUR_LTI_SECRET>"
         }
     },
-    "url": "<YOUR_LTI_URL>"
+    "url": "<YOUR_LTI_URL>",
+    "username_field": "<YOUR_LTI_USERNAME_FIELD>" # Specify which field in the LTI payload maps to your institution's user ID
 }
 ```
 
