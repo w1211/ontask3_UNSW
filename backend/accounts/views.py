@@ -2,7 +2,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.authtoken.models import Token
-from rest_framework.status import HTTP_401_UNAUTHORIZED, HTTP_400_BAD_REQUEST, HTTP_200_OK
+from rest_framework.status import (
+    HTTP_401_UNAUTHORIZED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_200_OK,
+)
 from rest_framework.exceptions import NotFound, PermissionDenied
 
 from django.contrib.auth.models import Group
@@ -60,7 +64,7 @@ class LocalAuth(APIView):
             user.groups.add(Group.objects.get(name="instructor"))
         else:
             user.groups.add(Group.objects.get(name="user"))
-            
+
         # Give the user a container with example datasources, datalabs, actions, etc
         # seed_data(user)
 
@@ -158,7 +162,7 @@ class LTIAuth(APIView):
         # Elevate the user to instructor group if they have a staff role in LTI
         # If they are already instructor or admin, then do nothing
         user_groups = [group.name for group in user.groups.all()]
-        is_lti_instructor = payload["roles"] == LTI_CONFIG.get("staff_role")
+        is_lti_instructor = LTI_CONFIG.get("staff_role") in payload["roles"].split(",")
         if "user" in user_groups and is_lti_instructor:
             user.groups.set([Group.objects.get(name="instructor")])
 
@@ -167,11 +171,9 @@ class LTIAuth(APIView):
         # Store the important LTI fields for this user
         # These fields be used to grant permissions in containers
         lti_payload = {
-            "user_id": payload["user_id"],
-            "ext_user_username": payload["ext_user_username"],
-            "lis_person_contact_email_primary": payload[
-                "lis_person_contact_email_primary"
-            ],
+            "lti_id": payload["user_id"],
+            "lti_email": payload["lis_person_contact_email_primary"],
+            "user_id": payload.get(LTI_CONFIG.get("username_field")),
         }
         lti.objects(user=user.id).update_one(payload=lti_payload, upsert=True)
 
@@ -247,14 +249,14 @@ class ImpersonateUser(APIView):
 
         if user.is_staff:
             raise PermissionDenied()
-        
+
         long_term_token, _ = Token.objects.get_or_create(user=user)
         return Response(
             {
                 "token": str(long_term_token),
                 "email": user.email,
                 "name": f"{user.first_name} {user.last_name}",
-                "group": ",".join([group.name for group in user.groups.all()])
+                "group": ",".join([group.name for group in user.groups.all()]),
             },
-            status=HTTP_200_OK
+            status=HTTP_200_OK,
         )
