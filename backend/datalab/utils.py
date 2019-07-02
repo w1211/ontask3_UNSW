@@ -1,3 +1,4 @@
+from rest_framework_mongoengine.validators import ValidationError
 from collections import defaultdict
 from datetime import datetime
 import numexpr as ne
@@ -256,6 +257,13 @@ def get_relations(steps, datalab_id=None, skip_last=False, permission=None):
             .filter(items=used_fields)  # Only include required fields
             .rename(columns={field: step["labels"][field] for field in used_fields})
         )
+
+        # Ensure that there are no duplicate values
+        if any(data.index.duplicated()):
+            raise ValidationError(
+                f'Field \"{step["primary"]}\" cannot be used as a primary \
+                    key in "{datasource.name}" because it contains duplicate values.'
+            )
 
         if step_index == 0:
             relations = data.reset_index().rename(
