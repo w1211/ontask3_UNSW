@@ -10,6 +10,16 @@ import { Value } from "slate";
 import { isKeyHotkey } from "is-hotkey";
 import sanitizeHtml from "sanitize-html";
 
+import FontFamilyList from './FontFamilyList';
+
+/**
+ * TODO
+ * Content Editor Cursor disappears after choosing color
+ * Font Family
+ * (Font Size?)
+ * Undo Redo
+ */
+
 const DEFAULT_NODE = "paragraph";
 
 const plugins = [SoftBreak({ shift: true })];
@@ -37,7 +47,6 @@ const MARK_TAGS = {
   code: "code",
   span: "span"
 };
-
 
 const parseStyles = styles => {
   return styles
@@ -622,6 +631,63 @@ class ContentEditor extends React.Component {
     return [...output];
   };
 
+  FontButton = () => {
+    // Get Font of Current Selection
+
+    return (
+      <Select
+        showSearch
+        placeholder="Choose a font"
+        size="small"
+        value={undefined}
+        onChange={field => this.onChangeFont(field)}
+        // onChange={field => {
+        //   change.insertInline({
+        //     type: "attribute",
+        //     data: { field },
+        //     isVoid: true
+        //   });
+        //   this.onChange(change);
+        // }}
+        className="attribute_select"
+        dropdownMatchSelectWidth={false}
+        filterOption={(input, option) =>
+          option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+        }
+      >
+        {FontFamilyList.map((item, i) => (
+          <Select.Option value={item.name} key={i}>
+            {item.name}
+          </Select.Option>
+        ))}
+      </Select>
+    );
+  };
+
+  onChangeFont = (font) => {
+    const type = "fontFamily";
+
+    console.log(font);
+    // Remove Current Font
+    let change = null;
+    let value = this.state.value;
+    const fontMarks = value.marks.filter(mark => mark.type === type);
+    fontMarks.map(mark => {
+      value = this.state.value;
+      change = value.change().removeMark(mark);
+      this.onChange(change);
+    });
+
+    const data = {
+      'style': `fontFamily: ${font}`
+    }
+
+    // Add new font
+    value = this.state.value;
+    change = value.change().addMark({ type, data });
+    this.onChange(change);
+  };
+
   ColourButton = () => {
     const { value } = this.state;
 
@@ -898,8 +964,8 @@ class ContentEditor extends React.Component {
           {this.renderMarkButton("italic", "format_italic")}
           {this.renderMarkButton("underlined", "format_underlined")}
           {this.renderMarkButton("code", "code")}
+          {this.FontButton()}
           {this.ColourButton()}
-          {/* {this.renderMarkButton("span", "format_color_text")} */}
           {this.LinkButton()}
           {this.ImageButton()}
           {this.renderBlockButton("heading-one", "looks_one")}
@@ -944,7 +1010,6 @@ class ContentEditor extends React.Component {
             Save
           </Button>
         </div>
-        <SketchPicker></SketchPicker>
       </div>
     );
   }
