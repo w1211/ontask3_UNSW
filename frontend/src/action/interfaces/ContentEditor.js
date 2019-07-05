@@ -1,6 +1,8 @@
 import React from "react";
 import { Popover, Tooltip, Popconfirm, Input, Select, Button } from "antd";
 
+import { SketchPicker } from 'react-color';
+
 import { Editor, getEventTransfer } from "slate-react";
 import Html from "slate-html-serializer";
 import SoftBreak from "slate-soft-break";
@@ -35,6 +37,7 @@ const MARK_TAGS = {
   code: "code",
   span: "span"
 };
+
 
 const parseStyles = styles => {
   return styles
@@ -619,6 +622,63 @@ class ContentEditor extends React.Component {
     return [...output];
   };
 
+  ColourButton = () => {
+    const { value } = this.state;
+
+    // Get current colour of selection (May need refactoring)
+    let oldColor = "#000000"
+    const marks = value.marks.toJSON();
+    const markObj = marks.find(obj => obj.type === "span");
+    // Requires span mark w/ color in style
+    if (typeof markObj !== 'undefined') {
+      const style = parseStyles(markObj.data.style);
+      if ("color" in style) {
+        oldColor = style.color;
+      }
+    }
+
+    return (
+      <Popover
+        content={
+          <SketchPicker
+            color={oldColor}
+            onChangeComplete={(color, event) => this.onChangeColor(color, event)}
+          />
+        }
+      >
+        <i
+          className="material-icons"
+          style={{ color: oldColor }}
+        >
+          format_color_text
+        </i>
+      </Popover>
+    );
+  };
+
+  onChangeColor = (color, event) => {
+    // Remove Current Color
+    let change = null;
+    let value = this.state.value;
+    const spanMarks = value.marks.filter(mark => mark.type === "span");
+    spanMarks.map(mark => {
+      value = this.state.value;
+      change = value.change().removeMark(mark);
+      this.onChange(change);
+    });
+
+    const type = 'span';
+
+    const data = {
+      'style': `color: ${color.hex}`
+    }
+
+    // Add new color
+    value = this.state.value;
+    change = value.change().addMark({ type, data });
+    this.onChange(change);
+  }
+
   LinkButton = () => {
     const { hyperlink, value } = this.state;
     const change = value.change();
@@ -838,6 +898,8 @@ class ContentEditor extends React.Component {
           {this.renderMarkButton("italic", "format_italic")}
           {this.renderMarkButton("underlined", "format_underlined")}
           {this.renderMarkButton("code", "code")}
+          {this.ColourButton()}
+          {/* {this.renderMarkButton("span", "format_color_text")} */}
           {this.LinkButton()}
           {this.ImageButton()}
           {this.renderBlockButton("heading-one", "looks_one")}
@@ -851,16 +913,17 @@ class ContentEditor extends React.Component {
         <Editor
           className={`content_editor ${isInside ? "isInside" : ""}`}
           value={value}
+          ref={editor => (this.editor = editor)}
           onChange={this.onChange}
           onKeyDown={this.onKeyDown}
           renderNode={this.renderNode}
           renderMark={this.renderMark}
-          renderEditor={props => (
-            <div ref={editor => (this.editor = editor)}>{props.children}</div>
-          )}
+          // renderEditor={props => (
+          //   <div ref={editor => (this.editor = editor)}>{props.children}</div>
+          // )}
           plugins={plugins}
           placeholder={"Create content by entering text here"}
-          onPaste={this.onPaste}
+          // onPaste={this.onPaste}
         />
 
         <div style={{ marginTop: "10px" }}>
@@ -881,6 +944,7 @@ class ContentEditor extends React.Component {
             Save
           </Button>
         </div>
+        <SketchPicker></SketchPicker>
       </div>
     );
   }
