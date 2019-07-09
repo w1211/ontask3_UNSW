@@ -371,7 +371,7 @@ class Email extends React.Component {
 
     return (
       <div className="email">
-        <SchedulerModal
+        {/* <SchedulerModal
           {...scheduler}
           onUpdate={this.updateSchedule}
           onDelete={this.deleteSchedule}
@@ -436,7 +436,7 @@ class Email extends React.Component {
           >
             Schedule email sending
           </Button>
-        )}
+        )} */}
 
         <h3>Email settings</h3>
 
