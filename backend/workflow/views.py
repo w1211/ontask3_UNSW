@@ -34,6 +34,10 @@ from scheduler.utils import create_task, delete_task
 
 from ontask.settings import SECRET_KEY, BACKEND_DOMAIN
 
+import logging
+
+logger = logging.getLogger("ontask")
+
 PIXEL_GIF_DATA = base64.b64decode(
     b"R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
 )
@@ -60,9 +64,19 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         self.check_object_permissions(self.request, None)
         serializer.save()
 
+        logger.info(
+            "action.create",
+            extra={"user": self.request.user.email, "payload": self.request.data},
+        )
+
     def perform_update(self, serializer):
         self.check_object_permissions(self.request, self.get_object())
         serializer.save()
+
+        logger.info(
+            "action.update",
+            extra={"user": self.request.user.email, "payload": self.request.data},
+        )
 
     def perform_destroy(self, action):
         self.check_object_permissions(self.request, action)
@@ -76,6 +90,11 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
         action.delete()
 
+        logger.info(
+            "action.delete",
+            extra={"user": self.request.user.email, "action": str(action.id)},
+        )
+
     @detail_route(methods=["post", "put", "delete"])
     def filter(self, request, id=None):
         action = self.get_object()
@@ -84,9 +103,19 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         if request.method in ["PUT", "POST"]:
             new_filter = Filter(**request.data.get("filter"))
             action.filter = new_filter
+            logger.info(
+                "action.create_filter"
+                if request.method == "POST"
+                else "action.update_filter",
+                extra={"user": self.request.user.email, "payload": self.request.data},
+            )
 
         elif request.method == "DELETE":
             action.filter = None
+            logger.info(
+                "action.delete_filter",
+                extra={"user": self.request.user.email, "payload": self.request.data},
+            )
 
         action.save()
 
@@ -104,6 +133,11 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         if request.method == "POST":
             action.rules += [Rule(**rule)]  # Add to end of list
 
+            logger.info(
+                "action.create_rule",
+                extra={"user": self.request.user.email, "payload": self.request.data},
+            )
+
         elif request.method == "PUT":
             updated_rule = Rule(**rule)
             old_rule = action.rules[rule_index]
@@ -119,6 +153,11 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             action.content = action.clean_content(deleted_conditions)
             action.rules[rule_index] = updated_rule
 
+            logger.info(
+                "action.update_rule",
+                extra={"user": self.request.user.email, "payload": self.request.data},
+            )
+
         elif request.method == "DELETE":
             rule = action.rules[rule_index]
             deleted_conditions = [
@@ -126,6 +165,11 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             ] + [str(rule.catchAll)]
             action.content = action.clean_content(deleted_conditions)
             del action.rules[rule_index]
+
+            logger.info(
+                "action.delete_rule",
+                extra={"user": self.request.user.email, "payload": self.request.data},
+            )
 
         action.save()
 
@@ -155,6 +199,15 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                 action.content = content
                 action.save()
                 serializer = ActionSerializer(action)
+
+                logger.info(
+                    "action.update_content",
+                    extra={
+                        "user": self.request.user.email,
+                        "payload": self.request.data,
+                    },
+                )
+
                 return Response(serializer.data)
 
     @detail_route(methods=["put", "delete"])
@@ -174,9 +227,19 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
             action.schedule = Schedule(**request.data)
 
+            logger.info(
+                "action.update_schedule",
+                extra={"user": self.request.user.email, "payload": self.request.data},
+            )
+
         if request.method == "DELETE" and "schedule" in action:
             delete_task(action.schedule.task_name)
             action.schedule = None
+
+            logger.info(
+                "action.delete_schedule",
+                extra={"user": self.request.user.email, "payload": self.request.data},
+            )
 
         action.save()
 
@@ -195,6 +258,11 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             raise ValidationError("Email content cannot be empty.")
 
         action.send_email()
+
+        logger.info(
+            "action.trigger_email_send",
+            extra={"user": self.request.user.email, "payload": self.request.data},
+        )
 
         return Response({"success": "true"})
 
@@ -248,6 +316,11 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         serializer = ActionSerializer(data=action)
         serializer.is_valid()
         serializer.save()
+
+        logger.info(
+            "action.clone",
+            extra={"user": self.request.user.email, "action": str(id)},
+        )
 
         return Response(status=HTTP_200_OK)
 
