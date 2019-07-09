@@ -19,6 +19,7 @@ from django.urls import reverse
 from pylti.common import LTIException, verify_request_common
 from jwt import decode
 import os
+from datetime import datetime as dt, timezone
 
 from .models import OneTimeToken, lti
 from .utils import (
@@ -38,6 +39,10 @@ from ontask.settings import (
     BACKEND_DOMAIN,
     FRONTEND_DOMAIN,
 )
+
+import logging
+
+logger = logging.getLogger("ontask")
 
 User = get_user_model()
 
@@ -71,6 +76,10 @@ class LocalAuth(APIView):
         # Send a notification to admins on user signup, if OnTask is in demo mode
         user_signup_notification(user)
 
+        logger.info(
+            "authentication.signup", extra={"user": user.email, "type": "local"}
+        )
+
         return Response({"success": "User creation successful"})
 
     def post(self, request, format=None):
@@ -79,6 +88,11 @@ class LocalAuth(APIView):
             return Response(
                 {"error": "Invalid credentials"}, status=HTTP_401_UNAUTHORIZED
             )
+
+        user.last_login = dt.now(timezone.utc)
+        user.save()
+
+        logger.info("authentication.login", extra={"user": user.email, "type": "local"})
 
         long_term_token, _ = Token.objects.get_or_create(user=user)
         return Response(
@@ -130,6 +144,11 @@ class AAFAuth(APIView):
 
         token = generate_one_time_token(user)
 
+        user.last_login = dt.now(timezone.utc)
+        user.save()
+
+        logger.info("authentication.login", extra={"user": user.email, "type": "AAF"})
+
         return redirect(FRONTEND_DOMAIN + "?tkn=" + token)
 
 
@@ -171,6 +190,11 @@ class LTIAuth(APIView):
             user.groups.set([Group.objects.get(name="instructor")])
 
         token = generate_one_time_token(user)
+
+        user.last_login = dt.now(timezone.utc)
+        user.save()
+
+        logger.info("authentication.login", extra={"user": user.email, "type": "LTI"})
 
         # Store the important LTI fields for this user
         # These fields be used to grant permissions in containers
@@ -253,6 +277,11 @@ class ImpersonateUser(APIView):
 
         if user.is_staff:
             raise PermissionDenied()
+
+        logger.info(
+            "authentication.impersonate",
+            extra={"user": request.user.email, "payload": request.data},
+        )
 
         long_term_token, _ = Token.objects.get_or_create(user=user)
         return Response(

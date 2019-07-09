@@ -175,11 +175,17 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "stream": sys.stdout,
             "formatter": "standard",
-        }
+        },
+        "json_console": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+            "stream": sys.stdout,
+            "formatter": "json",
+        },
     },
     "loggers": {
         "django": {"level": "INFO", "handlers": ["console"], "propagate": False},
-        "ontask": {"level": "INFO", "handlers": [], "propagate": False},
+        "ontask": {"level": "INFO", "handlers": ["json_console"], "propagate": False},
     },
 }
 
