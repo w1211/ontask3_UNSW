@@ -28,7 +28,7 @@ def process_data(data):
     )
 
     # Trim whitespaces from each cell
-    df = df.applymap(lambda x: x.strip())
+    df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
 
     df.replace({pd.np.nan: None}, inplace=True)
     return df.to_dict("records")
