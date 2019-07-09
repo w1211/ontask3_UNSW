@@ -59,7 +59,7 @@ class Data extends React.Component {
 
   initialiseColumns = () => {
     const { steps, columns, data } = this.props;
-    
+
     if (data.length > 1)
       return columns
         .filter(column => column.visible)
@@ -392,6 +392,7 @@ class Data extends React.Component {
               size="large"
               onClick={() => this.setState({ visualisation: true })}
               type="primary"
+              disabled={!tableData.length}
             >
               <Icon type="area-chart" size="large" />
               Visualise
@@ -451,12 +452,14 @@ class Data extends React.Component {
         ]}
 
         <div className="data_manipulation">
-          <Visualisation
-            visible={visualisation}
-            columns={columns}
-            data={tableData}
-            closeModal={() => this.setState({ visualisation: false })}
-          />
+          {tableData > 1 && (
+            <Visualisation
+              visible={visualisation}
+              columns={columns}
+              data={tableData}
+              closeModal={() => this.setState({ visualisation: false })}
+            />
+          )}
 
           {view === "data" && (
             <Table
