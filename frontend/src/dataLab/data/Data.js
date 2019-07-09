@@ -452,7 +452,7 @@ class Data extends React.Component {
         ]}
 
         <div className="data_manipulation">
-          {tableData > 1 && (
+          {tableData.length > 1 && (
             <Visualisation
               visible={visualisation}
               columns={columns}
