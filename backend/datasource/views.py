@@ -35,6 +35,10 @@ from scheduler.utils import create_task, delete_task
 from container.models import Container
 from datalab.models import Datalab
 
+import logging
+
+logger = logging.getLogger("ontask")
+
 
 class DatasourceViewSet(viewsets.ModelViewSet):
     lookup_field = "id"
@@ -101,6 +105,11 @@ class DatasourceViewSet(viewsets.ModelViewSet):
 
         datasource = serializer.save(
             connection=connection, data=data, fields=fields, types=types
+        )
+
+        logger.info(
+            "datasource.create",
+            extra={"user": self.request.user.email, "payload": self.request.data},
         )
 
     def perform_update(self, serializer):
@@ -180,6 +189,11 @@ class DatasourceViewSet(viewsets.ModelViewSet):
         else:
             serializer.save(connection=connection)
 
+        logger.info(
+            "datasource.update",
+            extra={"user": self.request.user.email, "payload": self.request.data},
+        )
+
     def perform_destroy(self, datasource):
         self.check_object_permissions(self.request, datasource)
 
@@ -194,6 +208,11 @@ class DatasourceViewSet(viewsets.ModelViewSet):
 
         self.delete_schedule(self.request, datasource.id)
         datasource.delete()
+
+        logger.info(
+            "datasource.delete",
+            extra={"user": self.request.user.email, "datasource": str(datasource.id)},
+        )
 
     @detail_route(methods=["patch"])
     def update_schedule(self, request, id):
@@ -216,6 +235,11 @@ class DatasourceViewSet(viewsets.ModelViewSet):
         serializer.is_valid()
         serializer.save()
 
+        logger.info(
+            "datasource.update_schedule",
+            extra={"user": self.request.user.email, "payload": self.request.data},
+        )
+
         return Response(serializer.data)
 
     @detail_route(methods=["patch"])
@@ -228,6 +252,11 @@ class DatasourceViewSet(viewsets.ModelViewSet):
             delete_task(datasource.schedule.task_name)
             datasource.schedule = None
             datasource.save()
+
+        logger.info(
+            "datasource.delete_schedule",
+            extra={"user": self.request.user.email, "datasource": str(datasource.id)},
+        )
 
         serializer = DatasourceSerializer(datasource)
         return JsonResponse(serializer.data)
@@ -279,5 +308,10 @@ class DatasourceViewSet(viewsets.ModelViewSet):
         data = data.reindex(columns=list(datasource.data[0].keys()))
 
         data.to_csv(path_or_buf=response, index=False)
+
+        logger.info(
+            "datasource.export_to_csv",
+            extra={"user": self.request.user.email, "datasource": str(datasource.id)},
+        )
 
         return response
