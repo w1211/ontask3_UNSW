@@ -125,6 +125,11 @@ class DetailContainer(APIView):
 
         container.delete()
 
+        logger.info(
+            "container.delete",
+            extra={"user": request.user.email, "container": str(container.id)},
+        )
+
         return Response(status=HTTP_200_OK)
 
 
@@ -141,7 +146,7 @@ def SurrenderAccess(request, id):
 
     logger.info(
         "container.surrender_access",
-        extra={"user": request.user.email, "container": str(id)},
+        extra={"user": request.user.email, "container": str(container.id)},
     )
 
     return Response(status=HTTP_200_OK)
