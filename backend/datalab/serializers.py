@@ -77,6 +77,33 @@ class OrderItemSerializer(EmbeddedDocumentSerializer):
             details["label"] = module.datasource.labels.get(order_item.field)
             details["field_type"] = module.datasource.types.get(order_item.field)
 
+            if details["field_type"] in ["checkbox-group", "list"]:
+                # Identify which form the field comes from
+                form_module_index = next(
+                    item for item in datasource.order if item.field == order_item.field
+                ).stepIndex
+                form_module_id = datasource.steps[form_module_index].form
+
+                if form_module_id in self.context["objects"]:
+                    form = self.context["objects"][form_module_id]
+                else:
+                    form = Form.objects.get(id=form_module_id)
+                    self.context["objects"][form_module_id] = form
+
+                details["from"] = form.name
+                for field in form.fields:
+                    if field.name == order_item.field:
+                        details["field_type"] = field.type
+
+                        if field.type == "checkbox-group":
+                            details["fields"] = field.columns
+
+                        if field.type == "list":
+                            details["options"] = [
+                                {"label": option.label, "value": option.value}
+                                for option in field.options
+                            ]
+
         elif module.type == "form":
             if module.form in self.context["objects"]:
                 form = self.context["objects"][module.form]
