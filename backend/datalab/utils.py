@@ -77,8 +77,8 @@ def calculate_computed_field(formula, record, build_fields, tracking_feedback_da
 
     def cast_float(value):
         try:
-            return float(value) if not np.isnan(value) else 0
-        except (ValueError, TypeError):
+            return float(value) if not pd.isna(value) else 0
+        except (ValueError, TypeError) as Error:
             return 0
 
     def tracking_feedback_value(action_id, job_id, data_type, record):
