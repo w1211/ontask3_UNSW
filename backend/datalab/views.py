@@ -463,7 +463,7 @@ def AccessDataLab(request, id):
 
     logger.info(
         "datalab.access",
-        extra={"user": self.request.user.email, "datalab": str(datalab.id)},
+        extra={"user": request.user.email, "datalab": str(datalab.id)},
     )
 
     return Response(serializer.data)
