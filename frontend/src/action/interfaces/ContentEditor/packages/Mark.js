@@ -9,11 +9,9 @@ function Mark(options) {
 
   return {
     onKeyDown(event, editor, next) {
-      // event.preventDefault(); // Enables typing?
       if (isHotkey(event)) {
         editor.toggleMark(type);
       }
-      event.preventDefault();
       return next();
     },
     renderMark(props, editor, next) {
@@ -39,7 +37,6 @@ export function hasMark(value, type) {
 };
 
 export function renderMarkButton(editor, value, type, icon) {
-  // console.log(editor.value.activeMarks);
   const isActive = hasMark(value, type);
 
   return (

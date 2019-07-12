@@ -481,7 +481,7 @@ class ContentEditor extends React.Component {
     }
   };
 
-  renderNode = props => {
+  renderBlock = props => {
     const { colours } = this.props;
     const { attributes, children, node } = props;
 
@@ -957,7 +957,7 @@ class ContentEditor extends React.Component {
           ref={editor => (this.editor = editor)}
           onChange={this.onChange}
           onKeyDown={this.onKeyDown}
-          renderNode={this.renderNode}
+          renderBlock={this.renderBlock}
           renderMark={this.renderMark}
           // renderEditor={props => (
           //   <div ref={editor => (this.editor = editor)}>{props.children}</div>

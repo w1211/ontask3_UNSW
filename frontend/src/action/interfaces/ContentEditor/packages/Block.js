@@ -4,20 +4,14 @@ import { isKeyHotkey } from "is-hotkey";
 
 const DEFAULT_NODE = "paragraph";
 
-const BLOCK_TAGS = {
-  p: "paragraph",
-  li: "list-item",
-  ul: "bulleted-list",
-  ol: "numbered-list",
-  blockquote: "quote",
-  pre: "code",
-  h1: "heading-one",
-  h2: "heading-two",
-};
+/**
+ * TODO
+ * Nested Lists? (icon shouldn't be active if the case)
+ */
 
 function Block(options) {
   return {
-    renderNode(props, editor, next) {
+    renderBlock(props, editor, next) {
         const { attributes, children, node } = props;
 
         switch (node.type) {
