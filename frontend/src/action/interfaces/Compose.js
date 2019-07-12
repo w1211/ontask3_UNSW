@@ -13,6 +13,7 @@ import QueryBuilder from "./QueryBuilder";
 import "material-design-icons/iconfont/material-icons.css";
 
 import apiRequest from "../../shared/apiRequest";
+import NewContentEditor from "./ContentEditor/NewContentEditor";
 
 const generateColours = size => {
   let colours = new Array(size);
@@ -280,6 +281,8 @@ class Compose extends React.Component {
           onUpdate={this.updateContent}
           onPreview={this.previewContent}
         />
+
+        <NewContentEditor/>
 
         <PreviewModal
           {...action.data}

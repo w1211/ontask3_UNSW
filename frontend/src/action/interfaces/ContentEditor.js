@@ -271,7 +271,7 @@ class ContentEditor extends React.Component {
 
   componentDidUpdate() {
     const { mouseEvent, ruleIndex, rules } = this.props;
-    const { isInside, value } = this.state;
+    const { isInside } = this.state;
 
     if (mouseEvent) {
       const contentEditor = this.editor.getBoundingClientRect();
@@ -294,10 +294,9 @@ class ContentEditor extends React.Component {
       this.setState({ isInside: false });
 
       const rule = rules[ruleIndex];
-      const change = value.change();
 
       rule.conditions.forEach(condition => {
-        change.insertBlock({
+        this.editor.insertBlock({
           type: "condition",
           data: {
             conditionId: condition.conditionId,
@@ -306,7 +305,7 @@ class ContentEditor extends React.Component {
         });
       });
 
-      change.insertBlock({
+      this.editor.insertBlock({
         type: "condition",
         data: {
           label: "else",
@@ -314,8 +313,6 @@ class ContentEditor extends React.Component {
           ruleIndex
         }
       });
-
-      this.onChange(change);
     }
   }
 
@@ -386,9 +383,12 @@ class ContentEditor extends React.Component {
     let isActive = this.hasBlock(type);
 
     if (["numbered-list", "bulleted-list"].includes(type)) {
-      const { value } = this.state;
-      const parent = value.document.getParent(value.blocks.first().key);
-      isActive = this.hasBlock("list-item") && parent && parent.type === type;
+      const { document, blocks } = this.state.value;
+
+      if (blocks.size > 0) {
+        const parent = document.getParent(blocks.first().key);
+        isActive = this.hasBlock("list-item") && parent && parent.type === type;
+      }
     }
 
     return (
@@ -406,11 +406,9 @@ class ContentEditor extends React.Component {
     return value.activeMarks.some(mark => mark.type === type);
   };
 
-  onClickMark = (event, type, data) => {
+  onClickMark = (event, type) => {
     event.preventDefault();
-    const { value } = this.state;
-    const change = value.change().toggleMark({ type, data });
-    this.onChange(change);
+    this.editor.toggleMark(type);
   };
 
   renderMark = props => {
@@ -444,7 +442,6 @@ class ContentEditor extends React.Component {
   onClickBlock = (event, type) => {
     event.preventDefault();
     const { value } = this.state;
-    const change = value.change();
     const { document } = value;
 
     // Handle everything but list buttons.
@@ -453,12 +450,12 @@ class ContentEditor extends React.Component {
       const isList = this.hasBlock("list-item");
 
       if (isList) {
-        change
+        this.editor
           .setBlocks(isActive ? DEFAULT_NODE : type)
           .unwrapBlock("bulleted-list")
           .unwrapBlock("numbered-list");
       } else {
-        change.setBlocks(isActive ? DEFAULT_NODE : type);
+        this.editor.setBlocks(isActive ? DEFAULT_NODE : type);
       }
     } else {
       // Handle the extra wrapping required for list buttons.
@@ -468,22 +465,20 @@ class ContentEditor extends React.Component {
       });
 
       if (isList && isType) {
-        change
+        this.editor
           .setBlocks(DEFAULT_NODE)
           .unwrapBlock("bulleted-list")
           .unwrapBlock("numbered-list");
       } else if (isList) {
-        change
+        this.editor
           .unwrapBlock(
             type === "bulleted-list" ? "numbered-list" : "bulleted-list"
           )
           .wrapBlock(type);
       } else {
-        change.setBlocks("list-item").wrapBlock(type);
+        this.editor.setBlocks("list-item").wrapBlock(type);
       }
     }
-
-    this.onChange(change);
   };
 
   renderNode = props => {
@@ -669,13 +664,10 @@ class ContentEditor extends React.Component {
 
     console.log(font);
     // Remove Current Font
-    let change = null;
     let value = this.state.value;
     const fontMarks = value.marks.filter(mark => mark.type === type);
     fontMarks.map(mark => {
-      value = this.state.value;
-      change = value.change().removeMark(mark);
-      this.onChange(change);
+      this.editor.removeMark(mark);
     });
 
     const data = {
@@ -684,8 +676,7 @@ class ContentEditor extends React.Component {
 
     // Add new font
     value = this.state.value;
-    change = value.change().addMark({ type, data });
-    this.onChange(change);
+    this.editor.addMark({ type, data });
   };
 
   ColourButton = () => {
@@ -724,30 +715,24 @@ class ContentEditor extends React.Component {
 
   onChangeColor = (color, event) => {
     // Remove Current Color
-    let change = null;
+    const type = 'span';
     let value = this.state.value;
-    const spanMarks = value.marks.filter(mark => mark.type === "span");
+    const spanMarks = value.marks.filter(mark => mark.type === type);
     spanMarks.map(mark => {
-      value = this.state.value;
-      change = value.change().removeMark(mark);
-      this.onChange(change);
+      this.editor.removeMark(mark);
     });
 
-    const type = 'span';
-
+    // Add new color
     const data = {
       'style': `color: ${color.hex}`
     }
 
-    // Add new color
     value = this.state.value;
-    change = value.change().addMark({ type, data });
-    this.onChange(change);
+    this.editor.addMark({ type, data });
   }
 
   LinkButton = () => {
-    const { hyperlink, value } = this.state;
-    const change = value.change();
+    const { hyperlink } = this.state;
 
     return (
       <Popconfirm
@@ -781,21 +766,16 @@ class ContentEditor extends React.Component {
             this.setState({ hyperlink: { label: null, url: null } });
         }}
         onConfirm={() => {
-          change.insertInline({
-            type: "link",
-            data: { href: hyperlink.url },
-            nodes: [
-              {
-                object: "text",
-                leaves: [
-                  {
-                    text: hyperlink.label ? hyperlink.label : hyperlink.url
-                  }
-                ]
-              }
-            ]
-          });
-          this.onChange(change);
+          if (!(hyperlink.label && hyperlink.url)) return;
+
+          this.editor
+            .insertText(hyperlink.label)
+            .moveFocusBackward(hyperlink.label.length)
+            .wrapInline({
+              type: "link",
+              data: { href: hyperlink.url }
+            })
+            .moveToEnd();
         }}
       >
         <i className="material-icons">insert_link</i>
@@ -804,8 +784,7 @@ class ContentEditor extends React.Component {
   };
 
   ImageButton = () => {
-    const { image, value } = this.state;
-    const change = value.change();
+    const { image } = this.state;
 
     return (
       <Popconfirm
@@ -838,12 +817,11 @@ class ContentEditor extends React.Component {
           if (!visible) this.setState({ image: { src: null, alt: null } });
         }}
         onConfirm={() => {
-          change.insertInline({
+          this.editor.insertInline({
             type: "image",
             data: { src: image.src, alt: image.alt },
             isVoid: true
           });
-          this.onChange(change);
         }}
       >
         <i className="material-icons">insert_photo</i>
@@ -890,8 +868,6 @@ class ContentEditor extends React.Component {
 
   AttributeButton = () => {
     const { order } = this.props;
-    const { value } = this.state;
-    const change = value.change();
 
     return (
       <Select
@@ -899,12 +875,11 @@ class ContentEditor extends React.Component {
         size="small"
         value={undefined}
         onChange={field => {
-          change.insertInline({
+          this.editor.insertInline({
             type: "attribute",
             data: { field },
             isVoid: true
           });
-          this.onChange(change);
         }}
         className="attribute_select"
         dropdownMatchSelectWidth={false}
