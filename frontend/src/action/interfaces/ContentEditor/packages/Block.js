@@ -1,7 +1,5 @@
 import React from "react";
 
-import { isKeyHotkey } from "is-hotkey";
-
 const DEFAULT_NODE = "paragraph";
 
 /**
@@ -13,7 +11,6 @@ function Block(options) {
   return {
     renderBlock(props, editor, next) {
         const { attributes, children, node } = props;
-
         switch (node.type) {
           case "paragraph":
             return <p {...attributes}>{children}</p>;

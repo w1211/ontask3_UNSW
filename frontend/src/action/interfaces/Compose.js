@@ -282,7 +282,9 @@ class Compose extends React.Component {
           onPreview={this.previewContent}
         />
 
-        <NewContentEditor/>
+        <NewContentEditor
+          order={action.data.order}
+        />
 
         <PreviewModal
           {...action.data}
