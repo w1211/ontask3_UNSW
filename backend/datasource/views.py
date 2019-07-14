@@ -107,10 +107,16 @@ class DatasourceViewSet(viewsets.ModelViewSet):
             connection=connection, data=data, fields=fields, types=types
         )
 
-        logger.info(
-            "datasource.create",
-            extra={"user": self.request.user.email, "payload": self.request.data},
-        )
+        if "file" in self.request.data:
+            logger.info(
+                "datasource.create",
+                extra={"user": self.request.user.email, "payload": json.loads(self.request.data["payload"])},
+            )
+        else:
+            logger.info(
+                "datasource.create",
+                extra={"user": self.request.user.email, "payload": self.request.data},
+            )   
 
     def perform_update(self, serializer):
         datasource = self.get_object()
@@ -189,10 +195,16 @@ class DatasourceViewSet(viewsets.ModelViewSet):
         else:
             serializer.save(connection=connection)
 
-        logger.info(
-            "datasource.update",
-            extra={"user": self.request.user.email, "payload": self.request.data},
-        )
+        if "file" in self.request.data:
+            logger.info(
+                "datasource.update",
+                extra={"user": self.request.user.email, "payload": json.loads(self.request.data["payload"])},
+            )
+        else:
+            logger.info(
+                "datasource.update",
+                extra={"user": self.request.user.email, "payload": self.request.data},
+            )   
 
     def perform_destroy(self, datasource):
         self.check_object_permissions(self.request, datasource)
