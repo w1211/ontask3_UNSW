@@ -186,6 +186,7 @@ LOGGING = {
     "loggers": {
         "django": {"level": "INFO", "handlers": ["console"], "propagate": False},
         "ontask": {"level": "INFO", "handlers": ["json_console"], "propagate": False},
+        "emails": {"level": "INFO", "handlers": ["json_console"], "propagate": False},
     },
 }
 
@@ -222,3 +223,10 @@ if ENABLE_CLOUDWATCH_LOGGING and LOG_GROUP:
         "stream_name": "Audit",
     }
     LOGGING["loggers"]["ontask"]["handlers"].append("audit")
+
+    LOGGING["handlers"]["emails"] = {
+        **watchtower,
+        "formatter": "json",
+        "stream_name": "Emails",
+    }
+    LOGGING["loggers"]["emails"]["handlers"].append("emails")
