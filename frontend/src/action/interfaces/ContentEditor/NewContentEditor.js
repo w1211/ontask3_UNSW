@@ -9,6 +9,8 @@ import Link, { LinkButton } from './packages/Link';
 import Image, { ImageButton } from './packages/Image';
 import Attribute, { AttributeButton } from './packages/Attribute';
 import Color, { ColorButton } from './packages/Color';
+import Font, { FontFamilySelect } from './packages/Font';
+import { UndoButton, RedoButton } from './packages/History';
 
 const initialValue = Value.fromJSON({
   document: {
@@ -41,7 +43,8 @@ const plugins = [
   italicPlugin,
   underlinedPlugin,
   codePlugin,
-  Color()
+  Color(),
+  Font()
 ];
 
 
@@ -56,6 +59,11 @@ class NewContentEditor extends React.Component {
     };
   };
 
+  componentDidMount = () => {
+    // So that "this.editor" is not undefined when changing font, undo, redo, colour, etc.
+    this.editor.focus();
+  };
+
   onChange = ({ value }) => {
     this.setState({ value });
   };
@@ -64,10 +72,13 @@ class NewContentEditor extends React.Component {
     return (
       <div>
         <div className="toolbar">
+          <UndoButton editor={this.editor} />
+          <RedoButton editor={this.editor} />
           {renderMarkButton(this.editor, this.state.value, "bold", "format_bold")}
           {renderMarkButton(this.editor, this.state.value, "italic", "format_italic")}
           {renderMarkButton(this.editor, this.state.value, "underlined", "format_underlined")}
           {renderMarkButton(this.editor, this.state.value, "code", "code")}
+          <FontFamilySelect editor={this.editor} value={this.state.value}/>
           <ColorButton editor={this.editor} value={this.state.value}/>
           <LinkButton editor={this.editor} />
           <ImageButton editor={this.editor} />

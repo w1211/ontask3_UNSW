@@ -51,6 +51,7 @@
 }
 .action .toolbar .attribute_select {
   width: 125px;
+  margin-right: 10px;
 }
 .action_toolbar_popup {
   max-width: 200px;
