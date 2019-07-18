@@ -250,18 +250,21 @@ class Compose extends React.Component {
                   }
                 }}
               >
-                <Button style={{ marginRight: 5 }}>
-                  <span
-                    style={{
-                      width: 9,
-                      height: 9,
-                      background: colours[ruleIndex],
-                      marginRight: 5,
-                      display: "inline-block"
-                    }}
-                  />
-                  {rule.name}
-                </Button>
+                <div>
+                  <Button>Add</Button>
+                  <Button style={{ marginRight: 5 }}>
+                    <span
+                      style={{
+                        width: 9,
+                        height: 9,
+                        background: colours[ruleIndex],
+                        marginRight: 5,
+                        display: "inline-block"
+                      }}
+                    />
+                    {rule.name}
+                  </Button>
+                </div>
               </Draggable>
             ))
           : "No rules have been added yet."}
@@ -271,7 +274,7 @@ class Compose extends React.Component {
         <h3>Content</h3>
 
         <ContentEditor
-          key={contentEditorKey} // Used to force a re-render after updating rules
+          // key={contentEditorKey} // Used to force a re-render after updating rules
           {...contentEditor}
           blockMap={_.get(action, "content.blockMap")}
           rules={action.rules}
@@ -283,7 +286,14 @@ class Compose extends React.Component {
         />
 
         <NewContentEditor
+          key={contentEditorKey} // Used to force a re-render after updating rules
+          {...contentEditor}
+          rules={action.rules}
+          types={action.options.types}
           order={action.data.order}
+          colours={colours}
+          // onUpdate={this.updateContent}
+          // onPreview={this.previewContent}
         />
 
         <PreviewModal

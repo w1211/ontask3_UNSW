@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 
 import { Select } from "antd";
 
@@ -57,7 +57,6 @@ export function onChangeFontFamily(editor, value, font) {
 
 export const FontFamilySelect = (props) => {
   const { editor, value } = props;
-  // const [open, setOpen] = useState(false);
 
   const mark = value.activeMarks.find(mark => mark.type === "font-family" && mark.data.get("font"));
   const currMark = (typeof mark !== 'undefined') ? mark.data.get("font") : defaultFont;
@@ -72,9 +71,6 @@ export const FontFamilySelect = (props) => {
       autoFocus
       size="small"
       value={currMark}
-      // open={open}
-      // onMouseEnter={() => {console.log("hi");setOpen(true)}}
-      // onBlur={() => setOpen(false)}
       placeholder="Select a font"
       className="attribute_select"
       optionFilterProp="children"

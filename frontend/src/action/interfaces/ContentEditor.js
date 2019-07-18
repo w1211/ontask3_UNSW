@@ -274,7 +274,7 @@ class ContentEditor extends React.Component {
     const { isInside } = this.state;
 
     if (mouseEvent) {
-      const contentEditor = this.editor.getBoundingClientRect();
+      const contentEditor = this.editorDiv.getBoundingClientRect();
 
       const isInsideX =
         mouseEvent.clientX >= contentEditor.x &&
@@ -959,12 +959,12 @@ class ContentEditor extends React.Component {
           onKeyDown={this.onKeyDown}
           renderBlock={this.renderBlock}
           renderMark={this.renderMark}
-          // renderEditor={props => (
-          //   <div ref={editor => (this.editor = editor)}>{props.children}</div>
-          // )}
+          renderEditor={props => (
+            <div ref={editor => (this.editorDiv = editor)}>{props.children}</div>
+          )}
           plugins={plugins}
           placeholder={"Create content by entering text here"}
-          // onPaste={this.onPaste}
+          onPaste={this.onPaste}
         />
 
         <div style={{ marginTop: "10px" }}>
