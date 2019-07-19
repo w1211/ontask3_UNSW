@@ -8,6 +8,25 @@ function Mark(options) {
   const isHotkey = isKeyHotkey(hotkey);
 
   return {
+    queries: {
+      hasMark(editor, type) {
+        return editor.value.activeMarks.some(mark => mark.type === type);
+      },
+      renderMarkButton(editor, type, icon) {
+        const isActive = editor.hasMark(type);
+        return (
+          <i
+            className={`material-icons ${isActive ? "active" : ""}`}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              editor.toggleMark(type);
+            }}
+          >
+            {icon}
+          </i>
+        );
+      }
+    },
     onKeyDown(event, editor, next) {
       if (isHotkey(event)) {
         editor.toggleMark(type);
@@ -30,28 +49,6 @@ function Mark(options) {
       };
     }
   };
-};
-
-export function hasMark(value, type) {
-  return value.activeMarks.some(mark => mark.type === type);
-};
-
-export function renderMarkButton(editor, value, type, icon) {
-  const isActive = hasMark(value, type);
-
-  return (
-    <i
-      className={`material-icons ${isActive ? "active" : ""}`}
-      onMouseDown={(event) => onClickMark(event, editor, type)}
-    >
-      {icon}
-    </i>
-  );
-};
-
-export function onClickMark(event, editor, type) {
-  event.preventDefault();
-  editor.toggleMark(type);
 };
 
 export default Mark;

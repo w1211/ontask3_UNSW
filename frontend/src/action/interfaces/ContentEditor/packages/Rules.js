@@ -4,12 +4,32 @@ function Rules(options) {
   const { rules, types, colours } = options;
 
   return {
-    renderNode(props, editor, next) {
-      const { attributes, children, node } = props;
-      console.log("HEY");
+    commands: {
+      insertRule(editor, ruleIndex, rule) {
+        rule.conditions.forEach(condition => {
+          editor.insertBlock({
+            type: "condition",
+            data: {
+              conditionId: condition.conditionId,
+              ruleIndex
+            }
+          });
+        });
+
+        editor.insertBlock({
+          type: "condition",
+          data: {
+            label: "else",
+            conditionId: rule.catchAll,
+            ruleIndex
+          }
+        });
+      },
+    },
+    renderBlock(props, editor, next) {
+      const { children, node } = props;
       switch (node.type) {
         case "condition":
-          console.log("HI");
           const ruleIndex = node.data.get("ruleIndex");
           const conditionId = node.data.get("conditionId");
           // The "else" blocks have a label of "else",
@@ -39,7 +59,7 @@ function Rules(options) {
   };
 };
 
-export function generateLabel(ruleIndex, conditionId, rules, types) {
+function generateLabel(ruleIndex, conditionId, rules, types) {
   const rule = rules[ruleIndex];
 
   if (!rule) return "MISSING_RULE";
