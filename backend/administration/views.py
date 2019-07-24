@@ -61,6 +61,8 @@ def ListUsers(request):
 def GetAllContainers(request):
     containers = list(Container.objects.all())
 
+    # Todo: add optional filters in order to make this method more useful.
+
     serializer = ContainerSerializer(containers, many=True)
     return Response(serializer.data)
 
