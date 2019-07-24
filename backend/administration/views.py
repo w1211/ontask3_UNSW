@@ -14,6 +14,8 @@ from datetime import datetime as dt, timedelta
 
 from .serializers import *
 from .models import *
+from container.models import Container
+from container.serializers import ContainerSerializer
 from datalab.models import Datalab
 from scheduler.utils import create_task, delete_task
 from scheduler.tasks import dump_datalab_data
@@ -52,6 +54,15 @@ def ListUsers(request):
 
     serializer = UserSerializer(paginated_users, many=True)
     return paginator.get_paginated_response(serializer.data)
+
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def GetAllContainers(request):
+    containers = list(Container.objects.all())
+
+    serializer = ContainerSerializer(containers, many=True)
+    return Response(serializer.data)
 
 
 @api_view(["GET"])
