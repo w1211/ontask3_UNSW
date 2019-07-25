@@ -58,7 +58,9 @@ const rules = [
               />
             );
           case "attribute":
-            return <attribute>{obj.data.get("field")}</attribute>;
+            return <attribute field={obj.data.get("field")}>{children}</attribute>;
+          case "condition-wrapper":
+            return <div index={obj.data.get("ruleIndex")}>{children}</div>
           case "condition":
             return <div>{children}</div>;
           default:
@@ -190,10 +192,6 @@ const BLOCK_TAGS = {
   pre: "code",
   h1: "heading-one",
   h2: "heading-two",
-  h3: "heading-three",
-  h4: "heading-four",
-  h5: "heading-five",
-  h6: "heading-six"
 };
 
 const MARK_TAGS = {
@@ -337,12 +335,14 @@ class NewContentEditor extends React.Component {
     if (event.key === '.') {
       event.preventDefault();
       const html = this.generateHtml();
-      console.log(editor.value.blocks.some(node => {
-        if (node.type === "condition") {
-          console.log(node);
-        }
-      }))
-      // console.log(html);
+      // console.log(editor.value.blocks.some(node => {
+      //   if (node.type === "condition") {
+      //     console.log(node);
+      //   }
+      // }))
+      console.log(html);
+      console.log(editor.value.document.toJSON());
+      console.log(editor.value.marks.toJSON());
     }
     return next();
   }

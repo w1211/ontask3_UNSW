@@ -2,6 +2,11 @@ import React from "react";
 
 import { Select } from "antd";
 
+/**
+ * TODO
+ * The attribute text shouldn't be able to be edited (can be deleted in one go)
+ */
+
 function Attribute(options) {
   return {
     queries: {
@@ -12,11 +17,13 @@ function Attribute(options) {
             size="small"
             value={undefined}
             onChange={field => {
-              editor.insertInline({
-                type: "attribute",
-                data: { field },
-                isVoid: true
-              });
+              editor
+                .insertText(field)
+                .moveFocusBackward(field.length)
+                .wrapInline({
+                  type: "attribute",
+                  data: { field }
+                });
             }}
             className="attribute_select"
             dropdownMatchSelectWidth={false}
@@ -31,11 +38,10 @@ function Attribute(options) {
       }
     },
     renderInline(props, editor, next) {
-      const { attributes, node } = props;
+      const { attributes, children, node } = props;
 
       switch (node.type) {
         case "attribute":
-          const field = node.data.get("field");
           return (
             <span
               {...attributes}
@@ -46,7 +52,7 @@ function Attribute(options) {
                 background: "#eee"
               }}
             >
-              {field}
+              {children}
             </span>
           );
         default:
@@ -55,30 +61,5 @@ function Attribute(options) {
     }
   };
 };
-
-// export const AttributeButton = (props) => {
-//   return (
-//     <Select
-//       placeholder="Add a field"
-//       size="small"
-//       value={undefined}
-//       onChange={field => {
-//         props.editor.insertInline({
-//           type: "attribute",
-//           data: { field },
-//           isVoid: true
-//         });
-//       }}
-//       className="attribute_select"
-//       dropdownMatchSelectWidth={false}
-//     >
-//       {props.order.map((item, i) => (
-//         <Select.Option value={item} key={i}>
-//           {item}
-//         </Select.Option>
-//       ))}
-//     </Select>
-//   );
-// };
 
 export default Attribute;

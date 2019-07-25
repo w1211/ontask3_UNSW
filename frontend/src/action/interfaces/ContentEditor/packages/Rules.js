@@ -1,5 +1,12 @@
 import React from "react";
 
+import { Block } from 'slate';
+
+/**
+ * TODO
+ * If user deletes the "paragraph" block, it should delete the whole block
+ */
+
 function Rules(options) {
   const { rules, types, colours } = options;
 
@@ -7,28 +14,63 @@ function Rules(options) {
     commands: {
       insertRule(editor, ruleIndex, rule) {
         rule.conditions.forEach(condition => {
-          editor.insertBlock({
-            type: "condition",
-            data: {
-              conditionId: condition.conditionId,
-              ruleIndex
+          const ruleBlock = Block.createList([
+            {
+              type: "condition",
+              nodes: [
+                {
+                  object: 'block',
+                  type: 'paragraph',
+                  nodes: [
+                    {
+                      object: 'text',
+                      text: '',
+                    },
+                  ],
+                },
+              ],
+              data: {
+                conditionId: condition.conditionId,
+                ruleIndex
+              }
+            },
+            {
+              type: "condition",
+              nodes: [
+                {
+                  object: 'block',
+                  type: 'paragraph',
+                  nodes: [
+                    {
+                      object: 'text',
+                      text: '',
+                    },
+                  ],
+                },
+              ],
+              data: {
+                label: "else",
+                conditionId: rule.catchAll,
+                ruleIndex
+              }
             }
-          });
-        });
+          ]);
 
-        editor.insertBlock({
-          type: "condition",
-          data: {
-            label: "else",
-            conditionId: rule.catchAll,
-            ruleIndex
-          }
+          editor.insertBlock({
+            type: "condition-wrapper",
+            data: {
+              ruleIndex
+            },
+            nodes: ruleBlock
+          });
         });
       },
     },
     renderBlock(props, editor, next) {
       const { children, node } = props;
       switch (node.type) {
+        case "condition-wrapper":
+          return <div>{children}</div>
         case "condition":
           const ruleIndex = node.data.get("ruleIndex");
           const conditionId = node.data.get("conditionId");

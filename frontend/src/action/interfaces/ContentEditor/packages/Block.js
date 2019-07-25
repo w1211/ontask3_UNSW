@@ -2,14 +2,6 @@ import React from "react";
 
 const DEFAULT_NODE = "paragraph";
 
-/**
- * TODO
- * Nested Lists? (icon shouldn't be active if the case)
- * Tab - (1level)Deeper List
- * Enter (on a list) -> SHallower list(1 level)
- * Handle Code
- */
-
 function Block(options) {
   return {
     queries: {
@@ -47,7 +39,6 @@ function Block(options) {
     commands: {
       onClickBlock(editor, event, type) {
         event.preventDefault();
-        const { document } = editor.value;
 
         // Handle everything but list buttons.
         if (type !== "bulleted-list" && type !== "numbered-list") {
@@ -65,35 +56,25 @@ function Block(options) {
         } else {
           // Handle the extra wrapping required for list buttons.
           const isList = editor.hasBlock("list-item");
-          const isCondition = editor.hasBlock("condition");
+          // const isCondition = editor.hasBlock("condition");
           const isType = editor.hasParentType(type);
 
           if (isList && isType) {
             // Is a list and of the same type
-            console.log("A");
             editor
               .setBlocks(DEFAULT_NODE)
               .unwrapBlock("bulleted-list")
               .unwrapBlock("numbered-list");
           } else if (isList) {
             // Is a list, but of the opposite type
-            console.log("B");
             editor
               .unwrapBlock(type === "bulleted-list" ? "numbered-list" : "bulleted-list")
               .wrapBlock(type);
           } else {
             // Not a list
-            // if (isCondition) {
-            //   console.log("C")
-            //   editor
-            //     .insertBlock("list-item")
-            //     .wrapBlock(type);
-            // } else {
-            console.log("D");
             editor
               .setBlocks("list-item")
               .wrapBlock(type);
-            // }
           }
         }
       },
@@ -129,7 +110,6 @@ function Block(options) {
     onKeyDown(event, editor, next) {
       if (event.key === 'Tab') {
         event.preventDefault();
-        console.log(event.shiftKey);
         if (event.shiftKey) editor.decreaseListDepth();
         else editor.increaseListDepth();
       }
