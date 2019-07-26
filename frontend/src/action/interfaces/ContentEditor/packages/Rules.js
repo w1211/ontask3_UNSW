@@ -2,15 +2,39 @@ import React from "react";
 
 import { Block } from 'slate';
 
-/**
- * TODO
- * If user deletes the "paragraph" block, it should delete the whole block
- */
-
 function Rules(options) {
   const { rules, types, colours } = options;
 
   return {
+    schema: {
+      blocks: {
+        "condition-wrapper": {
+          nodes: [
+            {
+              match: [{type: 'condition'}],
+              min: 2,
+              max: 2
+            }
+          ]
+        },
+        "condition": {
+          nodes: [
+            { match: { type: 'paragraph' } },
+            { match: { type: 'list-item' } },
+            { match: { type: 'bulleted-list' } },
+            { match: { type: 'numbered-list' } },
+            { match: { type: 'code' } },
+            { match: { type: 'heading-one' } },
+            { match: { type: 'heading-two' } },
+            { match: { type: 'link' } },
+            { match: { type: 'image' } },
+            { match: { type: 'attribute' } },
+            { match: { type: 'condition-wrapper' } },
+            { match: { type: 'condition' } }
+          ]
+        }
+      }
+    },
     commands: {
       insertRule(editor, ruleIndex, rule) {
         rule.conditions.forEach(condition => {

@@ -2,13 +2,15 @@ import React from "react";
 
 import { Select } from "antd";
 
-/**
- * TODO
- * The attribute text shouldn't be able to be edited (can be deleted in one go)
- */
-
 function Attribute(options) {
   return {
+    // Note: This function is called everytime a node changes (may consider optimising this)
+    // Makes an attribute node "atomic"
+    normalizeNode(node, editor, next) {
+      if (node.type !== "attribute") return next()
+      if (node.text === node.data.get("field")) return next()
+      return () => editor.removeNodeByKey(node.key)
+    },
     queries: {
       renderAttributeButton(editor, order) {
         return (
@@ -51,6 +53,7 @@ function Attribute(options) {
                 lineHeight: "1.25em",
                 background: "#eee"
               }}
+              contentEditable={false}
             >
               {children}
             </span>
