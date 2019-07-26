@@ -3,8 +3,6 @@ import React from "react";
 import { Editor } from 'slate-react';
 import { Value } from 'slate';
 import SoftBreak from "slate-soft-break";
-import Html from "slate-html-serializer";
-
 
 import Mark from './packages/Mark';
 import Block from './packages/Block';
@@ -15,215 +13,13 @@ import Color from './packages/Color';
 import Font from './packages/Font';
 import Rules from './packages/Rules';
 import History from './packages/History';
+import Serialize, { PreviewButton } from './packages/Serialize';
 
 /**
  * onPaste
  * Preview + Save
  * Drag Drop
  */
-
-const rules = [
-  {
-    serialize(obj, children) {
-      if (["block", "inline"].includes(obj.object)) {
-        switch (obj.type) {
-          case "heading-one":
-            return <h1>{children}</h1>;
-          case "heading-two":
-            return <h2>{children}</h2>;
-          case "paragraph":
-            return <p>{children}</p>;
-          case "numbered-list":
-            return <ol>{children}</ol>;
-          case "bulleted-list":
-            return <ul>{children}</ul>;
-          case "list-item":
-            return <li>{children}</li>;
-          case "link":
-            return (
-              <a
-                href={obj.data.get("href")}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {children}
-              </a>
-            );
-          case "image":
-            return (
-              <img
-                src={obj.data.get("src")}
-                alt={obj.data.get("alt")}
-                style={{ maxWidth: "100%" }}
-              />
-            );
-          case "attribute":
-            return <attribute field={obj.data.get("field")}>{children}</attribute>;
-          case "condition-wrapper":
-            return <div index={obj.data.get("ruleIndex")}>{children}</div>
-          case "condition":
-            return <div>{children}</div>;
-          default:
-            return;
-        }
-      }
-    }
-  },
-  {
-    serialize(obj, children) {
-      if (obj.object === "mark") {
-        switch (obj.type) {
-          case "span":
-            return (
-              <span style={parseStyles(obj.data.get("style"))}>{children}</span>
-            );
-          case "bold":
-            return <strong>{children}</strong>;
-          case "italic":
-            return <em>{children}</em>;
-          case "underlined":
-            return <u>{children}</u>;
-          case "code":
-            return (
-              <pre>
-                <code>{children}</code>
-              </pre>
-            );
-          default:
-            return;
-        }
-      }
-    }
-  },
-  {
-    deserialize(el, next) {
-      const block = BLOCK_TAGS[el.tagName.toLowerCase()];
-
-      if (block) {
-        return {
-          object: "block",
-          type: block,
-          nodes: next(el.childNodes)
-        };
-      }
-    }
-  },
-  {
-    deserialize(el, next) {
-      const mark = MARK_TAGS[el.tagName.toLowerCase()];
-
-      if (mark) {
-        return {
-          object: "mark",
-          type: mark,
-          nodes: next(el.childNodes),
-          data:
-            mark === "span"
-              ? {
-                  style: el.getAttribute("style")
-                }
-              : undefined
-        };
-      }
-    }
-  },
-  {
-    // Special case for code blocks, which need to grab the nested childNodes.
-    deserialize(el, next) {
-      if (el.tagName.toLowerCase() === "pre") {
-        const code = el.childNodes[0];
-        const childNodes =
-          code && code.tagName.toLowerCase() === "code"
-            ? code.childNodes
-            : el.childNodes;
-
-        return {
-          object: "block",
-          type: "code",
-          nodes: next(childNodes)
-        };
-      }
-    }
-  },
-  {
-    // Special case for images, to grab their src.
-    deserialize(el, next) {
-      if (el.tagName.toLowerCase() === "img") {
-        return {
-          object: "block",
-          type: "image",
-          isVoid: true,
-          nodes: next(el.childNodes),
-          data: {
-            src: el.getAttribute("src")
-          }
-        };
-      }
-    }
-  },
-  {
-    // Special case for links, to grab their href.
-    deserialize(el, next) {
-      if (el.tagName.toLowerCase() === "a") {
-        return {
-          object: "inline",
-          type: "link",
-          nodes: next(el.childNodes),
-          data: {
-            href: el.getAttribute("href")
-          }
-        };
-      }
-    }
-  },
-  {
-    deserialize(el, next) {
-      if (!el.nodeValue || el.nodeValue.trim() === "") return null;
-    }
-  }
-];
-
-const BLOCK_TAGS = {
-  p: "paragraph",
-  li: "list-item",
-  ul: "bulleted-list",
-  ol: "numbered-list",
-  blockquote: "quote",
-  pre: "code",
-  h1: "heading-one",
-  h2: "heading-two",
-};
-
-const MARK_TAGS = {
-  strong: "bold",
-  em: "italic",
-  u: "underlined",
-  s: "strikethrough",
-  code: "code",
-  span: "span"
-};
-
-const parseStyles = styles => {
-  return styles
-    ? styles
-        .split(";")
-        .filter(style => style.split(":")[0] && style.split(":")[1])
-        .map(style => [
-          style
-            .split(":")[0]
-            .trim()
-            .replace(/-./g, c => c.substr(1).toUpperCase()),
-          style.split(":")[1].trim()
-        ])
-        .reduce(
-          (styleObj, style) => ({
-            ...styleObj,
-            [style[0]]: style[1]
-          }),
-          {}
-        )
-    : styles;
-};
 
 const initialValue = Value.fromJSON({
   document: {
@@ -243,6 +39,25 @@ const initialValue = Value.fromJSON({
 });
 
 class NewContentEditor extends React.Component {
+  schema = {
+    document: {
+      nodes: [
+        { match: { type: 'paragraph' } },
+        { match: { type: 'list-item' } },
+        { match: { type: 'bulleted-list' } },
+        { match: { type: 'numbered-list' } },
+        { match: { type: 'code' } },
+        { match: { type: 'heading-one' } },
+        { match: { type: 'heading-two' } },
+        { match: { type: 'link' } },
+        { match: { type: 'image' } },
+        { match: { type: 'attribute' } },
+        { match: { type: 'condition-wrapper' } },
+        { match: { type: 'condition' } }
+      ],
+    },
+  };
+
   plugins = [
     Block(),
     Link(),
@@ -256,6 +71,7 @@ class NewContentEditor extends React.Component {
     Font(),
     Rules({ rules: this.props.rules, types: this.props.types, colours: this.props.colours }),
     History(),
+    Serialize(),
     SoftBreak({ shift: true })
   ];
 
@@ -264,7 +80,9 @@ class NewContentEditor extends React.Component {
 
     this.state = {
       value: initialValue,
-      isInside: false
+      isInside: false,
+      previewing: false,
+      error: null
     };
   };
 
@@ -310,20 +128,27 @@ class NewContentEditor extends React.Component {
     }
   };
 
-  generateHtml = () => {
-    const { value } = this.state;
-
-    const html = new Html({ rules });
-    const output = value.document.nodes.map(node => {
-      const pseudoValue = { document: { nodes: [node] } };
-      return html.serialize(pseudoValue);
-    });
-
-    return [...output];
-  };
-
   handleRuleClick(ruleIndex, rules) {
     this.editor.insertRule(ruleIndex, rules[ruleIndex]);
+  };
+
+  previewContent = () => {
+    const { onPreview } = this.props;
+
+    const content = {
+      blockMap: this.editor.value.toJSON(),
+      html: this.editor.generateHtml()
+    };
+
+    console.log(content);
+
+    this.setState({ error: null, previewing: true });
+
+    onPreview({
+      content,
+      onSuccess: () => this.setState({ previewing: false }),
+      onError: error => this.setState({ error })
+    });
   };
 
   onChange = ({ value }) => {
@@ -334,12 +159,7 @@ class NewContentEditor extends React.Component {
     // TODO: REMOVE (DEBUGGING ONLY)
     if (event.key === '.') {
       event.preventDefault();
-      const html = this.generateHtml();
-      // console.log(editor.value.blocks.some(node => {
-      //   if (node.type === "condition") {
-      //     console.log(node);
-      //   }
-      // }))
+      const html = editor.generateHtml();
       console.log(html);
       console.log(editor.value.document.toJSON());
       console.log(editor.value.marks.toJSON());
@@ -349,7 +169,7 @@ class NewContentEditor extends React.Component {
 
   render() {
     const { order } = this.props;
-    const { value, isInside } = this.state;
+    const { value, isInside, previewing } = this.state;
 
     return (
       <div>
@@ -374,6 +194,7 @@ class NewContentEditor extends React.Component {
         <Editor
           className={`content_editor ${isInside ? "isInside" : ""}`}
           ref={editor => this.editor = editor}
+          schema={this.schema}
           plugins={this.plugins}
           value={value}
           onKeyDown={this.onKeyDown}
@@ -382,6 +203,17 @@ class NewContentEditor extends React.Component {
             <div ref={editorDiv => (this.editorDiv = editorDiv)}>{props.children}</div> // editorDiv to use this.editorDiv.getBoundgetBoundingClientRect
           }
         />
+        <div style={{ marginTop: "10px" }}>
+          <PreviewButton loading={previewing} onClick={this.previewContent} />
+          {/* <Button
+            loading={loading}
+            type="primary"
+            size="large"
+            onClick={this.updateContent}
+          >
+            Save
+          </Button> */}
+        </div>
       </div>
     )
   };

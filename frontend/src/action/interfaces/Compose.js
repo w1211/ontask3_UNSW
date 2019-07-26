@@ -354,7 +354,7 @@ class Compose extends React.Component {
           order={action.data.order}
           colours={colours}
           // onUpdate={this.updateContent}
-          // onPreview={this.previewContent}
+          onPreview={this.previewContent}
         />
 
         <PreviewModal
