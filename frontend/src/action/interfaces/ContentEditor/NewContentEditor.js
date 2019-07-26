@@ -13,7 +13,7 @@ import Color from './packages/Color';
 import Font from './packages/Font';
 import Rules from './packages/Rules';
 import History from './packages/History';
-import Serialize, { PreviewButton } from './packages/Serialize';
+import Serialize, { PreviewButton, SaveButton } from './packages/Serialize';
 
 /**
  * onPaste
@@ -82,6 +82,7 @@ class NewContentEditor extends React.Component {
       value: initialValue,
       isInside: false,
       previewing: false,
+      saving: false,
       error: null
     };
   };
@@ -140,13 +141,28 @@ class NewContentEditor extends React.Component {
       html: this.editor.generateHtml()
     };
 
-    console.log(content);
-
     this.setState({ error: null, previewing: true });
 
     onPreview({
       content,
       onSuccess: () => this.setState({ previewing: false }),
+      onError: error => this.setState({ error })
+    });
+  };
+
+  updateContent = () => {
+    const { onUpdate } = this.props;
+
+    const content = {
+      blockMap: this.editor.value.toJSON(),
+      html: this.editor.generateHtml()
+    };
+
+    this.setState({ error: null, saving: true });
+
+    onUpdate({
+      content,
+      onSuccess: () => this.setState({ saving: false }),
       onError: error => this.setState({ error })
     });
   };
@@ -169,7 +185,7 @@ class NewContentEditor extends React.Component {
 
   render() {
     const { order } = this.props;
-    const { value, isInside, previewing } = this.state;
+    const { value, isInside, previewing, saving } = this.state;
 
     return (
       <div>
@@ -205,14 +221,7 @@ class NewContentEditor extends React.Component {
         />
         <div style={{ marginTop: "10px" }}>
           <PreviewButton loading={previewing} onClick={this.previewContent} />
-          {/* <Button
-            loading={loading}
-            type="primary"
-            size="large"
-            onClick={this.updateContent}
-          >
-            Save
-          </Button> */}
+          <SaveButton saving={saving} onClick={this.updateContent} />
         </div>
       </div>
     )

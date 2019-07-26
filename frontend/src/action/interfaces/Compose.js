@@ -353,7 +353,7 @@ class Compose extends React.Component {
           types={action.options.types}
           order={action.data.order}
           colours={colours}
-          // onUpdate={this.updateContent}
+          onUpdate={this.updateContent}
           onPreview={this.previewContent}
         />
 

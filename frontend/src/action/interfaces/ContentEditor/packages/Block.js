@@ -2,6 +2,11 @@ import React from "react";
 
 const DEFAULT_NODE = "paragraph";
 
+/**
+ * TODO: [!HIGH PRIORITY] Fix issue where heading converted to paragraph deletes the block
+ * TODO: Press Enter on Heading -> Convert to Paragraph
+ */
+
 function Block(options) {
   return {
     queries: {
@@ -108,11 +113,21 @@ function Block(options) {
       }
     },
     onKeyDown(event, editor, next) {
+      const getCurrentBlock = editor.value.blocks.get(0);
       if (event.key === 'Tab') {
         event.preventDefault();
         if (event.shiftKey) editor.decreaseListDepth();
         else editor.increaseListDepth();
       }
+      // // Press Enter
+
+      // if (event.key === "Enter") {
+      //   if (getCurrentBlock.type === "heading-one" || getCurrentBlock.type === "heading-two" ) {
+      //     editor
+      //       .splitBlock()
+      //       .setBlocks('paragraph');
+      //   }
+      // }
       return next();
     },
     renderBlock(props, editor, next) {

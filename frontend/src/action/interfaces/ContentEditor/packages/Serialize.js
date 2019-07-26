@@ -1,19 +1,27 @@
 import React from 'react';
 
+import { getEventTransfer } from "slate-react";
 import Html from "slate-html-serializer";
+
+import sanitizeHtml from "sanitize-html";
 
 import { Button } from 'antd';
 
 import FontList from './FontList';
 
 const BLOCK_TAGS = {
-  p: "paragraph",
-  li: "list-item",
-  ul: "bulleted-list",
-  ol: "numbered-list",
-  pre: "code",
-  h1: "heading-one",
-  h2: "heading-two",
+  p: 'paragraph',
+  li: 'list-item',
+  ul: 'bulleted-list',
+  ol: 'numbered-list',
+  blockquote: 'quote',
+  pre: 'code',
+  h1: 'heading-one',
+  h2: 'heading-two',
+  h3: 'heading-three',
+  h4: 'heading-four',
+  h5: 'heading-five',
+  h6: 'heading-six',
 };
 
 const MARK_TAGS = {
@@ -185,23 +193,140 @@ const rules = [
     deserialize(el, next) {
       if (!el.nodeValue || el.nodeValue.trim() === "") return null;
     }
-  }
+  },
+  // {
+  //   deserialize(el, next) {
+  //     const tag = el.tagName.toLowerCase();
+  //     const block = BLOCK_TAGS[tag];
+  //     const mark = MARK_TAGS[tag];
+  //     if (block) {
+  //       return {
+  //         object: "block",
+  //         type: block,
+  //         nodes: next(el.childNodes)
+  //       };
+  //     }
+  //     if (mark) {
+  //       return {
+  //         object: "mark",
+  //         type: mark,
+  //         nodes: next(el.childNodes),
+  //         data:
+  //           mark === "span"
+  //             ? {
+  //                 style: el.getAttribute("style")
+  //               }
+  //             : undefined
+  //       };
+  //     }
+  //     // Special case for code blocks, which need to grab the nested childNodes.
+  //     if (el.tagName.toLowerCase() === "pre") {
+  //       const code = el.childNodes[0];
+  //       const childNodes =
+  //         code && code.tagName.toLowerCase() === "code"
+  //           ? code.childNodes
+  //           : el.childNodes;
+
+  //       return {
+  //         object: "block",
+  //         type: "code",
+  //         nodes: next(childNodes)
+  //       };
+  //     }
+  //     if (el.tagName.toLowerCase() === "img") {
+  //       return {
+  //         object: "block",
+  //         type: "image",
+  //         isVoid: true,
+  //         nodes: next(el.childNodes),
+  //         data: {
+  //           src: el.getAttribute("src")
+  //         }
+  //       };
+  //     }
+  //     if (el.tagName.toLowerCase() === "a") {
+  //       return {
+  //         object: "inline",
+  //         type: "link",
+  //         nodes: next(el.childNodes),
+  //         data: {
+  //           href: el.getAttribute("href")
+  //         }
+  //       };
+  //     }
+  //     if (!el.nodeValue || el.nodeValue.trim() === "") return null;
+  //   }
+  // },
 ];
 
 function Serialize(options) {
+  const serializer = new Html({ rules });
   return {
     queries: {
       generateHtml(editor) {
         const { value } = editor;
 
-        const html = new Html({ rules });
         const output = value.document.nodes.map(node => {
           const pseudoValue = { document: { nodes: [node] } };
-          return html.serialize(pseudoValue);
+          return serializer.serialize(pseudoValue);
         });
         return [...output];
       },
-    }
+      generateDocument(editor, html) {
+        return serializer.deserialize(html);
+      }
+    },
+    // onPaste(event, editor, next) {
+    //   /**
+    //    * TODO: COLOUR, FONT, Sometimes only outputs headings??, Bullet Points
+    //    */
+    //   const transfer = getEventTransfer(event);
+    //   if (transfer.type !== "html") return next();
+    //   console.log(transfer.html);
+
+    //   // const { document } = serializer.deserialize(transfer.html);
+    //   // console.log(document.toJSON());
+    //   // editor.insertFragment(document);
+
+    //   // console.log("PASTE");
+
+    //   const sanitizedHtml = sanitizeHtml(transfer.html, {
+    //     allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+    //       "h1",
+    //       "h2",
+    //       "span",
+    //       "img",
+    //       "u"
+    //     ]),
+    //     allowedAttributes: {
+    //       "*": ["style"],
+    //       a: ["href", "name", "target"],
+    //       img: ["src"]
+    //     },
+    //     allowedStyles: {
+    //       "*": {
+    //         color: [/^.*$/]
+    //         // "font-size": [/^.*$/],
+    //         // "font-family": [/^.*$/]
+    //       }
+    //     },
+    //     transformTags: {
+    //       b: sanitizeHtml.simpleTransform("strong"),
+    //       i: sanitizeHtml.simpleTransform("em")
+    //     }
+    //   });
+
+    //   console.log(sanitizedHtml);
+    //   const { document } = serializer.deserialize(sanitizedHtml);
+    //   console.log(document.toJSON());
+    //   // console.log(documentSanitized)
+
+    //   // const html = new Html({ rules });
+    //   // const { document } = html.deserialize(sanitizedHtml);
+    //   editor.insertFragment(document);
+
+    //   return true;
+    // }
   };
 };
 
@@ -239,5 +364,18 @@ export const PreviewButton = (props) => {
     </Button>
   );
 };
+
+export const SaveButton = (props) => {
+  return (
+    <Button
+      loading={props.saving}
+      type="primary"
+      size="large"
+      onClick={props.onClick}
+    >
+      Save
+    </Button>
+  )
+}
 
 export default Serialize;
