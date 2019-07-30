@@ -139,17 +139,31 @@ class Datalab(Document):
 
                 build_fields.append([step.labels[field] for field in step.fields])
 
+                included_fields = []
+                for field in step.fields:
+                    # Skip columns that are already included in the relations table
+                    if step.labels[field] in list(combined_data):
+                        continue
+
+                    if step.types.get(field) != "checkbox-group":
+                        included_fields.append(field)
+                        continue
+
+                    # Identify which form the field comes from
+                    form_module_index = next(
+                        item for item in datasource.order if item.field == field
+                    ).stepIndex
+                    form_module_id = datasource.steps[form_module_index].form
+
+                    form = Form.objects.get(id=form_module_id)
+                    for form_field in form.fields:
+                        if form_field.name == field:
+                            included_fields.extend(form_field.columns)
+
                 data = (
                     pd.DataFrame(data=datasource.data)
                     .set_index(step.primary)
-                    .filter(
-                        items=[
-                            field
-                            for field in step.fields
-                            # Skip columns that are already included in the relations table
-                            if step.labels[field] not in list(combined_data)
-                        ]
-                    )
+                    .filter(items=included_fields)
                     .rename(
                         columns={field: step.labels[field] for field in step.fields}
                     )

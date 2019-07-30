@@ -11,7 +11,6 @@ from datetime import datetime as dt
 import boto3
 import pandas as pd
 from io import StringIO
-import logging
 import os
 
 from datasource.models import Datasource
@@ -29,6 +28,10 @@ from ontask.settings import (
     AWS_PROFILE,
     DATALAB_DUMP_BUCKET,
 )
+
+import logging
+
+logger = logging.getLogger("emails")
 
 
 @shared_task
@@ -90,7 +93,7 @@ def dump_datalab_data(**kwargs):
 @should_run
 def workflow_send_email(action_id=None, job_type="Scheduled", **kwargs):
     """ Send email based on the schedule in workflow model """
-    logging.info(f"{action_id} - Action - {job_type} email job initiated")
+    logger.info("email.initiate", extra={"action": action_id, "job_type": job_type})
 
     from workflow.models import Workflow, EmailJob, Email
 
@@ -122,8 +125,13 @@ def workflow_send_email(action_id=None, job_type="Scheduled", **kwargs):
 
     recipient_count = 0
     for batch_index, batch in enumerate(email_batches):
-        logging.info(
-            f"{action_id} - Action - Starting batch {batch_index + 1} of {len(email_batches)}"
+        logger.info(
+            "email.batch",
+            extra={
+                "action": action_id,
+                "current": batch_index + 1,
+                "total": len(email_batches),
+            },
         )
 
         # Open a connection to the SMTP server, which will be used for every email sent in this batch
@@ -161,15 +169,6 @@ def workflow_send_email(action_id=None, job_type="Scheduled", **kwargs):
 
                     if os.environ.get("ONTASK_DEVELOPMENT"):
                         email_sent = True
-                        logging.info(
-                            f"""
-                                To: {recipient}
-                                From: {email_settings.fromName}
-                                Reply To: {email_settings.replyTo}
-                                Subject: {email_settings.subject}
-                                Content:\n{email_content}
-                            """
-                        )
                     else:
                         email_sent = send_email(
                             recipient,
@@ -189,22 +188,27 @@ def workflow_send_email(action_id=None, job_type="Scheduled", **kwargs):
                                 content=populated_content[index],
                             )
                         )
+
                         successes.append(recipient)
-                        logging.info(
-                            f"{action_id} - Action - Successfully sent email to {recipient} ({recipient_count + 1} of {len(messages)})"
-                        )
                     else:
                         failures.append(recipient)
-                        logging.info(
-                            f"{action_id} - Action - Failed to send email to {recipient} ({recipient_count + 1} of {len(messages)})"
-                        )
+
+                    logger.info(
+                        f"email.{'success' if email_sent else 'fail'}",
+                        extra={
+                            "action": action_id,
+                            "batch": batch_index + 1,
+                            "recipient": recipient,
+                            "from": email_settings.fromName,
+                            "reply-to": email_settings.replyTo,
+                            "subject": email_settings.subject,
+                            "content": email_content,
+                        },
+                    )
 
                 recipient_count += 1
 
             if batch_index + 1 != len(email_batches) and batch_pause > 0:
-                logging.info(
-                    f"{action_id} - Action - End of batch reached. Waiting for {batch_pause} seconds"
-                )
                 sleep(batch_pause)
 
     action.emailJobs.append(job)
@@ -230,6 +234,6 @@ def workflow_send_email(action_id=None, job_type="Scheduled", **kwargs):
                 """,
             )
 
-    logging.info(f"{action_id} - Action - {job_type} email job completed")
+    logger.info("email.complete", extra={"action": action_id, "job_type": job_type})
 
     return "Email job completed."

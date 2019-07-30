@@ -175,11 +175,18 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "stream": sys.stdout,
             "formatter": "standard",
-        }
+        },
+        "json_console": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+            "stream": sys.stdout,
+            "formatter": "json",
+        },
     },
     "loggers": {
         "django": {"level": "INFO", "handlers": ["console"], "propagate": False},
-        "ontask": {"level": "INFO", "handlers": [], "propagate": False},
+        "ontask": {"level": "INFO", "handlers": ["json_console"], "propagate": False},
+        "emails": {"level": "INFO", "handlers": ["json_console"], "propagate": False},
     },
 }
 
@@ -216,3 +223,10 @@ if ENABLE_CLOUDWATCH_LOGGING and LOG_GROUP:
         "stream_name": "Audit",
     }
     LOGGING["loggers"]["ontask"]["handlers"].append("audit")
+
+    LOGGING["handlers"]["emails"] = {
+        **watchtower,
+        "formatter": "json",
+        "stream_name": "Emails",
+    }
+    LOGGING["loggers"]["emails"]["handlers"].append("emails")

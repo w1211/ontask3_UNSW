@@ -145,6 +145,7 @@ class Model extends React.Component {
             history.push({ pathname: `/datalab/${dataLab.id}/data` });
         },
         onError: error => {
+          notification["error"]({ message: error });
           this.setState({ loading: false });
         }
       });

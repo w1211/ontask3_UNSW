@@ -12,6 +12,10 @@ from form.models import Form
 from datalab.models import Datalab
 from accounts.permissions import CanCreateObjects
 
+import logging
+
+logger = logging.getLogger("ontask")
+
 
 @api_view(["GET"])
 def Dashboard(request):
@@ -63,6 +67,10 @@ def CreateContainer(request):
     serializer.is_valid()
     serializer.save()
 
+    logger.info(
+        "container.create", extra={"user": request.user.email, "payload": request.data}
+    )
+
     return Response(serializer.data, status=HTTP_201_CREATED)
 
 
@@ -101,6 +109,11 @@ class DetailContainer(APIView):
         serializer.is_valid()
         serializer.save()
 
+        logger.info(
+            "container.update",
+            extra={"user": request.user.email, "payload": request.data},
+        )
+
         return Response(status=HTTP_200_OK)
 
     def delete(self, request, id):
@@ -111,6 +124,11 @@ class DetailContainer(APIView):
             raise PermissionDenied()
 
         container.delete()
+
+        logger.info(
+            "container.delete",
+            extra={"user": request.user.email, "container": str(container.id)},
+        )
 
         return Response(status=HTTP_200_OK)
 
@@ -125,5 +143,10 @@ def SurrenderAccess(request, id):
     if request.user.email in container.sharing:
         container.sharing.remove(request.user.email)
         container.save()
+
+    logger.info(
+        "container.surrender_access",
+        extra={"user": request.user.email, "container": str(container.id)},
+    )
 
     return Response(status=HTTP_200_OK)

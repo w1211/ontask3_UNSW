@@ -27,6 +27,9 @@ def process_data(data):
         lambda x: x.rstrip("%") if isinstance(x, str) and x.endswith("%") else x
     )
 
+    # Trim whitespaces from each cell
+    df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+
     df.replace({pd.np.nan: None}, inplace=True)
     return df.to_dict("records")
 
@@ -165,6 +168,7 @@ def retrieve_file_from_s3(connection):
     data = [record for file in data_files for record in file]
 
     return data
+
 
 def guess_column_types(data):
     # Take 25 random records from the dataset, or the entire dataset if

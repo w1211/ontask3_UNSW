@@ -9,7 +9,8 @@
 3. From your terminal, run `docker-compose build` followed by `docker-compose up` in the root OnTask directory
 4. If this is the first time running, the following must be performed:
    - Attach to the backend container by running `docker-compose exec backend sh`
-   - Initialise the database by running `python3 manage.py makemigrations` followed by `python3 manage.py migrate`
+   - Initialise the database by running `python3 manage.py makemigrations accounts`, `python3 manage.py makemigrations` and lastly `python3 manage.py migrate`
+   - Load data into user groups by running `python3 manage.py loaddata user_groups`
    - Create the first admin user by running `python manage.py createsuperuser`
 5. In order to work with LTI via localhost, the application runs in SSL mode with self-signed certs
    - This will require adding an exception in your browser for both https://localhost:3000 and https://localhost:8000
@@ -53,6 +54,9 @@ ALLOWED_HOSTS = ["<YOUR_FRONTEND_DOMAIN>"] # Without the protocol specified
 # file (usually ~/.aws/credentials). Otherwise, boto3 will assume the AWS role
 # of the server itself
 # AWS_PROFILE = "<YOUR_AWS_NAMED_PROFILE>"
+AWS_REGION = "<YOUR_AWS_REGION>"
+ENABLE_CLOUDWATCH_LOGGING  = False
+DEMO_BUCKET = "<YOUR_S3_BUCKET>"
 
 # SMTP credentials to enable email sending from OnTask
 EMAIL_HOST = "<YOUR_SMTP_HOST>"

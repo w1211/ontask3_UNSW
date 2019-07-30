@@ -30,6 +30,10 @@ from container.models import Container
 from datasource.models import Datasource
 from form.models import Form
 
+import logging
+
+logger = logging.getLogger("ontask")
+
 
 class DatalabViewSet(viewsets.ModelViewSet):
     lookup_field = "id"
@@ -71,6 +75,11 @@ class DatalabViewSet(viewsets.ModelViewSet):
 
         datalab = serializer.save(steps=steps, order=order, relations=relations)
         datalab.refresh_access()
+
+        logger.info(
+            "datalab.create",
+            extra={"user": self.request.user.email, "payload": self.request.data},
+        )
 
     def perform_update(self, serializer):
         datalab = self.get_object()
@@ -136,9 +145,19 @@ class DatalabViewSet(viewsets.ModelViewSet):
         datalab = serializer.save(steps=steps, order=order, relations=relations)
         datalab.refresh_access()
 
+        logger.info(
+            "datalab.update",
+            extra={"user": self.request.user.email, "payload": self.request.data},
+        )
+
     def perform_destroy(self, datalab):
         self.check_object_permissions(self.request, datalab)
         datalab.delete()
+
+        logger.info(
+            "datalab.delete",
+            extra={"user": self.request.user.email, "datalab": str(datalab.id)},
+        )
 
     @action(detail=False, methods=["post"])
     def check_discrepencies(self, request):
@@ -254,6 +273,11 @@ class DatalabViewSet(viewsets.ModelViewSet):
         serializer.is_valid()
         serializer.save()
 
+        logger.info(
+            "datalab.reorder_columns",
+            extra={"user": self.request.user.email, "payload": self.request.data},
+        )
+
         return JsonResponse(serializer.data)
 
     @detail_route(methods=["patch"])
@@ -281,6 +305,11 @@ class DatalabViewSet(viewsets.ModelViewSet):
         serializer.is_valid()
         serializer.save()
 
+        logger.info(
+            "datalab.change_column_visibility",
+            extra={"user": self.request.user.email, "payload": self.request.data},
+        )
+
         return Response(status=HTTP_200_OK)
 
     @detail_route(methods=["patch"])
@@ -307,6 +336,11 @@ class DatalabViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid()
         serializer.save()
+
+        logger.info(
+            "datalab.change_column_pinned",
+            extra={"user": self.request.user.email, "payload": self.request.data},
+        )
 
         return Response(status=HTTP_200_OK)
 
@@ -337,6 +371,11 @@ class DatalabViewSet(viewsets.ModelViewSet):
                 field.type = field_type
 
         datalab.save()
+
+        logger.info(
+            "datalab.update_column_type",
+            extra={"user": self.request.user.email, "payload": self.request.data},
+        )
 
         return Response(status=HTTP_200_OK)
 
@@ -372,6 +411,11 @@ class DatalabViewSet(viewsets.ModelViewSet):
         serializer = DatalabSerializer(data=datalab)
         serializer.is_valid()
         serializer.save()
+
+        logger.info(
+            "datalab.clone",
+            extra={"user": self.request.user.email, "datalab": str(id)},
+        )
 
         return JsonResponse({"success": 1})
 
@@ -415,6 +459,11 @@ def AccessDataLab(request, id):
     serializer = RestrictedDatalabSerializer(
         datalab,
         context={"data": data.to_dict("records"), "default_group": default_group},
+    )
+
+    logger.info(
+        "datalab.access",
+        extra={"user": request.user.email, "datalab": str(datalab.id)},
     )
 
     return Response(serializer.data)
@@ -479,6 +528,11 @@ def ExportToCSV(request, id):
 
     data.to_csv(path_or_buf=response, index=False)
 
+    logger.info(
+        "datalab.export_to_csv",
+        extra={"user": request.user.email, "datalab": str(datalab.id)},
+    )
+
     return response
 
 
@@ -504,5 +558,9 @@ def CreateDataLab(request):
             Datalab.objects(container=container), many=True
         ).data,
     }
+
+    logger.info(
+        "datalab.create", extra={"user": request.user.email, "payload": request.data}
+    )
 
     return Response(response, status=HTTP_200_OK)
