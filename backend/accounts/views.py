@@ -29,7 +29,6 @@ from .utils import (
     user_signup_notification,
 )
 
-
 from container.models import Container
 
 from ontask.settings import (
@@ -211,10 +210,25 @@ class LTIAuth(APIView):
         lti_resource_id = payload["resource_link_id"]
         try:
             container = Container.objects.get(lti_resource=lti_resource_id)
+
+            if LTI_CONFIG.get("auto_create_share_containers"):
+                if container.owner != payload["lis_person_contact_email_primary"]:
+                    container.sharing.append(payload["lis_person_contact_email_primary"])
+                    container.save()
+
             return redirect(
                 FRONTEND_DOMAIN + "?tkn=" + token + "&container=" + str(container.id)
             )
         except:
+            if LTI_CONFIG.get("auto_create_share_containers"):
+                container = Container(
+                    owner=payload["lis_person_contact_email_primary"], 
+                    code=payload["context_title"],
+                    lti_resource=payload["resource_link_id"], 
+                    lti_context=payload["context_id"]
+                )
+                container.save()
+
             return redirect(
                 FRONTEND_DOMAIN + "?tkn=" + token + "&lti=" + lti_resource_id
             )
