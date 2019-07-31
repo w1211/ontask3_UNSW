@@ -87,7 +87,8 @@ LTI_CONFIG = {
         }
     },
     "url": "<YOUR_LTI_URL>",
-    "username_field": "<YOUR_LTI_USERNAME_FIELD>" # Specify which field in the LTI payload maps to your institution's user ID
+    "username_field": "<YOUR_LTI_USERNAME_FIELD>", # Specify which field in the LTI payload maps to your institution's user ID
+    "auto_create_share_containers": True # Allows for the auto creation and sharing of containers in lti context.
 }
 ```
 
