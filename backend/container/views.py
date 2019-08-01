@@ -33,11 +33,14 @@ def Dashboard(request):
         context_key = obj[1]
         access_context[f"accessible_{context_key}"] = accessible_objects
 
-    containers = Container.objects.filter(
-        Q(owner=request.user.email)
-        | Q(sharing__contains=request.user.email)
-        | Q(id__in=related_containers)
-    ).order_by("code")
+    if request.user.is_superuser:
+        containers = Container.objects.all()
+    else:
+        containers = Container.objects.filter(
+            Q(owner=request.user.email)
+            | Q(sharing__contains=request.user.email)
+            | Q(id__in=related_containers)
+        ).order_by("code")
 
     response = []
     for container in containers:
