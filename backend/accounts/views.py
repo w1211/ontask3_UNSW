@@ -170,8 +170,9 @@ class LTIAuth(APIView):
             # TODO: Implement logging of this error
             return redirect(FRONTEND_DOMAIN + "/forbidden")
 
+        current_user_email = payload["lis_person_contact_email_primary"]
         data = {
-            "email": payload["lis_person_contact_email_primary"],
+            "email": current_user_email,
             "first_name": payload["lis_person_name_given"],
             "last_name": payload["lis_person_name_family"],
         }
@@ -199,7 +200,7 @@ class LTIAuth(APIView):
         # These fields be used to grant permissions in containers
         lti_payload = {
             "lti_id": payload["user_id"],
-            "lti_email": payload["lis_person_contact_email_primary"],
+            "lti_email": current_user_email,
             "user_id": payload.get(LTI_CONFIG.get("username_field")),
         }
         lti.objects(user=user.id).update_one(payload=lti_payload, upsert=True)
@@ -212,8 +213,8 @@ class LTIAuth(APIView):
             container = Container.objects.get(lti_resource=lti_resource_id)
 
             if LTI_CONFIG.get("auto_create_share_containers"):
-                if container.owner != payload["lis_person_contact_email_primary"]:
-                    container.sharing.append(payload["lis_person_contact_email_primary"])
+                if container.owner != current_user_email and current_user_email not in container.sharing:
+                    container.sharing.append(current_user_email)
                     container.save()
 
             return redirect(
@@ -222,7 +223,7 @@ class LTIAuth(APIView):
         except:
             if LTI_CONFIG.get("auto_create_share_containers"):
                 container = Container(
-                    owner=payload["lis_person_contact_email_primary"], 
+                    owner=current_user_email,
                     code=payload["context_title"],
                     lti_resource=payload["resource_link_id"], 
                     lti_context=payload["context_id"]

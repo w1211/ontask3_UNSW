@@ -13,6 +13,9 @@ class Container(Document):
     lti_context = StringField(null=True)
 
     def has_full_permission(self, user):
+        if user.is_superuser:
+            return True
+
         return user.email == self.owner or user.email in self.sharing
 
     def is_owner(self, user):
