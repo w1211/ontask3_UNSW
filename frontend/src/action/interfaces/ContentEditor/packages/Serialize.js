@@ -99,8 +99,8 @@ const rules = [
           case "color":
             return <span style={{color: obj.data.get("hex")}}>{children}</span>;
           case "font-family":
-            const fontStack = FontList[obj.data.get("font")]["stack"];
-            const fontStackString = fontStack.join(", ");
+            const font = FontList[obj.data.get("font")];
+            const fontStackString = font && font["stack"].join(", ");
             return <span style={{fontFamily: fontStackString}}>{children}</span>;
           default:
             return;
@@ -121,18 +121,38 @@ const rules = [
         };
       }
       if (mark) {
-        // console.log(typeof (el.getAttribute("style")));
-        return {
-          object: "mark",
-          type: mark,
-          nodes: next(el.childNodes),
-          data:
-            mark === "span"
-              ? {
-                  style: el.getAttribute("style")
-                }
-              : undefined
-        };
+        const style = el.getAttribute("style");
+        const property = style && style.slice(0, style.indexOf(':'));
+        const value = style && style.slice(style.indexOf(':') + 1, -1);
+
+        switch (property) {
+          case 'color':
+            return {
+              object: "mark",
+              type: "color",
+              nodes: next(el.childNodes),
+              data: { hex: value }
+            }
+          case 'font-family':
+            return {
+              object: "mark",
+              type: "font-family",
+              nodes: next(el.childNodes),
+              data: { font: value.split(",")[0].replace(/['"]+/g, '') }
+            }
+          default:
+            return {
+              object: "mark",
+              type: mark,
+              nodes: next(el.childNodes),
+              data:
+                mark === "span"
+                  ? {
+                      style: el.getAttribute("style")
+                    }
+                  : undefined
+            };
+        }
       }
       // Special case for code blocks, which need to grab the nested childNodes.
       if (el.tagName.toLowerCase() === "pre") {
@@ -193,7 +213,8 @@ function Serialize(options) {
     },
     onPaste(event, editor, next) {
       /**
-       * TODO: COLOUR, FONT Bullet Points
+       * TODO:
+       * Bullet Points - Fix the weird symbol
        */
       const transfer = getEventTransfer(event);
       if (transfer.type !== "html") return next();
@@ -215,7 +236,7 @@ function Serialize(options) {
           "*": {
             "color": [/^.*$/],
             // "font-size": [/^.*$/],
-            // "font-family": [/^.*$/]
+            "font-family": [/^.*$/]
           }
         },
         transformTags: {
@@ -224,20 +245,7 @@ function Serialize(options) {
         }
       });
 
-      console.log(sanitizedHtml);
       const { document } = serializer.deserialize(sanitizedHtml);
-      // const output = document.nodes.map(node => {
-      //   const pseudoValue = { document: { nodes: [node] } };
-      //   return serializer.serialize(pseudoValue);
-      // });
-
-      // console.log([...output]);
-      // console.log(editor.generateHtml)
-      // console.log(document.toJSON());
-      // console.log(documentSanitized)
-
-      // const html = new Html({ rules });
-      // const { document } = html.deserialize(sanitizedHtml);
       editor.insertFragment(document);
 
       return true;

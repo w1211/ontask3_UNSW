@@ -15,9 +15,17 @@ function Rules(options) {
               min: 2,
               max: 2
             }
-          ]
+          ],
+          normalize: (editor, error) => {
+            switch (error.code) {
+              case 'child_min_invalid':
+                // TODO: Render Popconfirm delete code block?
+                return;
+            }
+          }
         },
         "condition": {
+          // No Text
           nodes: [
             { match: [
               { type: 'paragraph' },
@@ -34,7 +42,7 @@ function Rules(options) {
               { type: 'condition' }
             ]}
           ],
-        }
+        },
       }
     },
     commands: {

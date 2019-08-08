@@ -144,7 +144,7 @@ export default {
       "serif"
     ]
   },
-  "TimesNewRoman": {
+  "Times New Roman": {
     "category": "serif",
     "stack": [
       "TimesNewRoman",

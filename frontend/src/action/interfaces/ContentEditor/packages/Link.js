@@ -10,7 +10,7 @@ function Link(options) {
       switch (node.type) {
         case "link":
           let href = node.data.get("href");
-          if (!(href.startsWith("http://") || href.startsWith("https://")))
+          if (href && !(href.startsWith("http://") || href.startsWith("https://")))
             href = `//${href}`;
           return (
             <Popover

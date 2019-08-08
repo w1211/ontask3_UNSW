@@ -60,8 +60,8 @@ function Font(options) {
       const { children, mark, attributes } = props;
       switch (mark.type) {
         case "font-family":
-          const fontStack = FontList[mark.data.get("font")]["stack"];
-          const fontStackString = fontStack.join(", ");
+          const font = FontList[mark.data.get("font")];
+          const fontStackString = font && font["stack"].join(", ");
           return <span style={{fontFamily: fontStackString}} {...attributes}>{children}</span>;
         default:
           return next();
