@@ -36,7 +36,7 @@ function Color(options) {
       },
       onChangeColor(editor, color, event) {
         // Remove Current Color
-        editor.value.activeMarks
+        editor.value.marks
           .filter(mark => mark.type === "color")
           .forEach(mark => editor.removeMark(mark));
 

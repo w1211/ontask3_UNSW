@@ -8,9 +8,7 @@ const { Option } = Select;
 
 /**
  * TODO: FontSize
- * TODO: Default Change Default Font to Arial?
  * Keep Text Highlighting after clicking on Font Select
-
  */
 
 const defaultFont = "Arial";
@@ -46,7 +44,7 @@ function Font(options) {
       },
       onChangeFontFamily(editor, font) {
         // Remove Current fontfamily
-        editor.value.activeMarks
+        editor.value.marks
           .filter(mark => mark.type === "font-family")
           .forEach(mark => editor.removeMark(mark));
 
