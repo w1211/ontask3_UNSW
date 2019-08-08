@@ -3,7 +3,8 @@ import React from "react";
 const DEFAULT_NODE = "paragraph";
 
 /**
- * TODO: Press Enter on Heading -> Convert to Paragraph
+ * TODO: Press Enter on Heading -> Make one paragraph instead of 2
+ * TODO: Fix issue where Heading is rendered small?
  */
 
 function Block(options) {
@@ -118,15 +119,14 @@ function Block(options) {
         if (event.shiftKey) editor.decreaseListDepth();
         else editor.increaseListDepth();
       }
-      // // Press Enter
 
-      // if (event.key === "Enter") {
-      //   if (getCurrentBlock.type === "heading-one" || getCurrentBlock.type === "heading-two" ) {
-      //     editor
-      //       .splitBlock()
-      //       .setBlocks('paragraph');
-      //   }
-      // }
+      if (event.key === "Enter") {
+        if (getCurrentBlock.type === "heading-one" || getCurrentBlock.type === "heading-two" ) {
+          editor
+            .splitBlock()
+            .setBlocks('paragraph');
+        }
+      }
       return next();
     },
     renderBlock(props, editor, next) {

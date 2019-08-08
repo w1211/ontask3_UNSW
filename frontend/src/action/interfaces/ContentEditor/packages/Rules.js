@@ -21,6 +21,8 @@ function Rules(options) {
               case 'child_min_invalid':
                 // TODO: Render Popconfirm delete code block?
                 return;
+              default:
+                return;
             }
           }
         },
