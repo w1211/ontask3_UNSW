@@ -19,19 +19,21 @@ function Rules(options) {
         },
         "condition": {
           nodes: [
-            { match: { type: 'paragraph' } },
-            { match: { type: 'list-item' } },
-            { match: { type: 'bulleted-list' } },
-            { match: { type: 'numbered-list' } },
-            { match: { type: 'code' } },
-            { match: { type: 'heading-one' } },
-            { match: { type: 'heading-two' } },
-            { match: { type: 'link' } },
-            { match: { type: 'image' } },
-            { match: { type: 'attribute' } },
-            { match: { type: 'condition-wrapper' } },
-            { match: { type: 'condition' } }
-          ]
+            { match: [
+              { type: 'paragraph' },
+              { type: 'list-item' },
+              { type: 'bulleted-list' },
+              { type: 'numbered-list' },
+              { type: 'code' },
+              { type: 'heading-one' },
+              { type: 'heading-two' },
+              { type: 'link' },
+              { type: 'image' },
+              { type: 'attribute' },
+              { type: 'condition-wrapper' },
+              { type: 'condition' }
+            ]}
+          ],
         }
       }
     },

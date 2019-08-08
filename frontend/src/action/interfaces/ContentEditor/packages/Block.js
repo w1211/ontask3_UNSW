@@ -3,7 +3,6 @@ import React from "react";
 const DEFAULT_NODE = "paragraph";
 
 /**
- * TODO: [!HIGH PRIORITY] Fix issue where heading converted to paragraph deletes the block
  * TODO: Press Enter on Heading -> Convert to Paragraph
  */
 
