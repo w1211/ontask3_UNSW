@@ -94,11 +94,6 @@ class NewContentEditor extends React.Component {
     this.editor.focus();
   };
 
-  /**
-   * TODO: Fix strange issue where this.editor.<function> does not work
-   * in the if (ruleIndex !== null && isInside) condition block, but pretty much
-   * elsewhere.
-   */
   componentDidUpdate = () => {
     this.handleRuleDrag();
   };
@@ -125,9 +120,9 @@ class NewContentEditor extends React.Component {
     }
 
     if (ruleIndex !== null && isInside) {
-      this.setState({ isInside: false });
-
-      this.editor.insertRule(ruleIndex, rules[ruleIndex]);
+      this.setState({ isInside: false }, () => {
+        this.editor.insertRule(ruleIndex, rules[ruleIndex]);
+      });
     }
   };
 

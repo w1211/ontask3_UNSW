@@ -110,8 +110,9 @@ const rules = [
   },
   {
     deserialize(el, next) {
-      const block = BLOCK_TAGS[el.tagName.toLowerCase()];
-
+      const tag = el.tagName.toLowerCase();
+      const block = BLOCK_TAGS[tag];
+      const mark = MARK_TAGS[tag];
       if (block) {
         return {
           object: "block",
@@ -119,13 +120,8 @@ const rules = [
           nodes: next(el.childNodes)
         };
       }
-    }
-  },
-  {
-    deserialize(el, next) {
-      const mark = MARK_TAGS[el.tagName.toLowerCase()];
-
       if (mark) {
+        // console.log(typeof (el.getAttribute("style")));
         return {
           object: "mark",
           type: mark,
@@ -138,11 +134,7 @@ const rules = [
               : undefined
         };
       }
-    }
-  },
-  {
-    // Special case for code blocks, which need to grab the nested childNodes.
-    deserialize(el, next) {
+      // Special case for code blocks, which need to grab the nested childNodes.
       if (el.tagName.toLowerCase() === "pre") {
         const code = el.childNodes[0];
         const childNodes =
@@ -156,11 +148,6 @@ const rules = [
           nodes: next(childNodes)
         };
       }
-    }
-  },
-  {
-    // Special case for images, to grab their src.
-    deserialize(el, next) {
       if (el.tagName.toLowerCase() === "img") {
         return {
           object: "block",
@@ -172,11 +159,6 @@ const rules = [
           }
         };
       }
-    }
-  },
-  {
-    // Special case for links, to grab their href.
-    deserialize(el, next) {
       if (el.tagName.toLowerCase() === "a") {
         return {
           object: "inline",
@@ -187,76 +169,9 @@ const rules = [
           }
         };
       }
-    }
-  },
-  {
-    deserialize(el, next) {
       if (!el.nodeValue || el.nodeValue.trim() === "") return null;
     }
   },
-  // {
-  //   deserialize(el, next) {
-  //     const tag = el.tagName.toLowerCase();
-  //     const block = BLOCK_TAGS[tag];
-  //     const mark = MARK_TAGS[tag];
-  //     if (block) {
-  //       return {
-  //         object: "block",
-  //         type: block,
-  //         nodes: next(el.childNodes)
-  //       };
-  //     }
-  //     if (mark) {
-  //       return {
-  //         object: "mark",
-  //         type: mark,
-  //         nodes: next(el.childNodes),
-  //         data:
-  //           mark === "span"
-  //             ? {
-  //                 style: el.getAttribute("style")
-  //               }
-  //             : undefined
-  //       };
-  //     }
-  //     // Special case for code blocks, which need to grab the nested childNodes.
-  //     if (el.tagName.toLowerCase() === "pre") {
-  //       const code = el.childNodes[0];
-  //       const childNodes =
-  //         code && code.tagName.toLowerCase() === "code"
-  //           ? code.childNodes
-  //           : el.childNodes;
-
-  //       return {
-  //         object: "block",
-  //         type: "code",
-  //         nodes: next(childNodes)
-  //       };
-  //     }
-  //     if (el.tagName.toLowerCase() === "img") {
-  //       return {
-  //         object: "block",
-  //         type: "image",
-  //         isVoid: true,
-  //         nodes: next(el.childNodes),
-  //         data: {
-  //           src: el.getAttribute("src")
-  //         }
-  //       };
-  //     }
-  //     if (el.tagName.toLowerCase() === "a") {
-  //       return {
-  //         object: "inline",
-  //         type: "link",
-  //         nodes: next(el.childNodes),
-  //         data: {
-  //           href: el.getAttribute("href")
-  //         }
-  //       };
-  //     }
-  //     if (!el.nodeValue || el.nodeValue.trim() === "") return null;
-  //   }
-  // },
 ];
 
 function Serialize(options) {
@@ -276,57 +191,57 @@ function Serialize(options) {
         return serializer.deserialize(html);
       }
     },
-    // onPaste(event, editor, next) {
-    //   /**
-    //    * TODO: COLOUR, FONT, Sometimes only outputs headings??, Bullet Points
-    //    */
-    //   const transfer = getEventTransfer(event);
-    //   if (transfer.type !== "html") return next();
-    //   console.log(transfer.html);
+    onPaste(event, editor, next) {
+      /**
+       * TODO: COLOUR, FONT Bullet Points
+       */
+      const transfer = getEventTransfer(event);
+      if (transfer.type !== "html") return next();
 
-    //   // const { document } = serializer.deserialize(transfer.html);
-    //   // console.log(document.toJSON());
-    //   // editor.insertFragment(document);
+      const sanitizedHtml = sanitizeHtml(transfer.html, {
+        allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+          "h1",
+          "h2",
+          "span",
+          "img",
+          "u"
+        ]),
+        allowedAttributes: {
+          "*": ["style"],
+          a: ["href", "name", "target"],
+          img: ["src"]
+        },
+        allowedStyles: {
+          "*": {
+            "color": [/^.*$/],
+            // "font-size": [/^.*$/],
+            // "font-family": [/^.*$/]
+          }
+        },
+        transformTags: {
+          b: sanitizeHtml.simpleTransform("strong"),
+          i: sanitizeHtml.simpleTransform("em")
+        }
+      });
 
-    //   // console.log("PASTE");
+      console.log(sanitizedHtml);
+      const { document } = serializer.deserialize(sanitizedHtml);
+      // const output = document.nodes.map(node => {
+      //   const pseudoValue = { document: { nodes: [node] } };
+      //   return serializer.serialize(pseudoValue);
+      // });
 
-    //   const sanitizedHtml = sanitizeHtml(transfer.html, {
-    //     allowedTags: sanitizeHtml.defaults.allowedTags.concat([
-    //       "h1",
-    //       "h2",
-    //       "span",
-    //       "img",
-    //       "u"
-    //     ]),
-    //     allowedAttributes: {
-    //       "*": ["style"],
-    //       a: ["href", "name", "target"],
-    //       img: ["src"]
-    //     },
-    //     allowedStyles: {
-    //       "*": {
-    //         color: [/^.*$/]
-    //         // "font-size": [/^.*$/],
-    //         // "font-family": [/^.*$/]
-    //       }
-    //     },
-    //     transformTags: {
-    //       b: sanitizeHtml.simpleTransform("strong"),
-    //       i: sanitizeHtml.simpleTransform("em")
-    //     }
-    //   });
+      // console.log([...output]);
+      // console.log(editor.generateHtml)
+      // console.log(document.toJSON());
+      // console.log(documentSanitized)
 
-    //   console.log(sanitizedHtml);
-    //   const { document } = serializer.deserialize(sanitizedHtml);
-    //   console.log(document.toJSON());
-    //   // console.log(documentSanitized)
+      // const html = new Html({ rules });
+      // const { document } = html.deserialize(sanitizedHtml);
+      editor.insertFragment(document);
 
-    //   // const html = new Html({ rules });
-    //   // const { document } = html.deserialize(sanitizedHtml);
-    //   editor.insertFragment(document);
-
-    //   return true;
-    // }
+      return true;
+    }
   };
 };
 
