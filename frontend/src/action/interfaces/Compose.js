@@ -1,6 +1,6 @@
 import React from "react";
 
-import { Button, Divider, Table, notification } from "antd";
+import { Button, Divider, Table, Tooltip, notification } from "antd";
 
 import _ from "lodash";
 import Draggable from "react-draggable";
@@ -276,54 +276,31 @@ class Compose extends React.Component {
                     {rule.name}
                   </div>
                   <div>
-                    <Button
-                      icon="edit"
-                      size="small"
-                      onClick={(e) => {
-                        this.setState({
-                          querybuilder: {
-                            visible: true,
-                            type: "rule",
-                            selected: rule,
-                            onSubmit: ({ rule, method, onSuccess, onError }) =>
-                              this.updateRule({
-                                rule,
-                                ruleIndex,
-                                method,
-                                onSuccess,
-                                onError
-                              })
-                          }
-                        });
-                      }}
-                    />
-                    <Button
-                      size="small"
-                      icon="plus"
-                      onClick={(e) => {
-                        // this.setState({
-                        //   contentEditor: { ...contentEditor, ruleIndex: ruleIndex, isRuleClick: true }
-                        // });
-                        this.newContentEditor.handleRuleClick(ruleIndex, action.rules);
-                        // console.log(this.newContentEditor.handleRuleClick);
-                        // console.log(this);
-                      }}
-                    />
+                    <Tooltip title="Edit rule">
+                      <Button
+                        icon="edit"
+                        size="small"
+                        onClick={(e) => {
+                          this.setState({
+                            querybuilder: {
+                              visible: true,
+                              type: "rule",
+                              selected: rule,
+                              onSubmit: ({ rule, method, onSuccess, onError }) =>
+                                this.updateRule({rule, ruleIndex, method, onSuccess, onError})
+                            }
+                          });
+                        }}
+                      />
+                    </Tooltip>
+                    <Tooltip title="Add rule to content editor">
+                      <Button
+                        size="small"
+                        icon="plus"
+                        onClick={(e) => {this.newContentEditor.handleRuleClick(ruleIndex, action.rules)}}
+                      />
+                    </Tooltip>
                   </div>
-                  {/* <Button
-                    style={{ marginRight: 5 }}
-                  >
-                    <span
-                      style={{
-                        width: 9,
-                        height: 9,
-                        background: colours[ruleIndex],
-                        marginRight: 5,
-                        display: "inline-block"
-                      }}
-                    />
-                    {rule.name}
-                  </Button> */}
                 </div>
               </Draggable>
             ))

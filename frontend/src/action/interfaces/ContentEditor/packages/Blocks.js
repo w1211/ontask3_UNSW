@@ -7,7 +7,7 @@ const DEFAULT_NODE = "paragraph";
  * TODO: Fix issue where Heading is rendered small?
  */
 
-function Block(options) {
+function Blocks(options) {
   return {
     queries: {
       hasBlock(editor, type) {
@@ -151,4 +151,4 @@ function Block(options) {
   };
 };
 
-export default Block;
+export default Blocks;

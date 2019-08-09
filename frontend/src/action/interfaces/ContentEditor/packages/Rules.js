@@ -2,6 +2,8 @@ import React from "react";
 
 import { Block } from 'slate';
 
+import { Button, Tooltip } from 'antd';
+
 function Rules(options) {
   const { rules, types, colours } = options;
 
@@ -12,19 +14,8 @@ function Rules(options) {
           nodes: [
             {
               match: [{type: 'condition'}],
-              min: 2,
-              max: 2
             }
           ],
-          normalize: (editor, error) => {
-            switch (error.code) {
-              case 'child_min_invalid':
-                // TODO: Render Popconfirm delete code block?
-                return;
-              default:
-                return;
-            }
-          }
         },
         "condition": {
           // No Text
@@ -44,61 +35,59 @@ function Rules(options) {
               { type: 'condition' }
             ]}
           ],
+          normalize: (editor, { code, node, child, index }) => {
+            switch (code) {
+              case 'child_type_invalid':
+                // Prevent Deletion of Block
+                return editor.insertNodeByKey(node.key, index, Block.create({ object: 'block', type: 'paragraph' }));
+              default:
+                return;
+            }
+          }
         },
       }
     },
     commands: {
       insertRule(editor, ruleIndex, rule) {
-        rule.conditions.forEach(condition => {
-          const ruleBlock = Block.createList([
-            {
-              type: "condition",
-              nodes: [
-                {
-                  object: 'block',
-                  type: 'paragraph',
-                  nodes: [
-                    {
-                      object: 'text',
-                      text: '',
-                    },
-                  ],
-                },
-              ],
-              data: {
-                conditionId: condition.conditionId,
-                ruleIndex
-              }
-            },
-            {
-              type: "condition",
-              nodes: [
-                {
-                  object: 'block',
-                  type: 'paragraph',
-                  nodes: [
-                    {
-                      object: 'text',
-                      text: '',
-                    },
-                  ],
-                },
-              ],
-              data: {
-                label: "else",
-                conditionId: rule.catchAll,
-                ruleIndex
-              }
-            }
-          ]);
-
-          editor.insertBlock({
-            type: "condition-wrapper",
+        let ruleBlocks = rule.conditions.map(condition => {
+          return {
+            type: "condition",
+            nodes: [
+              {
+                object: 'block',
+                type: 'paragraph',
+              },
+            ],
             data: {
+              conditionId: condition.conditionId,
               ruleIndex
-            },
-            nodes: ruleBlock
-          });
+            }
+          }
+        });
+
+        ruleBlocks.push(
+          {
+            type: "condition",
+            nodes: [
+              {
+                object: 'block',
+                type: 'paragraph',
+              },
+            ],
+            data: {
+              label: "else",
+              conditionId: rule.catchAll,
+              ruleIndex
+            }
+          }
+        );
+
+        editor.insertBlock({
+          type: "condition-wrapper",
+          data: {
+            ruleIndex
+          },
+          nodes: Block.createList(ruleBlocks)
         });
       },
     },
@@ -121,11 +110,24 @@ function Rules(options) {
               className="condition_block"
               style={{ borderColor: colours[ruleIndex] }}
             >
-              <div
-                className="condition_name"
-                style={{ color: colours[ruleIndex] }}
-              >
-                If <strong>{label}</strong>:
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between"
+              }}>
+                <div
+                  className="condition_name"
+                  style={{ color: colours[ruleIndex] }}
+                >
+                  If <strong>{label}</strong>:
+                </div>
+                <Tooltip title="Delete condition block">
+                  <Button
+                    icon="close-circle"
+                    size="small"
+                    style={{ border: "none" }}
+                    onClick={(e) => {editor.removeNodeByKey(node.key)}}
+                  />
+                </Tooltip>
               </div>
                 {children}
               </div>

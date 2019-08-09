@@ -5,7 +5,7 @@ import { Value } from 'slate';
 import SoftBreak from "slate-soft-break";
 
 import Mark from './packages/Mark';
-import Block from './packages/Block';
+import Blocks from './packages/Blocks';
 import Link, { LinkButton } from './packages/Link';
 import Image, { ImageButton } from './packages/Image';
 import Attribute from './packages/Attribute';
@@ -15,24 +15,12 @@ import Rules from './packages/Rules';
 import History from './packages/History';
 import Serialize, { PreviewButton, SaveButton } from './packages/Serialize';
 
-/**
- * onPaste
- * Preview + Save
- * Drag Drop
- */
-
 const initialValue = Value.fromJSON({
   document: {
     nodes: [
       {
         object: 'block',
         type: 'paragraph',
-        nodes: [
-          {
-            object: 'text',
-            text: '',
-          },
-        ],
       },
     ],
   },
@@ -57,11 +45,11 @@ class NewContentEditor extends React.Component {
           { type: 'condition' }
         ]}
       ]
-    },
+    }
   };
 
   plugins = [
-    Block(),
+    Blocks(),
     Link(),
     Image(),
     Attribute(),
@@ -85,6 +73,7 @@ class NewContentEditor extends React.Component {
       isInside: false,
       previewing: false,
       saving: false,
+      showDeleteCondition: false,
       error: null
     };
   };
@@ -176,6 +165,7 @@ class NewContentEditor extends React.Component {
       console.log(html);
       console.log(editor.value.document.toJSON());
       console.log(editor.value.marks.toJSON());
+      console.log(editor.value.fragment);
     }
     return next();
   }
