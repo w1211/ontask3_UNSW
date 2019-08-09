@@ -73,7 +73,7 @@ const rules = [
           case "condition-wrapper":
             return <div index={obj.data.get("ruleIndex")}>{children}</div>
           case "condition":
-            return <div>{children}</div>;
+            return <div conditionid={obj.data.get("conditionId")}>{children}</div>;
           default:
             return;
         }

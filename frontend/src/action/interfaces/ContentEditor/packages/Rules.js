@@ -125,7 +125,7 @@ function Rules(options) {
                     icon="close-circle"
                     size="small"
                     style={{ border: "none" }}
-                    onClick={(e) => {editor.removeNodeByKey(node.key)}}
+                    onClick={(e) => {editor.removeNodeByKey(node.key).focus()}}
                   />
                 </Tooltip>
               </div>
