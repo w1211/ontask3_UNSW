@@ -23,11 +23,19 @@ from datalab.models import Datalab
 from datasource.models import Datasource
 from form.models import Form
 
-from .utils import did_pass_test, parse_content_line
+from .utils import (
+    did_pass_test,
+    parse_attribute,
+    generate_condition_tag_locations,
+    replace_condition_tags,
+    delete_html_by_indexes
+)
 from scheduler.tasks import workflow_send_email
 
 from ontask.settings import SECRET_KEY, BACKEND_DOMAIN, FRONTEND_DOMAIN
 
+import re
+from pprint import pprint # TODO Remove after debuggin
 
 class Formula(EmbeddedDocument):
     comparator = BaseField()
@@ -249,7 +257,7 @@ class Workflow(Document):
         filtered_data = self.data["records"]
         types = self.options["types"]
 
-        # Assign each record to the rule groups
+        # Assign each student record to the rule groups
         populated_rules = defaultdict(set)
         for item_index, item in enumerate(filtered_data):
             for rule in self.rules:
@@ -274,30 +282,41 @@ class Workflow(Document):
                 if not did_match:
                     populated_rules[rule.catchAll].add(item_index)
 
-        block_map = content["blockMap"]["document"]["nodes"]
         html = content["html"]
         result = []
-
+        result_html = []
         from datalab.serializers import OrderItemSerializer
         order = OrderItemSerializer(
             self.datalab.order, many=True, context={"steps": self.datalab.steps}
         ).data
 
-        # Populate the content for each record
+        html_string = "".join(html)
+        condition_ids = list(set(re.findall(r"conditionid=\"(.*?)\"", html_string)))
+        condition_tag_locations = generate_condition_tag_locations(html_string)
+        """
+        Generate HTML string for each student based on conditions and attributes
+        Algo:
+        1. Delete condition blocks that do not match the student attributes
+            - Get a list of deleteIndexes of (start,stop) slices of condition tags to delete
+            - Perform the iterative deletion
+        2. Clean the HTML (replace <attribute> and <condition>) to actual HTML tags
+        """
         for item_index, item in enumerate(filtered_data):
-            populated_content = ""
+            content = html_string
 
-            for block_index, block in enumerate(block_map):
-                if block["type"] == "condition":
-                    condition_id = block["data"]["conditionId"]
-                    if item_index in populated_rules.get(ObjectId(condition_id), {}):
-                        populated_content += parse_content_line(html[block_index], item, order)
-                else:
-                    populated_content += parse_content_line(html[block_index], item, order)
+            # 1
+            deleteIndexes = []
+            for condition_id in condition_ids:
+                if not item_index in populated_rules.get(ObjectId(condition_id), {}):
+                    deleteIndexes += condition_tag_locations[condition_id]
+            content = delete_html_by_indexes(content, deleteIndexes)
 
-            result.append(populated_content)
+            # 2
+            content = replace_condition_tags(content)
+            content = parse_attribute(content, item, order)
 
-        return result
+            result_html.append(content)
+        return result_html
 
     def clean_content(self, conditions):
         if not self.content:

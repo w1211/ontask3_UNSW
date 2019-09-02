@@ -69,11 +69,11 @@ const rules = [
               />
             );
           case "attribute":
-            return <attribute field={obj.data.get("field")}>{children}</attribute>;
+            return <attribute>{children}</attribute>;
           case "condition-wrapper":
             return <div index={obj.data.get("ruleIndex")}>{children}</div>
           case "condition":
-            return <div conditionid={obj.data.get("conditionId")}>{children}</div>;
+            return <condition conditionid={obj.data.get("conditionId")}>{children}</condition>;
           default:
             return;
         }
