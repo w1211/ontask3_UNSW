@@ -35,7 +35,6 @@ from scheduler.tasks import workflow_send_email
 from ontask.settings import SECRET_KEY, BACKEND_DOMAIN, FRONTEND_DOMAIN
 
 import re
-from pprint import pprint # TODO Remove after debuggin
 
 class Formula(EmbeddedDocument):
     comparator = BaseField()

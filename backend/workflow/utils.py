@@ -93,7 +93,7 @@ def parse_attribute(html, item, order):
         - bold,italic,underline,code,span inlines and may need to be modified
     """
     return re.sub(
-        r"<attribute>((?:<(?:strong|em|u|pre|code|span)>)*)(.*?)((?:</(?:strong|em|u|pre|code|span)>)*)</attribute>",
+        r"<attribute>((?:<(?:strong|em|u|pre|code|span.*?)>)*)(.*?)((?:</(?:strong|em|u|pre|code|span)>)*)</attribute>",
         lambda match: replace_attribute(match, item, order),
         html
     )
