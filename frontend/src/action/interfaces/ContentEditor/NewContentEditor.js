@@ -79,8 +79,11 @@ class NewContentEditor extends React.Component {
   };
 
   componentDidMount = () => {
-    // So that "this.editor" is not undefined when changing font, undo, redo, colour, etc.
-    this.editor.focus();
+    const html = this.editor.generateDocument(this.props.html.join(''));
+    this.setState({ value: html }, () => {
+      // So that "this.editor" is not undefined when changing font, undo, redo, colour, etc.
+      this.editor.focus();
+    });
   };
 
   componentDidUpdate = () => {
@@ -123,7 +126,6 @@ class NewContentEditor extends React.Component {
     const { onPreview } = this.props;
 
     const content = {
-      blockMap: this.editor.value.toJSON(),
       html: this.editor.generateHtml()
     };
 
@@ -140,7 +142,6 @@ class NewContentEditor extends React.Component {
     const { onUpdate } = this.props;
 
     const content = {
-      blockMap: this.editor.value.toJSON(),
       html: this.editor.generateHtml()
     };
 

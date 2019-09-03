@@ -326,6 +326,7 @@ class Compose extends React.Component {
           ref={newContentEditor => this.newContentEditor = newContentEditor}
           key={contentEditorKey} // Used to force a re-render after updating rules
           {...contentEditor}
+          html={_.get(action, "content.html")}
           rules={action.rules}
           types={action.options.types}
           order={action.data.order}

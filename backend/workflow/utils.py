@@ -107,7 +107,7 @@ def generate_condition_tag_locations(html):
     Returns:
         [dict{list((start,stop))}] -- Dictionary of condition tag locations
     """
-    tagPattern = r"<condition conditionid=\"(.*?)\">|<\/condition>"
+    tagPattern = r"<condition conditionid=\"(.*?)\" index=\"\d+\"(?: label=\"else\")?>|<\/condition>"
     conditionTagLocations = defaultdict(list)
     stack = []
     for match in re.finditer(tagPattern, html):
@@ -148,8 +148,8 @@ def delete_html_by_indexes(html,indexes):
 
     return html
 
-def replace_condition_tags(html):
-    """Replaces all instances of <condition ...> and </condition> with <div ...> </div>
+def replace_tags(html, old, new):
+    """Replaces all instances of <old ...> and </old> with <new ...> </new>
 
     Arguments:
         html {string} -- Serialized HTML String of content editor
@@ -157,5 +157,5 @@ def replace_condition_tags(html):
     Returns:
         string -- New HTML String
     """
-    tagPattern = r"(<\s*\/?\s*)condition(\s*([^>]*)?\s*>)"
-    return re.sub(tagPattern, r"\g<1>div\g<2>", html)
+    tagPattern = r"(<\s*\/?\s*)" + old + r"(\s*([^>]*)?\s*>)"
+    return re.sub(tagPattern, r"\g<1>" + new + r"\g<2>", html)

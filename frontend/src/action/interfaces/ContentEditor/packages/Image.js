@@ -4,6 +4,13 @@ import { Popconfirm, Input } from "antd";
 
 function Image(options) {
   return {
+    schema: {
+      inlines: {
+        "image": {
+          isVoid: true
+        }
+      }
+    },
     renderInline(props, editor, next) {
       const { attributes, node } = props;
 

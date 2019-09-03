@@ -27,7 +27,7 @@ from .utils import (
     did_pass_test,
     parse_attribute,
     generate_condition_tag_locations,
-    replace_condition_tags,
+    replace_tags,
     delete_html_by_indexes
 )
 from scheduler.tasks import workflow_send_email
@@ -129,6 +129,7 @@ class Workflow(Document):
     filter = EmbeddedDocumentField(Filter)
     rules = EmbeddedDocumentListField(Rule)
     content = EmbeddedDocumentField(Content)
+    # content = StringField()
     emailSettings = EmbeddedDocumentField(EmailSettings)
     schedule = EmbeddedDocumentField(Schedule, null=True, required=False)
     linkId = StringField(null=True)  # link_id is unique across workflow objects
@@ -311,7 +312,8 @@ class Workflow(Document):
             content = delete_html_by_indexes(content, deleteIndexes)
 
             # 2
-            content = replace_condition_tags(content)
+            content = replace_tags(content, "condition", "div")
+            content = replace_tags(content, "cwrapper", "div")
             content = parse_attribute(content, item, order)
 
             result_html.append(content)

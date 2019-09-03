@@ -15,7 +15,6 @@ const BLOCK_TAGS = {
   ul: 'bulleted-list',
   ol: 'numbered-list',
   blockquote: 'quote',
-  pre: 'code',
   h1: 'heading-one',
   h2: 'heading-two',
   h3: 'heading-three',
@@ -71,9 +70,9 @@ const rules = [
           case "attribute":
             return <attribute>{children}</attribute>;
           case "condition-wrapper":
-            return <div index={obj.data.get("ruleIndex")}>{children}</div>
+            return <cwrapper index={obj.data.get("ruleIndex")}>{children}</cwrapper>
           case "condition":
-            return <condition conditionid={obj.data.get("conditionId")}>{children}</condition>;
+            return <condition conditionid={obj.data.get("conditionId")} index={obj.data.get("ruleIndex")} label={obj.data.get("label")}>{children}</condition>;
           default:
             return;
         }
@@ -95,7 +94,7 @@ const rules = [
           case "underlined":
             return <u>{children}</u>;
           case "code":
-            return (<pre><code>{children}</code></pre>);
+            return <code>{children}</code>;
           case "color":
             return <span style={{color: obj.data.get("hex")}}>{children}</span>;
           case "font-family":
@@ -121,9 +120,11 @@ const rules = [
         };
       }
       if (mark) {
+        // TODO: Add both colour & fontfamily when pasting from word doc (two styles in one span tag)
         const style = el.getAttribute("style");
-        const property = style && style.slice(0, style.indexOf(':'));
-        const value = style && style.slice(style.indexOf(':') + 1, -1);
+        const styleClean = style && (style.indexOf(';') === -1 ? style : style.slice(0, style.indexOf(';')));
+        const property = styleClean && styleClean.slice(0, styleClean.indexOf(':'));
+        const value = styleClean && styleClean.slice(styleClean.indexOf(':') + 1);
 
         switch (property) {
           case 'color':
@@ -154,28 +155,15 @@ const rules = [
             };
         }
       }
-      // Special case for code blocks, which need to grab the nested childNodes.
-      if (el.tagName.toLowerCase() === "pre") {
-        const code = el.childNodes[0];
-        const childNodes =
-          code && code.tagName.toLowerCase() === "code"
-            ? code.childNodes
-            : el.childNodes;
-
-        return {
-          object: "block",
-          type: "code",
-          nodes: next(childNodes)
-        };
-      }
       if (el.tagName.toLowerCase() === "img") {
         return {
-          object: "block",
+          object: "inline",
           type: "image",
           isVoid: true,
           nodes: next(el.childNodes),
           data: {
-            src: el.getAttribute("src")
+            src: el.getAttribute("src"),
+            alt: el.getAttribute("alt")
           }
         };
       }
@@ -188,6 +176,38 @@ const rules = [
             href: el.getAttribute("href")
           }
         };
+      }
+      if (el.tagName.toLowerCase() === "attribute") {
+        return {
+          object: "inline",
+          type: "attribute",
+          nodes: next(el.childNodes),
+          data: {
+            field: el.textContent
+          }
+        }
+      }
+      if (el.tagName.toLowerCase() === "cwrapper") {
+        return {
+          object: "block",
+          type: "condition-wrapper",
+          nodes: next(el.childNodes),
+          data: {
+            ruleIndex: el.getAttribute("index")
+          }
+        }
+      }
+      if (el.tagName.toLowerCase() === "condition") {
+        return {
+          object: "block",
+          type: "condition",
+          nodes: next(el.childNodes),
+          data: {
+            label: el.getAttribute("label"),
+            conditionId: el.getAttribute("conditionid"),
+            ruleIndex: el.getAttribute("index"),
+          }
+        }
       }
       if (!el.nodeValue || el.nodeValue.trim() === "") return null;
     }
@@ -205,6 +225,7 @@ function Serialize(options) {
           const pseudoValue = { document: { nodes: [node] } };
           return serializer.serialize(pseudoValue);
         });
+        // return [...output].join('');
         return [...output];
       },
       generateDocument(editor, html) {
