@@ -141,7 +141,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             populated_content = action.populate_content()
             return Response(populated_content)
         else:
-            content = request.data.get("content")
+            content = request.data.get("content")["html"]
 
             # User-provided content is being previewed
             if request.method == "POST":
@@ -150,7 +150,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
             # Content is being updated
             elif request.method == "PUT":
-                action.content = content["html"]
+                action.content = content
                 action.save()
                 serializer = ActionSerializer(action)
                 return Response(serializer.data)

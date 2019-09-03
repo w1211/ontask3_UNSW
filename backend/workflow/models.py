@@ -276,15 +276,14 @@ class Workflow(Document):
                 if not did_match:
                     populated_rules[rule.catchAll].add(item_index)
 
-        html = content["html"]
-        result_html = []
+        result = []
         from datalab.serializers import OrderItemSerializer
         order = OrderItemSerializer(
             self.datalab.order, many=True, context={"steps": self.datalab.steps}
         ).data
 
-        condition_ids = list(set(re.findall(r"conditionid=\"(.*?)\"", html)))
-        condition_tag_locations = generate_condition_tag_locations(html)
+        condition_ids = list(set(re.findall(r"conditionid=\"(.*?)\"", content)))
+        condition_tag_locations = generate_condition_tag_locations(content)
         """
         Generate HTML string for each student based on conditions and attributes
         Algo:
@@ -294,22 +293,22 @@ class Workflow(Document):
         2. Clean the HTML (replace <attribute>, <condition>, <cwrapper>) to actual HTML tags
         """
         for item_index, item in enumerate(filtered_data):
-            content = html
+            html = content
 
             # 1
             deleteIndexes = []
             for condition_id in condition_ids:
                 if not item_index in populated_rules.get(ObjectId(condition_id), {}):
                     deleteIndexes += condition_tag_locations[condition_id]
-            content = delete_html_by_indexes(content, deleteIndexes)
+            html = delete_html_by_indexes(html, deleteIndexes)
 
             # 2
-            content = replace_tags(content, "condition", "div")
-            content = replace_tags(content, "cwrapper", "div")
-            content = parse_attribute(content, item, order)
+            html = replace_tags(html, "condition", "div")
+            html = replace_tags(html, "cwrapper", "div")
+            html = parse_attribute(html, item, order)
 
-            result_html.append(content)
-        return result_html
+            result.append(html)
+        return result
 
     def clean_content(self, conditions):
         if not self.content:
