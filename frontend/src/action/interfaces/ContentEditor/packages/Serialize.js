@@ -225,8 +225,7 @@ function Serialize(options) {
           const pseudoValue = { document: { nodes: [node] } };
           return serializer.serialize(pseudoValue);
         });
-        // return [...output].join('');
-        return [...output];
+        return [...output].join('');
       },
       generateDocument(editor, html) {
         return serializer.deserialize(html);

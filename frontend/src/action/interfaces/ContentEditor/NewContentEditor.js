@@ -79,7 +79,7 @@ class NewContentEditor extends React.Component {
   };
 
   componentDidMount = () => {
-    const html = this.editor.generateDocument(this.props.html.join(''));
+    const html = this.editor.generateDocument(this.props.html);
     this.setState({ value: html }, () => {
       // So that "this.editor" is not undefined when changing font, undo, redo, colour, etc.
       this.editor.focus();

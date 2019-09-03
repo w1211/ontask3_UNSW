@@ -113,20 +113,20 @@ function Blocks(options) {
       }
     },
     onKeyDown(event, editor, next) {
-      const getCurrentBlock = editor.value.blocks.get(0);
+      // const getCurrentBlock = editor.value.blocks.get(0);
       if (event.key === 'Tab') {
         event.preventDefault();
         if (event.shiftKey) editor.decreaseListDepth();
         else editor.increaseListDepth();
       }
 
-      if (event.key === "Enter") {
-        if (getCurrentBlock.type === "heading-one" || getCurrentBlock.type === "heading-two" ) {
-          editor
-            .splitBlock()
-            .setBlocks('paragraph');
-        }
-      }
+      // if (event.key === "Enter") {
+      //   if (getCurrentBlock.type === "heading-one" || getCurrentBlock.type === "heading-two" ) {
+      //     editor
+      //       .splitBlock()
+      //       .setBlocks('paragraph');
+      //   }
+      // }
       return next();
     },
     renderBlock(props, editor, next) {

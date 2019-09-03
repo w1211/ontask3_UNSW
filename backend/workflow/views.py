@@ -23,7 +23,6 @@ from .models import (
     Email,
     Rule,
     Filter,
-    Content,
     Schedule,
 )
 from .permissions import WorkflowPermissions
@@ -143,7 +142,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             return Response(populated_content)
         else:
             content = request.data.get("content")
-            content = Content(**content)
 
             # User-provided content is being previewed
             if request.method == "POST":
@@ -152,7 +150,7 @@ class WorkflowViewSet(viewsets.ModelViewSet):
 
             # Content is being updated
             elif request.method == "PUT":
-                action.content = content
+                action.content = content["html"]
                 action.save()
                 serializer = ActionSerializer(action)
                 return Response(serializer.data)

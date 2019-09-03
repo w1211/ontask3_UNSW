@@ -60,11 +60,6 @@ class Filter(EmbeddedDocument):
     conditions = EmbeddedDocumentListField(Condition)
 
 
-class Content(EmbeddedDocument):
-    blockMap = DictField()
-    html = ListField(StringField())
-
-
 class Schedule(EmbeddedDocument):
     active_from = DateTimeField(null=True)
     active_to = DateTimeField(null=True)
@@ -128,8 +123,7 @@ class Workflow(Document):
     description = StringField(null=True)
     filter = EmbeddedDocumentField(Filter)
     rules = EmbeddedDocumentListField(Rule)
-    content = EmbeddedDocumentField(Content)
-    # content = StringField()
+    content = StringField()
     emailSettings = EmbeddedDocumentField(EmailSettings)
     schedule = EmbeddedDocumentField(Schedule, null=True, required=False)
     linkId = StringField(null=True)  # link_id is unique across workflow objects
@@ -205,7 +199,7 @@ class Workflow(Document):
     @property
     def data(self):
         options = self.options
-    
+
         if self.filter:
             filtered_data = []
 
@@ -234,7 +228,7 @@ class Workflow(Document):
         order = OrderItemSerializer(
             self.datalab.order, many=True, context={"steps": self.datalab.steps}
         ).data
-            
+
         for item in order:
             if item["details"]["field_type"] == "checkbox-group":
                 column_order.extend(item["details"]["fields"])
@@ -283,26 +277,24 @@ class Workflow(Document):
                     populated_rules[rule.catchAll].add(item_index)
 
         html = content["html"]
-        result = []
         result_html = []
         from datalab.serializers import OrderItemSerializer
         order = OrderItemSerializer(
             self.datalab.order, many=True, context={"steps": self.datalab.steps}
         ).data
 
-        html_string = "".join(html)
-        condition_ids = list(set(re.findall(r"conditionid=\"(.*?)\"", html_string)))
-        condition_tag_locations = generate_condition_tag_locations(html_string)
+        condition_ids = list(set(re.findall(r"conditionid=\"(.*?)\"", html)))
+        condition_tag_locations = generate_condition_tag_locations(html)
         """
         Generate HTML string for each student based on conditions and attributes
         Algo:
         1. Delete condition blocks that do not match the student attributes
             - Get a list of deleteIndexes of (start,stop) slices of condition tags to delete
             - Perform the iterative deletion
-        2. Clean the HTML (replace <attribute> and <condition>) to actual HTML tags
+        2. Clean the HTML (replace <attribute>, <condition>, <cwrapper>) to actual HTML tags
         """
         for item_index, item in enumerate(filtered_data):
-            content = html_string
+            content = html
 
             # 1
             deleteIndexes = []
