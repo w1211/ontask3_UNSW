@@ -25,7 +25,8 @@ function Attribute(options) {
                 .wrapInline({
                   type: "attribute",
                   data: { field }
-                });
+                })
+                .moveToEndOfInline();
             }}
             className="attribute_select"
             dropdownMatchSelectWidth={false}

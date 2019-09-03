@@ -13,7 +13,7 @@ import QueryBuilder from "./QueryBuilder";
 import "material-design-icons/iconfont/material-icons.css";
 
 import apiRequest from "../../shared/apiRequest";
-import NewContentEditor from "./ContentEditor/NewContentEditor";
+import ContentEditor from "./ContentEditor/ContentEditor";
 
 const generateColours = size => {
   let colours = new Array(size);
@@ -310,19 +310,7 @@ class Compose extends React.Component {
 
         <h3>Content</h3>
 
-        {/* <ContentEditor
-          // key={contentEditorKey} // Used to force a re-render after updating rules
-          {...contentEditor}
-          blockMap={_.get(action, "content.blockMap")}
-          rules={action.rules}
-          types={action.options.types}
-          order={action.data.order}
-          colours={colours}
-          onUpdate={this.updateContent}
-          onPreview={this.previewContent}
-        /> */}
-
-        <NewContentEditor
+        <ContentEditor
           ref={newContentEditor => this.newContentEditor = newContentEditor}
           key={contentEditorKey} // Used to force a re-render after updating rules
           {...contentEditor}

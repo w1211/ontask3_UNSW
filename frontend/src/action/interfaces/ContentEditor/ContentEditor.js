@@ -26,7 +26,7 @@ const initialValue = Value.fromJSON({
   },
 });
 
-class NewContentEditor extends React.Component {
+class ContentEditor extends React.Component {
   schema = {
     document: {
       nodes: [
@@ -216,4 +216,4 @@ class NewContentEditor extends React.Component {
   };
 };
 
-export default NewContentEditor;
+export default ContentEditor;

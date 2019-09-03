@@ -2,6 +2,8 @@ import React from "react";
 
 import { isKeyHotkey } from "is-hotkey";
 
+// TODO: Changing style of an empty block unaffected when previous block has a style
+
 function Mark(options) {
   const { type, hotkey } = options;
 
