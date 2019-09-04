@@ -41,31 +41,6 @@ const initialValue = Value.fromJSON({
 });
 
 class ComputedFieldModal extends React.Component {
-
-  // constructor(props) {
-  //   super(props);
-  //   this.editor = React.createElement(
-  //     Editor,
-  //     {
-  //       readOnly: true,
-  //       value: value,
-  //       onChange: this.onChange,
-  //       renderBlock: this.renderBlock,
-  //       placeholder: "Create a formula using the buttons above",
-  //       style: {
-  //         border: "2px solid #ddd",
-  //         borderRadius: 5,
-  //         padding: 5,
-  //         minHeight: 60,
-  //         display: "flex",
-  //         flexWrap: "wrap",
-  //         alignItems: "center",
-  //         whiteSpace: "normal"
-  //       }
-  //     }
-  //   )
-  // }
-
   static contextType = ModelContext;
 
   state = {
@@ -277,7 +252,7 @@ class ComputedFieldModal extends React.Component {
   };
 
   renderBlock = props => {
-    const { attributes, children, node } = props;
+    const { attributes, node } = props;
     const { treeData } = this.state;
 
     switch (node.type) {
@@ -292,7 +267,6 @@ class ComputedFieldModal extends React.Component {
               alignItems: "center"
             }}
           >
-            {children}
           </p>
         );
       case "aggregation": {
@@ -322,7 +296,6 @@ class ComputedFieldModal extends React.Component {
                 {type}:
               </div>
               <div>
-                {children}
                 <TreeSelect
                   treeData={treeData}
                   treeCheckable={true}
@@ -386,7 +359,6 @@ class ComputedFieldModal extends React.Component {
               cursor: "default"
             }}
           >
-            {children}
             {name}
           </div>
         );
@@ -412,7 +384,6 @@ class ComputedFieldModal extends React.Component {
               cursor: "default"
             }}
           >
-            {children}
             {typeMap[type]}
           </div>
         );

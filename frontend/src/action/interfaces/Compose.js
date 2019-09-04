@@ -7,13 +7,12 @@ import Draggable from "react-draggable";
 
 import PreviewModal from "../modals/PreviewModal";
 
-// import ContentEditor from "./ContentEditor";
+import ContentEditor from "./ContentEditor/ContentEditor";
 import QueryBuilder from "./QueryBuilder";
 
 import "material-design-icons/iconfont/material-icons.css";
 
 import apiRequest from "../../shared/apiRequest";
-import ContentEditor from "./ContentEditor/ContentEditor";
 
 const generateColours = size => {
   let colours = new Array(size);
