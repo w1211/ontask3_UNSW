@@ -1,6 +1,6 @@
 import React from "react";
 
-import { Select } from "antd";
+import { Select, Tooltip } from "antd";
 
 import FontList from './FontList';
 
@@ -25,21 +25,23 @@ function Font(options) {
         );
 
         return (
-          <Select
-            showSearch
-            autoFocus
-            size="small"
-            value={currMark}
-            placeholder="Select a font"
-            className="attribute_select"
-            optionFilterProp="children"
-            onChange={(font) => editor.onChangeFontFamily(font)}
-            filterOption={(input, option) =>
-              option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-            }
-          >
-            {options}
-          </Select>
+          <Tooltip title="Font">
+            <Select
+              showSearch
+              autoFocus
+              size="small"
+              value={currMark}
+              placeholder="Select a font"
+              className="attribute_select"
+              optionFilterProp="children"
+              onChange={(font) => editor.onChangeFontFamily(font)}
+              filterOption={(input, option) =>
+                option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              }
+            >
+              {options}
+            </Select>
+          </Tooltip>
         );
       },
       onChangeFontFamily(editor, font) {

@@ -1,5 +1,7 @@
 import React from "react";
 
+import { Tooltip } from 'antd';
+
 const DEFAULT_NODE = "paragraph";
 
 /**
@@ -20,7 +22,7 @@ function Blocks(options) {
           block => !!value.document.getClosest(block.key, parent => parent.type === type)
         );
       },
-      renderBlockButton(editor, type, icon) {
+      renderBlockButton(editor, type, title, icon) {
         let isActive = editor.hasBlock(type);
 
         if (["numbered-list", "bulleted-list"].includes(type)) {
@@ -33,12 +35,14 @@ function Blocks(options) {
         }
 
         return (
-          <i
-            className={`material-icons ${isActive ? "active" : ""}`}
-            onMouseDown={event => {editor.onClickBlock(event, type)}}
-          >
-            {icon}
-          </i>
+          <Tooltip title={title}>
+            <i
+              className={`material-icons ${isActive ? "active" : ""}`}
+              onMouseDown={event => {editor.onClickBlock(event, type)}}
+            >
+              {icon}
+            </i>
+          </Tooltip>
         );
       }
     },
@@ -62,7 +66,6 @@ function Blocks(options) {
         } else {
           // Handle the extra wrapping required for list buttons.
           const isList = editor.hasBlock("list-item");
-          // const isCondition = editor.hasBlock("condition");
           const isType = editor.hasParentType(type);
 
           if (isList && isType) {

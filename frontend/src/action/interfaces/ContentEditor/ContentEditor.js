@@ -53,10 +53,10 @@ class ContentEditor extends React.Component {
     Link(),
     Image(),
     Attribute(),
-    Mark({ type: "bold", icon: "format_bold", hotkey: "mod+b" }),
-    Mark({ type: "italic", icon: "format_italic", hotkey: "mod+i" }),
-    Mark({ type: "underlined", icon: "format_underlined", hotkey: "mod+u" }),
-    Mark({ type: "code", icon: "code", hotkey: "mod+`" }),
+    Mark({ type: "bold", hotkey: "mod+b" }),
+    Mark({ type: "italic", hotkey: "mod+i" }),
+    Mark({ type: "underlined", hotkey: "mod+u" }),
+    Mark({ type: "code", hotkey: "mod+`" }),
     Color(),
     Font(),
     Rules({ rules: this.props.rules, types: this.props.types, colours: this.props.colours }),
@@ -177,19 +177,19 @@ class ContentEditor extends React.Component {
         <div className="toolbar">
           {this.editor && this.editor.renderUndoButton()}
           {this.editor && this.editor.renderRedoButton()}
-          {this.editor && this.editor.renderMarkButton("bold", "format_bold")}
-          {this.editor && this.editor.renderMarkButton("italic", "format_italic")}
-          {this.editor && this.editor.renderMarkButton("underlined", "format_underlined")}
-          {this.editor && this.editor.renderMarkButton("code", "code")}
+          {this.editor && this.editor.renderMarkButton("bold", "Bold", "format_bold")}
+          {this.editor && this.editor.renderMarkButton("italic", "Italic", "format_italic")}
+          {this.editor && this.editor.renderMarkButton("underlined", "Underline", "format_underlined")}
+          {this.editor && this.editor.renderMarkButton("code", "Code", "code")}
           {this.editor && this.editor.renderFontFamilySelect()}
           {this.editor && this.editor.renderColorButton()}
           {<LinkButton editor={this.editor} />}
           <ImageButton editor={this.editor} />
-          {this.editor && this.editor.renderBlockButton("heading-one", "looks_one")}
-          {this.editor && this.editor.renderBlockButton("heading-two", "looks_two")}
-          {this.editor && this.editor.renderBlockButton("paragraph", "short_text")}
-          {this.editor && this.editor.renderBlockButton("numbered-list", "format_list_numbered")}
-          {this.editor && this.editor.renderBlockButton("bulleted-list", "format_list_bulleted")}
+          {this.editor && this.editor.renderBlockButton("heading-one", "Header One", "looks_one")}
+          {this.editor && this.editor.renderBlockButton("heading-two", "Header Two", "looks_two")}
+          {this.editor && this.editor.renderBlockButton("paragraph", "Paragraph", "short_text")}
+          {this.editor && this.editor.renderBlockButton("numbered-list", "Ordered List", "format_list_numbered")}
+          {this.editor && this.editor.renderBlockButton("bulleted-list", "Unordered List", "format_list_bulleted")}
           {this.editor && this.editor.renderAttributeButton(order)}
         </div>
         <Editor

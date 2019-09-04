@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-import { Popconfirm, Input } from "antd";
+import { Popconfirm, Input, Tooltip } from "antd";
 
 function Image(options) {
   return {
@@ -66,7 +66,9 @@ export const ImageButton = (props) => {
         });
       }}
     >
-      <i className="material-icons">insert_photo</i>
+      <Tooltip title="Insert Image">
+        <i className="material-icons">insert_photo</i>
+      </Tooltip>
     </Popconfirm>
   );
 };

@@ -85,7 +85,9 @@ export const LinkButton = (props) => {
           .moveToEnd();
       }}
     >
-      <i className="material-icons">insert_link</i>
+      <Tooltip title="Insert Link">
+        <i className="material-icons">insert_link</i>
+      </Tooltip>
     </Popconfirm>
   );
 };
