@@ -9,7 +9,11 @@ function History(options) {
             className={"material-icons"}
             onMouseDown={(event) => {
               event.preventDefault();
-              editor.undo();
+              // Prevents bug where press undo, then press redo without typing in the editor
+              // results in error
+              // There should be a better solution to this:
+              // (editor.value.data.get('undos').size = 1 on render)
+              if (editor.value.data.get('undos').size > 1) { editor.undo(); }
             }}
           >
             undo
@@ -22,7 +26,7 @@ function History(options) {
             className={"material-icons"}
             onMouseDown={(event) => {
               event.preventDefault();
-              editor.redo();
+              if (editor.value.data.get('redos').size > 0) { editor.redo(); }
             }}
           >
             redo
