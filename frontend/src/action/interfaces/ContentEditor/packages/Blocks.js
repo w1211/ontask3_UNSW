@@ -94,9 +94,13 @@ function Blocks(options) {
     },
     onKeyDown(event, editor, next) {
       const { value } = editor;
-      const { selection, anchorBlock } = value;
+      const { selection, anchorText, anchorBlock } = value;
       const { start } = selection;
+      const nodeType = anchorBlock.type;
+      const parent = editor.getCurrentParent();
       const parentType = editor.getParentType();
+
+      const hasParentList = ["bulleted-list", "numbered-list"].includes(parentType);
 
       // List depth
       if (event.key === 'Tab') {
@@ -119,22 +123,26 @@ function Blocks(options) {
       // Removes leftover bulleted-list & numbered-list blocks
       if (event.key === 'Backspace') {
         event.preventDefault();
-        const type = anchorBlock.type;
-        const parentType = editor.getParentType();
         const offset = start.offset;
 
-        if (type !== "list-item" && ["bulleted-list", "numbered-list"].includes(parentType) && offset === 0) {
+        if (hasParentList && offset === 0 && (nodeType !== "list-item" || parent.nodes.size === 1)) {
           editor.unwrapBlock(parentType);
+          return false;
         }
       }
 
-      // Enter on Heading Block to remove heading style
       if (event.key === "Enter") {
+        // Enter on Heading Block to remove heading style
         if (["heading-one", "heading-two"].includes(anchorBlock.type)) {
           editor
             .splitBlock()
             .setBlocks('paragraph');
-          return null; // Prevent 'Enter' from creating a new block
+          return false; // Prevent 'Enter' from creating a new block by default
+        }
+        // Enter on empty list item block to unwrap list
+        if (nodeType === "list-item" && hasParentList && anchorText.text === '') {
+          editor.unwrapBlock(parentType);
+          return false;
         }
       }
       return next();
