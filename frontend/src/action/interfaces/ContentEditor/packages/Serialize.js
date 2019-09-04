@@ -9,18 +9,19 @@ import { Button } from 'antd';
 
 import FontList from './FontList';
 
+// Note: blockquote; heading 3,4,5,6 unsupported, so render paragraph
 const BLOCK_TAGS = {
   p: 'paragraph',
   li: 'list-item',
   ul: 'bulleted-list',
   ol: 'numbered-list',
-  blockquote: 'quote',
   h1: 'heading-one',
   h2: 'heading-two',
-  h3: 'heading-three',
-  h4: 'heading-four',
-  h5: 'heading-five',
-  h6: 'heading-six',
+  h3: 'paragraph',
+  h4: 'paragraph',
+  h5: 'paragraph',
+  h6: 'paragraph',
+  blockquote: 'paragraph',
 };
 
 const MARK_TAGS = {
@@ -233,8 +234,9 @@ function Serialize(options) {
     },
     onPaste(event, editor, next) {
       /**
+       * To handle pasting from apps such as Word Document.
        * TODO:
-       * Bullet Points - Fix the weird symbol
+       * Bullet Points - Convert dotted symbol text to a <ul> tag
        */
       const transfer = getEventTransfer(event);
       if (transfer.type !== "html") return next();

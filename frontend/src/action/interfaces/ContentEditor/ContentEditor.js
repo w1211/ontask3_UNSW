@@ -155,19 +155,6 @@ class ContentEditor extends React.Component {
     this.setState({ value });
   };
 
-  onKeyDown = (event, editor, next) => {
-    // TODO: REMOVE (DEBUGGING ONLY)
-    if (event.key === '.') {
-      event.preventDefault();
-      const html = editor.generateHtml();
-      console.log(html);
-      console.log(editor.value.document.toJSON());
-      console.log(editor.value.marks.toJSON());
-      console.log(editor.value.fragment);
-    }
-    return next();
-  }
-
   render() {
     const { order } = this.props;
     const { value, isInside, previewing, saving } = this.state;
@@ -198,7 +185,6 @@ class ContentEditor extends React.Component {
           schema={this.schema}
           plugins={this.plugins}
           value={value}
-          onKeyDown={this.onKeyDown}
           onChange={this.onChange}
           renderEditor={(props) =>
             <div ref={editorDiv => (this.editorDiv = editorDiv)}>{props.children}</div> // editorDiv to use this.editorDiv.getBoundgetBoundingClientRect

@@ -6,7 +6,6 @@ const DEFAULT_NODE = "paragraph";
 
 /**
  * TODO: Press Enter on Heading -> Make one paragraph instead of 2
- * TODO: Fix issue where Heading is rendered small?
  * TODO: Tab (on non-list) to add tab space?
  */
 
