@@ -6,7 +6,7 @@ class Container(Document):
     owner = StringField()  # User's email
     sharing = ListField(StringField())  # List of user emails
     code = StringField(required=True)
-    term = IntField(null=True)
+    term = IntField(required=True)
     school = StringField(null=True)
     faculty = StringField(null=True)
     description = StringField(null=True)
