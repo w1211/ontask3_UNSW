@@ -123,7 +123,7 @@ class Workflow(Document):
     description = StringField(null=True)
     filter = EmbeddedDocumentField(Filter)
     rules = EmbeddedDocumentListField(Rule)
-    content = StringField()
+    content = StringField(default="")
     emailSettings = EmbeddedDocumentField(EmailSettings)
     schedule = EmbeddedDocumentField(Schedule, null=True, required=False)
     linkId = StringField(null=True)  # link_id is unique across workflow objects
