@@ -255,6 +255,8 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         if not action.content:
             raise ValidationError("Email content cannot be empty.")
 
+        action.emailLocked = True
+        action.save()
         action.send_email()
 
         logger.info(
@@ -263,6 +265,11 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         )
 
         return Response({"success": "true"})
+
+    @detail_route(methods=["get"])
+    def locked(self, request, id=None):
+        action = self.get_object()
+        return Response({ "emailLocked": action.emailLocked })
 
     @list_route(methods=["get"], permission_classes=[AllowAny])
     def read_receipt(self, request):

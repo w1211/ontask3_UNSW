@@ -128,6 +128,7 @@ class Workflow(Document):
     schedule = EmbeddedDocumentField(Schedule, null=True, required=False)
     linkId = StringField(null=True)  # link_id is unique across workflow objects
     emailJobs = EmbeddedDocumentListField(EmailJob)
+    emailLocked = BooleanField(default=False)
 
     @property
     def datalab_name(self):

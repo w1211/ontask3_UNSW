@@ -44,7 +44,8 @@ class Email extends React.Component {
       previewing: true,
       sending: false,
       options,
-      emailView: { visible: false }
+      emailView: { visible: false },
+      emailLocked: true
     };
 
     this.dayMap = {
@@ -64,6 +65,24 @@ class Email extends React.Component {
       onError: error => this.setState({ error, previewing: false })
     });
   }
+
+  // TODO: On Update, send notification
+  // TODO: On disable, show message sayig email is to be sent
+  // TODO: Only setinterval once emailLocked = true
+  componentDidMount = () => {
+    this.checkEmailStatus();
+    var intervalId = setInterval(this.checkEmailStatus, 5000);
+    this.setState({ intervalId: intervalId });
+  };
+
+  // componentDidUpdate = () => {
+  //   var intervalId
+  // };
+
+  componentWillUnmount = () => {
+    const { intervalId } = this.state;
+    clearInterval(intervalId);
+  };
 
   handleSubmit = () => {
     const { form, action, history } = this.props;
@@ -86,8 +105,18 @@ class Email extends React.Component {
           this.setState({ sending: false });
           history.push("/dashboard");
         },
-        onError: error => this.setState({ error })
+        onError: error => this.setState({ sending: false, error })
       });
+    });
+  };
+
+  checkEmailStatus = () => {
+    const { action } = this.props;
+
+    apiRequest(`/workflow/${action.id}/locked/`, {
+      method: "GET",
+      onSuccess: locked => this.setState(locked),
+      onError: error => console.log(error)
     });
   };
 
@@ -366,7 +395,8 @@ class Email extends React.Component {
       scheduler,
       options,
       index,
-      populatedContent
+      populatedContent,
+      emailLocked
     } = this.state;
 
     return (
@@ -500,13 +530,13 @@ class Email extends React.Component {
 
         <Button
           loading={sending}
+          disabled={emailLocked}
           type="primary"
           size="large"
           onClick={this.handleSubmit}
         >
           Send once-off email
         </Button>
-
         {error && <Alert message={error} className="error" type="error" />}
       </div>
     );
