@@ -4,6 +4,7 @@ import { Tooltip } from 'antd';
 
 const DEFAULT_NODE = "paragraph";
 
+// TODO User Types '<num>.' or '-' should auto render ordered, unordered list respectively
 function Blocks(options) {
   return {
     schema: {
